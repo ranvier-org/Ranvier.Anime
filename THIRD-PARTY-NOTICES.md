@@ -8,6 +8,8 @@ The easing formulas retain Anime.js's credit to Robert Penner, Copyright (c) 200
 The cubic Bezier solver retains Anime.js's credit to https://github.com/gre/bezier-easing, Copyright (c) 2014 Gaëtan Renaudeau.
 These credits are preserved in the ported source as well as this notice.
 
+The spring solver retains Anime.js's credit to WebKit's https://webkit.org/demos/spring/spring.js, Copyright (c) 2016 WebKit - Apple Inc.
+
 The MIT License
 
 Copyright (c) 2025 Julian Garnier

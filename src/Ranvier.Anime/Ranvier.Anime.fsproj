@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Ease.fs" />
+    <Compile Include="Spring.fs" />
     <Compile Include="NumericAnimation.fs" />
     <Compile Include="Reactive.fs" />
     <Compile Include="Css.fs" />

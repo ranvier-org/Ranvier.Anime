@@ -140,6 +140,10 @@ module Animation =
     /// <summary>Creates and starts a linear tween. The caller owns its disposable lifetime.</summary>
     let animate scheduler read write target duration = animateWith id scheduler read write target duration
 
+    /// <summary>Creates a tween using a spring easing and its calculated duration.</summary>
+    let animateSpring (spring: Spring) scheduler read write target =
+        animateWith spring.Ease scheduler read write target spring.SettlingDuration
+
     /// <summary>Attaches a tween to the current Ranvier owner, which cancels it on disposal.</summary>
     let own (animation: NumericAnimation) =
         let owner = Api.getOwner()

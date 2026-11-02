@@ -2,8 +2,9 @@
   "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
   "statusMeaning": "Families define the full scope. Progress records verified subsets only; presence of an upstream test file is not native acceptance evidence.",
   "progress": {
-    "managedFoundation": "Numeric runner, reactive ownership and typed numeric CSS custom-property endpoints; 70 unfiltered tests pass normal Release and Traced Debug on the current Windows host.",
-    "easing": "46 default named easings plus one Bezier and two step-mode fixtures match 441 upstream samples; runner consumes custom easing with tested reentrant cancellation and seek. Full easing parameter domains, springs, irregular and multi-stop linear remain incomplete.",
+    "managedFoundation": "Numeric runner, reactive ownership, spring playback and typed numeric CSS custom-property endpoints; 88 unfiltered tests pass normal Release and Traced Debug on the current Windows host.",
+    "easing": "46 default named easings plus one Bezier and two step-mode fixtures match 441 upstream samples; runner consumes custom easing with tested reentrant cancellation and seek. Full easing parameter domains, irregular and multi-stop linear remain incomplete.",
+    "springs": "Physical/perceived spring modes, parameter clamps/mutations, perceived completion and settling-duration playback compare against twelve constructor and six mutation snapshots. Whole-millisecond perceived input accepts uint; precise fractional input remains supported.",
     "nativeIntegration": "Not yet verified; no hardware acceleration or matched public package consumer claim."
   },
   "families": [

@@ -5,6 +5,7 @@
     <Compile Include="ReactiveTests.fs" />
     <Compile Include="CssTests.fs" />
     <Compile Include="EaseTests.fs" />
+    <Compile Include="SpringTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

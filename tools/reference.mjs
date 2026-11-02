@@ -22,10 +22,32 @@ const named = Object.entries(eases).flatMap(([name, evaluate]) => {
   const result = evaluate(0.5);
   return typeof result === 'number' ? [sample(name, evaluate)] : [sample(name, evaluate())];
 });
-const springParameters = [{}, { stiffness: 170, damping: 11 }, { mass: 2, stiffness: 100, damping: 10, velocity: -2 }];
-const springs = springParameters.map(parameters => {
-  const instance = spring(parameters);
-  return { parameters, duration: instance.duration, ...sample('spring', instance.ease) };
+const springCases = [
+  ['default', {}],
+  ['physical', { stiffness: 170, damping: 11 }],
+  ['negativeVelocity', { mass: 2, stiffness: 100, damping: 10, velocity: -2 }],
+  ['critical', { stiffness: 100, damping: 20 }],
+  ['overdamped', { stiffness: 100, damping: 40 }],
+  ['perceived', { duration: 500, bounce: 0.25, mass: 4, velocity: 2 }],
+  ['overdampedPerceived', { duration: 500, bounce: -0.5 }],
+  ['parameterClamps', { mass: 20000, stiffness: 20000, damping: 20000, velocity: -20000 }],
+  ['negativeClamps', { mass: -1, stiffness: -1, damping: -1, velocity: 20000 }],
+  ['fractionalDuration', { duration: 628.5, bounce: 0.5 }],
+  ['bounceUpper', { duration: 500, bounce: 1 }],
+  ['bounceLower', { duration: 500, bounce: -1 }],
+];
+const snapshotSpring = (instance, name) => ({
+  caseName: name,
+  mass: instance.mass, stiffness: instance.stiffness, damping: instance.damping, velocity: instance.velocity,
+  bounce: instance.bounce, duration: instance.duration,
+  solverDuration: instance.solverDuration, settlingDuration: instance.settlingDuration,
+  ...sample('spring', instance.ease),
+});
+const springs = springCases.map(([name, parameters]) => ({ parameters, ...snapshotSpring(spring(parameters), name) }));
+const mutableSpring = spring();
+const springMutations = [['stiffness', 200], ['damping', 20], ['mass', 2], ['velocity', -2], ['bounce', 0.7], ['duration', 900]].map(([property, value]) => {
+  mutableSpring[property] = value;
+  return { property, value, ...snapshotSpring(mutableSpring, property) };
 });
 const staggering = [
   { name: 'step', value: 10, parameters: {}, count: 5 },
@@ -44,6 +66,7 @@ const fixture = {
   named,
   curves: [sample('cubicBezier', cubicBezier(0.42, 0, 0.58, 1)), sample('stepsEnd', steps(4)), sample('stepsStart', steps(4, true))],
   springs,
+  springMutations,
   staggering,
   timing: [0.5, 1, 4294967295, 1000000000001].map(duration => {
     const target = { value: 0 };
