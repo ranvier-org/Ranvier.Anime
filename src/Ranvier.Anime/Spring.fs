@@ -12,16 +12,15 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         let value = defaultArg supplied fallback
         finite name value
         value
-    let clamp low high value = max low (min high value)
     let round digits value =
         let factor = Math.Pow(10., float digits)
         Math.Floor(value * factor + 0.5) / factor
-    let mutable massValue = parameter "mass" 1. mass |> clamp 1. 10000.
-    let mutable stiffnessValue = parameter "stiffness" 100. stiffness |> clamp 1e-11 10000.
-    let mutable dampingValue = parameter "damping" 10. damping |> clamp 1e-11 10000.
-    let mutable velocityValue = parameter "velocity" 0. velocity |> clamp -10000. 10000.
-    let mutable bounceValue = parameter "bounce" 0.5 bounce |> clamp -1. 1.
-    let mutable durationValue = parameter "duration" 628. duration |> clamp 10. 10000.
+    let mutable massValue = Math.Clamp(parameter "mass" 1. mass, 1., 10000.)
+    let mutable stiffnessValue = Math.Clamp(parameter "stiffness" 100. stiffness, 1e-11, 10000.)
+    let mutable dampingValue = Math.Clamp(parameter "damping" 10. damping, 1e-11, 10000.)
+    let mutable velocityValue = Math.Clamp(parameter "velocity" 0. velocity, -10000., 10000.)
+    let mutable bounceValue = Math.Clamp(parameter "bounce" 0.5 bounce, -1., 1.)
+    let mutable durationValue = Math.Clamp(parameter "duration" 628. duration, 10., 10000.)
     let onComplete = defaultArg onComplete ignore
     let mutable naturalFrequency = 0.
     let mutable dampingRatio = 0.
@@ -52,8 +51,8 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         dampingValue <-
             if bounceValue >= 0. then ((1. - bounceValue) * 4. * Math.PI) / seconds
             else (4. * Math.PI) / (seconds * (1. + bounceValue))
-        stiffnessValue <- stiffnessValue |> clamp 1e-11 10000. |> round 3
-        dampingValue <- dampingValue |> clamp 1e-11 300. |> round 3
+        stiffnessValue <- Math.Clamp(stiffnessValue, 1e-11, 10000.) |> round 3
+        dampingValue <- Math.Clamp(dampingValue, 1e-11, 300.) |> round 3
 
     let perceivedFromPhysical () =
         let seconds = (2. * Math.PI) / Math.Sqrt stiffnessValue
@@ -62,11 +61,11 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         bounceValue <-
             if ratio <= 1. then 1. - (dampingValue * seconds) / (4. * Math.PI)
             else (4. * Math.PI) / (dampingValue * seconds) - 1.
-        bounceValue <- bounceValue |> clamp -1. 1. |> round 3
-        durationValue <- durationValue |> clamp 10. 10000. |> round 3
+        bounceValue <- Math.Clamp(bounceValue, -1., 1.) |> round 3
+        durationValue <- Math.Clamp(durationValue, 10., 10000.) |> round 3
 
     let compute () =
-        naturalFrequency <- Math.Sqrt(stiffnessValue / massValue) |> clamp 1e-11 1000.
+        naturalFrequency <- Math.Clamp(Math.Sqrt(stiffnessValue / massValue), 1e-11, 1000.)
         dampingRatio <- dampingValue / (2. * Math.Sqrt(stiffnessValue * massValue))
         if dampingRatio < 1. then
             dampedFrequency <- naturalFrequency * Math.Sqrt(1. - dampingRatio * dampingRatio)
@@ -96,7 +95,7 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         with get() = massValue
         and set value =
             finite "value" value
-            massValue <- clamp 1. 10000. value
+            massValue <- Math.Clamp(value, 1., 10000.)
             compute()
 
     /// <summary>Stiffness clamped to 1e-11 through 10000; setting it also updates bounce and perceived duration.</summary>
@@ -104,7 +103,7 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         with get() = stiffnessValue
         and set value =
             finite "value" value
-            stiffnessValue <- clamp 1e-11 10000. value
+            stiffnessValue <- Math.Clamp(value, 1e-11, 10000.)
             perceivedFromPhysical()
             compute()
 
@@ -113,7 +112,7 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         with get() = dampingValue
         and set value =
             finite "value" value
-            dampingValue <- clamp 1e-11 10000. value
+            dampingValue <- Math.Clamp(value, 1e-11, 10000.)
             perceivedFromPhysical()
             compute()
 
@@ -122,7 +121,7 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         with get() = velocityValue
         and set value =
             finite "value" value
-            velocityValue <- clamp -10000. 10000. value
+            velocityValue <- Math.Clamp(value, -10000., 10000.)
             compute()
 
     /// <summary>Bounce clamped to negative one through one; setting it derives physical parameters and resets mass and velocity.</summary>
@@ -130,7 +129,7 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         with get() = bounceValue
         and set value =
             finite "value" value
-            bounceValue <- clamp -1. 1. value
+            bounceValue <- Math.Clamp(value, -1., 1.)
             physicalFromPerceived()
             compute()
 
@@ -139,7 +138,7 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         with get() = durationValue
         and set value =
             finite "value" value
-            durationValue <- clamp 10. 10000. value
+            durationValue <- Math.Clamp(value, 10., 10000.)
             physicalFromPerceived()
             compute()
 

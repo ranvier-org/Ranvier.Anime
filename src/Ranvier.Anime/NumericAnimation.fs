@@ -42,7 +42,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
 
     let render time =
         let expected = generation
-        elapsed <- max 0. (min duration time)
+        elapsed <- Math.Clamp(time, 0., duration)
         completed <- elapsed >= duration
         if completed then playing <- false
         let progress = ease (if duration = 0. then 1. else elapsed / duration)
@@ -81,7 +81,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     /// <summary>Stops scheduled frames and retains elapsed time without writing a new value.</summary>
     member _.Pause() =
         if playing then
-            elapsed <- max 0. (min duration (scheduler.Now() - anchor))
+            elapsed <- Math.Clamp(scheduler.Now() - anchor, 0., duration)
             playing <- false
             stopFrame()
 
@@ -90,7 +90,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
         ensureLive()
         finite "milliseconds" milliseconds
         stopFrame()
-        anchor <- scheduler.Now() - max 0. (min duration milliseconds)
+        anchor <- scheduler.Now() - Math.Clamp(milliseconds, 0., duration)
         render milliseconds
         queue()
 

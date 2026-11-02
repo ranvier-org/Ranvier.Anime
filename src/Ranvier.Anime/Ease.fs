@@ -51,8 +51,8 @@ module Ease =
             | Elastic (amplitude, period) ->
                 finite "amplitude" amplitude
                 finite "period" period
-                let amplitude = max 1. (min 10. amplitude)
-                let period = max 1e-11 (min 2. period)
+                let amplitude = Math.Clamp(amplitude, 1., 10.)
+                let period = Math.Clamp(period, 1e-11, 2.)
                 let shift = period / (Math.PI * 2.) * Math.Asin(1. / amplitude)
                 let frequency = Math.PI * 2. / period
                 fun time ->
@@ -98,7 +98,7 @@ module Ease =
         let count = float count
         fun time ->
             finite "time" time
-            let scaled = max 0. (min 1. time) * count
+            let scaled = Math.Clamp(time, 0., 1.) * count
             (if fromStart then Math.Ceiling scaled else Math.Floor scaled) * (1. / count)
 
     // Solver adapted through Anime.js from gre/bezier-easing, (c) 2014 Gaëtan Renaudeau.
