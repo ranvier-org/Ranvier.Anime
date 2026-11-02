@@ -20,6 +20,8 @@
     <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssBindingsVersion)]" />
   </ItemGroup>
   <Target Name="RequirePinnedSourceGraph" BeforeTargets="PrepareForBuild">
-    <Error Condition="'$(UseLocalRanvier)' != 'true'" Text="Run the native smoke through build.fsx to select its pinned private source graph." />
+    <Error Condition="'$(NativeSmokeGraph)' != 'source' and '$(NativeSmokeGraph)' != 'core56'" Text="Run the native smoke through build.fsx to select a qualified source or public-Core graph." />
+    <Error Condition="'$(NativeSmokeGraph)' == 'source' and '$(UseLocalRanvier)' != 'true'" Text="The source cohort requires local Core projects." />
+    <Error Condition="'$(NativeSmokeGraph)' == 'core56' and ('$(UseLocalRanvier)' == 'true' or '$(RanvierDomVersion)' != '0.1.0-alpha.56')" Text="The public-Core cohort requires actual public DOM alpha.56 packages." />
   </Target>
 </Project>

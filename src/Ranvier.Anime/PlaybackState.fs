@@ -1,7 +1,23 @@
 namespace Ranvier.Anime
 
 /// <summary>Callback phases for a standalone playback controller.</summary>
-type internal PlaybackEvent = Begin | BeforeUpdate | Update | Loop | Pause | Complete
+[<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+type internal PlaybackEvent =
+    | Begin
+    | BeforeUpdate
+    | Update
+    | Loop
+    | Pause
+    | Complete
+    /// <summary>Callback phase name for diagnostics.</summary>
+    override this.ToString() =
+        match this with
+        | Begin -> "Begin"
+        | BeforeUpdate -> "BeforeUpdate"
+        | Update -> "Update"
+        | Loop -> "Loop"
+        | Pause -> "Pause"
+        | Complete -> "Complete"
 
 /// <summary>Standalone callback and control state; clock input includes the initial delay.</summary>
 type internal PlaybackState(duration: float, iterations: float, delay: float, loopDelay: float,

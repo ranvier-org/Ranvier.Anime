@@ -30,6 +30,8 @@ Task 2 evidence: 18 admitted-frame source traces plus 11 lifetime/input tests; f
 
 Task 3 numeric progress: 46 source animation traces (24 generated), three interruption tests and two typed CSS playback tests; full suites 492/492 normal Release and Traced Debug, XML audit zero. Additional source cases cover negative periods, inverted bounds and the signed32 iteration boundary. A fresh successful Traced native JIT build/run verifies typed CSS repeat/alternate output and retained priority. Timelines still use their prior clock; timer tracks, nested repeated controllers and the final scoped review remain open. Historical NativeAOT receipts do not qualify the changed source.
 
+Current native replay: the added timer/numeric code now passes both strict normal and Traced NativeAOT publishes and PE executions against actual public Core/DOM alpha.56 and CSS alpha.2. Our generated F# diagnostic/debugger formatting roots were corrected without upstream edits or IL suppression. New schema3 receipts preserve exact source/package/native identities. View/runtime remain private; this closes current playback PE replay, not public-cohort/GPU acceptance or the remaining Task3 timeline work.
+
 ## Review focus
 
 Check skipped iterations versus callback counts, delay/loop-gap boundaries, 32-bit JavaScript truncation and negative zero-duration iteration indices, infinite versus clamped total durations, mixed forward/backward sampling, render eligibility after completion, sample time versus public rounded getters, reentrant controls during callbacks, and float precision at maximum uint/large values. Current native lifetime adaptations must not silently change ordinary Anime.js clock geometry.

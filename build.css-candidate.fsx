@@ -65,8 +65,8 @@ let verify () =
     if count <> 4 then failwith "Owned CSS candidate cohort is incomplete."
     printfn "Reverified four owned CSS candidate packages"
 
-/// <summary>Verifies the private CSS graph and archive/cache/app/resolved-compiler DLL identities.</summary>
-let packageProof (configuration: string) (stage: string) (cache: string) candidate =
+/// <summary>Verifies selected public/private packages against archive, cache, app and resolved compiler DLLs.</summary>
+let packageProof (configuration: string) (stage: string) (cache: string) candidate publicCore =
     if candidate then verify()
     let suffix = if configuration = "Debug" then ".Traced" elif configuration = "Release" then "" else invalidArg "configuration" "Expected Debug or Release."
     let obj = Path.Combine(stage, "build", "obj", "Ranvier.Anime.NativeSmoke")
@@ -74,35 +74,61 @@ let packageProof (configuration: string) (stage: string) (cache: string) candida
     use assets = JsonDocument.Parse(File.ReadAllText(Path.Combine(obj, "project.assets.json")))
     let libraries = assets.RootElement.GetProperty("libraries")
     let expectedCss = Set.ofList ["Ranvier.Css" + suffix; "Ranvier.Css.Bindings" + suffix; "Ranvier.Css.Dom" + suffix]
+    let coreIds = Set.ofList ["Ranvier"; "Ranvier.Traced"; "Ranvier.Dom"; "Ranvier.Dom.Traced"]
+    let expectedCore = Set.ofList ["Ranvier" + suffix; "Ranvier.Dom" + suffix]
     for library in libraries.EnumerateObject() do
         let id = library.Name.Split('/')[0]
         if id.StartsWith("Ranvier.Css", StringComparison.Ordinal) && not(expectedCss.Contains id) then
             failwith "Native restore graph mixes CSS package variants."
+        if publicCore && coreIds.Contains id && not(expectedCore.Contains id) then
+            failwith "Public Core restore graph mixes normal/Traced package variants."
     let response = Path.Combine(obj, configuration.ToLowerInvariant() + "_net10.0_win-x64", "native", "Ranvier.Anime.NativeSmoke.ilc.rsp")
     let cssVersion = if candidate then "0.1.1-alpha.1-css-aot.2" else "0.1.1-alpha.2"
     let bindingsVersion = if candidate then "0.1.1-alpha.1-css-aot.2" else "0.1.1-alpha.1"
-    [("Ranvier.Css" + suffix, cssVersion, "Ranvier.Css.dll");
-     ("Ranvier.Css.Bindings" + suffix, bindingsVersion, "Ranvier.Css.Bindings.dll");
-     ("Ranvier.Css.Dom" + suffix, "0.1.0-alpha.1", "Ranvier.Css.Dom.dll")]
+    let selected =
+        [("Ranvier.Css" + suffix, cssVersion, "Ranvier.Css.dll");
+         ("Ranvier.Css.Bindings" + suffix, bindingsVersion, "Ranvier.Css.Bindings.dll");
+         ("Ranvier.Css.Dom" + suffix, "0.1.0-alpha.1", "Ranvier.Css.Dom.dll")] @
+        (if publicCore then
+            [("Ranvier" + suffix, "0.1.1-preview.1", "Ranvier.dll");
+             ("Ranvier.Dom" + suffix, "0.1.0-alpha.56", "Ranvier.Dom.dll");
+             ("Ranvier.WebCore", "0.1.1-preview.7", "Ranvier.WebCore.dll")]
+         else [])
+    selected
         |> List.map(fun (id, version, dll) ->
-            libraries.GetProperty(id + "/" + version) |> ignore
+            let library = libraries.GetProperty(id + "/" + version)
+            if library.GetProperty("type").GetString() <> "package" then failwith "Expected an actual restored public/private package."
             let directory = Path.Combine(cache, id.ToLowerInvariant(), version)
             let payload = Path.Combine(directory, id.ToLowerInvariant() + "." + version + ".nupkg")
             let cacheDll = Path.Combine(directory, "lib", "net10.0", dll)
             let compilerDll = BuildProvenance.compilerDll __SOURCE_DIRECTORY__ response dll
             BuildProvenance.verifyDll payload ("lib/net10.0/" + dll) [cacheDll; Path.Combine(bin, dll); compilerDll]
+            if publicCore && id = "Ranvier.Dom" + suffix then BuildCore56.verifyDomPackage id payload
             if version.EndsWith("css-aot.2", StringComparison.Ordinal) then
                 let owned = Path.Combine(__SOURCE_DIRECTORY__, "artifacts", "css-candidate", "70ac", "packages", id + "." + version + ".nupkg")
                 if hash payload <> hash owned then failwith "Restored private CSS package differs from the copied feed."
             elif id = "Ranvier.Css" + suffix then
                 let expected = if suffix = "" then "2665336dbac9deabd5f641cee78e654389b46720f7d262f866b123a6340e2f1a" else "2713ff055b570c62ce7db25ffff4b48ff8e8a2efc25f4e039a298fa94b5dc0de"
                 if hash payload <> expected then failwith "Public CSS alpha.2 package differs from the independently audited nupkg."
-            {| Id = id; Version = version; NupkgSha256 = hash payload; DllSha256 = hash cacheDll; CompilerInput = compilerDll |})
+            use archive = ZipFile.OpenRead payload
+            let nuspec = archive.Entries |> Seq.filter(fun entry -> entry.FullName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase)) |> Seq.exactlyOne
+            use stream = nuspec.Open()
+            let document = XDocument.Load stream
+            let ns = document.Root.Name.Namespace
+            let metadata = document.Root.Element(ns + "metadata")
+            if metadata.Element(ns + "id").Value <> id || metadata.Element(ns + "version").Value <> version then
+                failwith "Package nuspec identity differs from the resolved dependency."
+            let repository = metadata.Element(ns + "repository")
+            let commit = if isNull repository then null else repository.Attribute(XName.Get "commit")
+            use origin = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, ".nupkg.metadata")))
+            {| Id = id; Version = version; NupkgSha256 = hash payload; DllSha256 = hash cacheDll; CompilerInput = compilerDll
+               SourceCommit = if isNull commit then "" else commit.Value
+               Feed = origin.RootElement.GetProperty("source").GetString() |})
 
-/// <summary>Archives an executed private AOT replay whose successful publication and inputs remain unchanged.</summary>
-let capture (configuration: string) (stage: string) (cache: string) candidate =
+/// <summary>Archives an executed AOT replay whose successful publication and inputs remain unchanged.</summary>
+let capture (configuration: string) (stage: string) (cache: string) candidate publicCore =
     let publication = BuildProvenance.requirePublish __SOURCE_DIRECTORY__ stage configuration
-    let packages = packageProof configuration stage cache candidate
+    let packages = packageProof configuration stage cache candidate publicCore
     if JsonSerializer.SerializeToElement(packages).GetRawText() <> publication.Packages.GetRawText() then
         failwith "Current package provenance differs from the successful publication."
     let obj = Path.Combine(stage, "build", "obj", "Ranvier.Anime.NativeSmoke")
@@ -113,9 +139,9 @@ let capture (configuration: string) (stage: string) (cache: string) candidate =
        not(run.RootElement.GetProperty("RequiredAot").GetBoolean()) || run.RootElement.GetProperty("ExecutableSha256").GetString() <> hash executable ||
        run.RootElement.GetProperty("LogSha256").GetString() <> hash log then
         failwith "A successful matching NativeAOT execution receipt is required."
-    let cohort = if candidate then "native-css-70ac-hardened" else "native-css-public-alpha2-hardened"
+    let cohort = if publicCore then "native-core56-css2-hardened" elif candidate then "native-css-70ac-hardened" else "native-css-public-alpha2-hardened"
     let destination = Path.Combine(__SOURCE_DIRECTORY__, "artifacts", "qualification", cohort + "-" + configuration)
-    if File.Exists(Path.Combine(destination, "receipt.json")) then failwith "This private replay snapshot is already preserved."
+    if File.Exists(Path.Combine(destination, "receipt.json")) then failwith "This replay snapshot is already preserved."
     Directory.CreateDirectory destination |> ignore
     let files =
         ["publish.log", Path.Combine(stage, "publish-" + configuration + ".log")
@@ -123,7 +149,9 @@ let capture (configuration: string) (stage: string) (cache: string) candidate =
          "run.log", log; "run.json", log + ".json"
          "project.assets.json", Path.Combine(obj, "project.assets.json")
          "compiler.rsp", Path.Combine(obj, configuration.ToLowerInvariant() + "_net10.0_win-x64", "native", "Ranvier.Anime.NativeSmoke.ilc.rsp")
-         "Ranvier.Anime.NativeSmoke.exe", executable]
+         "Ranvier.Anime.NativeSmoke.exe", executable
+         "native-manifest.json", Path.Combine(__SOURCE_DIRECTORY__, "artifacts", "native-smoke", "source-manifest.json")] @
+        (if publicCore then ["core56-audit.json", Path.Combine(__SOURCE_DIRECTORY__, "artifacts", "core56", "public-byte-audit.json")] else [])
         |> List.map(fun (name, source) ->
             let target = Path.Combine(destination, name)
             File.Copy(source, target, true)
@@ -133,24 +161,28 @@ let capture (configuration: string) (stage: string) (cache: string) candidate =
                   |> Array.map(fun input -> {| File = Path.GetFileName input.Path; Sha256 = input.Sha256 |}) |> Array.sortBy _.File
     let consumer = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "tests", "Ranvier.Anime.NativeSmoke", "Program.fs"))
     let receipt =
-        {| Schema = 2; Configuration = configuration; PrivateCandidate = candidate; PublicCssPackages = not candidate; PublicQualified = false
+        {| Schema = 3; Configuration = configuration; PrivateCandidate = candidate; PublicCssPackages = not candidate
+           PublicCorePackages = publicCore; PublicViewPackages = false; PublicNativePayload = false; PublicQualified = false
+           CoreAuditSha256 = if publicCore then BuildCore56.verifyAudit() else ""
            CssSource = if candidate then "70ac54af73543d86941da45c4dc499ca819a7e3e" else "public-alpha.2-audited-packages"
-           CoreSource = "6f5e063c06a48af2c3375c1c986cb5925e814d3d"; ViewSource = "625b0e1baeaf2ccc023f69dd7f1e76626e27a084"
+           CoreSource = if publicCore then "public-package-commits-recorded-per-nupkg" else "6f5e063c06a48af2c3375c1c986cb5925e814d3d"
+           ViewSource = "625b0e1baeaf2ccc023f69dd7f1e76626e27a084"
            NativeSource = "6f10bea17d7a1f22e5e97d472819c055fba3ef06"; NativeAbi = 62
            Packages = packages; Files = files; LibrarySources = sources
            ConsumerSourceSha256 = (publication.Inputs |> Array.find(fun input -> input.Path = consumer)).Sha256 |}
     File.WriteAllText(Path.Combine(destination, "receipt.json"), JsonSerializer.Serialize receipt)
-    printfn "Preserved successful private %s replay and verified three CSS package/DLL identities" configuration
+    printfn "Preserved %s %s replay and verified %d package/DLL identities" cohort configuration packages.Length
 
-/// <summary>Writes the tracked private-replay summary from both immutable archived mode receipts.</summary>
-let summarize candidate =
-    let cohort = if candidate then "native-css-70ac-hardened" else "native-css-public-alpha2-hardened"
+/// <summary>Writes the tracked replay summary from both immutable archived mode receipts.</summary>
+let summarize candidate publicCore =
+    let cohort = if publicCore then "native-core56-css2-hardened" elif candidate then "native-css-70ac-hardened" else "native-css-public-alpha2-hardened"
     let modes =
         ["Release"; "Debug"] |> List.map(fun configuration ->
             let path = Path.Combine(__SOURCE_DIRECTORY__, "artifacts", "qualification", cohort + "-" + configuration, "receipt.json")
             use receipt = JsonDocument.Parse(File.ReadAllText path)
             {| Configuration = configuration; ReceiptSha256 = hash path; Evidence = receipt.RootElement.Clone() |})
-    let summary = {| PrivateCandidate = candidate; PublicCssPackages = not candidate; PublicAccepted = false; HardwareAccelerationQualified = false; Modes = modes |}
+    let summary = {| PrivateCandidate = candidate; PublicCssPackages = not candidate; PublicCorePackages = publicCore
+                     PublicAccepted = false; HardwareAccelerationQualified = false; Modes = modes |}
     let path = Path.Combine(__SOURCE_DIRECTORY__, "docs", "evidence", cohort + ".json")
     File.WriteAllText(path, JsonSerializer.Serialize(summary, JsonSerializerOptions(WriteIndented = true)))
-    printfn "Wrote compact two-mode private replay evidence"
+    printfn "Wrote compact two-mode %s replay evidence" cohort

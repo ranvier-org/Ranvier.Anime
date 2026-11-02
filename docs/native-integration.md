@@ -58,3 +58,24 @@ Both full public-package managed suites pass 354/354 with CSS alpha.2; XML audit
 The subsequent standalone Timer addition passes 441/441 full managed tests in each configuration. A fresh Traced JIT host build/run now also verifies repeated-timer completion and disposal of its actual Ranvier owner inside before-update: the timer cancels during that active sample, emits zero update callbacks and stays quiet on later native frames. Its current run log is `artifacts/native-css-public-alpha2/run-Debug-jit.log`. Earlier immutable AOT snapshots bind their earlier source; they do not qualify this Timer addition. A new published-PE replay, numeric/timeline shared playback, host-destruction coverage and broad native feature tests remain required.
 
 Numeric animation and typed CSS now share the timer clock as well. Current suites pass 492/492 normal and Traced; the fresh successful Traced JIT build/run also verifies repeated/alternated typed-CSS output reaches its source-directed endpoint with importance retained. The same current JIT log includes that explicit check. Numeric source comparisons cover 46 value/callback/state traces and three interruption tests. Timeline shared playback, fresh NativeAOT qualification of these added sources, host destruction and broad native feature coverage remain open.
+
+The current playback foundation now also passes strict NativeAOT with actual public Core packages: Ranvier 0.1.1-preview.1, DOM 0.1.0-alpha.56, CSS 0.1.1-alpha.2, Bindings 0.1.1-alpha.1, CSS-DOM 0.1.0-alpha.1 and managed WebCore 0.1.1-preview.7. Both normal Release and Traced Debug restore into the fresh `artifacts/nuget-core56-css2` cache using public feeds only. `--public-core` sets `UseLocalRanvier=false` and selects `artifacts/native-core56-css2`; Core/DOM are package dependencies, rather than producer project references. The existing private View625b source and owned ABI62 runtime remain pinned. The portable managed-test default remains DOM alpha.55; this native replay explicitly overrides it to alpha.56.
+
+DOM normal/traced nupkg SHA256 values match the coordinator's independently signed public audit: `518866e8bc643a52cb069ad597e6fc307e042cfb9ff9fb8b0156a92095caeae2` and `ca60a9a05bd355941e615c044b5a2ad897a347be23278e89422d345820a7586c`. Their nuspec source is `fc7a751babe9ee6df6369776451a7fa71a06a00e`. Six selected package DLLs in each mode match their nupkg entries, extracted cache copies, app copies and actual ILC references. Receipts record full nupkg/DLL hashes, feed URLs and each package's source commit, including public Ranvier source1f101370 and CSS source5ed51b9f. The accepted audit metadata is copied into the owned evidence tree; no producer package or released reader path is used.
+
+The first strict replay found our own newly introduced F# diagnostic formatting roots. Explicit BCL-based ToString implementations for PlaybackOptions/PlaybackRepeat/PlaybackEvent and direct DU debugger displays remove those paths. The dependency graph identified the generated ToString and __DebugDisplay calls; no upstream bug, source edit or IL suppression was needed. PlaybackOptions diagnostic text is now invariant and one-line. Both published PEs confirm NativeAOT and pass all current style/layout/repeat/priority/owner checks, including owner disposal during an active callback.
+
+Reproduce the public-Core replay through warm Partas.Build, preserving Release before restoring Debug:
+
+```fsharp
+build ["core56-audit-copy"; "--receipt"; "C:/wk/project2/core56-public-byte-audit.json"]
+build ["native-publish"; "-c"; "Release"; "--public-core"]
+build ["native-run"; "-c"; "Release"; "--public-core"; "--aot"]
+build ["core56-evidence"; "-c"; "Release"]
+// Repeat publish/run/evidence with Debug, then summarize.
+build ["core56-summary"]
+```
+
+Immutable schema-3 snapshots `artifacts/qualification/native-core56-css2-hardened-{Release,Debug}` include successful publication/run receipts, full logs, assets, ILC response, executable, runtime manifest and accepted Core audit. [Tracked two-mode evidence](evidence/native-core56-css2-hardened.json) binds them. Both receipt hashes and all 18 archived files were reverified. Current Debug publication still validates 337 authored inputs and 190 compiler inputs after both full 492/492 managed suites; XML audit and evidence regressions pass. Source snapshots conservatively include the owned Core clone, but the assets and compiler inputs prove that public Core packages supplied the actual binaries.
+
+This closes the current timer/numeric NativeAOT replay requirement, with public Core/CSS and private View/runtime. It does not establish matched public View/native acceptance, host-destruction safety, full Anime.js parity, Linux execution or GPU presentation. Timeline clock integration and the remaining capability families stay open. Existing historical snapshots remain intact.

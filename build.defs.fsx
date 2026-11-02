@@ -3,6 +3,7 @@ module BuildDefs
 #i "nuget: https://nuget.cloudsmith.io/shayanhabibi/shayanhabibi-partas-build/v3/index.json"
 #r "nuget: Partas.Build, 0.8.2"
 #load "build.native.fsx"
+#load "build.core56.fsx"
 #load "build.provenance.fsx"
 #load "build.css-candidate.fsx"
 #load "build.evidence-tests.fsx"
@@ -11,11 +12,12 @@ open Partas.Build
 
 let packageCache = System.IO.Path.Combine(__SOURCE_DIRECTORY__, "artifacts", "nuget-packages")
 
-let nativeRoot candidate =
-    System.IO.Path.Combine(__SOURCE_DIRECTORY__, "artifacts", if candidate then "native-css-70ac" else "native-css-public-alpha2")
+let nativeRoot candidate publicCore =
+    if candidate && publicCore then invalidArg "public-core" "Public Core and the private CSS candidate are separate cohorts."
+    System.IO.Path.Combine(__SOURCE_DIRECTORY__, "artifacts", if publicCore then "native-core56-css2" elif candidate then "native-css-70ac" else "native-css-public-alpha2")
 
-let nativeCache candidate =
-    System.IO.Path.Combine(__SOURCE_DIRECTORY__, "artifacts", if candidate then "nuget-css-70ac" else "nuget-css-public-alpha2")
+let nativeCache candidate publicCore =
+    System.IO.Path.Combine(__SOURCE_DIRECTORY__, "artifacts", if publicCore then "nuget-core56-css2" elif candidate then "nuget-css-70ac" else "nuget-css-public-alpha2")
 
 let nativeNuget candidate = if candidate then "nuget.private-css.config" else "nuget.config"
 
@@ -25,12 +27,14 @@ let cohortArguments config candidate =
     (if candidate then ["-p:RanvierCssVersion=0.1.1-alpha.1-css-aot.2"; "-p:RanvierCssBindingsVersion=0.1.1-alpha.1-css-aot.2"]
      else ["-p:RanvierCssVersion=0.1.1-alpha.2"; "-p:RanvierCssBindingsVersion=0.1.1-alpha.1"])
 
-let nativeArguments config candidate =
+let nativeArguments config candidate publicCore =
     cohortArguments config candidate @
-    [ "-p:UseLocalRanvier=true"; $"-p:RanvierRoot={__SOURCE_DIRECTORY__}/upstream/core-aot"; "-p:UseLocalRanvierWebCore=false"
+    [ (if publicCore then "-p:UseLocalRanvier=false" else "-p:UseLocalRanvier=true")
+      (if publicCore then "-p:NativeSmokeGraph=core56" else "-p:NativeSmokeGraph=source")
+      (if publicCore then "-p:RanvierDomVersion=0.1.0-alpha.56" else "-p:RanvierDomVersion=0.1.0-alpha.55"); $"-p:RanvierRoot={__SOURCE_DIRECTORY__}/upstream/core-aot"; "-p:UseLocalRanvierWebCore=false"
       "-p:RanvierWebCoreNativeVersion=0.1.1-preview.7"; $"-p:RanvierWebCoreNativeDir={__SOURCE_DIRECTORY__}/artifacts/native-smoke/runtime"
       "-p:RanvierWebCoreNativeRid=win-x64"; "-p:TargetFrameworks=net10.0"; "-p:FSharpCoreImplicitPackageVersion=10.1.401"
-      "--artifacts-path"; nativeRoot candidate + "/build" ]
+      "--artifacts-path"; nativeRoot candidate publicCore + "/build" ]
 
 let nativeCommand arguments = { Cmd.create "rtk" "" with Arguments = arguments }
 
@@ -41,6 +45,7 @@ let configuration =
     |> Input.acceptOnlyFromAmong ["Debug"; "Release"]
 
 let cssCandidate = Input.option<bool> "--css-candidate"
+let publicCore = Input.option<bool> "--public-core"
 
 let restore = input {
     let! config = configuration
@@ -54,11 +59,13 @@ let restore = input {
 let nativeRestore = input {
     let! config = configuration
     and! candidate = cssCandidate
-    let arguments = nativeArguments config candidate
+    and! publicCore = publicCore
+    let arguments = nativeArguments config candidate publicCore
     return stage "native source-cohort restore" {
         workingDir __SOURCE_DIRECTORY__
-        envVars [("NUGET_PACKAGES", nativeCache candidate); ("OS", "Windows_NT")]
+        envVars [("NUGET_PACKAGES", nativeCache candidate publicCore); ("OS", "Windows_NT")]
         run (fun _ -> if candidate then BuildCssCandidate.verify())
+        run (fun _ -> if publicCore then BuildCore56.verifyAudit() |> ignore)
         run (fun _ -> BuildNative.verifySources())
         run (fun _ -> BuildNative.verifyStage())
         run (nativeCommand ["git"; "-C"; "upstream/core-aot"; "diff"; "--exit-code"; "HEAD"])
@@ -70,11 +77,12 @@ let nativeRestore = input {
 let nativeBuild = input {
     let! config = configuration
     and! candidate = cssCandidate
-    let arguments = nativeArguments config candidate
+    and! publicCore = publicCore
+    let arguments = nativeArguments config candidate publicCore
     return stage "native source-cohort build" {
         workingDir __SOURCE_DIRECTORY__
-        envVars [("NUGET_PACKAGES", nativeCache candidate); ("OS", "Windows_NT")]
-        run (nativeCommand (["dotnet"; "build"; "tests/Ranvier.Anime.NativeSmoke/Ranvier.Anime.NativeSmoke.fsproj"; "-c"; config; "-r"; "win-x64"] @ arguments @ ["--no-restore"; $"-flp:logfile={nativeRoot candidate}/build-{config}.log;verbosity=normal"]))
+        envVars [("NUGET_PACKAGES", nativeCache candidate publicCore); ("OS", "Windows_NT")]
+        run (nativeCommand (["dotnet"; "build"; "tests/Ranvier.Anime.NativeSmoke/Ranvier.Anime.NativeSmoke.fsproj"; "-c"; config; "-r"; "win-x64"] @ arguments @ ["--no-restore"; $"-flp:logfile={nativeRoot candidate publicCore}/build-{config}.log;verbosity=normal"]))
     }
 }
 
@@ -82,59 +90,63 @@ let nativeRun = input {
     let! config = configuration
     and! aot = Input.option<bool> "--aot"
     and! candidate = cssCandidate
+    and! publicCore = publicCore
     let output =
-        if aot then $"{nativeRoot candidate}/publish/{config}"
-        else $"{nativeRoot candidate}/build/bin/Ranvier.Anime.NativeSmoke/{config.ToLowerInvariant()}_net10.0_win-x64"
+        if aot then $"{nativeRoot candidate publicCore}/publish/{config}"
+        else $"{nativeRoot candidate publicCore}/build/bin/Ranvier.Anime.NativeSmoke/{config.ToLowerInvariant()}_net10.0_win-x64"
     return stage "native source-cohort smoke" {
         workingDir output
         envVars [("OS", "Windows_NT")]
-        run (fun _ -> if aot then BuildProvenance.requirePublish __SOURCE_DIRECTORY__ (nativeRoot candidate) config |> ignore)
+        run (fun _ -> if aot then BuildProvenance.requirePublish __SOURCE_DIRECTORY__ (nativeRoot candidate publicCore) config |> ignore)
         run (fun _ -> BuildNative.verifyStage())
         run (fun _ -> BuildNative.verifyOutput output)
-        run (fun _ -> BuildNative.runSmoke output aot ($"{nativeRoot candidate}/run-{config}-" + (if aot then "aot" else "jit") + ".log"))
+        run (fun _ -> BuildNative.runSmoke output aot ($"{nativeRoot candidate publicCore}/run-{config}-" + (if aot then "aot" else "jit") + ".log"))
     }
 }
 
 let nativePublish = input {
     let! config = configuration
     and! candidate = cssCandidate
-    let arguments = nativeArguments config candidate
-    let output = $"{nativeRoot candidate}/publish/{config}"
-    let log = $"{nativeRoot candidate}/publish-{config}.log"
+    and! publicCore = publicCore
+    let arguments = nativeArguments config candidate publicCore
+    let output = $"{nativeRoot candidate publicCore}/publish/{config}"
+    let log = $"{nativeRoot candidate publicCore}/publish-{config}.log"
     return stage "strict NativeAOT publish" {
         workingDir __SOURCE_DIRECTORY__
-        envVars [("NUGET_PACKAGES", nativeCache candidate); ("OS", "Windows_NT")]
-        run (fun _ -> BuildProvenance.beginPublish __SOURCE_DIRECTORY__ (nativeRoot candidate) config)
+        envVars [("NUGET_PACKAGES", nativeCache candidate publicCore); ("OS", "Windows_NT")]
+        run (fun _ -> BuildProvenance.beginPublish __SOURCE_DIRECTORY__ (nativeRoot candidate publicCore) config)
         run (nativeCommand (["proxy"; "dotnet"; "publish"; "tests/Ranvier.Anime.NativeSmoke/Ranvier.Anime.NativeSmoke.fsproj"; "-c"; config; "-r"; "win-x64"] @ arguments @ ["--no-restore"; "-o"; output; "-p:ILLinkTreatWarningsAsErrors=true"; "-p:IlcTreatWarningsAsErrors=true"; "-p:TrimmerSingleWarn=false"; "-p:IlcGenerateDgmlFile=true"; $"-flp:logfile={log};verbosity=normal"]))
         run (fun _ ->
             BuildNative.verifyPublishLog log
             let packages =
-                System.Text.Json.JsonSerializer.SerializeToElement(BuildCssCandidate.packageProof config (nativeRoot candidate) (nativeCache candidate) candidate)
-            BuildProvenance.recordPublish __SOURCE_DIRECTORY__ (nativeRoot candidate) config packages)
+                System.Text.Json.JsonSerializer.SerializeToElement(BuildCssCandidate.packageProof config (nativeRoot candidate publicCore) (nativeCache candidate publicCore) candidate publicCore)
+            BuildProvenance.recordPublish __SOURCE_DIRECTORY__ (nativeRoot candidate publicCore) config packages)
     }
 }
 
 let cssProbeRestore = input {
     let! config = configuration
     and! candidate = cssCandidate
+    and! publicCore = publicCore
     let arguments = cohortArguments config candidate
     return stage "isolated typed CSS restore" {
         workingDir __SOURCE_DIRECTORY__
-        envVars [("NUGET_PACKAGES", nativeCache candidate); ("OS", "Windows_NT")]
+        envVars [("NUGET_PACKAGES", nativeCache candidate publicCore); ("OS", "Windows_NT")]
         run (fun _ -> if candidate then BuildCssCandidate.verify())
-        run (nativeCommand (["dotnet"; "restore"; "tests/Ranvier.Anime.CssAotProbe/Ranvier.Anime.CssAotProbe.fsproj"; "-r"; "win-x64"] @ arguments @ ["-p:FSharpCoreImplicitPackageVersion=10.1.401"; "--artifacts-path"; nativeRoot candidate + "/build"; "--configfile"; nativeNuget candidate; "--force"; "--no-http-cache"]))
+        run (nativeCommand (["dotnet"; "restore"; "tests/Ranvier.Anime.CssAotProbe/Ranvier.Anime.CssAotProbe.fsproj"; "-r"; "win-x64"] @ arguments @ ["-p:FSharpCoreImplicitPackageVersion=10.1.401"; "--artifacts-path"; nativeRoot candidate publicCore + "/build"; "--configfile"; nativeNuget candidate; "--force"; "--no-http-cache"]))
     }
 }
 
 let cssAotProbe = input {
     let! config = configuration
     and! candidate = cssCandidate
-    let arguments = cohortArguments config candidate @ ["-p:FSharpCoreImplicitPackageVersion=10.1.401"; "--artifacts-path"; nativeRoot candidate + "/build"]
-    let log = $"{nativeRoot candidate}/css-probe-{config}.log"
+    and! publicCore = publicCore
+    let arguments = cohortArguments config candidate @ ["-p:FSharpCoreImplicitPackageVersion=10.1.401"; "--artifacts-path"; nativeRoot candidate publicCore + "/build"]
+    let log = $"{nativeRoot candidate publicCore}/css-probe-{config}.log"
     return stage "isolated typed CSS AOT probe" {
         workingDir __SOURCE_DIRECTORY__
-        envVars [("NUGET_PACKAGES", nativeCache candidate); ("OS", "Windows_NT")]
-        run (nativeCommand (["proxy"; "dotnet"; "publish"; "tests/Ranvier.Anime.CssAotProbe/Ranvier.Anime.CssAotProbe.fsproj"; "-c"; config; "-r"; "win-x64"] @ arguments @ ["--no-restore"; "-o"; $"{nativeRoot candidate}/css-probe/{config}"; $"-flp:logfile={log};verbosity=normal"]))
+        envVars [("NUGET_PACKAGES", nativeCache candidate publicCore); ("OS", "Windows_NT")]
+        run (nativeCommand (["proxy"; "dotnet"; "publish"; "tests/Ranvier.Anime.CssAotProbe/Ranvier.Anime.CssAotProbe.fsproj"; "-c"; config; "-r"; "win-x64"] @ arguments @ ["--no-restore"; "-o"; $"{nativeRoot candidate publicCore}/css-probe/{config}"; $"-flp:logfile={log};verbosity=normal"]))
         run (fun _ -> BuildNative.verifyPublishLog log)
     }
 }
@@ -236,14 +248,14 @@ let root = Command.root {
             let! config = configuration
             return stage "preserve corrected private CSS replay" {
                 run (fun _ ->
-                    BuildNative.verifyPublishLog ($"{nativeRoot true}/publish-{config}.log")
-                    BuildCssCandidate.capture config (nativeRoot true) (nativeCache true) true)
+                    BuildNative.verifyPublishLog ($"{nativeRoot true false}/publish-{config}.log")
+                    BuildCssCandidate.capture config (nativeRoot true false) (nativeCache true false) true false)
             }
         }
     }
     command "css-candidate-summary" {
         stage "summarize private candidate replay" {
-            run (fun _ -> BuildCssCandidate.summarize true)
+            run (fun _ -> BuildCssCandidate.summarize true false)
         }
     }
     command "evidence-test" {
@@ -258,13 +270,36 @@ let root = Command.root {
         input {
             let! config = configuration
             return stage "preserve public CSS replay" {
-                run (fun _ -> BuildCssCandidate.capture config (nativeRoot false) (nativeCache false) false)
+                run (fun _ -> BuildCssCandidate.capture config (nativeRoot false false) (nativeCache false false) false false)
             }
         }
     }
     command "css-public-summary" {
         stage "summarize public CSS replay" {
-            run (fun _ -> BuildCssCandidate.summarize false)
+            run (fun _ -> BuildCssCandidate.summarize false false)
+        }
+    }
+    command "core56-audit-copy" {
+        input {
+            let! receipt = Input.option<string> "--receipt" |> Input.def ""
+            return stage "preserve public Core byte audit" {
+                run (fun _ ->
+                    if System.String.IsNullOrWhiteSpace receipt then invalidArg "--receipt" "Supply the coordinator's public byte-audit path."
+                    BuildCore56.copyAudit receipt)
+            }
+        }
+    }
+    command "core56-evidence" {
+        input {
+            let! config = configuration
+            return stage "preserve public Core/CSS native replay" {
+                run (fun _ -> BuildCssCandidate.capture config (nativeRoot false true) (nativeCache false true) false true)
+            }
+        }
+    }
+    command "core56-summary" {
+        stage "summarize public Core/CSS native replay" {
+            run (fun _ -> BuildCssCandidate.summarize false true)
         }
     }
     command "native-stage" {

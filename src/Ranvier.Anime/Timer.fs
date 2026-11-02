@@ -5,11 +5,16 @@ open Ranvier
 open Ranvier.Dom
 
 /// <summary>Additional iterations after the initial playback, or an indefinite repeat sequence.</summary>
-[<RequireQualifiedAccess>]
+[<RequireQualifiedAccess; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type PlaybackRepeat =
     /// <summary>Runs this many additional iterations; zero runs once.</summary>
     | Count of uint
     | Forever
+    /// <summary>Invariant diagnostic text for the selected repeat policy.</summary>
+    override this.ToString() =
+        match this with
+        | PlaybackRepeat.Count count -> "Count " + count.ToString(Globalization.CultureInfo.InvariantCulture) + "u"
+        | PlaybackRepeat.Forever -> "Forever"
 
 /// <summary>Shared playback geometry and clock settings. Delays and loop gaps use signed milliseconds.</summary>
 type PlaybackOptions =
@@ -24,6 +29,13 @@ type PlaybackOptions =
     static member Default =
         { Repeat = PlaybackRepeat.Count 0u; Delay = 0.; LoopDelay = 0.; Reversed = false
           Alternate = false; Speed = 1.; FrameRate = 240. }
+    /// <summary>An invariant one-line diagnostic of the clock options.</summary>
+    override this.ToString() =
+        let culture = Globalization.CultureInfo.InvariantCulture
+        String.Concat [| "PlaybackOptions(Repeat="; this.Repeat.ToString(); "; Delay="; this.Delay.ToString("R", culture)
+                         "; LoopDelay="; this.LoopDelay.ToString("R", culture); "; Reversed="; this.Reversed.ToString()
+                         "; Alternate="; this.Alternate.ToString(); "; Speed="; this.Speed.ToString("R", culture)
+                         "; FrameRate="; this.FrameRate.ToString("R", culture); ")" |]
 
 /// <summary>A paused standalone timer on the scheduler's thread, with nonnegative duration in milliseconds.</summary>
 /// <remarks>

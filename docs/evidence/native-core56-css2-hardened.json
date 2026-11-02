@@ -1,0 +1,373 @@
+{
+  "HardwareAccelerationQualified": false,
+  "Modes": [
+    {
+      "Configuration": "Release",
+      "Evidence": {
+        "Configuration": "Release",
+        "ConsumerSourceSha256": "39cd1ef426f5bf0aef22e46c03649fd8bf8e1878078cca08af8ac020b68c0afa",
+        "CoreAuditSha256": "e7835db8a60792698a2d2a64e7d27a5865f82d0884280aefebf40bb612818d96",
+        "CoreSource": "public-package-commits-recorded-per-nupkg",
+        "CssSource": "public-alpha.2-audited-packages",
+        "Files": [
+          {
+            "Bytes": 67470,
+            "File": "publish.log",
+            "Sha256": "a7c48adafe622598dadc6a7c3f1870c7e8071d086d0df751a4369717a39dfe8b"
+          },
+          {
+            "Bytes": 108480,
+            "File": "publish.json",
+            "Sha256": "b7b79009a5d4fef1ff5fbe7ebb49423170f804167ff87b645ad9115b417d4417"
+          },
+          {
+            "Bytes": 844,
+            "File": "run.log",
+            "Sha256": "932de83720c6f3821b9115456244c12f1993cff943d74f23029c0a188639767b"
+          },
+          {
+            "Bytes": 390,
+            "File": "run.json",
+            "Sha256": "37dc230460b341f324ea26ab2be837092ab9b55eb113b8b89aea36459e9c0280"
+          },
+          {
+            "Bytes": 53018,
+            "File": "project.assets.json",
+            "Sha256": "4f53a766e6053ceb0e8ed7439033372777cd3aa9708c2936e3e739928edb9a88"
+          },
+          {
+            "Bytes": 38244,
+            "File": "compiler.rsp",
+            "Sha256": "69f8ba5f8a65212ce921f075f4b3993fc894daa0d9f9afe58141b537d4a7aed3"
+          },
+          {
+            "Bytes": 9198592,
+            "File": "Ranvier.Anime.NativeSmoke.exe",
+            "Sha256": "7505af660dbc7a40a6d0e6d679a96dd6a131b365e45f8d65f26b430a291ed0a2"
+          },
+          {
+            "Bytes": 4784,
+            "File": "native-manifest.json",
+            "Sha256": "d86f90ecbee9329cb006d06aaf0dbdb54ab0c483da6ea8aef4eb6b9bd3329a0a"
+          },
+          {
+            "Bytes": 1135,
+            "File": "core56-audit.json",
+            "Sha256": "e7835db8a60792698a2d2a64e7d27a5865f82d0884280aefebf40bb612818d96"
+          }
+        ],
+        "LibrarySources": [
+          {
+            "File": "Css.fs",
+            "Sha256": "43bda71c58e17fb18e9c10dd763e6c93685b852dfedbe6be436df32565a91dc3"
+          },
+          {
+            "File": "CssStagger.fs",
+            "Sha256": "786758576ca2dd350f8a0e1124a2f3f4aa1a7675c44cb2aeec6326de68ba7294"
+          },
+          {
+            "File": "Ease.fs",
+            "Sha256": "f07eb93e50aeee43b19b8aa6deaef726fd2865c06dc37b580b8cac3f76f0548b"
+          },
+          {
+            "File": "NumericAnimation.fs",
+            "Sha256": "a07383f28fef93b007cb251dede4bb9ccbc1195905254a687800bca4051c4172"
+          },
+          {
+            "File": "NumericProperty.fs",
+            "Sha256": "7908fc27c79b256f0b6805483f1ed3832e63933ebc68f28a9e0e992514421a1f"
+          },
+          {
+            "File": "PlaybackState.fs",
+            "Sha256": "214ad29ac48c0d7efb923fc8a13f514fa231b6d20a7c69c0b0bb3c907934b204"
+          },
+          {
+            "File": "PlaybackTiming.fs",
+            "Sha256": "78b40cce49152d97ae8169bdf20fb318b26d63f384b778c8f6400fa361c0221f"
+          },
+          {
+            "File": "PropertyTrack.fs",
+            "Sha256": "e1b8280634875b5315b4c3b29e3a5f0408b282b48b2edf7daccd84dd99ef2250"
+          },
+          {
+            "File": "Reactive.fs",
+            "Sha256": "aaf590dff4fcc55a3eb5a313af73bbc0d0efff4c8f2e6ee1f1fd15573fa8fa16"
+          },
+          {
+            "File": "Spring.fs",
+            "Sha256": "4a33000f85cad581c08dd50fc98adfe35540325aa64a79412785ed1622010f75"
+          },
+          {
+            "File": "Stagger.fs",
+            "Sha256": "c40121c2c797db95bc2417922e998ebabf6dcba96f7553bc9ac39d636c77271a"
+          },
+          {
+            "File": "Timeline.fs",
+            "Sha256": "e33f0c76397c30e31e52ef30dd10e3bc612848795fb103aed7ad620fc7bdbfd6"
+          },
+          {
+            "File": "TimelinePosition.fs",
+            "Sha256": "3feab12f9e7e6cd649e277753f2879402f06ebe93154c0beda5f45c99dcd9af2"
+          },
+          {
+            "File": "Timer.fs",
+            "Sha256": "b3f5d88dc3717907a6e6ff9f4a9403f44cd1cb025a1b24d3c3d59c8a174059a3"
+          }
+        ],
+        "NativeAbi": 62,
+        "NativeSource": "6f10bea17d7a1f22e5e97d472819c055fba3ef06",
+        "Packages": [
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.css\\0.1.1-alpha.2\\lib\\net10.0\\Ranvier.Css.dll",
+            "DllSha256": "968e03432cd95546312dad085e3ebec85a5980c5839b8c8413141e700c3eba64",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.Css",
+            "NupkgSha256": "2665336dbac9deabd5f641cee78e654389b46720f7d262f866b123a6340e2f1a",
+            "SourceCommit": "5ed51b9fc80cb192ef4f3551d5f096bc0467cc88",
+            "Version": "0.1.1-alpha.2"
+          },
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.css.bindings\\0.1.1-alpha.1\\lib\\net10.0\\Ranvier.Css.Bindings.dll",
+            "DllSha256": "b4b7c2c1b6a0e08f56d0f76318856bb5cbce3939f458e1eff6b4c08e785a06c5",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.Css.Bindings",
+            "NupkgSha256": "7b328a774a20108b351645c3a5158552393419d89514fd4a78ac5b77f25ac6c7",
+            "SourceCommit": "1222e8ffcfb956f5535dbef1dc1ad642419505db",
+            "Version": "0.1.1-alpha.1"
+          },
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.css.dom\\0.1.0-alpha.1\\lib\\net10.0\\Ranvier.Css.Dom.dll",
+            "DllSha256": "2068e902f6ce7362d71198b5d3879b4081a60e8ab70da009a5107d39721acf4f",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.Css.Dom",
+            "NupkgSha256": "45e48054012bd94780940df96d7630a3f08cd0997bda22fa2434fdda583b7f1e",
+            "SourceCommit": "77aa632e3f2d4bff2476b5d9dcab3e3254a4cd23",
+            "Version": "0.1.0-alpha.1"
+          },
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier\\0.1.1-preview.1\\lib\\net10.0\\Ranvier.dll",
+            "DllSha256": "76039963734915f938e6e7c9c97f5c10d8e9f5d2ee43e8aeaa5eb61ffc66b3a9",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier",
+            "NupkgSha256": "fba88bba064128f4edb6a2e927f784560d4b3268c3a9a2d684f317ea2a827a2d",
+            "SourceCommit": "1f10137067e2973201fb2c2a6171cd0ec780b8ed",
+            "Version": "0.1.1-preview.1"
+          },
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.dom\\0.1.0-alpha.56\\lib\\net10.0\\Ranvier.Dom.dll",
+            "DllSha256": "788036faa186537961d9a9b16f305d70ade05fa67c3ca6964253cd99c8d6da28",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.Dom",
+            "NupkgSha256": "518866e8bc643a52cb069ad597e6fc307e042cfb9ff9fb8b0156a92095caeae2",
+            "SourceCommit": "fc7a751babe9ee6df6369776451a7fa71a06a00e",
+            "Version": "0.1.0-alpha.56"
+          },
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.webcore\\0.1.1-preview.7\\lib\\net10.0\\Ranvier.WebCore.dll",
+            "DllSha256": "6d45f1b322d8e4a548cfcf37f5926c06af5351f0801d348e912881549f75100a",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.WebCore",
+            "NupkgSha256": "35f423153302bae174707f789cb60c85083be3da56816cfa593262b01bfd2b7c",
+            "SourceCommit": "6f10bea17d7a1f22e5e97d472819c055fba3ef06",
+            "Version": "0.1.1-preview.7"
+          }
+        ],
+        "PrivateCandidate": false,
+        "PublicCorePackages": true,
+        "PublicCssPackages": true,
+        "PublicNativePayload": false,
+        "PublicQualified": false,
+        "PublicViewPackages": false,
+        "Schema": 3,
+        "ViewSource": "625b0e1baeaf2ccc023f69dd7f1e76626e27a084"
+      },
+      "ReceiptSha256": "a05a2f32cce7a2f8e743b459401398338b161be4391735025c69d1352ec9060f"
+    },
+    {
+      "Configuration": "Debug",
+      "Evidence": {
+        "Configuration": "Debug",
+        "ConsumerSourceSha256": "39cd1ef426f5bf0aef22e46c03649fd8bf8e1878078cca08af8ac020b68c0afa",
+        "CoreAuditSha256": "e7835db8a60792698a2d2a64e7d27a5865f82d0884280aefebf40bb612818d96",
+        "CoreSource": "public-package-commits-recorded-per-nupkg",
+        "CssSource": "public-alpha.2-audited-packages",
+        "Files": [
+          {
+            "Bytes": 234590,
+            "File": "publish.log",
+            "Sha256": "227347178e5d574d58132ff2ca4dfb637a6621bf7f07a7d6dd211134a45b7219"
+          },
+          {
+            "Bytes": 108567,
+            "File": "publish.json",
+            "Sha256": "a0e423e2df27fe09a3863067db9709ecf4a4823bcc88552fac8fb02687ce8bd5"
+          },
+          {
+            "Bytes": 844,
+            "File": "run.log",
+            "Sha256": "932de83720c6f3821b9115456244c12f1993cff943d74f23029c0a188639767b"
+          },
+          {
+            "Bytes": 388,
+            "File": "run.json",
+            "Sha256": "0ff4a4cc3d2db2669301a0e6303bcce91cdf0711b1babcb41ff10fa29e213eb0"
+          },
+          {
+            "Bytes": 53714,
+            "File": "project.assets.json",
+            "Sha256": "ece6181e9af9e79aab825ce6482ea820b713b655fb79f75b7af64e391e44ee40"
+          },
+          {
+            "Bytes": 38252,
+            "File": "compiler.rsp",
+            "Sha256": "dd25f77b414126832a8ed6329f712d1ab4d16e32ae87c78c164f6ee699dc47e2"
+          },
+          {
+            "Bytes": 13950464,
+            "File": "Ranvier.Anime.NativeSmoke.exe",
+            "Sha256": "52c8429c5afb0017051970ce70d97a0e992eb42d3fddac53e4ac1038dfa5e0eb"
+          },
+          {
+            "Bytes": 4784,
+            "File": "native-manifest.json",
+            "Sha256": "d86f90ecbee9329cb006d06aaf0dbdb54ab0c483da6ea8aef4eb6b9bd3329a0a"
+          },
+          {
+            "Bytes": 1135,
+            "File": "core56-audit.json",
+            "Sha256": "e7835db8a60792698a2d2a64e7d27a5865f82d0884280aefebf40bb612818d96"
+          }
+        ],
+        "LibrarySources": [
+          {
+            "File": "Css.fs",
+            "Sha256": "43bda71c58e17fb18e9c10dd763e6c93685b852dfedbe6be436df32565a91dc3"
+          },
+          {
+            "File": "CssStagger.fs",
+            "Sha256": "786758576ca2dd350f8a0e1124a2f3f4aa1a7675c44cb2aeec6326de68ba7294"
+          },
+          {
+            "File": "Ease.fs",
+            "Sha256": "f07eb93e50aeee43b19b8aa6deaef726fd2865c06dc37b580b8cac3f76f0548b"
+          },
+          {
+            "File": "NumericAnimation.fs",
+            "Sha256": "a07383f28fef93b007cb251dede4bb9ccbc1195905254a687800bca4051c4172"
+          },
+          {
+            "File": "NumericProperty.fs",
+            "Sha256": "7908fc27c79b256f0b6805483f1ed3832e63933ebc68f28a9e0e992514421a1f"
+          },
+          {
+            "File": "PlaybackState.fs",
+            "Sha256": "214ad29ac48c0d7efb923fc8a13f514fa231b6d20a7c69c0b0bb3c907934b204"
+          },
+          {
+            "File": "PlaybackTiming.fs",
+            "Sha256": "78b40cce49152d97ae8169bdf20fb318b26d63f384b778c8f6400fa361c0221f"
+          },
+          {
+            "File": "PropertyTrack.fs",
+            "Sha256": "e1b8280634875b5315b4c3b29e3a5f0408b282b48b2edf7daccd84dd99ef2250"
+          },
+          {
+            "File": "Reactive.fs",
+            "Sha256": "aaf590dff4fcc55a3eb5a313af73bbc0d0efff4c8f2e6ee1f1fd15573fa8fa16"
+          },
+          {
+            "File": "Spring.fs",
+            "Sha256": "4a33000f85cad581c08dd50fc98adfe35540325aa64a79412785ed1622010f75"
+          },
+          {
+            "File": "Stagger.fs",
+            "Sha256": "c40121c2c797db95bc2417922e998ebabf6dcba96f7553bc9ac39d636c77271a"
+          },
+          {
+            "File": "Timeline.fs",
+            "Sha256": "e33f0c76397c30e31e52ef30dd10e3bc612848795fb103aed7ad620fc7bdbfd6"
+          },
+          {
+            "File": "TimelinePosition.fs",
+            "Sha256": "3feab12f9e7e6cd649e277753f2879402f06ebe93154c0beda5f45c99dcd9af2"
+          },
+          {
+            "File": "Timer.fs",
+            "Sha256": "b3f5d88dc3717907a6e6ff9f4a9403f44cd1cb025a1b24d3c3d59c8a174059a3"
+          }
+        ],
+        "NativeAbi": 62,
+        "NativeSource": "6f10bea17d7a1f22e5e97d472819c055fba3ef06",
+        "Packages": [
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.css.traced\\0.1.1-alpha.2\\lib\\net10.0\\Ranvier.Css.dll",
+            "DllSha256": "9d1277275aa25643d9cb2c95a82663ac4de39d0c9fae11050eef7e2023d1ff03",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.Css.Traced",
+            "NupkgSha256": "2713ff055b570c62ce7db25ffff4b48ff8e8a2efc25f4e039a298fa94b5dc0de",
+            "SourceCommit": "5ed51b9fc80cb192ef4f3551d5f096bc0467cc88",
+            "Version": "0.1.1-alpha.2"
+          },
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.css.bindings.traced\\0.1.1-alpha.1\\lib\\net10.0\\Ranvier.Css.Bindings.dll",
+            "DllSha256": "f7057628b8bfffef07f087a24a30074e3cb68995164fb0c18f3668eed01a088b",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.Css.Bindings.Traced",
+            "NupkgSha256": "b71f15b5b657f0ebf5517a20f183d17c31ef1a18df65c40e008ae260242c47da",
+            "SourceCommit": "ef6916ffb5c13c8f7f9b349ac2d1424a6c31cade",
+            "Version": "0.1.1-alpha.1"
+          },
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.css.dom.traced\\0.1.0-alpha.1\\lib\\net10.0\\Ranvier.Css.Dom.dll",
+            "DllSha256": "192c160e02237139296c89d10592fc9301855ea63e107b8f5b51e46896e8d9c5",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.Css.Dom.Traced",
+            "NupkgSha256": "88f79c262754a096c1fb0b89e7733b74350467b422a756bb8e8fc550047f79e7",
+            "SourceCommit": "77aa632e3f2d4bff2476b5d9dcab3e3254a4cd23",
+            "Version": "0.1.0-alpha.1"
+          },
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.traced\\0.1.1-preview.1\\lib\\net10.0\\Ranvier.dll",
+            "DllSha256": "1c2ce0ef29486c78d8199af81ca12a38b168cd945726dc8cb150a8e26ef50f9b",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.Traced",
+            "NupkgSha256": "75ca08706143315f6f08db10fa9feee9032cf0666f0dc2aa44b44b6408db8ea6",
+            "SourceCommit": "1f10137067e2973201fb2c2a6171cd0ec780b8ed",
+            "Version": "0.1.1-preview.1"
+          },
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.dom.traced\\0.1.0-alpha.56\\lib\\net10.0\\Ranvier.Dom.dll",
+            "DllSha256": "d42f3e38b277579fd71b3a759d89538cbeb486aa985d01a4c004545ce64ce4d2",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.Dom.Traced",
+            "NupkgSha256": "ca60a9a05bd355941e615c044b5a2ad897a347be23278e89422d345820a7586c",
+            "SourceCommit": "fc7a751babe9ee6df6369776451a7fa71a06a00e",
+            "Version": "0.1.0-alpha.56"
+          },
+          {
+            "CompilerInput": "C:\\wk\\ranvier-anime\\artifacts\\nuget-core56-css2\\ranvier.webcore\\0.1.1-preview.7\\lib\\net10.0\\Ranvier.WebCore.dll",
+            "DllSha256": "6d45f1b322d8e4a548cfcf37f5926c06af5351f0801d348e912881549f75100a",
+            "Feed": "https://api.nuget.org/v3/index.json",
+            "Id": "Ranvier.WebCore",
+            "NupkgSha256": "35f423153302bae174707f789cb60c85083be3da56816cfa593262b01bfd2b7c",
+            "SourceCommit": "6f10bea17d7a1f22e5e97d472819c055fba3ef06",
+            "Version": "0.1.1-preview.7"
+          }
+        ],
+        "PrivateCandidate": false,
+        "PublicCorePackages": true,
+        "PublicCssPackages": true,
+        "PublicNativePayload": false,
+        "PublicQualified": false,
+        "PublicViewPackages": false,
+        "Schema": 3,
+        "ViewSource": "625b0e1baeaf2ccc023f69dd7f1e76626e27a084"
+      },
+      "ReceiptSha256": "d348cf8a6cf5f526f9a3c015eea3135959308b0cf7f14ed1a9bf3d514da39861"
+    }
+  ],
+  "PrivateCandidate": false,
+  "PublicAccepted": false,
+  "PublicCorePackages": true,
+  "PublicCssPackages": true
+}
