@@ -4658,6 +4658,125 @@
       ]
     }
   ],
+  "unitStaggering": [
+    {
+      "name": "pxStep",
+      "unit": "px",
+      "first": 10,
+      "parameters": {},
+      "values": [
+        "0px",
+        "10px",
+        "20px",
+        "30px",
+        "40px"
+      ]
+    },
+    {
+      "name": "remRange",
+      "unit": "rem",
+      "first": 1,
+      "last": 5,
+      "parameters": {
+        "from": "center"
+      },
+      "values": [
+        "5rem",
+        "3rem",
+        "1rem",
+        "3rem",
+        "5rem"
+      ]
+    },
+    {
+      "name": "percentRange",
+      "unit": "%",
+      "first": 10,
+      "last": 100,
+      "parameters": {
+        "reversed": true
+      },
+      "values": [
+        "100%",
+        "77.5%",
+        "55%",
+        "32.5%",
+        "10%"
+      ]
+    },
+    {
+      "name": "angleNegative",
+      "unit": "deg",
+      "first": -15,
+      "parameters": {
+        "start": 20
+      },
+      "values": [
+        "20deg",
+        "5deg",
+        "-10deg",
+        "-25deg",
+        "-40deg"
+      ]
+    },
+    {
+      "name": "milliseconds",
+      "unit": "ms",
+      "first": 25,
+      "parameters": {
+        "grid": [
+          3,
+          2
+        ],
+        "from": "center"
+      },
+      "values": [
+        "28.000000000000004ms",
+        "12.5ms",
+        "28.000000000000004ms",
+        "28.000000000000004ms",
+        "12.5ms",
+        "28.000000000000004ms"
+      ]
+    },
+    {
+      "name": "secondsRandom",
+      "unit": "s",
+      "first": 0.25,
+      "last": 2,
+      "parameters": {
+        "from": "random",
+        "seed": 42,
+        "jitter": [
+          0.1,
+          0.3
+        ]
+      },
+      "values": [
+        "0.9863959999999999s",
+        "0.563068s",
+        "0.29929s",
+        "1.5185699999999998s",
+        "1.94213s",
+        "1.7455239999999999s"
+      ]
+    },
+    {
+      "name": "numberStep",
+      "unit": "",
+      "first": 0.5,
+      "parameters": {
+        "ease": "inQuad"
+      },
+      "values": [
+        0,
+        0.125,
+        0.5,
+        1.125,
+        2
+      ]
+    }
+  ],
   "timing": [
     {
       "duration": 0.5,

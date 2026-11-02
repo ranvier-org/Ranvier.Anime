@@ -7,6 +7,7 @@
     <Compile Include="Ease.fs" />
     <Compile Include="Spring.fs" />
     <Compile Include="Stagger.fs" />
+    <Compile Include="CssStagger.fs" />
     <Compile Include="NumericAnimation.fs" />
     <Compile Include="Reactive.fs" />
     <Compile Include="Css.fs" />

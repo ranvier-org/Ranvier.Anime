@@ -132,6 +132,20 @@ const staggering = [
     return Number.isFinite(output) ? output : String(output);
   }) };
 });
+const unitStaggering = [
+  { name: 'pxStep', unit: 'px', first: 10, parameters: {}, count: 5 },
+  { name: 'remRange', unit: 'rem', first: 1, last: 5, parameters: {from: 'center'}, count: 5 },
+  { name: 'percentRange', unit: '%', first: 10, last: 100, parameters: {reversed: true}, count: 5 },
+  { name: 'angleNegative', unit: 'deg', first: -15, parameters: {start: 20}, count: 5 },
+  { name: 'milliseconds', unit: 'ms', first: 25, parameters: {grid: [3, 2], from: 'center'}, count: 6 },
+  { name: 'secondsRandom', unit: 's', first: 0.25, last: 2, parameters: {from: 'random', seed: 42, jitter: [0.1, 0.3]}, count: 6 },
+  { name: 'numberStep', unit: '', first: 0.5, parameters: {ease: 'inQuad'}, count: 5 },
+].map(({name, unit, first, last, parameters, count}) => {
+  const value = last === undefined ? `${first}${unit}` : [`${first}${unit}`, `${last}${unit}`];
+  const evaluate = stagger(value, parameters);
+  const targets = Array.from({length: count}, () => ({}));
+  return {name, unit, first, last, parameters, values: targets.map((target, index) => evaluate(target, index, targets))};
+});
 const fixture = {
   upstreamCommit: revision,
   version: JSON.parse(readFileSync(resolve(upstream, 'package.json'), 'utf8')).version,
@@ -140,6 +154,7 @@ const fixture = {
   springs,
   springMutations,
   staggering,
+  unitStaggering,
   timing: [0.5, 1, 4294967295, 1000000000001].map(duration => {
     const target = { value: 0 };
     const animation = animate(target, { value: 100, duration, ease: 'linear', autoplay: false });

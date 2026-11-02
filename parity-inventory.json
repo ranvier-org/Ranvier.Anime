@@ -2,10 +2,10 @@
   "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
   "statusMeaning": "Families define the full scope. Progress records verified subsets only; presence of an upstream test file is not native acceptance evidence.",
   "progress": {
-    "managedFoundation": "Numeric runner, reactive ownership, spring playback, numeric/grid/automatic/randomized staggering and typed numeric CSS custom-property endpoints; 164 unfiltered tests pass normal Release and Traced Debug on the current Windows host.",
+    "managedFoundation": "Numeric runner, reactive ownership, spring playback, numeric/grid/automatic/randomized/typed-unit staggering and typed numeric CSS custom-property endpoints; 177 unfiltered tests pass normal Release and Traced Debug on the current Windows host.",
     "easing": "46 default named easings plus one Bezier and two step-mode fixtures match 441 upstream samples; runner consumes custom easing with tested reentrant cancellation and seek. Full easing parameter domains, irregular and multi-stop linear remain incomplete.",
     "springs": "Physical/perceived spring modes, parameter clamps/mutations, perceived completion and settling-duration playback compare against twelve constructor and six mutation snapshots. Whole-millisecond perceived input accepts uint; precise fractional input remains supported.",
-    "staggering": "67 upstream fixtures cover numeric step/range, origins, explicit and automatic 2D/3D geometry, axes, reversal, easing, start, modifiers, total overrides, index mapping, random origins and seeded constant/range jitter. Existing DOMPointInit and Element APIs support measured positions; recording-interface tests verify centers and measurement counts. Actual native layout integration, typed CSS units and timeline positioning remain incomplete.",
+    "staggering": "67 numeric/geometry/random fixtures and7 unit fixtures cover step/range, origins, explicit and automatic 2D/3D geometry, axes, reversal, easing, start, modifiers, total overrides, index mapping, random origins, seeded jitter and checked typed CSS output. Existing DOMPointInit and Element APIs support measured positions; recording-interface tests verify centers and measurement counts. Actual native layout/unit integration and timeline positioning remain incomplete.",
     "nativeIntegration": "Not yet verified; no hardware acceleration or matched public package consumer claim."
   },
   "families": [

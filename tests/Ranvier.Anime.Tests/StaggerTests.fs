@@ -6,6 +6,7 @@ open System.Text.Json
 open Expecto
 open Ranvier.Anime
 open Ranvier.Dom
+open Ranvier.Css
 
 /// <summary>Records the DOM members exercised by geometry adapter tests.</summary>
 type GeometryProxy() =
@@ -91,7 +92,35 @@ let private fixtures =
     use document = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "reference", "pure.json")))
     [for item in document.RootElement.GetProperty("staggering").EnumerateArray() -> item.Clone()]
 
+let private unitFixtures =
+    use document = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "reference", "pure.json")))
+    [for item in document.RootElement.GetProperty("unitStaggering").EnumerateArray() -> item.Clone()]
+
 let tests = testList "upstream staggering" [
+    for fixture in unitFixtures do
+        testCase (fixture.GetProperty("name").GetString()) <| fun _ ->
+            let first = fixture.GetProperty("first").GetDouble()
+            let last = field "last" fixture |> Option.map _.GetDouble()
+            let count = uint (fixture.GetProperty("values").GetArrayLength())
+            let distribute create =
+                let result =
+                    match last with
+                    | None -> CssStagger.step create (create first) (options fixture) count
+                    | Some last -> CssStagger.range create (create first) (create last) (options fixture) count
+                result |> Array.map Value.render
+            let actual =
+                match fixture.GetProperty("unit").GetString() with
+                | "px" -> distribute Css.px
+                | "rem" -> distribute (fun value -> Css.rem value)
+                | "%" -> distribute Css.percent
+                | "deg" -> distribute Css.deg
+                | "ms" -> distribute Css.ms
+                | "s" -> distribute Css.s
+                | "" -> distribute Css.number
+                | unknown -> failwithf "Unknown unit %s" unknown
+            let expected = fixture.GetProperty("values").EnumerateArray() |> Seq.map(fun value ->
+                if value.ValueKind = JsonValueKind.String then value.GetString() else value.GetRawText()) |> Seq.toArray
+            Expect.equal actual expected "typed unit outputs match source"
     for fixture in fixtures do
         testCase (fixture.GetProperty("name").GetString()) <| fun _ ->
             let input = fixture.GetProperty "value"
@@ -138,4 +167,26 @@ let tests = testList "upstream staggering" [
         let actual = Stagger.autoElements (StaggerValue.Step 10.) options targets
         Expect.equal reads [|1; 1; 0|] "only relevant elements measured"
         Expect.equal actual [|0.; 10.; 0.|] "missing distance follows source fallback"
+    testCase "typed staggering retains the concrete generated value type" <| fun _ ->
+        let actual: CssValue.Numeric.Length array = CssStagger.step Css.px (Css.px 10.) StaggerOptions.Default 3u
+        Expect.equal (actual |> Array.map Value.render) [|"0px"; "10px"; "20px"|] "generated type retained"
+    testCase "typed staggering rejects mixed endpoint units" <| fun _ ->
+        Expect.throwsT<ArgumentException>
+            (fun () -> CssStagger.range Css.px (Css.px 0.) (Css.rem 1.) StaggerOptions.Default 3u |> ignore) "no implicit conversion"
+    testCase "typed staggering rejects compound expressions" <| fun _ ->
+        Expect.throwsT<ArgumentException>
+            (fun () -> CssStagger.step Css.px (Value.unsafeFromTokens "calc(10px + 1rem)") StaggerOptions.Default 3u |> ignore) "requires numeric metadata"
+    testCase "typed staggering checks the output constructor unit" <| fun _ ->
+        Expect.throwsT<ArgumentException>
+            (fun () -> CssStagger.step (fun value -> Css.rem value) (Css.px 10.) StaggerOptions.Default 3u |> ignore) "constructor unit mismatch"
+    testCase "typed staggering preserves constructor validation" <| fun _ ->
+        let nonNegative value = if value < 0. then raise(InvalidOperationException "negative magnitude") else Css.px value
+        Expect.throwsT<InvalidOperationException>
+            (fun () -> CssStagger.step nonNegative (Css.px -10.) StaggerOptions.Default 3u |> ignore) "checked constructor runs"
+    testCase "typed staggering rejects nonfinite outputs before constructors run" <| fun _ ->
+        let mutable constructed = 0
+        let create value = constructed <- constructed + 1; Css.px value
+        Expect.throwsT<ArgumentException>
+            (fun () -> CssStagger.step create (Css.px Double.MaxValue) StaggerOptions.Default 3u |> ignore) "overflow cannot become CSS"
+        Expect.equal constructed 0 "validate complete numeric distribution first"
 ]
