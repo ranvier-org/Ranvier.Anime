@@ -5151,6 +5151,404 @@
       "value": 0
     }
   ],
+  "timelineCallbacks": [
+    {
+      "name": "middleCrossings",
+      "calls": [
+        [
+          "a",
+          50
+        ]
+      ],
+      "samples": [
+        {
+          "time": 0,
+          "events": []
+        },
+        {
+          "time": 49,
+          "events": []
+        },
+        {
+          "time": 50,
+          "events": [
+            "a"
+          ]
+        },
+        {
+          "time": 50,
+          "events": []
+        },
+        {
+          "time": 51,
+          "events": []
+        },
+        {
+          "time": 100,
+          "events": []
+        },
+        {
+          "time": 50,
+          "events": [
+            "a"
+          ]
+        },
+        {
+          "time": 50,
+          "events": [
+            "a"
+          ]
+        },
+        {
+          "time": 49,
+          "events": [
+            "a"
+          ]
+        },
+        {
+          "time": 50,
+          "events": [
+            "a"
+          ]
+        },
+        {
+          "time": 0,
+          "events": [
+            "a"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "equalTimeOrder",
+      "calls": [
+        [
+          "a",
+          50
+        ],
+        [
+          "b",
+          50
+        ]
+      ],
+      "samples": [
+        {
+          "time": 100,
+          "events": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "time": 0,
+          "events": [
+            "b",
+            "a"
+          ]
+        },
+        {
+          "time": 100,
+          "events": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "time": 100,
+          "events": []
+        }
+      ]
+    },
+    {
+      "name": "edgeCalls",
+      "calls": [
+        [
+          "start",
+          0
+        ],
+        [
+          "end",
+          100
+        ]
+      ],
+      "samples": [
+        {
+          "time": 0,
+          "events": []
+        },
+        {
+          "time": 1,
+          "events": [
+            "start"
+          ]
+        },
+        {
+          "time": 100,
+          "events": [
+            "end"
+          ]
+        },
+        {
+          "time": 100,
+          "events": []
+        },
+        {
+          "time": 0,
+          "events": [
+            "end",
+            "start"
+          ]
+        },
+        {
+          "time": 0,
+          "events": []
+        },
+        {
+          "time": 1,
+          "events": [
+            "start"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "mutedSeek",
+      "calls": [
+        [
+          "a",
+          50
+        ]
+      ],
+      "samples": [
+        {
+          "time": 75,
+          "muted": true,
+          "events": []
+        },
+        {
+          "time": 75,
+          "events": [
+            "a"
+          ]
+        },
+        {
+          "time": 0,
+          "muted": true,
+          "events": []
+        },
+        {
+          "time": 75,
+          "events": []
+        },
+        {
+          "time": 0,
+          "events": [
+            "a"
+          ]
+        },
+        {
+          "time": 75,
+          "events": [
+            "a"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "resetCalls",
+      "calls": [
+        [
+          "a",
+          50
+        ]
+      ],
+      "samples": [
+        {
+          "time": 75,
+          "events": [
+            "a"
+          ]
+        },
+        {
+          "reset": true,
+          "events": []
+        },
+        {
+          "time": 75,
+          "events": [
+            "a"
+          ]
+        },
+        {
+          "reset": true,
+          "events": []
+        },
+        {
+          "time": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "name": "negativeCall",
+      "calls": [
+        [
+          "negative",
+          -10
+        ]
+      ],
+      "samples": [
+        {
+          "time": 0,
+          "events": []
+        },
+        {
+          "time": 1,
+          "events": [
+            "negative"
+          ]
+        },
+        {
+          "time": -20,
+          "events": [
+            "negative"
+          ]
+        },
+        {
+          "time": 0,
+          "events": []
+        },
+        {
+          "time": 1,
+          "events": [
+            "negative"
+          ]
+        }
+      ]
+    }
+  ],
+  "nestedTimelines": [
+    {
+      "name": "nested",
+      "muted": false,
+      "samples": [
+        {
+          "time": 0,
+          "value": 0,
+          "events": []
+        },
+        {
+          "time": 50,
+          "value": 25,
+          "events": []
+        },
+        {
+          "time": 75,
+          "value": 50,
+          "events": [
+            "child"
+          ]
+        },
+        {
+          "time": 100,
+          "value": 75,
+          "events": []
+        },
+        {
+          "time": 125,
+          "value": 100,
+          "events": []
+        },
+        {
+          "time": 75,
+          "value": 50,
+          "events": [
+            "child"
+          ]
+        },
+        {
+          "time": 25,
+          "value": 0,
+          "events": []
+        },
+        {
+          "time": 0,
+          "value": 0,
+          "events": []
+        },
+        {
+          "time": 100,
+          "value": 75,
+          "events": [
+            "child"
+          ]
+        }
+      ],
+      "resetEvents": [
+        "child"
+      ]
+    },
+    {
+      "name": "mutedParent",
+      "muted": true,
+      "samples": [
+        {
+          "time": 0,
+          "value": 0,
+          "events": []
+        },
+        {
+          "time": 50,
+          "value": 25,
+          "events": []
+        },
+        {
+          "time": 75,
+          "value": 50,
+          "events": [
+            "child"
+          ]
+        },
+        {
+          "time": 100,
+          "value": 75,
+          "events": []
+        },
+        {
+          "time": 125,
+          "value": 100,
+          "events": []
+        },
+        {
+          "time": 75,
+          "value": 50,
+          "events": [
+            "child"
+          ]
+        },
+        {
+          "time": 25,
+          "value": 0,
+          "events": []
+        },
+        {
+          "time": 0,
+          "value": 0,
+          "events": []
+        },
+        {
+          "time": 100,
+          "value": 75,
+          "events": [
+            "child"
+          ]
+        }
+      ],
+      "resetEvents": [
+        "child"
+      ]
+    }
+  ],
   "timing": [
     {
       "duration": 0.5,

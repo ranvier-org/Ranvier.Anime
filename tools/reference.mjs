@@ -198,6 +198,42 @@ const timelineRepeatedSync = (() => {
   timeline.cancel(); child.cancel();
   return samples;
 })();
+const timelineCallbacks = [
+  {name: 'middleCrossings', calls: [['a', 50]], steps: [{time: 0}, {time: 49}, {time: 50}, {time: 50}, {time: 51}, {time: 100}, {time: 50}, {time: 50}, {time: 49}, {time: 50}, {time: 0}]},
+  {name: 'equalTimeOrder', calls: [['a', 50], ['b', 50]], steps: [{time: 100}, {time: 0}, {time: 100}, {time: 100}]},
+  {name: 'edgeCalls', calls: [['start', 0], ['end', 100]], steps: [{time: 0}, {time: 1}, {time: 100}, {time: 100}, {time: 0}, {time: 0}, {time: 1}]},
+  {name: 'mutedSeek', calls: [['a', 50]], steps: [{time: 75, muted: true}, {time: 75}, {time: 0, muted: true}, {time: 75}, {time: 0}, {time: 75}]},
+  {name: 'resetCalls', calls: [['a', 50]], steps: [{time: 75}, {reset: true}, {time: 75}, {reset: true}, {time: 0}]},
+  {name: 'negativeCall', calls: [['negative', -10]], steps: [{time: 0}, {time: 1}, {time: -20}, {time: 0}, {time: 1}]},
+].map(({name, calls, steps}) => {
+  const events = [];
+  const timeline = createTimeline({autoplay: false});
+  timeline.add({duration: 100}, 0);
+  calls.forEach(([id, position]) => timeline.call(() => events.push(id), position));
+  const samples = steps.map(step => {
+    events.length = 0;
+    if (step.reset) timeline.reset(); else timeline.seek(step.time, step.muted || false);
+    return {...step, events: [...events]};
+  });
+  timeline.cancel();
+  return {name, calls, samples};
+});
+const nestedTimelines = [false, true].map(muted => {
+  const target = {value: 0}, events = [];
+  const child = createTimeline({autoplay: false});
+  child.add(target, {value: 100, duration: 100, ease: 'linear'}, 0).call(() => events.push('child'), 50);
+  const parent = createTimeline({autoplay: false}).sync(child, 25);
+  const samples = [0, 50, 75, 100, 125, 75, 25, 0, 100].map(time => {
+    events.length = 0;
+    parent.seek(time, muted);
+    return {time, value: target.value, events: [...events]};
+  });
+  events.length = 0;
+  parent.reset();
+  const resetEvents = [...events];
+  parent.cancel(); child.cancel();
+  return {name: muted ? 'mutedParent' : 'nested', muted, samples, resetEvents};
+});
 const fixture = {
   upstreamCommit: revision,
   version: JSON.parse(readFileSync(resolve(upstream, 'package.json'), 'utf8')).version,
@@ -211,6 +247,8 @@ const fixture = {
   timelineSync,
   timelineStaggering,
   timelineRepeatedSync,
+  timelineCallbacks,
+  nestedTimelines,
   timing: [0.5, 1, 4294967295, 1000000000001].map(duration => {
     const target = { value: 0 };
     const animation = animate(target, { value: 100, duration, ease: 'linear', autoplay: false });

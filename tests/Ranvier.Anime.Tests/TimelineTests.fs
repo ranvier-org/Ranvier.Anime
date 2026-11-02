@@ -18,6 +18,111 @@ let private animation clock duration initial target =
     tween, value
 
 let tests = testList "timeline synchronization" [
+    for fixture in fixtures "timelineCallbacks" do
+        testCase (fixture.GetProperty("name").GetString()) <| fun _ ->
+            let clock = new ManualFrameScheduler()
+            let baseline, _ = animation clock 100. 0. 1.
+            use baseline = baseline
+            use timeline = new Timeline(clock)
+            timeline.Sync baseline |> ignore
+            let events = ResizeArray<string>()
+            for call in fixture.GetProperty("calls").EnumerateArray() do
+                let id = call[0].GetString()
+                timeline.Call((fun () -> events.Add id), TimelinePosition.At(call[1].GetDouble())) |> ignore
+            for sample in fixture.GetProperty("samples").EnumerateArray() do
+                events.Clear()
+                match sample.TryGetProperty "reset" with
+                | true, _ -> timeline.Reset()
+                | _ ->
+                    let muted = match sample.TryGetProperty "muted" with true, value -> value.GetBoolean() | _ -> false
+                    timeline.Seek(sample.GetProperty("time").GetDouble(), muteCallbacks = muted)
+                let expected = sample.GetProperty("events").EnumerateArray() |> Seq.map _.GetString() |> Seq.toArray
+                Expect.sequenceEqual events expected $"source callbacks at {sample.GetRawText()}"
+    for fixture in fixtures "nestedTimelines" do
+        testCase (fixture.GetProperty("name").GetString()) <| fun _ ->
+            let clock = new ManualFrameScheduler()
+            let numeric, value = animation clock 100. 0. 100.
+            use numeric = numeric
+            use child = new Timeline(clock)
+            use parent = new Timeline(clock)
+            let events = ResizeArray<string>()
+            child.Sync(numeric, TimelinePosition.At 0.).Call((fun () -> events.Add "child"), TimelinePosition.At 50.) |> ignore
+            parent.Sync(child, TimelinePosition.At 25.) |> ignore
+            for sample in fixture.GetProperty("samples").EnumerateArray() do
+                events.Clear()
+                parent.Seek(sample.GetProperty("time").GetDouble(), muteCallbacks = fixture.GetProperty("muted").GetBoolean())
+                Expect.floatClose Accuracy.high value.Value (sample.GetProperty("value").GetDouble()) "nested source value"
+                Expect.sequenceEqual events (sample.GetProperty("events").EnumerateArray() |> Seq.map _.GetString()) "nested source callbacks"
+            events.Clear()
+            parent.Reset()
+            Expect.sequenceEqual events (fixture.GetProperty("resetEvents").EnumerateArray() |> Seq.map _.GetString()) "nested source reset callbacks"
+    testCase "timeline synchronization rejects direct and indirect cycles" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use first = new Timeline(clock)
+        use second = new Timeline(clock)
+        Expect.throwsT<ArgumentException> (fun () -> first.Sync first |> ignore) "direct cycle"
+        first.Sync second |> ignore
+        Expect.throwsT<ArgumentException> (fun () -> second.Sync first |> ignore) "indirect cycle"
+    testCase "reset cannot clear callback state from a newer reentrant seek" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use parent = new Timeline(clock)
+        use child = new Timeline(clock)
+        let baseline, _ = animation clock 100. 0. 1.
+        use baseline = baseline
+        let mutable armed = false
+        let mutable calls = 0
+        child.Sync baseline |> ignore
+        child.Call((fun () ->
+            if armed then
+                armed <- false
+                parent.Seek 75.), TimelinePosition.At 50.) |> ignore
+        parent.Sync child |> ignore
+        parent.Call((fun () -> calls <- calls + 1), TimelinePosition.At 60.) |> ignore
+        parent.Seek 75.
+        armed <- true
+        parent.Reset()
+        Expect.equal parent.CurrentTime 75. "new seek retained"
+        parent.Seek 75.
+        Expect.equal calls 1 "no callback refire without crossing"
+    testCase "zero-position callback can run as the only track" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use timeline = new Timeline(clock)
+        let mutable calls = 0
+        timeline.Call(fun () -> calls <- calls + 1) |> ignore
+        timeline.Play()
+        clock.Advance 1.; clock.RunFrame()
+        Expect.equal calls 1 "single callback track runs"
+    testCase "callback can seek forward without recursively refiring itself" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        let baseline, _ = animation clock 100. 0. 1.
+        use baseline = baseline
+        use timeline = new Timeline(clock)
+        let mutable calls = 0
+        timeline.Sync baseline |> ignore
+        timeline.Call((fun () -> calls <- calls + 1; timeline.Seek 75.), TimelinePosition.At 50.) |> ignore
+        timeline.Seek 50.
+        Expect.equal calls 1 "callback transition is committed before user code"
+        Expect.equal timeline.CurrentTime 75. "nested seek wins"
+    testCase "ancestor cancellation during nested easing prevents descendant writes" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use root = new Timeline(clock)
+        use middle = new Timeline(clock)
+        use leaf = new Timeline(clock)
+        let mutable armed = false
+        let mutable value = 0.
+        use numeric = new NumericAnimation(clock, (fun () -> value), (fun number -> value <- number), 100., 100.,
+            ease = (fun progress ->
+                if armed then root.Cancel()
+                progress))
+        leaf.Sync numeric |> ignore
+        middle.Sync leaf |> ignore
+        root.Sync middle |> ignore
+        armed <- true
+        root.Seek 50.
+        Expect.equal value 0. "root generation guards all descendants"
+        armed <- false
+        leaf.Seek 25.
+        Expect.equal value 25. "borrowed descendants remain live"
     for fixture in fixtures "timelinePositions" do
         let position = match fixture.TryGetProperty "position" with
                        | false, _ -> None
