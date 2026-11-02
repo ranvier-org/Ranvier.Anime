@@ -4,6 +4,10 @@ Upstream: https://github.com/juliangarnier/anime, v4.5.0, commit `2c9cf8ea00329f
 
 The behavioral reference fixtures are generated from Anime.js. Preserve this notice with derived source, tests and distributions.
 
+The easing formulas retain Anime.js's credit to Robert Penner, Copyright (c) 2001 Robert Penner, from https://robertpenner.com/easing/.
+The cubic Bezier solver retains Anime.js's credit to https://github.com/gre/bezier-easing, Copyright (c) 2014 Gaëtan Renaudeau.
+These credits are preserved in the ported source as well as this notice.
+
 The MIT License
 
 Copyright (c) 2025 Julian Garnier

@@ -4,14 +4,15 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Ease.fs" />
     <Compile Include="NumericAnimation.fs" />
     <Compile Include="Reactive.fs" />
     <Compile Include="Css.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Ranvier" Version="[0.1.1-preview.1]" />
-    <PackageReference Include="Ranvier.Dom" Version="[0.1.0-alpha.55]" />
+    <PackageReference Include="Ranvier$(RanvierPackageSuffix)" Version="[0.1.1-preview.1]" />
+    <PackageReference Include="Ranvier.Dom$(RanvierPackageSuffix)" Version="[0.1.0-alpha.55]" />
     <PackageReference Include="Ranvier.Css" Version="[0.1.1-alpha.1]" />
-    <PackageReference Include="Ranvier.Css.Dom" Version="[0.1.0-alpha.1]" />
+    <PackageReference Include="Ranvier.Css.Dom$(RanvierPackageSuffix)" Version="[0.1.0-alpha.1]" />
   </ItemGroup>
 </Project>

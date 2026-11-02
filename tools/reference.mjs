@@ -7,6 +7,7 @@ import { cubicBezier } from '../upstream/anime/src/easings/cubic-bezier/index.js
 import { steps } from '../upstream/anime/src/easings/steps/index.js';
 import { spring } from '../upstream/anime/src/easings/spring/index.js';
 import { stagger } from '../upstream/anime/src/utils/stagger.js';
+import { animate } from '../upstream/anime/src/animation/index.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const provenance = JSON.parse(readFileSync(resolve(root, 'upstream-provenance.json'), 'utf8'));
@@ -19,7 +20,7 @@ const times = [0, 0.001, 0.1, 0.25, 0.5, 0.75, 0.9, 0.999, 1];
 const sample = (name, evaluate) => ({ name, values: times.map(time => [time, evaluate(time)]) });
 const named = Object.entries(eases).flatMap(([name, evaluate]) => {
   const result = evaluate(0.5);
-  return typeof result === 'number' ? [sample(name, evaluate)] : [];
+  return typeof result === 'number' ? [sample(name, evaluate)] : [sample(name, evaluate())];
 });
 const springParameters = [{}, { stiffness: 170, damping: 11 }, { mass: 2, stiffness: 100, damping: 10, velocity: -2 }];
 const springs = springParameters.map(parameters => {
@@ -44,7 +45,29 @@ const fixture = {
   curves: [sample('cubicBezier', cubicBezier(0.42, 0, 0.58, 1)), sample('stepsEnd', steps(4)), sample('stepsStart', steps(4, true))],
   springs,
   staggering,
+  timing: [0.5, 1, 4294967295, 1000000000001].map(duration => {
+    const target = { value: 0 };
+    const animation = animate(target, { value: 100, duration, ease: 'linear', autoplay: false });
+    const actualDuration = animation.duration;
+    const sampleTime = duration === 0.5 ? 0.25 : 0;
+    animation.seek(sampleTime);
+    const sampleValue = target.value;
+    animation.cancel();
+    return { duration, actualDuration, sampleTime, sampleValue };
+  }),
+  customEasing: (() => {
+    const target = { value: 0 };
+    const animation = animate(target, { value: 100, duration: 100, ease: () => 1.25, autoplay: false });
+    const initial = target.value;
+    animation.seek(50);
+    const midpoint = target.value;
+    animation.seek(100);
+    const endpoint = target.value;
+    animation.cancel();
+    return { name: 'constantOvershoot', initial, midpoint, endpoint };
+  })(),
 };
+if (fixture.timing[0].sampleValue !== 50) throw new Error('Fractional-duration reference did not reach its midpoint');
 if (JSON.stringify(staggering[0].values) !== '[0,10,20,30,40]') throw new Error('Incorrect stagger reference invocation');
 for (const group of [...fixture.named, ...fixture.curves, ...fixture.springs]) {
   if (group.values.some(([, value]) => !Number.isFinite(value))) throw new Error(`Nonfinite sample: ${group.name}`);

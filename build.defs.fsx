@@ -11,9 +11,12 @@ let configuration =
     |> Input.def "Release"
     |> Input.acceptOnlyFromAmong ["Debug"; "Release"]
 
-let restore = stage "restore" {
-    workingDir __SOURCE_DIRECTORY__
-    run "rtk dotnet restore Ranvier.Anime.slnx"
+let restore = input {
+    let! config = configuration
+    return stage "restore" {
+        workingDir __SOURCE_DIRECTORY__
+        run (cmd $"rtk dotnet restore Ranvier.Anime.slnx -p:Configuration={config}")
+    }
 }
 
 let build = input {

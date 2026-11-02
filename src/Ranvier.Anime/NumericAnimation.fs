@@ -6,7 +6,9 @@ open Ranvier.Dom
 
 /// <summary>A single numeric tween driven by an explicit frame scheduler. Instances start paused.</summary>
 /// <remarks>Call from the scheduler's thread. Cancellation is terminal and preserves the last written value.</remarks>
-type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: float -> unit, target: float, duration: float) =
+type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: float -> unit, target: float, duration: float,
+                      ?ease: (float -> float)) =
+    let ease = defaultArg ease id
     let finite name value =
         if not (Double.IsFinite value) then invalidArg name "Expected a finite number."
     do
@@ -39,18 +41,21 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
         stopFrame()
 
     let render time =
+        let expected = generation
         elapsed <- max 0. (min duration time)
         completed <- elapsed >= duration
         if completed then playing <- false
-        let value =
-            if completed then last
-            elif elapsed = 0. then first
-            else
-                let progress = elapsed / duration
-                let delta = last - first
-                if Double.IsFinite delta then first + delta * progress
-                else first * (1. - progress) + last * progress
-        write value
+        let progress = ease (if duration = 0. then 1. else elapsed / duration)
+        if expected = generation && not cancelled then
+            finite "ease" progress
+            let value =
+                if progress = 0. then first
+                elif progress = 1. then last
+                else
+                    let delta = last - first
+                    if Double.IsFinite delta then first + delta * progress
+                    else first * (1. - progress) + last * progress
+            write value
 
     let rec queue () =
         if playing && not cancelled && pending.IsNone then
@@ -109,7 +114,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     /// <summary>The last sampled or paused time, in milliseconds.</summary>
     member _.CurrentTime = elapsed
 
-    /// <summary>Whether the most recent sample reached the endpoint.</summary>
+    /// <summary>Whether the most recent sample reached the end of the duration.</summary>
     member _.Completed = completed
 
     /// <summary>Whether a frame loop is active.</summary>
@@ -121,15 +126,19 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
 /// <summary>Numeric tweens with explicit scheduling and optional Ranvier ownership.</summary>
 [<RequireQualifiedAccess>]
 module Animation =
-    /// <summary>Creates and starts a linear tween. The caller owns its disposable lifetime.</summary>
-    let animate scheduler read write target duration =
-        let animation = new NumericAnimation(scheduler, read, write, target, duration)
+    /// <summary>Creates a tween with a custom easing function.</summary>
+    let animateWith ease scheduler read write target duration =
+        let animation = new NumericAnimation(scheduler, read, write, target, duration, ease = ease)
         try
+            animation.Seek 0.
             animation.Play()
             animation
         with _ ->
             (animation :> IDisposable).Dispose()
             reraise()
+
+    /// <summary>Creates and starts a linear tween. The caller owns its disposable lifetime.</summary>
+    let animate scheduler read write target duration = animateWith id scheduler read write target duration
 
     /// <summary>Attaches a tween to the current Ranvier owner, which cancels it on disposal.</summary>
     let own (animation: NumericAnimation) =

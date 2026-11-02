@@ -5,5 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <WarnOn>$(WarnOn);3390</WarnOn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RanvierTrace Condition="'$(RanvierTrace)' == '' and '$(Configuration)' == 'Debug'">true</RanvierTrace>
+    <RanvierPackageSuffix Condition="'$(RanvierTrace)' == 'true'">.Traced</RanvierPackageSuffix>
   </PropertyGroup>
 </Project>

@@ -1,6 +1,11 @@
 {
   "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
-  "statusMeaning": "All families below are inventoried, not implemented or verified. Presence of an upstream test file is not native acceptance evidence.",
+  "statusMeaning": "Families define the full scope. Progress records verified subsets only; presence of an upstream test file is not native acceptance evidence.",
+  "progress": {
+    "managedFoundation": "Numeric runner, reactive ownership and typed numeric CSS custom-property endpoints; 70 unfiltered tests pass normal Release and Traced Debug on the current Windows host.",
+    "easing": "46 default named easings plus one Bezier and two step-mode fixtures match 441 upstream samples; runner consumes custom easing with tested reentrant cancellation and seek. Full easing parameter domains, springs, irregular and multi-stop linear remain incomplete.",
+    "nativeIntegration": "Not yet verified; no hardware acceleration or matched public package consumer claim."
+  },
   "families": [
     { "name": "engine and clocks", "source": "src/engine", "tests": ["engine", "seconds", "timings"] },
     { "name": "timers and playback controls", "source": "src/timer", "tests": ["controls", "directions", "callbacks", "promises", "leaks"] },
