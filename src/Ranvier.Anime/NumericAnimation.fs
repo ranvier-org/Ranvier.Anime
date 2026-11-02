@@ -40,13 +40,13 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
         cancelled <- true
         stopFrame()
 
-    let render time =
+    let renderWith shouldWrite time =
         let expected = generation
         elapsed <- Math.Clamp(time, 0., duration)
         completed <- elapsed >= duration
         if completed then playing <- false
         let progress = ease (if duration = 0. then 1. else elapsed / duration)
-        if expected = generation && not cancelled then
+        if expected = generation && not cancelled && shouldWrite() then
             finite "ease" progress
             let value =
                 if progress = 0. then first
@@ -56,6 +56,8 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
                     if Double.IsFinite delta then first + delta * progress
                     else first * (1. - progress) + last * progress
             write value
+
+    let render time = renderWith (fun () -> true) time
 
     let rec queue () =
         if playing && not cancelled && pending.IsNone then
@@ -69,6 +71,14 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
                     with _ ->
                         cancel()
                         reraise()))
+
+    let seek shouldWrite milliseconds =
+        ensureLive()
+        finite "milliseconds" milliseconds
+        stopFrame()
+        anchor <- scheduler.Now() - Math.Clamp(milliseconds, 0., duration)
+        renderWith shouldWrite milliseconds
+        queue()
 
     /// <summary>Resumes from the current time; a completed tween stays completed.</summary>
     member _.Play() =
@@ -86,13 +96,10 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
             stopFrame()
 
     /// <summary>Writes the value at a time in milliseconds, clamped to this tween's duration.</summary>
-    member _.Seek(milliseconds: float) =
-        ensureLive()
-        finite "milliseconds" milliseconds
-        stopFrame()
-        anchor <- scheduler.Now() - Math.Clamp(milliseconds, 0., duration)
-        render milliseconds
-        queue()
+    member _.Seek(milliseconds: float) = seek (fun () -> true) milliseconds
+
+    /// <summary>Samples a borrowed child only while its controller still permits the final write after easing.</summary>
+    member internal _.SeekGuarded(milliseconds: float, shouldWrite: unit -> bool) = seek shouldWrite milliseconds
 
     /// <summary>Starts a new tween from the current target value using the original duration.</summary>
     member this.Retarget(target: float) =
@@ -113,6 +120,9 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
 
     /// <summary>The last sampled or paused time, in milliseconds.</summary>
     member _.CurrentTime = elapsed
+
+    /// <summary>The fixed duration in milliseconds used for this tween and subsequent retargets.</summary>
+    member _.Duration = duration
 
     /// <summary>Whether the most recent sample reached the end of the duration.</summary>
     member _.Completed = completed

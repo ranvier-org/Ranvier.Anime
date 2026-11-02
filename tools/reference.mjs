@@ -8,6 +8,8 @@ import { steps } from '../upstream/anime/src/easings/steps/index.js';
 import { spring } from '../upstream/anime/src/easings/spring/index.js';
 import { stagger } from '../upstream/anime/src/utils/stagger.js';
 import { animate } from '../upstream/anime/src/animation/index.js';
+import { createTimeline } from '../upstream/anime/src/timeline/index.js';
+import { parseTimelinePosition } from '../upstream/anime/src/timeline/position.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const provenance = JSON.parse(readFileSync(resolve(root, 'upstream-provenance.json'), 'utf8'));
@@ -146,6 +148,56 @@ const unitStaggering = [
   const targets = Array.from({length: count}, () => ({}));
   return {name, unit, first, last, parameters, values: targets.map((target, index) => evaluate(target, index, targets))};
 });
+const timelinePositions = [undefined, 0, -25, 12.5, '100', '12.5', ' 25 ', '', '0x10', '0b101', '0o17', '1e2', '\uFEFF25\uFEFF', '\u008525', '0x١٢', 'infinity', 'intro', 'unknown', '+=25', '-=20', '*=2', 'intro+=10', 'outro-=50', 'intro*=2', '<', '<<', '<+=10', '<<-=30', 'missing+=10'].map(position => {
+  const timeline = {iterationDuration: 350, labels: {intro: 50, outro: 300}, _tail: {_offset: 100, _delay: 20, duration: 80}};
+  const result = parseTimelinePosition(timeline, position);
+  return {position, result: Number.isFinite(result) ? result : String(result)};
+});
+const timelineSync = [
+  {name: 'gapped', secondPosition: 150},
+  {name: 'overlap', secondPosition: 50},
+].map(({name, secondPosition}) => {
+  const a = {value: 0}, b = {value: 10};
+  const first = animate(a, {value: 100, duration: 100, ease: 'linear', autoplay: false});
+  const second = animate(b, {value: 90, duration: 80, ease: 'linear', autoplay: false});
+  const timeline = createTimeline({autoplay: false});
+  timeline.sync(first, 0).label('second', secondPosition).sync(second, 'second');
+  const duration = timeline.duration;
+  const samples = [0, 25, 50, 100, 125, 150, duration, 100, 25, 0, 0].map(time => {
+    timeline.seek(time);
+    return {time, a: a.value, b: b.value};
+  });
+  timeline.cancel(); first.cancel(); second.cancel();
+  return {name, secondPosition, duration, samples};
+});
+const timelineStaggering = [
+  {name: 'appendStep', value: 10, parameters: {}},
+  {name: 'appendRange', value: [10, 110], parameters: {}},
+  {name: 'largeRangeAppend', value: [10000000000000000, 10000000000000100], parameters: {}},
+  {name: 'explicitZeroRange', value: [10, 110], parameters: {start: 0}},
+  {name: 'explicitStart', value: 10, parameters: {start: 20}},
+  {name: 'modifierAfterAppend', value: 10, parameters: {modifier: 'double'}},
+  {name: 'randomJitterAppend', value: 10, parameters: {from: 'random', seed: 42, jitter: [2, 9]}},
+].map(({name, value, parameters}) => {
+  const timeline = {iterationDuration: 200, labels: {}, _tail: {_offset: 0, _delay: 0, duration: 200}};
+  const resolved = {...parameters};
+  if (parameters.modifier === 'double') resolved.modifier = value => value * 2;
+  const evaluate = stagger(value, resolved);
+  const targets = Array.from({length: 4}, () => ({}));
+  return {name, value, parameters, offsets: targets.map((target, index) => evaluate(target, index, targets, null, timeline))};
+});
+const timelineRepeatedSync = (() => {
+  const target = {value: 0};
+  const child = animate(target, {value: 100, duration: 100, ease: 'linear', autoplay: false});
+  const timeline = createTimeline({autoplay: false});
+  timeline.sync(child, 0).sync(child, 100);
+  const samples = [150, 200, 150, 125, 100, 75, 0].map(time => {
+    timeline.seek(time);
+    return {time, value: target.value};
+  });
+  timeline.cancel(); child.cancel();
+  return samples;
+})();
 const fixture = {
   upstreamCommit: revision,
   version: JSON.parse(readFileSync(resolve(upstream, 'package.json'), 'utf8')).version,
@@ -155,6 +207,10 @@ const fixture = {
   springMutations,
   staggering,
   unitStaggering,
+  timelinePositions,
+  timelineSync,
+  timelineStaggering,
+  timelineRepeatedSync,
   timing: [0.5, 1, 4294967295, 1000000000001].map(duration => {
     const target = { value: 0 };
     const animation = animate(target, { value: 100, duration, ease: 'linear', autoplay: false });
