@@ -55,10 +55,47 @@ const staggering = [
   { name: 'reverse', value: 10, parameters: { reversed: true }, count: 5 },
   { name: 'range', value: [0, 100], parameters: {}, count: 5 },
   { name: 'grid', value: 10, parameters: { grid: [3, 3], from: 'center' }, count: 9 },
+  { name: 'last', value: 10, parameters: { from: 'last' }, count: 5 },
+  { name: 'evenCenter', value: 10, parameters: { from: 'center' }, count: 4 },
+  { name: 'index', value: 10, parameters: { from: 2 }, count: 6 },
+  { name: 'start', value: 10, parameters: { start: 7.5 }, count: 5 },
+  { name: 'descendingRange', value: [100, 0], parameters: {}, count: 5 },
+  { name: 'rangeOrigin', value: [10, 110], parameters: {}, count: 5 },
+  { name: 'rangeStartZero', value: [10, 110], parameters: { start: 0 }, count: 5 },
+  { name: 'rangeStart', value: [10, 110], parameters: { start: 20 }, count: 5 },
+  { name: 'eased', value: 10, parameters: { ease: 'inQuad' }, count: 5 },
+  { name: 'easedReverse', value: 10, parameters: { ease: 'inQuad', reversed: true }, count: 5 },
+  { name: 'gridX', value: 10, parameters: { grid: [3, 3], from: 'center', axis: 'x' }, count: 9 },
+  { name: 'gridYReverse', value: 10, parameters: { grid: [3, 3], from: 'last', axis: 'y', reversed: true }, count: 9 },
+  { name: 'gridSignedEase', value: 10, parameters: { grid: [3, 3], from: 'center', axis: 'x', ease: 'inQuad' }, count: 9 },
+  { name: 'gridSignedSpring', value: 10, parameters: { grid: [3, 3], from: 'center', axis: 'x', ease: 'spring' }, count: 9 },
+  { name: 'gridPosition', value: 10, parameters: { grid: [3, 3], from: [0.25, 0.75] }, count: 9 },
+  { name: 'grid3D', value: 10, parameters: { grid: [3, 2, 2], from: 'center' }, count: 12 },
+  { name: 'grid3DZ', value: 10, parameters: { grid: [3, 2, 2], from: [0.5, 0.5, 0], axis: 'z' }, count: 12 },
+  { name: 'negativeStep', value: -10, parameters: {}, count: 5 },
+  { name: 'totalOverride', value: [0, 100], parameters: { total: 7 }, count: 5 },
+  { name: 'mappedIndex', value: 10, parameters: { map: 'reverse' }, count: 5 },
+  { name: 'invalidMappedIndex', value: 10, parameters: { map: 'invalid' }, count: 5 },
+  { name: 'modifier', value: 10, parameters: { modifier: 'double' }, count: 5 },
+  { name: 'singleRange', value: [10, 110], parameters: {}, count: 1 },
+  { name: 'singleEased', value: 10, parameters: { ease: 'inQuad' }, count: 1 },
+  { name: 'zeroTotal', value: 10, parameters: { total: 0 }, count: 3 },
+  { name: 'negativeHalfRound', value: 10, parameters: { grid: [2, 1], from: [0.005, 0], axis: 'x' }, count: 2 },
+  { name: 'zeroMaximumAxisRange', value: [0, 100], parameters: { grid: [3, 1], from: 'last', axis: 'x' }, count: 3 },
+  { name: 'zeroMaximumAxisRangeReverse', value: [0, 100], parameters: { grid: [3, 1], from: 'last', axis: 'x', reversed: true }, count: 3 },
+  { name: 'gridSignedBounce', value: 10, parameters: { grid: [101, 1], from: 1, axis: 'x', ease: 'inBounce' }, count: 101 },
 ].map(({ name, value, parameters, count }) => {
-  const evaluate = stagger(value, parameters);
+  const resolved = { ...parameters };
+  if (parameters.ease === 'spring') resolved.ease = spring();
+  if (parameters.map === 'reverse') resolved.use = (_, index, total) => total - 1 - index;
+  if (parameters.map === 'invalid') resolved.use = (_, index, total) => total + index;
+  if (parameters.modifier === 'double') resolved.modifier = value => value * 2;
+  const evaluate = stagger(value, resolved);
   const targets = Array.from({ length: count }, () => ({}));
-  return { name, value, parameters, values: targets.map((target, index) => evaluate(target, index, targets)) };
+  return { name, value, parameters, values: targets.map((target, index) => {
+    const output = evaluate(target, index, targets);
+    return Number.isFinite(output) ? output : String(output);
+  }) };
 });
 const fixture = {
   upstreamCommit: revision,

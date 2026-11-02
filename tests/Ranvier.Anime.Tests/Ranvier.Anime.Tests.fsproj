@@ -6,6 +6,7 @@
     <Compile Include="CssTests.fs" />
     <Compile Include="EaseTests.fs" />
     <Compile Include="SpringTests.fs" />
+    <Compile Include="StaggerTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

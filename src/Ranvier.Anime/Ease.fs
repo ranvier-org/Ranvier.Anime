@@ -23,18 +23,19 @@ module Ease =
 
     let private progress time =
         finite "time" time
-        if time < 0. || time > 1. then invalidArg "time" "Progress must be between zero and one."
 
     let private bounce time =
+        if time < -1. / 11. then invalidArg "time" "Bounce extrapolation must not fall below -1/11."
         let mutable b = 3
         let mutable power = Math.Pow(2., float b)
-        while b > 0 && time < (power - 1.) / 11. do
+        while time < (power - 1.) / 11. do
             b <- b - 1
             power <- Math.Pow(2., float b)
         1. / Math.Pow(4., float (3 - b)) - 7.5625 * Math.Pow((power * 3. - 2.) / 22. - time, 2.)
 
     // Easing formulas adapted through Anime.js from Robert Penner, (c) 2001 Robert Penner.
-    /// <summary>Creates an easing function accepting progress from zero through one; outputs may overshoot.</summary>
+    /// <summary>Creates an easing function accepting finite progress, including signed axis extrapolation; outputs may overshoot.</summary>
+    /// <remarks>Bounce rejects transformed inputs below -1/11, where the upstream search cannot terminate.</remarks>
     let create family direction =
         let easeIn =
             match family with
@@ -102,7 +103,7 @@ module Ease =
             (if fromStart then Math.Ceiling scaled else Math.Floor scaled) * (1. / count)
 
     // Solver adapted through Anime.js from gre/bezier-easing, (c) 2014 Gaëtan Renaudeau.
-    /// <summary>Creates a cubic Bezier easing with finite control points and normalized input progress.</summary>
+    /// <summary>Creates a cubic Bezier easing with finite control points and finite input progress.</summary>
     let cubicBezier x1 y1 x2 y2 =
         finite "x1" x1
         finite "y1" y1

@@ -3060,6 +3060,612 @@
         10,
         14.1
       ]
+    },
+    {
+      "name": "last",
+      "value": 10,
+      "parameters": {
+        "from": "last"
+      },
+      "values": [
+        40,
+        30,
+        20,
+        10,
+        0
+      ]
+    },
+    {
+      "name": "evenCenter",
+      "value": 10,
+      "parameters": {
+        "from": "center"
+      },
+      "values": [
+        15,
+        5,
+        5,
+        15
+      ]
+    },
+    {
+      "name": "index",
+      "value": 10,
+      "parameters": {
+        "from": 2
+      },
+      "values": [
+        20,
+        10,
+        0,
+        10,
+        20,
+        30
+      ]
+    },
+    {
+      "name": "start",
+      "value": 10,
+      "parameters": {
+        "start": 7.5
+      },
+      "values": [
+        7.5,
+        17.5,
+        27.5,
+        37.5,
+        47.5
+      ]
+    },
+    {
+      "name": "descendingRange",
+      "value": [
+        100,
+        0
+      ],
+      "parameters": {},
+      "values": [
+        100,
+        75,
+        50,
+        25,
+        0
+      ]
+    },
+    {
+      "name": "rangeOrigin",
+      "value": [
+        10,
+        110
+      ],
+      "parameters": {},
+      "values": [
+        10,
+        35,
+        60,
+        85,
+        110
+      ]
+    },
+    {
+      "name": "rangeStartZero",
+      "value": [
+        10,
+        110
+      ],
+      "parameters": {
+        "start": 0
+      },
+      "values": [
+        10,
+        35,
+        60,
+        85,
+        110
+      ]
+    },
+    {
+      "name": "rangeStart",
+      "value": [
+        10,
+        110
+      ],
+      "parameters": {
+        "start": 20
+      },
+      "values": [
+        20,
+        45,
+        70,
+        95,
+        120
+      ]
+    },
+    {
+      "name": "eased",
+      "value": 10,
+      "parameters": {
+        "ease": "inQuad"
+      },
+      "values": [
+        0,
+        2.5,
+        10,
+        22.5,
+        40
+      ]
+    },
+    {
+      "name": "easedReverse",
+      "value": 10,
+      "parameters": {
+        "ease": "inQuad",
+        "reversed": true
+      },
+      "values": [
+        40,
+        37.5,
+        30,
+        17.5,
+        0
+      ]
+    },
+    {
+      "name": "gridX",
+      "value": 10,
+      "parameters": {
+        "grid": [
+          3,
+          3
+        ],
+        "from": "center",
+        "axis": "x"
+      },
+      "values": [
+        -10,
+        0,
+        10,
+        -10,
+        0,
+        10,
+        -10,
+        0,
+        10
+      ]
+    },
+    {
+      "name": "gridYReverse",
+      "value": 10,
+      "parameters": {
+        "grid": [
+          3,
+          3
+        ],
+        "from": "last",
+        "axis": "y",
+        "reversed": true
+      },
+      "values": [
+        20,
+        20,
+        20,
+        10,
+        10,
+        10,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "gridSignedEase",
+      "value": 10,
+      "parameters": {
+        "grid": [
+          3,
+          3
+        ],
+        "from": "center",
+        "axis": "x",
+        "ease": "inQuad"
+      },
+      "values": [
+        10,
+        0,
+        10,
+        10,
+        0,
+        10,
+        10,
+        0,
+        10
+      ]
+    },
+    {
+      "name": "gridSignedSpring",
+      "value": 10,
+      "parameters": {
+        "grid": [
+          3,
+          3
+        ],
+        "from": "center",
+        "axis": "x",
+        "ease": "spring"
+      },
+      "values": [
+        76488.2,
+        0,
+        10,
+        76488.2,
+        0,
+        10,
+        76488.2,
+        0,
+        10
+      ]
+    },
+    {
+      "name": "gridPosition",
+      "value": 10,
+      "parameters": {
+        "grid": [
+          3,
+          3
+        ],
+        "from": [
+          0.25,
+          0.75
+        ]
+      },
+      "values": [
+        15.8,
+        15.8,
+        21.200000000000003,
+        7.1,
+        7.1,
+        15.8,
+        7.1,
+        7.1,
+        15.8
+      ]
+    },
+    {
+      "name": "grid3D",
+      "value": 10,
+      "parameters": {
+        "grid": [
+          3,
+          2,
+          2
+        ],
+        "from": "center"
+      },
+      "values": [
+        12.2,
+        7.1,
+        12.2,
+        12.2,
+        7.1,
+        12.2,
+        12.2,
+        7.1,
+        12.2,
+        12.2,
+        7.1,
+        12.2
+      ]
+    },
+    {
+      "name": "grid3DZ",
+      "value": 10,
+      "parameters": {
+        "grid": [
+          3,
+          2,
+          2
+        ],
+        "from": [
+          0.5,
+          0.5,
+          0
+        ],
+        "axis": "z"
+      },
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "name": "negativeStep",
+      "value": -10,
+      "parameters": {},
+      "values": [
+        0,
+        -10,
+        -20,
+        -30,
+        -40
+      ]
+    },
+    {
+      "name": "totalOverride",
+      "value": [
+        0,
+        100
+      ],
+      "parameters": {
+        "total": 7
+      },
+      "values": [
+        0,
+        16.666666666666668,
+        33.333333333333336,
+        50,
+        66.66666666666667
+      ]
+    },
+    {
+      "name": "mappedIndex",
+      "value": 10,
+      "parameters": {
+        "map": "reverse"
+      },
+      "values": [
+        40,
+        30,
+        20,
+        10,
+        0
+      ]
+    },
+    {
+      "name": "invalidMappedIndex",
+      "value": 10,
+      "parameters": {
+        "map": "invalid"
+      },
+      "values": [
+        0,
+        10,
+        20,
+        30,
+        40
+      ]
+    },
+    {
+      "name": "modifier",
+      "value": 10,
+      "parameters": {
+        "modifier": "double"
+      },
+      "values": [
+        0,
+        20,
+        40,
+        60,
+        80
+      ]
+    },
+    {
+      "name": "singleRange",
+      "value": [
+        10,
+        110
+      ],
+      "parameters": {},
+      "values": [
+        10
+      ]
+    },
+    {
+      "name": "singleEased",
+      "value": 10,
+      "parameters": {
+        "ease": "inQuad"
+      },
+      "values": [
+        0
+      ]
+    },
+    {
+      "name": "zeroTotal",
+      "value": 10,
+      "parameters": {
+        "total": 0
+      },
+      "values": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "negativeHalfRound",
+      "value": 10,
+      "parameters": {
+        "grid": [
+          2,
+          1
+        ],
+        "from": [
+          0.005,
+          0
+        ],
+        "axis": "x"
+      },
+      "values": [
+        0,
+        10
+      ]
+    },
+    {
+      "name": "zeroMaximumAxisRange",
+      "value": [
+        0,
+        100
+      ],
+      "parameters": {
+        "grid": [
+          3,
+          1
+        ],
+        "from": "last",
+        "axis": "x"
+      },
+      "values": [
+        "Infinity",
+        "Infinity",
+        0
+      ]
+    },
+    {
+      "name": "zeroMaximumAxisRangeReverse",
+      "value": [
+        0,
+        100
+      ],
+      "parameters": {
+        "grid": [
+          3,
+          1
+        ],
+        "from": "last",
+        "axis": "x",
+        "reversed": true
+      },
+      "values": [
+        "-Infinity",
+        "-Infinity",
+        0
+      ]
+    },
+    {
+      "name": "gridSignedBounce",
+      "value": 10,
+      "parameters": {
+        "grid": [
+          101,
+          1
+        ],
+        "from": 1,
+        "axis": "x",
+        "ease": "inBounce"
+      },
+      "values": [
+        2.7,
+        0,
+        6.1,
+        10.700000000000001,
+        13.799999999999999,
+        15.3,
+        15.3,
+        13.799999999999999,
+        10.700000000000001,
+        6.1,
+        0,
+        13,
+        24.4,
+        34.4,
+        42.800000000000004,
+        49.699999999999996,
+        55,
+        58.8,
+        61.1,
+        61.900000000000006,
+        61.1,
+        58.8,
+        55,
+        49.699999999999996,
+        42.800000000000004,
+        34.4,
+        24.4,
+        13,
+        0,
+        26.7,
+        51.900000000000006,
+        75.6,
+        97.8,
+        118.4,
+        137.5,
+        155.1,
+        171.1,
+        185.6,
+        198.6,
+        210.10000000000002,
+        220,
+        228.4,
+        235.3,
+        240.6,
+        244.4,
+        246.70000000000002,
+        247.5,
+        246.70000000000002,
+        244.4,
+        240.6,
+        235.3,
+        228.4,
+        220,
+        210.10000000000002,
+        198.6,
+        185.6,
+        171.1,
+        155.1,
+        137.5,
+        118.4,
+        97.8,
+        75.6,
+        51.900000000000006,
+        26.7,
+        0,
+        54.2,
+        106.89999999999999,
+        158.1,
+        207.8,
+        255.9,
+        302.5,
+        347.59999999999997,
+        391.1,
+        433.1,
+        473.6,
+        512.6,
+        550,
+        585.9000000000001,
+        620.3,
+        653.1,
+        684.4,
+        714.2,
+        742.5,
+        769.2,
+        794.4,
+        818.1,
+        840.3,
+        860.9000000000001,
+        880,
+        897.6,
+        913.6,
+        928.1,
+        941.1,
+        952.6,
+        962.5,
+        970.9000000000001,
+        977.8,
+        983.1,
+        986.9,
+        989.2,
+        990
+      ]
     }
   ],
   "timing": [

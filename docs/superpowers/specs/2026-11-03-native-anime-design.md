@@ -1,6 +1,6 @@
 # Native Anime.js for Ranvier
 
-Status: proposed implementation design, 3 November 2026. A fresh builder review found only the unresolved integration cohort dependency described below; design approval is pending.
+Status: approved for implementation by the user, 3 November 2026, with Ranvier ownership integrated from the first milestone and Ranvier.Css used directly. The matching public Native/View integration cohort remains a qualification dependency.
 
 ## Outcome
 
@@ -75,6 +75,6 @@ Completion requires the export/behavior inventory to account for the full baseli
 
 ## Implementation order and builder discretion
 
-First pin references and establish the behavior oracle and portable calculation tests. In the first working milestone, connect a minimal runner to the shared manual frame scheduler and actual Ranvier core ownership: a reactive source retargets a numeric property, owner disposal cancels it, and subsequent frames cannot write. This early integration is my recommendation in response to the user's question about involving Ranvier; it is not a claim of design approval. Then port the remaining easing/spring/stagger/interpolation and playback/composition behavior, followed by timelines and animatables. Add typed CSS/DOM and native adapters, then complete the remaining SVG, scroll, drag, text, scope and layout families and View integration. Build acceleration only after behavioral equivalence can be measured. Finish with the matched public cohort and complete audit.
+First pin references and establish the behavior oracle and portable calculation tests. In the first working milestone, connect a minimal runner to the shared manual frame scheduler and actual Ranvier core ownership: a reactive source retargets a numeric property, owner disposal cancels it, and subsequent frames cannot write. The user approved this early integration and the direct Ranvier.Css dependency. Then port the remaining easing/spring/stagger/interpolation and playback/composition behavior, followed by timelines and animatables. Add typed CSS/DOM and native adapters, then complete the remaining SVG, scroll, drag, text, scope and layout families and View integration. Build acceleration only after behavioral equivalence can be measured. Finish with the matched public cohort and complete audit.
 
 The builder may choose internal data structures, exact F# method/module spelling, test framework, project splitting and batching strategies. Preserve the described behavior, typed authoring and native runtime boundary. Benchmark allocations, interop calls and frame work before choosing SIMD, pooling or a more complex backend. Do not promise speedups without measurements.

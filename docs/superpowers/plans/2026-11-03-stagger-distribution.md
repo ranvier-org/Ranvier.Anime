@@ -24,10 +24,10 @@
 
 **Interfaces:** StaggerOrigin (First, Last, Center, Index, Position2D, Position3D), StaggerGrid (Flat, Grid2D, Grid3D), StaggerAxis (X,Y,Z), StaggerValue (Step,Range), StaggerOptions.Default, Stagger.distribute : StaggerValue -> StaggerOptions -> uint -> float array.
 
-- [ ] Expand upstream fixtures for all listed options, including degenerate cases and signed-axis easing. Test actual reference arrays with1e-9 absolute tolerance.
-- [ ] Observe a zero/identity placeholder failing, then implement distance construction, source rounding and output transformation. Validate authored finite numbers and size limits before allocation.
-- [ ] Test invalid dimensions, empty targets, total override and index mapping. Preserve visible outputs for zero max distance; document any safer callback-domain adaptation explicitly.
-- [ ] Prove pure functions in SageFs, persist, run full normal/Traced suites and XML audit, then obtain one fresh review. Fix concrete findings through regressions and commit.
+- [x] Expand upstream fixtures for all listed options, including degenerate cases and signed-axis easing. Test actual reference arrays with1e-9 absolute tolerance.
+- [x] Observe a zero/identity placeholder failing, then implement distance construction, source rounding and output transformation. Validate authored finite numbers and size limits before allocation.
+- [x] Test invalid dimensions, empty targets, total override and index mapping. Preserve visible outputs for zero max distance; document any safer callback-domain adaptation explicitly.
+- [x] Prove pure functions in SageFs, persist, run full normal/Traced suites and XML audit, then obtain one fresh review. Fix concrete findings through regressions and commit.
 
 ## Task 2: Follow-up staggering work
 

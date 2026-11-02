@@ -156,11 +156,10 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         finite "time" time
         solve time
 
-    /// <summary>Evaluates normalized progress and notifies completion when perceived duration is crossed.</summary>
+    /// <summary>Evaluates finite progress, including signed axis extrapolation, and notifies completion when perceived duration is crossed.</summary>
     /// <remarks>Calling below the perceived threshold resets completion, allowing a later forward crossing to notify again.</remarks>
     member _.Ease(time: float) =
         finite "time" time
-        if time < 0. || time > 1. then invalidArg "time" "Progress must be between zero and one."
         let currentTime = time * settlingDuration
         let perceivedTime = durationValue
         if currentTime >= perceivedTime && not completed then
