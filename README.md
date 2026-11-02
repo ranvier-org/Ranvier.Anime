@@ -4,7 +4,7 @@ Native F# Anime.js port in progress. Working home: `C:/wk/ranvier-anime`.
 
 Open `Ranvier.Anime.slnx` in Rider. It contains the library and test project and will be updated as projects are added.
 
-`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. The real-host normal and Traced managed smokes pass; strict NativeAOT currently exposes a public typed-CSS qualification gap. See [native integration evidence](docs/native-integration.md) for the pinned private graph, reproducible build operations and limits. This does not establish matched public Native/View acceptance.
+`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. Normal and Traced NativeAOT smokes pass with the corrected private CSS candidate and pinned private Core/View/runtime graph. Public-cohort acceptance remains incomplete. See [native integration evidence](docs/native-integration.md) for reproducible operations and limits.
 
 Project operations use Partas.Build 0.8.2 from the public Cloudsmith feed configured in `nuget.config`:
 
@@ -27,7 +27,7 @@ The foundation supports numeric scheduling, easing, springs, staggering, nested 
 
 The internal playback timing kernel matches 55 source timer traces and 929 samples exactly, including repeat gaps, reversal/alternation, signed delay, skipped/forced samples and zero/fractional/infinite/overflow cases. It separates raw clock state from rounded public time/progress. Timer callbacks and scheduler controls, plus numeric/timeline loop-direction-speed integration, remain required work; the existing controllers do not expose these new timing capabilities yet.
 
-Use `build ["test"; "-c"; "Debug"]` for the matched Traced Ranvier dependency cohort. Restore uses the same configuration as build, so switching back to Release restores normal dependencies. `Ranvier.Css` and generated CSS bindings are shared between modes.
+Use `build ["test"; "-c"; "Debug"]` for the matched Traced Ranvier dependency cohort, including CSS and generated bindings. Restore uses the same configuration as build, so switching back to Release restores normal dependencies. Native commands accept `--css-candidate` to select the copied private CSS cohort in an isolated cache/output tree; ordinary commands retain public versions.
 
 Restore/build/test use the owned package cache `artifacts/nuget-packages`, explicit repository feeds and a fresh HTTP lookup. They do not alter the shared global NuGet cache. Use `build ["test"; "--rebuild"]` for a nonincremental build and `build ["identity"]` to verify the Release output assemblies against restored package bytes and the coordinator's verified public DOM hash; add `-c Debug` for Traced output identity. Receipts are written under `artifacts/qualification`. These managed checks do not qualify Native/View integration.
 

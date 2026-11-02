@@ -5,6 +5,7 @@ open System.IO
 open System.Text.Json
 open System.Security.Cryptography
 open System.Text.RegularExpressions
+open System.Diagnostics
 
 let private hash path =
     use stream = File.OpenRead path
@@ -102,6 +103,38 @@ let verifyPublishLog (path: string) =
     if failures.Count > 0 then
         failures |> Seq.cast<Match> |> Seq.map _.Value |> String.concat "\n" |> failwith
     printfn "Native publish log has no IL diagnostics or unconditional-throw messages"
+
+/// <summary>Runs the owned headless consumer and preserves its output, exit code and executable hash.</summary>
+let runSmoke (output: string) requireAot (logPath: string) =
+    let executable = Path.Combine(output, "Ranvier.Anime.NativeSmoke.exe")
+    let start = ProcessStartInfo("rtk")
+    start.WorkingDirectory <- output
+    start.UseShellExecute <- false
+    start.CreateNoWindow <- true
+    start.RedirectStandardOutput <- true
+    start.RedirectStandardError <- true
+    start.Environment["OS"] <- "Windows_NT"
+    start.ArgumentList.Add "proxy"
+    start.ArgumentList.Add executable
+    if requireAot then start.ArgumentList.Add "--require-aot"
+    use child = Process.Start start
+    let stdout = child.StandardOutput.ReadToEndAsync()
+    let stderr = child.StandardError.ReadToEndAsync()
+    if not(child.WaitForExit 30000) then
+        child.Kill(true)
+        child.WaitForExit()
+        failwith "Owned native smoke exceeded its 30-second limit."
+    let outputText, errorText = stdout.GetAwaiter().GetResult(), stderr.GetAwaiter().GetResult()
+    File.WriteAllText(logPath, outputText + errorText)
+    Console.Write outputText
+    Console.Error.Write errorText
+    if child.ExitCode <> 0 || not(outputText.Contains("NATIVE_ANIME_SMOKE_PASS", StringComparison.Ordinal)) ||
+       (requireAot && not(outputText.Contains("PASS consumer is NativeAOT", StringComparison.Ordinal))) then
+        failwith "Native consumer failed its exit/sentinel checks; inspect the retained run log."
+    let receipt =
+        {| ExitCode = child.ExitCode; RequiredAot = requireAot; Executable = executable; ExecutableSha256 = hash executable
+           LogSha256 = hash logPath; CompletedUtc = DateTimeOffset.UtcNow.ToString("O") |}
+    File.WriteAllText(logPath + ".json", JsonSerializer.Serialize receipt)
 
 /// <summary>Preserves the failed strict typed-CSS publishes, exact dependency assets and compiler graph.</summary>
 let captureCssGap (configuration: string) =

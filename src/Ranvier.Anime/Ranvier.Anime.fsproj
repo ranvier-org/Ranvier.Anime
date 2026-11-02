@@ -20,7 +20,7 @@
   <ItemGroup>
     <PackageReference Include="Ranvier$(RanvierPackageSuffix)" Version="[0.1.1-preview.1]" Condition="'$(UseLocalRanvier)' != 'true'" />
     <PackageReference Include="Ranvier.Dom$(RanvierPackageSuffix)" Version="[0.1.0-alpha.55]" Condition="'$(UseLocalRanvier)' != 'true'" />
-    <PackageReference Include="Ranvier.Css" Version="[0.1.1-alpha.1]" />
+    <PackageReference Include="Ranvier.Css$(RanvierPackageSuffix)" Version="[$(RanvierCssVersion)]" />
     <PackageReference Include="Ranvier.Css.Dom$(RanvierPackageSuffix)" Version="[0.1.0-alpha.1]" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseLocalRanvier)' == 'true'">

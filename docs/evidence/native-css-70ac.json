@@ -1,0 +1,241 @@
+{
+  "HardwareAccelerationQualified": false,
+  "Modes": [
+    {
+      "Configuration": "Release",
+      "Evidence": {
+        "Configuration": "Release",
+        "ConsumerSourceSha256": "252ec478476c45720694e0a71b2bf96ea8dd014db9de5bb8dfbed20f217942b2",
+        "CoreSource": "6f5e063c06a48af2c3375c1c986cb5925e814d3d",
+        "CssSource": "70ac54af73543d86941da45c4dc499ca819a7e3e",
+        "Files": [
+          {
+            "Bytes": 289846,
+            "File": "publish.log",
+            "Sha256": "3dfc05f7d6561f21e05e7fc15940d2f7cee167a354966c629ef878cac5aa17a0"
+          },
+          {
+            "Bytes": 536,
+            "File": "run.log",
+            "Sha256": "49ab53e798594020ad200588be0295908d4e32c8c0e3825e2695156c8e7832d6"
+          },
+          {
+            "Bytes": 366,
+            "File": "run.json",
+            "Sha256": "9da852b9bdd3fc764ede5065d1f71e45bd3b45aa58dce2d6229e291f2d218c46"
+          },
+          {
+            "Bytes": 49891,
+            "File": "project.assets.json",
+            "Sha256": "481a3680d40c9a9fab507906a169dc6ae990d2eab312262aa1713193b9411dac"
+          },
+          {
+            "Bytes": 37704,
+            "File": "compiler.rsp",
+            "Sha256": "5961043adbe4c9372f7c0d64ebbb3db936d671b067cec09af3f718bd4619ed8a"
+          },
+          {
+            "Bytes": 9135104,
+            "File": "Ranvier.Anime.NativeSmoke.exe",
+            "Sha256": "54c09be98dc1bb5e29f413cdd0d3efff015195dcaa6cde4a4baaf4bf571d7fd9"
+          }
+        ],
+        "LibrarySources": [
+          {
+            "File": "Css.fs",
+            "Sha256": "c0056863469aa3777a962d2b5e898fac3246960b13f1a070050f13ac70023afb"
+          },
+          {
+            "File": "CssStagger.fs",
+            "Sha256": "786758576ca2dd350f8a0e1124a2f3f4aa1a7675c44cb2aeec6326de68ba7294"
+          },
+          {
+            "File": "Ease.fs",
+            "Sha256": "f07eb93e50aeee43b19b8aa6deaef726fd2865c06dc37b580b8cac3f76f0548b"
+          },
+          {
+            "File": "NumericAnimation.fs",
+            "Sha256": "d2d53bb33c84707f300124e424888d9e7b2df41bd6cefc4bf27b0342f86352bf"
+          },
+          {
+            "File": "NumericProperty.fs",
+            "Sha256": "7908fc27c79b256f0b6805483f1ed3832e63933ebc68f28a9e0e992514421a1f"
+          },
+          {
+            "File": "PlaybackTiming.fs",
+            "Sha256": "300dcb52a20f17d4b86268c6c81507d43b8be63ac803e4f1aa5509e1cb51c024"
+          },
+          {
+            "File": "PropertyTrack.fs",
+            "Sha256": "e1b8280634875b5315b4c3b29e3a5f0408b282b48b2edf7daccd84dd99ef2250"
+          },
+          {
+            "File": "Reactive.fs",
+            "Sha256": "aaf590dff4fcc55a3eb5a313af73bbc0d0efff4c8f2e6ee1f1fd15573fa8fa16"
+          },
+          {
+            "File": "Spring.fs",
+            "Sha256": "4a33000f85cad581c08dd50fc98adfe35540325aa64a79412785ed1622010f75"
+          },
+          {
+            "File": "Stagger.fs",
+            "Sha256": "c40121c2c797db95bc2417922e998ebabf6dcba96f7553bc9ac39d636c77271a"
+          },
+          {
+            "File": "Timeline.fs",
+            "Sha256": "e33f0c76397c30e31e52ef30dd10e3bc612848795fb103aed7ad620fc7bdbfd6"
+          },
+          {
+            "File": "TimelinePosition.fs",
+            "Sha256": "3feab12f9e7e6cd649e277753f2879402f06ebe93154c0beda5f45c99dcd9af2"
+          }
+        ],
+        "NativeAbi": 62,
+        "NativeSource": "6f10bea17d7a1f22e5e97d472819c055fba3ef06",
+        "Packages": [
+          {
+            "DllSha256": "be6dde75d2a2929e602b4968a07a399f045735920acddb03759784e20ad19226",
+            "Id": "Ranvier.Css",
+            "NupkgSha256": "d7287022f4a967c71e215f062295ad95a2c412985940dcf20f36a55d5fb5b0c3",
+            "Version": "0.1.1-alpha.1-css-aot.2"
+          },
+          {
+            "DllSha256": "777532ae43727e8f8f5878b0aa396ba426fd793c0ddd36491eb747de952b8f71",
+            "Id": "Ranvier.Css.Bindings",
+            "NupkgSha256": "fbd92132ba8c28230df9e66c8ad877a10198c4700a7163b77d64b1763e91c816",
+            "Version": "0.1.1-alpha.1-css-aot.2"
+          },
+          {
+            "DllSha256": "2068e902f6ce7362d71198b5d3879b4081a60e8ab70da009a5107d39721acf4f",
+            "Id": "Ranvier.Css.Dom",
+            "NupkgSha256": "45e48054012bd94780940df96d7630a3f08cd0997bda22fa2434fdda583b7f1e",
+            "Version": "0.1.0-alpha.1"
+          }
+        ],
+        "PrivateCandidate": true,
+        "PublicQualified": false,
+        "ViewSource": "625b0e1baeaf2ccc023f69dd7f1e76626e27a084"
+      },
+      "ReceiptSha256": "23867d873854b126eb2479a9442e1a0ff7cbae9477a0e2bfdec5f5e55ed7c941"
+    },
+    {
+      "Configuration": "Debug",
+      "Evidence": {
+        "Configuration": "Debug",
+        "ConsumerSourceSha256": "252ec478476c45720694e0a71b2bf96ea8dd014db9de5bb8dfbed20f217942b2",
+        "CoreSource": "6f5e063c06a48af2c3375c1c986cb5925e814d3d",
+        "CssSource": "70ac54af73543d86941da45c4dc499ca819a7e3e",
+        "Files": [
+          {
+            "Bytes": 294114,
+            "File": "publish.log",
+            "Sha256": "8fe263d99f785ad4c0a511081cf173ce5317efc13be46d5c319686b4c32b4541"
+          },
+          {
+            "Bytes": 536,
+            "File": "run.log",
+            "Sha256": "49ab53e798594020ad200588be0295908d4e32c8c0e3825e2695156c8e7832d6"
+          },
+          {
+            "Bytes": 364,
+            "File": "run.json",
+            "Sha256": "01d230b0aecb4ad8e8048aec11f04abba5d9808aebf8f1fbbb6c5a5cdd3d009b"
+          },
+          {
+            "Bytes": 50437,
+            "File": "project.assets.json",
+            "Sha256": "2112e9da19f552d709459141ea5d07061ea2b4b70683e1dd7432160bd5907e9e"
+          },
+          {
+            "Bytes": 37694,
+            "File": "compiler.rsp",
+            "Sha256": "f802919a50b96830e73db39d9b03cbe39da37da998d4d7b6d181a379095c5084"
+          },
+          {
+            "Bytes": 13823488,
+            "File": "Ranvier.Anime.NativeSmoke.exe",
+            "Sha256": "f67c24a54b2465c0939b737b48c22ccbbbc0321a15c76660e939fe46d5700a67"
+          }
+        ],
+        "LibrarySources": [
+          {
+            "File": "Css.fs",
+            "Sha256": "c0056863469aa3777a962d2b5e898fac3246960b13f1a070050f13ac70023afb"
+          },
+          {
+            "File": "CssStagger.fs",
+            "Sha256": "786758576ca2dd350f8a0e1124a2f3f4aa1a7675c44cb2aeec6326de68ba7294"
+          },
+          {
+            "File": "Ease.fs",
+            "Sha256": "f07eb93e50aeee43b19b8aa6deaef726fd2865c06dc37b580b8cac3f76f0548b"
+          },
+          {
+            "File": "NumericAnimation.fs",
+            "Sha256": "d2d53bb33c84707f300124e424888d9e7b2df41bd6cefc4bf27b0342f86352bf"
+          },
+          {
+            "File": "NumericProperty.fs",
+            "Sha256": "7908fc27c79b256f0b6805483f1ed3832e63933ebc68f28a9e0e992514421a1f"
+          },
+          {
+            "File": "PlaybackTiming.fs",
+            "Sha256": "300dcb52a20f17d4b86268c6c81507d43b8be63ac803e4f1aa5509e1cb51c024"
+          },
+          {
+            "File": "PropertyTrack.fs",
+            "Sha256": "e1b8280634875b5315b4c3b29e3a5f0408b282b48b2edf7daccd84dd99ef2250"
+          },
+          {
+            "File": "Reactive.fs",
+            "Sha256": "aaf590dff4fcc55a3eb5a313af73bbc0d0efff4c8f2e6ee1f1fd15573fa8fa16"
+          },
+          {
+            "File": "Spring.fs",
+            "Sha256": "4a33000f85cad581c08dd50fc98adfe35540325aa64a79412785ed1622010f75"
+          },
+          {
+            "File": "Stagger.fs",
+            "Sha256": "c40121c2c797db95bc2417922e998ebabf6dcba96f7553bc9ac39d636c77271a"
+          },
+          {
+            "File": "Timeline.fs",
+            "Sha256": "e33f0c76397c30e31e52ef30dd10e3bc612848795fb103aed7ad620fc7bdbfd6"
+          },
+          {
+            "File": "TimelinePosition.fs",
+            "Sha256": "3feab12f9e7e6cd649e277753f2879402f06ebe93154c0beda5f45c99dcd9af2"
+          }
+        ],
+        "NativeAbi": 62,
+        "NativeSource": "6f10bea17d7a1f22e5e97d472819c055fba3ef06",
+        "Packages": [
+          {
+            "DllSha256": "7929fc44821f4c33c6d4fee64d16afd8c0de658413c47d3355a0c8aca37331b8",
+            "Id": "Ranvier.Css.Traced",
+            "NupkgSha256": "f0ae079da35473cbbc3796c5cc01d50eb91b308c919d8572d1d0e542babaf395",
+            "Version": "0.1.1-alpha.1-css-aot.2"
+          },
+          {
+            "DllSha256": "81a485ca39f2f63ee83432676d55fae2d430db145ba5ce25d22349b0e305952c",
+            "Id": "Ranvier.Css.Bindings.Traced",
+            "NupkgSha256": "5941c00b7c0d73923cfacd64686ed029ed00d1547f21d33b26d50544dcafec38",
+            "Version": "0.1.1-alpha.1-css-aot.2"
+          },
+          {
+            "DllSha256": "192c160e02237139296c89d10592fc9301855ea63e107b8f5b51e46896e8d9c5",
+            "Id": "Ranvier.Css.Dom.Traced",
+            "NupkgSha256": "88f79c262754a096c1fb0b89e7733b74350467b422a756bb8e8fc550047f79e7",
+            "Version": "0.1.0-alpha.1"
+          }
+        ],
+        "PrivateCandidate": true,
+        "PublicQualified": false,
+        "ViewSource": "625b0e1baeaf2ccc023f69dd7f1e76626e27a084"
+      },
+      "ReceiptSha256": "5a6a98eec37387f2a28b5f016776d6114b63fa0758ccd3cf4944d0d108e6e359"
+    }
+  ],
+  "PrivateCandidate": true,
+  "PublicAccepted": false
+}
