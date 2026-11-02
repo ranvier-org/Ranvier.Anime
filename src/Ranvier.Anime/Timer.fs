@@ -56,6 +56,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let mutable generation = 0
     let mutable pending : IDisposable option = None
     do state.Speed <- options.Speed
+    let mutable renderingEnabled = true
 
     let live () =
         if state.Cancelled then raise(ObjectDisposedException(nameof Timer))
@@ -213,9 +214,27 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         with get() = fps
         and set value =
             finite "value" value
-            operate (fun _ -> fps <- Math.Max(1e-11, value)) ignore
+            live()
+            fps <- Math.Max(1e-11, value)
     /// <summary>Raw geometry for shared playback integration and behavioral verification.</summary>
     member internal _.Sample = state.Sample
+    /// <summary>Both scheduler and state generations for guarding property writes across user code.</summary>
+    member internal _.Generation = generation, state.Generation
+    /// <summary>Raw time immediately before the current sample.</summary>
+    member internal _.PreviousAbsoluteTime = state.PreviousAbsoluteTime
+    /// <summary>Installs an animation renderer and an optional source setter-duration override before sampling.</summary>
+    member internal _.ConfigureRenderer(renderer, ?totalDuration: float) =
+        state.Renderer <- fun sample mode muted -> if renderingEnabled then renderer sample mode muted
+        totalDuration |> Option.iter state.OverrideDuration
+    /// <summary>Resets retargeted endpoints without dispatching a reset write, then resumes under one interruption guard.</summary>
+    member internal _.Rebase(prepare: unit -> unit) =
+        operate (fun current ->
+            state.Pause()
+            if current() then prepare()
+            if current() then
+                renderingEnabled <- false
+                try state.Reset() finally renderingEnabled <- true
+            if current() then state.Resume()) (fun () -> reanchor 12.)
     interface IDisposable with
         member _.Dispose() = cancel()
 

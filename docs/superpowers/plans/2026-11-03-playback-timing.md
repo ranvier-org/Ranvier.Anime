@@ -23,9 +23,12 @@ Task 2 evidence: 18 admitted-frame source traces plus 11 lifetime/input tests; f
 
 ## Task 3: shared playback integration
 
+- [x] Connect numeric animation and typed CSS property rendering to the shared timer; compare source property values and callback phases across repeats/directions/speed changes. Verify current ancestor guards and active-owner cancellation.
 - [ ] Integrate the common model with numeric animations and timelines, including timer tracks and nested controllers. Add source comparisons for real numeric/property writes across loops, alternate/reverse boundaries and changing playback speed; a standalone timer passing is insufficient.
 - [ ] Preserve current sibling composition, cached construction, callback crossing and ancestor-write guards. Verify owner cleanup and native host scheduling with the existing adapters when qualification permits.
 - [ ] Run the full suites, inspect API impact with fslangmcp, update documentation/inventory and obtain one fresh-context review for this scoped plan. Address material findings RED→GREEN in one fix pass. Do not mark the full goal complete.
+
+Task 3 numeric progress: 46 source animation traces (24 generated), three interruption tests and two typed CSS playback tests; full suites 492/492 normal Release and Traced Debug, XML audit zero. Additional source cases cover negative periods, inverted bounds and the signed32 iteration boundary. A fresh successful Traced native JIT build/run verifies typed CSS repeat/alternate output and retained priority. Timelines still use their prior clock; timer tracks, nested repeated controllers and the final scoped review remain open. Historical NativeAOT receipts do not qualify the changed source.
 
 ## Review focus
 

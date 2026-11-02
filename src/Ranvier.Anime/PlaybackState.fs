@@ -6,7 +6,7 @@ type internal PlaybackEvent = Begin | BeforeUpdate | Update | Loop | Pause | Com
 /// <summary>Standalone callback and control state; clock input includes the initial delay.</summary>
 type internal PlaybackState(duration: float, iterations: float, delay: float, loopDelay: float,
                             initialReversed: bool, alternate: bool, callback: PlaybackEvent -> unit) =
-    let timing = PlaybackTiming(duration, iterations, delay, loopDelay)
+    let mutable timing = PlaybackTiming(duration, iterations, delay, loopDelay)
     let mutable sample = timing.Sample(0., 0., initialReversed, alternate, false, PlaybackTickMode.Force)
     let mutable paused = true
     let mutable began = false
@@ -17,6 +17,8 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let mutable deltaTime = 0.
     let mutable lastTime = 0.
     let mutable generation = 0
+    let mutable previousAbsoluteTime = 0.
+    let mutable renderer : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
 
     let live () =
         if cancelled then raise (System.ObjectDisposedException("Timer"))
@@ -29,7 +31,8 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         let expected = generation
         let previousIteration = sample.Iteration
         let wasCompleted = completed
-        let next = timing.Sample(sample.AbsoluteTime, time, reversed, alternate, wasCompleted, mode)
+        previousAbsoluteTime <- sample.AbsoluteTime
+        let next = timing.Sample(previousAbsoluteTime, time, reversed, alternate, wasCompleted, mode)
         sample <- next
         let current () = expected = generation && not cancelled
         let emit event = if not mute && current() then callback event
@@ -39,11 +42,13 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         elif next.AbsoluteTime <= 0. then
             began <- false
         if current() && next.AboveZero && next.Iteration <> previousIteration then emit PlaybackEvent.Loop
-        if current() && next.ShouldRender && next.AboveZero then
-            deltaTime <- next.PreviousTime - lastTime
-            lastTime <- next.PreviousTime
-            emit PlaybackEvent.BeforeUpdate
-            emit PlaybackEvent.Update
+        if current() && next.ShouldRender then
+            if next.AboveZero then
+                deltaTime <- next.PreviousTime - lastTime
+                lastTime <- next.PreviousTime
+                emit PlaybackEvent.BeforeUpdate
+            if current() then renderer next mode mute
+            if next.AboveZero then emit PlaybackEvent.Update
         if current() then
             if next.AboveZero && next.AtEnd then
                 if System.Double.IsFinite iterations && float next.Iteration >= iterations - 1. then
@@ -129,6 +134,15 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     member _.DeltaTime = deltaTime
     /// <summary>Changes on control operations and sampling, allowing callers to reject interrupted work.</summary>
     member _.Generation = generation
+    /// <summary>Renders eligible samples between before-update and update callbacks, including muted and nonpositive samples.</summary>
+    member _.Renderer with set value = renderer <- value
+    /// <summary>Raw time preceding the current sample, used for forced property-render eligibility.</summary>
+    member _.PreviousAbsoluteTime = previousAbsoluteTime
+    /// <summary>Overrides total geometry for source animation setter durations while preserving iteration count.</summary>
+    member _.OverrideDuration(value: float) =
+        if not(System.Double.IsFinite value) then invalidArg "value" "Expected finite total milliseconds."
+        change() |> ignore
+        timing <- PlaybackTiming(duration, iterations, delay, loopDelay, totalDuration=value)
     /// <summary>Playback multiplier; finite values below the source minimum become 1e-11.</summary>
     member _.Speed
         with get() = speed

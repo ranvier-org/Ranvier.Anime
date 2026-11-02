@@ -30,6 +30,33 @@ type private RecordingStyle() =
         member _.cssRules = Unchecked.defaultof<CSSRuleList>
 
 let tests = testList "typed CSS animation" [
+    testCase "typed CSS repeat and alternate use the shared playback clock" <| fun _ ->
+        use clock = new ManualFrameScheduler()
+        let recorder = RecordingStyle()
+        let style = recorder :> CSSStyleDeclaration
+        style.setProperty("--gap", "7px", priority = "important")
+        let options = { PlaybackOptions.Default with Repeat=PlaybackRepeat.Count 1u; Alternate=true }
+        use tween = CssAnimation.customPropertyWithOptions options clock style (RuntimeApi.createCustomProperty "--gap") (Css.px 0.) (Css.px 100.) 100.
+        clock.Advance(100. - 12.)
+        clock.RunFrame()
+        Expect.equal (style.getPropertyValue "--gap") "100px" "first iteration endpoint"
+        clock.Advance 100.
+        clock.RunFrame()
+        Expect.equal (style.getPropertyValue "--gap") "0px" "alternate endpoint"
+        Expect.equal (style.getPropertyPriority "--gap") "important" "retained priority"
+        Expect.isTrue tween.Completed "complete repeat sequence"
+
+    testCase "reversed typed CSS begins at the directional endpoint" <| fun _ ->
+        use clock = new ManualFrameScheduler()
+        let recorder = RecordingStyle()
+        let style = recorder :> CSSStyleDeclaration
+        use tween = CssAnimation.customPropertyWithOptions { PlaybackOptions.Default with Reversed=true } clock style
+                        (RuntimeApi.createCustomProperty "--gap") (Css.px 0.) (Css.px 100.) 100.
+        Expect.equal (style.getPropertyValue "--gap") "100px" "initial reversed value"
+        clock.Advance(25. - 12.)
+        clock.RunFrame()
+        Expect.equal (style.getPropertyValue "--gap") "75px" "reversed sample"
+
     testCase "existing typed endpoints animate the named property and preserve importance" <| fun _ ->
         let clock = new ManualFrameScheduler()
         let recorder = RecordingStyle()
@@ -38,7 +65,7 @@ let tests = testList "typed CSS animation" [
         style.setProperty("color", "red")
         use tween = CssAnimation.customProperty clock style (RuntimeApi.createCustomProperty "--gap") (Css.px 0.) (Css.px 100.) 100.
         Expect.equal (style.getPropertyValue "--gap") "0px" "explicit start"
-        clock.Advance 25.
+        clock.Advance(25. - 12.)
         clock.RunFrame()
         Expect.equal (style.getPropertyValue "--gap") "25px" "numeric frame"
         Expect.equal (style.getPropertyPriority "--gap") "important" "preserved priority"
@@ -60,7 +87,7 @@ let tests = testList "typed CSS animation" [
             let recorder = RecordingStyle()
             let style = recorder :> CSSStyleDeclaration
             use tween = CssAnimation.customProperty clock style (RuntimeApi.createCustomProperty "--gap") (Css.px 0.) (Css.px 1.) 100.
-            clock.Advance 25.
+            clock.Advance(25. - 12.)
             clock.RunFrame()
             Expect.equal (style.getPropertyValue "--gap") "0.25px" "CSS decimal point"
         finally CultureInfo.CurrentCulture <- previous

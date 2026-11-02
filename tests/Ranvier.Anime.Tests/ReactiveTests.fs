@@ -48,12 +48,12 @@ let tests = testList "reactive drive" [
         graph.Flush()
         signal.Value <- 100.
         graph.Flush()
-        clock.Advance 25.
+        clock.Advance(25. - 12.)
         clock.RunFrame()
         Expect.equal value 25. "quarter duration"
         signal.Value <- 200.
         graph.Flush()
-        clock.Advance 50.
+        clock.Advance(50. - 12.)
         clock.RunFrame()
         Expect.equal value 112.5 "retarget starts from 25"
         owner.Dispose()

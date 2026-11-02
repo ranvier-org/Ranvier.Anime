@@ -12,7 +12,7 @@ let private fixtures property =
     use document = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "reference", "pure.json")))
     document.RootElement.GetProperty(property: string).EnumerateArray() |> Seq.map _.Clone() |> Seq.toList
 
-let private animation clock duration initial target =
+let private animation clock (duration: float) initial target =
     let value = ref initial
     let tween = new NumericAnimation(clock, (fun () -> value.Value), (fun number -> value.Value <- number), target, duration)
     tween, value

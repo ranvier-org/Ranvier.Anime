@@ -40,7 +40,7 @@ let tests = testList "upstream springs" [
         let spring = new Spring(stiffness = 170., damping = 11.)
         let mutable value = 0.
         use animation = Animation.animateSpring spring clock (fun () -> value) (fun next -> value <- next) 100.
-        clock.Advance(spring.SettlingDuration / 2.)
+        clock.Advance(spring.SettlingDuration / 2. - 12.)
         clock.RunFrame()
         Expect.isFalse animation.Completed "only half of settling time elapsed"
         Expect.isTrue (abs(value - expected[1].GetDouble() * 100.) < 1e-8) "upstream spring midpoint"

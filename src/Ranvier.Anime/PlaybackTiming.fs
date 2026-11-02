@@ -37,7 +37,7 @@ type internal PlaybackSample(absoluteTime: float, previousTime: float, time: flo
 
 /// <summary>Standalone timer geometry shared by playback controllers; input time includes the initial delay.</summary>
 [<Sealed>]
-type internal PlaybackTiming(iterationDuration: float, iterationCount: float, delay: float, loopDelay: float) =
+type internal PlaybackTiming(iterationDuration: float, iterationCount: float, delay: float, loopDelay: float, ?totalDuration: float) =
     do
         if System.Double.IsNaN iterationDuration || iterationDuration < 0. then
             invalidArg "iterationDuration" "Expected nonnegative milliseconds or positive infinity."
@@ -47,7 +47,7 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
         if not(System.Double.IsFinite delay) then invalidArg "delay" "Expected finite milliseconds."
         if not(System.Double.IsFinite loopDelay) then invalidArg "loopDelay" "Expected finite milliseconds."
     let duration =
-        let total = (iterationDuration + loopDelay) * iterationCount - loopDelay
+        let total = defaultArg totalDuration ((iterationDuration + loopDelay) * iterationCount - loopDelay)
         if System.Double.IsNaN total || total = 0. then 1e-11
         elif System.Double.IsPositiveInfinity total then 1e12
         elif System.Double.IsNegativeInfinity total then -1e12

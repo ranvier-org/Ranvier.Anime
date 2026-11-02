@@ -52,6 +52,16 @@ let main args =
         tween.Play()
         pumpUntil host (fun () -> style.getPropertyValue "--anime-gap" = "100px")
         require "native layout consumes animated custom property" (abs(element.getBoundingClientRect().width - 100.) < 0.01)
+        style.setProperty("--anime-repeat-gap", "7px", priority = "important")
+        use repeatedCss =
+            CssAnimation.customPropertyWithOptions
+                { PlaybackOptions.Default with Repeat = PlaybackRepeat.Count 1u; Alternate = true }
+                scheduler style (RuntimeApi.createCustomProperty "--anime-repeat-gap")
+                (Ranvier.Css.Css.px 0.) (Ranvier.Css.Css.px 100.) 25.
+        pumpUntil host (fun () -> repeatedCss.Completed)
+        require "native typed CSS repeats and alternates through the shared clock"
+            (repeatedCss.CurrentIteration = 1 && style.getPropertyValue "--anime-repeat-gap" = "0px" &&
+             style.getPropertyPriority "--anime-repeat-gap" = "important")
         use graph = new Graph()
         use activation = graph.Activate()
         let mutable writes = 0

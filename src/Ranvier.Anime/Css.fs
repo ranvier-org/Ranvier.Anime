@@ -10,8 +10,8 @@ open Ranvier.Dom
 [<RequireQualifiedAccess>]
 module CssAnimation =
     /// <summary>Animates explicit numeric endpoints with matching units and preserves the property's inline priority.</summary>
-    /// <remarks>Writes the initial endpoint immediately. The caller owns cancellation; disposal retains the last value.</remarks>
-    let customProperty (scheduler: FrameScheduler) (style: CSSStyleDeclaration) (variable: CustomProperty<'syntax>)
+    /// <remarks>Renders the initial directional value immediately. The caller owns cancellation; disposal retains the last value.</remarks>
+    let customPropertyWithOptions (options: PlaybackOptions) (scheduler: FrameScheduler) (style: CSSStyleDeclaration) (variable: CustomProperty<'syntax>)
                        (first: Value<'syntax>) (last: Value<'syntax>) (duration: float) : NumericAnimation =
         let startValue, finishValue, unitName =
             match RuntimeApi.tryNumericValue first, RuntimeApi.tryNumericValue last with
@@ -28,11 +28,8 @@ module CssAnimation =
             let declaration = if priority = "important" then Declaration.important declaration else declaration
             StyleDeclaration.apply style declaration
             rendered <- value
-        let animation = new NumericAnimation(scheduler, (fun () -> rendered), apply, finishValue, duration)
-        try
-            apply startValue
-            animation.Play()
-            animation
-        with _ ->
-            (animation :> IDisposable).Dispose()
-            reraise()
+        Animation.animateWithOptions options id scheduler (fun () -> rendered) apply finishValue duration
+
+    /// <summary>Animates matching numeric CSS endpoints with default playback options and retained inline priority.</summary>
+    let customProperty scheduler style variable first last duration =
+        customPropertyWithOptions PlaybackOptions.Default scheduler style variable first last duration

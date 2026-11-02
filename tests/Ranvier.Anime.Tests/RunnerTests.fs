@@ -12,7 +12,7 @@ let tests =
             let clock = new ManualFrameScheduler()
             let mutable value = 0.
             use animation = Animation.animateWith (Ease.named "inQuad") clock (fun () -> value) (fun next -> value <- next) 100. 100.
-            clock.Advance 50.
+            clock.Advance(50. - 12.)
             clock.RunFrame()
             Expect.equal value 25. "quadratic midpoint"
 
@@ -54,7 +54,7 @@ let tests =
                 time
             use animation = Animation.animateWith ease clock (fun () -> value) (fun next -> value <- next) 100. 100.
             current <- Some animation
-            clock.Advance 50.
+            clock.Advance(50. - 12.)
             clock.RunFrame()
             Expect.equal value 100. "outer frame must preserve the inner seek result"
             Expect.isTrue animation.Completed "seek completed the animation"
@@ -63,7 +63,7 @@ let tests =
             let clock = new ManualFrameScheduler()
             let mutable value = -1e308
             use animation = Animation.animate clock (fun () -> value) (fun next -> value <- next) 1e308 100.
-            clock.Advance 50.
+            clock.Advance(50. - 12.)
             clock.RunFrame()
             Expect.equal value 0. "opposite finite endpoints meet at zero"
 
@@ -71,7 +71,7 @@ let tests =
             let clock = new ManualFrameScheduler()
             let mutable value = 0.
             use animation = Animation.animate clock (fun () -> value) (fun next -> value <- next) 100. 100.
-            clock.Advance 25.
+            clock.Advance(25. - 12.)
             clock.RunFrame()
             Expect.equal value 25. "quarter duration"
             clock.Advance 75.
@@ -84,14 +84,14 @@ let tests =
             let clock = new ManualFrameScheduler()
             let mutable value = 0.
             use animation = Animation.animate clock (fun () -> value) (fun next -> value <- next) 100. 100.
-            clock.Advance 25.
+            clock.Advance(25. - 12.)
             clock.RunFrame()
             animation.Pause()
             clock.Advance 200.
             clock.RunFrame()
             Expect.equal value 25. "paused"
             animation.Play()
-            clock.Advance 25.
+            clock.Advance(25. - 12.)
             clock.RunFrame()
             Expect.equal value 50. "resumed remaining time"
 
@@ -102,7 +102,7 @@ let tests =
             animation.Seek 25.
             Expect.equal value 25. "seek"
             animation.Retarget 125.
-            clock.Advance 50.
+            clock.Advance(50. - 12.)
             clock.RunFrame()
             Expect.equal value 75. "new target uses current value"
 
@@ -115,7 +115,7 @@ let tests =
                 Animation.animate clock (fun () -> 0.) values.Add 100. 100.
                 |> Animation.own |> ignore
                 owner)
-            clock.Advance 25.
+            clock.Advance(25. - 12.)
             clock.RunFrame()
             owner.Dispose()
             clock.Advance 50.
@@ -131,7 +131,7 @@ let tests =
                 current |> Option.iter(fun animation -> animation.Cancel())
             use animation = Animation.animate clock (fun () -> 0.) write 100. 100.
             current <- Some animation
-            clock.Advance 25.
+            clock.Advance(25. - 12.)
             clock.RunFrame()
             clock.Advance 25.
             clock.RunFrame()

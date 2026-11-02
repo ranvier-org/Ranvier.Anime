@@ -8,12 +8,12 @@
     <Compile Include="Spring.fs" />
     <Compile Include="Stagger.fs" />
     <Compile Include="CssStagger.fs" />
-    <Compile Include="NumericAnimation.fs" />
     <Compile Include="NumericProperty.fs" />
     <Compile Include="PropertyTrack.fs" />
     <Compile Include="PlaybackTiming.fs" />
     <Compile Include="PlaybackState.fs" />
     <Compile Include="Timer.fs" />
+    <Compile Include="NumericAnimation.fs" />
     <Compile Include="TimelinePosition.fs" />
     <Compile Include="Timeline.fs" />
     <Compile Include="Reactive.fs" />
