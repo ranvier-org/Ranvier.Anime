@@ -13,11 +13,13 @@ The approved design needs a common clock model for timers, numeric animations an
 
 ## Task 2: owned standalone timer
 
-- [ ] Add public timers over the existing Ranvier FrameScheduler, using Task 1 arithmetic. Keep float milliseconds internally; provide uint convenience inputs and explicit finite repeat counts/forever rather than negative or infinity input sentinels.
+- [x] Add public timers over the existing Ranvier FrameScheduler, using Task 1 arithmetic. Keep float milliseconds internally; provide uint convenience inputs and explicit finite repeat counts/forever rather than negative or infinity input sentinels.
 - [x] Add source oracle traces for begin/before-update/update/loop/complete/pause callbacks and Seek/Reset/Restart/Play/Reverse/Alternate/Complete controls, including muted callbacks.
 - [x] Prove and persist internal standalone callback/control state against 51 source traces and seven native interruption/validation tests. This is the wrapper's state machine, not a public scheduled timer.
-- [ ] Reproduce failures first, then implement scheduler speed/anchors, frame cancellation, actual Ranvier ownership and reentrant callback guards. Preserve the established terminal-disposal native contract and document deliberate differences.
-- [ ] Verify deterministic scheduler traces, disposal during callbacks, same-frame reentrancy, zero duration, loop-gap boundaries and speed changes. Keep source behavior and native lifetime adaptations distinct.
+- [x] Reproduce failures first, then implement scheduler speed/anchors, frame cancellation, actual Ranvier ownership and reentrant callback guards. Preserve the established terminal-disposal native contract and document deliberate differences.
+- [x] Verify deterministic scheduler traces, disposal during callbacks, same-frame reentrancy, zero duration, loop-gap boundaries and speed changes. Keep source behavior and native lifetime adaptations distinct.
+
+Task 2 evidence: 18 admitted-frame source traces plus 11 lifetime/input tests; full suites 441/441 Release and Traced Debug, XML audit zero. Source wake lead, speed anchors, low-FPS tick modes, setters and infinite rollover are retained. A real Traced WebCore JIT smoke verifies repeats/completion and owner disposal inside an active timer callback. No new NativeAOT claim is made for this added source. Task 3 and the final scoped review remain open.
 
 ## Task 3: shared playback integration
 

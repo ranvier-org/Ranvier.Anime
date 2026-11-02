@@ -72,6 +72,33 @@ let main args =
         host.Cycle()
         host.Frame()
         require "Ranvier owner disposal stops native writes" (writes = priorWrites)
+        let mutable timerLoops = 0
+        let mutable timerCompletions = 0
+        use repeatedTimer = new Timer(scheduler, 25u,
+            options = { PlaybackOptions.Default with Repeat = PlaybackRepeat.Count 1u; Alternate = true },
+            onLoop = (fun _ -> timerLoops <- timerLoops + 1),
+            onComplete = (fun _ -> timerCompletions <- timerCompletions + 1))
+        repeatedTimer.Resume()
+        pumpUntil host (fun () -> repeatedTimer.Completed)
+        require "native timer repeats and completes once" (timerLoops = 1 && timerCompletions = 1 && repeatedTimer.Paused)
+        let mutable timerBeforeUpdates = 0
+        let mutable timerUpdates = 0
+        let timerOwner, ownedTimer = Api.createRoot(fun owner ->
+            let timer = new Timer(scheduler, 1000u,
+                onBeforeUpdate = (fun _ -> timerBeforeUpdates <- timerBeforeUpdates + 1; owner.Dispose()),
+                onUpdate = (fun _ -> timerUpdates <- timerUpdates + 1))
+            Timer.own timer |> ignore
+            owner, timer)
+        use timer = ownedTimer
+        timer.Resume()
+        pumpUntil host (fun () -> timerBeforeUpdates > 0)
+        host.Cycle(milliseconds = 10)
+        host.Frame()
+        host.Cycle(milliseconds = 10)
+        host.Frame()
+        require "native timer owner disposal interrupts active callbacks"
+            (timer.Cancelled && not timer.Completed && timerBeforeUpdates = 1 && timerUpdates = 0)
+        timerOwner.Dispose()
         require "native host has no listener errors" (host.Errors.Count = 0)
         Console.WriteLine "NATIVE_ANIME_SMOKE_PASS"
         0

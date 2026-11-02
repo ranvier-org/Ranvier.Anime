@@ -11,7 +11,8 @@ if (revision !== '2c9cf8ea00329f6768c7d7902252ed977d75ce42' ||
     execFileSync('git', ['-C', upstream, 'status', '--porcelain'], {encoding: 'utf8'}).trim()) {
   throw new Error('Timer oracle requires the clean pinned source');
 }
-Date.now = () => 0;
+let clockNow = 0;
+Date.now = () => clockNow;
 const {createTimer} = await import(pathToFileURL(resolve(upstream, 'src/timer/timer.js')));
 const {engine} = await import(pathToFileURL(resolve(upstream, 'src/engine/engine.js')));
 const {tick} = await import(pathToFileURL(resolve(upstream, 'src/core/render.js')));
@@ -83,7 +84,52 @@ const fixtures = cases.map(({name, parameters, steps}) => {
   timer.cancel();
   return {name, parameters, initial, samples};
 });
-const fixture = {upstreamCommit:revision, version:JSON.parse(readFileSync(resolve(upstream,'package.json'),'utf8')).version, fixtures};
+const frame = after => ({op:'frame', after});
+const scheduledCases = [
+  {name:'scheduledBasic', parameters:{duration:100}, steps:[{op:'resume'}, frame(0), frame(25), frame(75), frame(25)]},
+  {name:'scheduledPause', parameters:{duration:100}, steps:[{op:'resume'}, frame(25), {op:'advance', after:10}, {op:'pause'}, frame(200), {op:'resume'}, frame(25)]},
+  {name:'scheduledSpeed', parameters:{duration:200}, steps:[{op:'resume'}, frame(25), {op:'advance', after:10}, {op:'speed', value:2}, frame(25), {op:'speed', value:0.5}, frame(20), seek(100), frame(20)]},
+  {name:'scheduledDirections', parameters:{duration:100, loop:2, loopDelay:25, alternate:true}, steps:[{op:'resume'}, frame(25), {op:'alternate'}, frame(25), {op:'reverse'}, frame(25), {op:'play'}, frame(25), {op:'reset'}, {op:'restart'}, frame(500)]},
+  {name:'scheduledDelay', parameters:{duration:100, delay:40}, steps:[{op:'resume'}, frame(10), frame(10), frame(10), frame(10), frame(100), seek(0), frame(25)]},
+  {name:'scheduledNegativeDelay', parameters:{duration:100, delay:-20}, steps:[{op:'resume'}, frame(0), frame(25), frame(100), {op:'restart'}, frame(25)]},
+  {name:'scheduledRate', parameters:{duration:100, frameRate:20}, steps:[{op:'resume'}, frame(1), frame(20), frame(25), frame(1), frame(25), frame(25), frame(25)]},
+  {name:'scheduledRateChange', parameters:{duration:300, frameRate:20}, steps:[{op:'resume'}, frame(20), {op:'fps',value:60}, frame(1), frame(15), frame(1), {op:'fps',value:240}, frame(1), {op:'fps',value:0}, frame(100)]},
+  {name:'scheduledZero', parameters:{duration:0}, steps:[{op:'resume'}, frame(100), {op:'reset'}, {op:'restart'}, frame(100)]},
+  {name:'scheduledZeroGap', parameters:{duration:0, loop:2, loopDelay:25}, steps:[{op:'resume'}, frame(1), frame(12), frame(25)]},
+  {name:'scheduledFractional', parameters:{duration:0.125, loop:3, loopDelay:0.25}, steps:[seek(0.1), {op:'speed',value:0.01}, {op:'resume'}, frame(1), frame(10), frame(100)]},
+  {name:'scheduledUint', parameters:{duration:4294967295}, steps:[{op:'resume'}, frame(2147483647), {op:'speed',value:2}, frame(1073741824)]},
+  {name:'scheduledForeverRollover', parameters:{duration:100, loop:true, alternate:true}, steps:[{op:'resume'}, frame(50), frame(1000000000000), frame(25), {op:'speed',value:2}, frame(500000000000), frame(25)]},
+  {name:'scheduledComplete', parameters:{duration:100}, steps:[{op:'resume'}, frame(25), {op:'complete'}]},
+  {name:'scheduledCurrentTime', parameters:{duration:100}, steps:[{op:'resume'}, frame(25), {op:'currentTime',value:50}, frame(25), {op:'pause'}, {op:'currentTime',value:20}, frame(50)]},
+  {name:'scheduledProgress', parameters:{duration:100, loop:2, loopDelay:25}, steps:[{op:'resume'}, frame(25), {op:'progress',value:0.5}, frame(25), {op:'iterationProgress',value:0.25}, frame(10), {op:'pause'}]},
+  {name:'scheduledIterationSetters', parameters:{duration:100, loop:2, loopDelay:25}, steps:[{op:'currentIteration',value:1}, {op:'resume'}, frame(25), {op:'iterationCurrentTime',value:50}, frame(25), {op:'currentIteration',value:20}, {op:'pause'}]},
+  {name:'scheduledReversedSetter', parameters:{duration:100}, steps:[{op:'reversed',value:true}, frame(25), {op:'reversed',value:false}, frame(25), {op:'pause'}]},
+];
+const scheduled = scheduledCases.map(({name, parameters, steps}) => {
+  clockNow = 0;
+  const events = [];
+  const capture = timer => ({...snapshot(timer), fps:timer.fps});
+  const callbacks = Object.fromEntries(['Begin','BeforeUpdate','Update','Loop','Pause','Complete'].map(event =>
+    ['on' + event, timer => events.push({event, state:capture(timer)})]));
+  const timer = createTimer({...parameters, autoplay:false, ...callbacks});
+  const initial = capture(timer);
+  const samples = steps.map(step => {
+    events.length = 0;
+    if (step.op === 'frame' || step.op === 'advance') {
+      clockNow += step.after;
+      if (step.op === 'frame' && !timer.paused) {
+        tick(timer, (clockNow - timer._startTime) * timer._speed, 0, 0, timer._fps < engine._fps ? timer.requestTick(clockNow) : 1);
+      }
+    } else if (step.op === 'seek') timer.seek(step.time, step.mute);
+    else if (['speed','fps','currentTime','progress','iterationProgress','iterationCurrentTime','currentIteration','reversed'].includes(step.op)) timer[step.op] = step.value;
+    else if (step.op === 'complete') timer.complete(step.mute);
+    else timer[step.op]();
+    return {step, events:[...events], state:capture(timer)};
+  });
+  timer.cancel();
+  return {name, parameters, initial, samples};
+});
+const fixture = {upstreamCommit:revision, version:JSON.parse(readFileSync(resolve(upstream,'package.json'),'utf8')).version, fixtures, scheduled};
 const text = JSON.stringify(fixture,null,2) + '\n';
 writeFileSync(resolve(root,'tests/reference/timer-controls.json'),text);
-console.log(`Captured ${fixtures.length} timer control traces; SHA256 ${createHash('sha256').update(text).digest('hex')}`);
+console.log(`Captured ${fixtures.length} timer control and ${scheduled.length} scheduled traces; SHA256 ${createHash('sha256').update(text).digest('hex')}`);
