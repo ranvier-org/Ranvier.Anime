@@ -21,6 +21,6 @@ build ["test"]
 
 The command tree is shared with the CLI and returns a structured `RunResult`. Reload the definitions and rebind `build` after editing them. Load the definitions rather than the CLI shim, whose final line exits the process.
 
-The first numeric runner supports explicit scheduling, linear interpolation, pause/resume, seek, retargeting, cancellation and Ranvier ownership. The initial six behavior tests pass under Release. Reactive drive, typed CSS animation, full Anime.js parity and native host integration remain in progress. Direct dependencies are Ranvier, Ranvier.Dom and Ranvier.Css; no replacement CSS or scheduler contract is introduced.
+The foundation supports numeric scheduling, linear interpolation, pause/resume, seek, retargeting, cancellation, Ranvier ownership and reactive drive. Typed CSS custom-property animations accept existing numeric values with matching units. Fifteen behavior tests pass under Release; XML documentation audit reports zero findings. Full Anime.js parity and native host integration remain in progress. Direct dependencies reuse Ranvier, Ranvier.Dom, Ranvier.Css and Ranvier.Css.Dom; no replacement CSS or scheduler contract is introduced.
 
 Upstream baseline: Anime.js v4.5.0, commit `2c9cf8ea00329f6768c7d7902252ed977d75ce42`. The research checkout is ignored under `upstream/anime`; the tracked provenance and parity inventory record it. Preserve its MIT license when deriving source or tests. This initial numeric runner is independently authored; upstream behavioral comparison remains required.

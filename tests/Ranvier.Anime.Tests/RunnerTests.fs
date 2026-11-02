@@ -8,6 +8,14 @@ open Ranvier.Anime
 
 let tests =
     testList "numeric runner" [
+        testCase "finite opposite endpoints have a finite midpoint" <| fun _ ->
+            let clock = new ManualFrameScheduler()
+            let mutable value = -1e308
+            use animation = Animation.animate clock (fun () -> value) (fun next -> value <- next) 1e308 100.
+            clock.Advance 50.
+            clock.RunFrame()
+            Expect.equal value 0. "opposite finite endpoints meet at zero"
+
         testCase "linear frames render the midpoint and finish exactly" <| fun _ ->
             let clock = new ManualFrameScheduler()
             let mutable value = 0.

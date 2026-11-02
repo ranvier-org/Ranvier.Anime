@@ -32,9 +32,26 @@ let tests = input {
     }
 }
 
+let audit = input {
+    let! script = Input.option<string> "--script" |> Input.def ""
+    return stage "XML documentation audit" {
+        workingDir __SOURCE_DIRECTORY__
+        run (fun _ -> if System.String.IsNullOrWhiteSpace script then invalidArg "--script" "Supply the fsharp-xml-docs audit.fsx path.")
+        run (cmd $"rtk proxy dotnet fsi {script} --compiler src tests")
+    }
+}
+
 let root = Command.root {
     description "Native Ranvier animation build"
     command "restore" { restore }
     command "build" { restore; build }
     command "test" { restore; build; tests }
+    command "audit" { description "Audit F# XML documentation using the supplied skill script"; audit }
+    command "reference" {
+        description "Generate comparison fixtures from the pinned upstream Anime.js source"
+        stage "upstream reference" {
+            workingDir __SOURCE_DIRECTORY__
+            run "rtk node tools/reference.mjs"
+        }
+    }
 }

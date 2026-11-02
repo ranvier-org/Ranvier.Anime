@@ -45,7 +45,11 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
         let value =
             if completed then last
             elif elapsed = 0. then first
-            else first + (last - first) * (elapsed / duration)
+            else
+                let progress = elapsed / duration
+                let delta = last - first
+                if Double.IsFinite delta then first + delta * progress
+                else first * (1. - progress) + last * progress
         write value
 
     let rec queue () =
