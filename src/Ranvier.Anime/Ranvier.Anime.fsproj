@@ -12,6 +12,7 @@
     <Compile Include="NumericProperty.fs" />
     <Compile Include="PropertyTrack.fs" />
     <Compile Include="PlaybackTiming.fs" />
+    <Compile Include="PlaybackState.fs" />
     <Compile Include="TimelinePosition.fs" />
     <Compile Include="Timeline.fs" />
     <Compile Include="Reactive.fs" />

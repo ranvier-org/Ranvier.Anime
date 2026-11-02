@@ -284,6 +284,7 @@ let root = Command.root {
         stage "upstream reference" {
             workingDir __SOURCE_DIRECTORY__
             run "rtk node tools/reference.mjs"
+            run "rtk node tools/timer-controls.mjs"
         }
     }
 }

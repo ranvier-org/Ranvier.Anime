@@ -9,6 +9,7 @@
     <Compile Include="StaggerTests.fs" />
     <Compile Include="TimelineTests.fs" />
     <Compile Include="PlaybackTimingTests.fs" />
+    <Compile Include="PlaybackStateTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -18,5 +19,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="../reference/pure.json" Link="reference/pure.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timer-controls.json" Link="reference/timer-controls.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
