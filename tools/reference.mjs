@@ -11,6 +11,9 @@ const { spring } = await import('../upstream/anime/src/easings/spring/index.js')
 const { stagger } = await import('../upstream/anime/src/utils/stagger.js');
 const { animate } = await import('../upstream/anime/src/animation/index.js');
 const { createTimeline } = await import('../upstream/anime/src/timeline/index.js');
+const { createTimer } = await import('../upstream/anime/src/timer/index.js');
+const { tick } = await import('../upstream/anime/src/core/render.js');
+const { clamp: sourceClamp } = await import('../upstream/anime/src/core/helpers.js');
 const { parseTimelinePosition } = await import('../upstream/anime/src/timeline/position.js');
 const { createSeededRandom } = await import('../upstream/anime/src/utils/random.js');
 
@@ -296,6 +299,73 @@ const timelineProperties = propertyCases.map(({name, tracks, times}) => {
   timeline.cancel();
   return {name, tracks, initial, duration, samples, resetValue};
 });
+const timerTimes = [-100, -1, 0, 0.00001, 0.25, 1, 25, 99.9999, 100, 100, 101, 125, 225, 250, 349.9999, 350, 351, 225, 100, 25, 0, -100];
+const timerTimingCases = [
+  {name: 'basic', parameters: {duration: 100}},
+  {name: 'reversed', parameters: {duration: 100, reversed: true}},
+  {name: 'delay', parameters: {duration: 100, delay: 40}},
+  {name: 'negativeDelay', parameters: {duration: 100, delay: -20}},
+  {name: 'negativeLoopDelay', parameters: {duration: 100, loop: 2, loopDelay: -25}},
+  {name: 'invertedTotalBounds', parameters: {duration: 100, loop: 3, loopDelay: -150}},
+  {name: 'invertedDelayBounds', parameters: {duration: 100, delay: -150}},
+  {name: 'repeatsAndGaps', parameters: {duration: 100, loop: 2, loopDelay: 25}},
+  {name: 'reversedRepeats', parameters: {duration: 100, loop: 2, loopDelay: 25, reversed: true}},
+  {name: 'alternateRepeats', parameters: {duration: 100, loop: 2, loopDelay: 25, alternate: true}},
+  {name: 'reversedAlternate', parameters: {duration: 100, loop: 2, loopDelay: 25, reversed: true, alternate: true}},
+  {name: 'delayedAlternate', parameters: {duration: 100, delay: 40, loop: 2, loopDelay: 25, alternate: true}},
+  {name: 'fractional', parameters: {duration: 0.5, delay: 0.125, loop: 2, loopDelay: 0.25}, times: [-1, -0.125, 0, 0.00005, 0.25, 0.5, 0.6, 0.75, 0.75001, 1, 1.25, 1.5, 1.75, 2, 3, 1.5, 0.75, 0]},
+  {name: 'fractionalAlternate', parameters: {duration: 0.1, loop: 4, alternate: true}, times: [0, 0.1, 0.2, 0.3, 0.30000000000000004, 0.4, 0.5, 0.3, 0]},
+  {name: 'zero', parameters: {duration: 0}, times: [-1, 0, 1e-12, 1e-11, 1, 0]},
+  {name: 'zeroRepeated', parameters: {duration: 0, loop: 2, alternate: true}, times: [-1, 0, 1e-12, 1e-11, 1, 0]},
+  {name: 'zeroForever', parameters: {duration: 0, loop: true, alternate: true}, times: [-1, 0, 1e-12, 1e-11, 1, 0]},
+  {name: 'zeroReversedRepeated', parameters: {duration: 0, loop: 2, alternate: true, reversed: true}, times: [-1, 0, 1e-12, 1e-11, 1, 0]},
+  {name: 'zeroWithGaps', parameters: {duration: 0, loop: 2, loopDelay: 25}, times: [-1, 0, 1, 24.999, 25, 49, 50, 100, 25, 0]},
+  {name: 'tiny', parameters: {duration: 1e-12, loop: 2}, times: [0, 5e-13, 1e-12, 1.5e-12, 2e-12, 3e-12, 4e-12, 0]},
+  {name: 'uintDuration', parameters: {duration: 4294967295, loop: 1, loopDelay: 1}, times: [0, 2147483647.5, 4294967295, 4294967296, 6442450943.5, 8589934591, 0]},
+  {name: 'iterationInt32Boundary', parameters: {duration: 0.125, loop: 4294967295, alternate: true}, times: [0, 268435455.875, 268435456, 268435456.125, 536870911.875, 536870912, 0]},
+  {name: 'unboundedDefault', parameters: {}, times: [-1, 0, 100, 1e12 - 1, 1e12, 1e12 + 1, 0]},
+  {name: 'unboundedReversed', parameters: {reversed: true}, times: [-1, 0, 100, 1e12, 0]},
+  {name: 'forever', parameters: {duration: 100, loop: true, alternate: true}, times: [0, 50, 100, 150, 200, 1e12, 0]},
+  {name: 'overflowTotal', parameters: {duration: 1e308, loop: 2}, times: [-1, 0, 100, 1e12, 1e308, 0]},
+  {name: 'negativeOverflowTotal', parameters: {duration: 100, loop: 2, loopDelay: -1e308}, times: [-1, 0, 1e12, 1e308, 0]},
+  {name: 'largeFinite', parameters: {duration: 1e308}, times: [-1, 0, 1e12, 1e307, 1e308, 0]},
+  {name: 'automaticTickCompletion', parameters: {duration: 100, loop: 2, loopDelay: 25}, mode: 'tick'},
+  {name: 'forcedTickCompletion', parameters: {duration: 100, delay: 40}, mode: 'force'},
+  {name: 'skippedTickBoundaries', parameters: {duration: 100, loop: 2, loopDelay: 25}, mode: 'skip'},
+];
+for (let index = 0; index < 24; index++) {
+  const random = createSeededRandom(index + 517);
+  const duration = Math.round(random() * 1000) / 8;
+  const loopDelay = Math.round(random() * 80) / 8;
+  const loop = Math.floor(random() * 6);
+  const delay = Math.round((random() - 0.5) * 800) / 8;
+  const parameters = {duration, loopDelay, loop, delay, alternate: random() > 0.5, reversed: random() > 0.5};
+  const total = (duration + loopDelay) * (loop + 1) - loopDelay;
+  const times = [0, ...Array.from({length: 16}, () => (random() * 1.4 - 0.2) * total), total, total, 0];
+  timerTimingCases.push({name: `generated${index}`, parameters, times, mode: index % 2 ? 'tick' : 'seek'});
+}
+const encodeTimerNumber = value => Number.isFinite(value) ? value : String(value);
+const timerTiming = timerTimingCases.map(({name, parameters, times = timerTimes, mode = 'seek'}) => {
+  let updates = 0;
+  const timer = createTimer({...parameters, autoplay: false, onBeforeUpdate: () => updates++});
+  const duration = encodeTimerNumber(timer.duration), iterationDuration = encodeTimerNumber(timer.iterationDuration), iterationCount = encodeTimerNumber(timer.iterationCount);
+  const samples = times.map(time => {
+    const previousAbsoluteTime = timer._currentTime, previousCompleted = timer.completed, before = updates;
+    if (mode === 'seek') timer.seek(time);
+    else tick(timer, time + timer._delay, 0, 0, mode === 'force' ? 2 : mode === 'skip' ? 0 : 1);
+    return {
+      time, previousAbsoluteTime: encodeTimerNumber(previousAbsoluteTime), previousCompleted,
+      previousBoundedTime: encodeTimerNumber(sourceClamp(previousAbsoluteTime, -timer._delay, timer.duration)),
+      boundedTime: encodeTimerNumber(sourceClamp(timer._currentTime, -timer._delay, timer.duration)),
+      absoluteTime: encodeTimerNumber(timer._currentTime), currentTime: encodeTimerNumber(timer.currentTime),
+      iteration: timer.currentIteration, iterationTime: encodeTimerNumber(timer._iterationTime),
+      iterationCurrentTime: encodeTimerNumber(timer.iterationCurrentTime), progress: encodeTimerNumber(timer.progress),
+      iterationProgress: encodeTimerNumber(timer.iterationProgress), backwards: timer.backwards, updated: updates !== before,
+    };
+  });
+  timer.cancel();
+  return {name, parameters, mode, duration, iterationDuration, iterationCount, samples};
+});
 const fixture = {
   clock: {milliseconds: 0, description: 'Date.now is fixed before loading the unmodified source engine'},
   upstreamCommit: revision,
@@ -313,6 +383,7 @@ const fixture = {
   timelineCallbacks,
   nestedTimelines,
   timelineProperties,
+  timerTiming,
   timing: [0.5, 1, 4294967295, 1000000000001].map(duration => {
     const target = { value: 0 };
     const animation = animate(target, { value: 100, duration, ease: 'linear', autoplay: false });
@@ -343,5 +414,5 @@ for (const group of [...fixture.named, ...fixture.curves, ...fixture.springs]) {
 mkdirSync(resolve(root, 'tests/reference'), { recursive: true });
 const fixtureText = JSON.stringify(fixture, null, 2) + '\n';
 writeFileSync(resolve(root, 'tests/reference/pure.json'), fixtureText);
-console.log(`Captured ${named.length} named easings, 3 curves, ${springs.length} springs, ${staggering.length} numeric stagger and ${timelineProperties.length} property cases from ${revision}`);
+console.log(`Captured ${named.length} named easings, 3 curves, ${springs.length} springs, ${staggering.length} numeric stagger, ${timelineProperties.length} property and ${timerTiming.length} timer cases from ${revision}`);
 console.log(`Fixture SHA256 ${createHash('sha256').update(fixtureText).digest('hex')}`);

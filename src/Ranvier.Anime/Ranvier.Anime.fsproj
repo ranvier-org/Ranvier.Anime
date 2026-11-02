@@ -11,6 +11,7 @@
     <Compile Include="NumericAnimation.fs" />
     <Compile Include="NumericProperty.fs" />
     <Compile Include="PropertyTrack.fs" />
+    <Compile Include="PlaybackTiming.fs" />
     <Compile Include="TimelinePosition.fs" />
     <Compile Include="Timeline.fs" />
     <Compile Include="Reactive.fs" />
@@ -25,5 +26,8 @@
   <ItemGroup Condition="'$(UseLocalRanvier)' == 'true'">
     <ProjectReference Include="$(RanvierRoot)/src/Ranvier/Ranvier.fsproj" />
     <ProjectReference Include="$(RanvierRoot)/src/Ranvier.Dom/Ranvier.Dom.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ranvier.Anime.Tests" />
   </ItemGroup>
 </Project>
