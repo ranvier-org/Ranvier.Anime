@@ -2,10 +2,10 @@
   "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
   "statusMeaning": "Families define the full scope. Progress records verified subsets only; presence of an upstream test file is not native acceptance evidence.",
   "progress": {
-    "managedFoundation": "Numeric runner, reactive ownership, spring playback, numeric/grid staggering and typed numeric CSS custom-property endpoints; 127 unfiltered tests pass normal Release and Traced Debug on the current Windows host.",
+    "managedFoundation": "Numeric runner, reactive ownership, spring playback, numeric/grid/randomized staggering and typed numeric CSS custom-property endpoints; 145 unfiltered tests pass normal Release and Traced Debug on the current Windows host.",
     "easing": "46 default named easings plus one Bezier and two step-mode fixtures match 441 upstream samples; runner consumes custom easing with tested reentrant cancellation and seek. Full easing parameter domains, irregular and multi-stop linear remain incomplete.",
     "springs": "Physical/perceived spring modes, parameter clamps/mutations, perceived completion and settling-duration playback compare against twelve constructor and six mutation snapshots. Whole-millisecond perceived input accepts uint; precise fractional input remains supported.",
-    "staggering": "34 upstream fixtures cover numeric step/range, origins, explicit 2D/3D grids, axes, reversal, easing, start, modifiers, total override and index mapping, including signed bounce and zero-maximum range infinities. Automatic geometry, random origin, seeded jitter, typed CSS units and timeline positioning remain incomplete.",
+    "staggering": "50 upstream fixtures cover numeric step/range, origins, explicit 2D/3D grids, axes, reversal, easing, start, modifiers, total override, index mapping, random origins and seeded constant/range jitter. Seeds include zero, negative, fractional and large values. Unseeded shuffle and jitter invariants also pass. Automatic geometry, typed CSS units and timeline positioning remain incomplete.",
     "nativeIntegration": "Not yet verified; no hardware acceleration or matched public package consumer claim."
   },
   "families": [

@@ -84,6 +84,22 @@ const staggering = [
   { name: 'zeroMaximumAxisRange', value: [0, 100], parameters: { grid: [3, 1], from: 'last', axis: 'x' }, count: 3 },
   { name: 'zeroMaximumAxisRangeReverse', value: [0, 100], parameters: { grid: [3, 1], from: 'last', axis: 'x', reversed: true }, count: 3 },
   { name: 'gridSignedBounce', value: 10, parameters: { grid: [101, 1], from: 1, axis: 'x', ease: 'inBounce' }, count: 101 },
+  { name: 'randomSeedZero', value: 10, parameters: { from: 'random', seed: 0 }, count: 8 },
+  { name: 'randomSeedPositive', value: [10, 110], parameters: { from: 'random', seed: 12345 }, count: 8 },
+  { name: 'randomSeedNegative', value: 10, parameters: { from: 'random', seed: -14 }, count: 8 },
+  { name: 'randomSeedFractional', value: 10, parameters: { from: 'random', seed: 1.75 }, count: 8 },
+  { name: 'randomSeedLarge', value: 10, parameters: { from: 'random', seed: 1000000000001 }, count: 8 },
+  { name: 'randomReversedEase', value: 10, parameters: { from: 'random', seed: 42, reversed: true, ease: 'inQuad' }, count: 8 },
+  { name: 'jitterMagnitude', value: 10, parameters: { seed: 42, jitter: 5 }, count: 8 },
+  { name: 'jitterRange', value: [10, 110], parameters: { from: 'center', seed: 42, jitter: [2, 9] }, count: 8 },
+  { name: 'jitterSigned', value: 10, parameters: { grid: [3, 3], axis: 'x', from: 'center', seed: 17, jitter: [-3, 5] }, count: 9 },
+  { name: 'jitterRandomOrder', value: [0, 100], parameters: { from: 'random', seed: 42, jitter: [2, 9], ease: 'inQuad', reversed: true }, count: 8 },
+  { name: 'jitterMapModifier', value: 10, parameters: { from: 'random', seed: 42, jitter: 5, start: 7, map: 'reverse', modifier: 'double' }, count: 8 },
+  { name: 'jitterZero', value: 10, parameters: { from: 'random', seed: 42, jitter: 0 }, count: 8 },
+  { name: 'jitterSingle', value: 10, parameters: { seed: 42, jitter: [2, 9] }, count: 1 },
+  { name: 'randomSingle', value: 10, parameters: { from: 'random', seed: 42 }, count: 1 },
+  { name: 'jitterZeroTotal', value: 10, parameters: { seed: 42, jitter: 5, total: 0 }, count: 3 },
+  { name: 'jitterShortTotal', value: 10, parameters: { seed: 42, jitter: 5, total: 2 }, count: 4 },
 ].map(({ name, value, parameters, count }) => {
   const resolved = { ...parameters };
   if (parameters.ease === 'spring') resolved.ease = spring();

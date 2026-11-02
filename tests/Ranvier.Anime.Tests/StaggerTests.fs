@@ -22,6 +22,7 @@ let private options (parameters: JsonElement) =
             | "center" -> StaggerOrigin.Center
             | "last" -> StaggerOrigin.Last
             | "first" -> StaggerOrigin.First
+            | "random" -> StaggerOrigin.Random
             | unknown -> failwithf "Unknown origin %s" unknown
     let grid =
         match field "grid" parameters with
@@ -34,6 +35,10 @@ let private options (parameters: JsonElement) =
         Reversed = field "reversed" parameters |> Option.map _.GetBoolean() |> Option.defaultValue false
         Start = field "start" parameters |> Option.map _.GetDouble()
         Total = field "total" parameters |> Option.map _.GetUInt32()
+        Seed = field "seed" parameters |> Option.map _.GetDouble()
+        Jitter = field "jitter" parameters |> Option.map(fun item ->
+            if item.ValueKind = JsonValueKind.Array then StaggerJitter.Range(item[0].GetDouble(), item[1].GetDouble())
+            else StaggerJitter.Magnitude(item.GetDouble()))
         Ease = field "ease" parameters |> Option.map(fun item -> if item.GetString() = "spring" then (new Spring()).Ease else Ease.named (item.GetString()))
         Modifier = field "modifier" parameters |> Option.map(fun _ -> fun value -> value * 2.)
         IndexMap = field "map" parameters |> Option.map(fun item ->
@@ -57,7 +62,8 @@ let tests = testList "upstream staggering" [
             let actual = Stagger.distribute value (options (fixture.GetProperty "parameters")) (uint expected.Length)
             Expect.equal actual.Length expected.Length "target count"
             Array.iteri(fun index expected ->
-                Expect.isTrue (actual[index] = expected || (Double.IsFinite actual[index] && abs(actual[index] - expected) <= 1e-9))
+                Expect.isTrue (actual[index] = expected || (Double.IsNaN actual[index] && Double.IsNaN expected) ||
+                    (Double.IsFinite actual[index] && abs(actual[index] - expected) <= 1e-9))
                     $"index {index}: expected {expected:R}, got {actual[index]:R}") expected
     testCase "empty targets produce an empty distribution" <| fun _ ->
         Expect.isEmpty (Stagger.distribute (StaggerValue.Step 10.) StaggerOptions.Default 0u) "empty target set"
@@ -71,4 +77,12 @@ let tests = testList "upstream staggering" [
         Expect.equal (Ease.named "inQuad" -1.) 1. "signed quadratic input"
     testCase "bounce rejects extrapolation where the source search cannot terminate" <| fun _ ->
         Expect.throwsT<ArgumentException> (fun () -> Ease.named "inBounce" -1. |> ignore) "nonterminating source domain"
+    testCase "unseeded random origins preserve the offset multiset" <| fun _ ->
+        let options = { StaggerOptions.Default with Origin = StaggerOrigin.Random }
+        let actual = Stagger.distribute (StaggerValue.Step 10.) options 32u |> Array.sort
+        Expect.equal actual (Array.init 32 (fun index -> float index * 10.)) "shuffle preserves offsets"
+    testCase "unseeded jitter remains within its magnitude" <| fun _ ->
+        let options = { StaggerOptions.Default with Jitter = Some(StaggerJitter.Magnitude 5.) }
+        Stagger.distribute (StaggerValue.Step 10.) options 32u
+        |> Array.iteri(fun index actual -> Expect.isTrue (abs(actual - float index * 10.) <= 5.) "jitter magnitude")
 ]

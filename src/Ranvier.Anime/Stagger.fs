@@ -8,6 +8,7 @@ type StaggerOrigin =
     | First
     | Last
     | Center
+    | Random
     | Index of uint
     | Position2D of x: float * y: float
     | Position3D of x: float * y: float * z: float
@@ -24,6 +25,10 @@ type StaggerAxis = X | Y | Z
 [<RequireQualifiedAccess>]
 type StaggerValue = Step of float | Range of first: float * last: float
 
+/// <summary>A constant jitter magnitude or a magnitude interpolated over stagger progress; values may be signed.</summary>
+[<RequireQualifiedAccess>]
+type StaggerJitter = Magnitude of float | Range of first: float * last: float
+
 /// <summary>Stagger transformations evaluated once for an explicit target count.</summary>
 [<NoEquality; NoComparison>]
 type StaggerOptions =
@@ -35,16 +40,38 @@ type StaggerOptions =
       Ease: (float -> float) option
       Modifier: (float -> float) option
       Total: uint option
+      /// <summary>A finite seed for reproducible random origins and jitter; None uses the shared random source.</summary>
+      Seed: float option
+      Jitter: StaggerJitter option
       /// <summary>Maps natural index and effective total to an index; out-of-range results fall back to the natural index.</summary>
       IndexMap: (uint -> uint -> int) option }
     /// <summary>A flat distribution from the first target with default offsets and transformations.</summary>
     static member Default =
         { Origin = StaggerOrigin.First; Grid = StaggerGrid.Flat; Axis = None; Reversed = false
-          Start = None; Ease = None; Modifier = None; Total = None; IndexMap = None }
+          Start = None; Ease = None; Modifier = None; Total = None; Seed = None; Jitter = None; IndexMap = None }
 
 /// <summary>Numeric Anime.js stagger distributions over explicit target indices and grids.</summary>
 [<RequireQualifiedAccess>]
 module Stagger =
+    let private createRandom seed =
+        let next =
+            match seed with
+            | None -> fun () -> System.Random.Shared.NextDouble()
+            | Some seed ->
+                let mutable state = seed
+                let toUint32 (value: float) =
+                    let remainder = System.Math.Truncate(value) % 4294967296.
+                    uint32 (if remainder < 0. then remainder + 4294967296. else remainder)
+                fun () ->
+                    let bits = toUint32 (state + 1831565813.)
+                    let mixed = (bits ^^^ (bits >>> 15)) * (bits ||| 1u)
+                    let mixed = mixed ^^^ (mixed + ((mixed ^^^ (mixed >>> 7)) * (mixed ||| 61u)))
+                    state <- float mixed
+                    float (mixed ^^^ (mixed >>> 14)) / 4294967296.
+        fun minimum maximum decimals ->
+            let factor = System.Math.Pow(10., float decimals)
+            System.Math.Floor((next() * (maximum - minimum + 1. / factor) + minimum) * factor) / factor
+
     let private finite name value =
         if not (Double.IsFinite value) then invalidArg name "Expected a finite value."
 
@@ -74,6 +101,17 @@ module Stagger =
                 finite "finish" finish
                 0., first, finish, true
         options.Start |> Option.iter (finite "Start")
+        options.Seed |> Option.iter (finite "Seed")
+        let jitter =
+            options.Jitter |> Option.map(fun value ->
+                let first, last =
+                    match value with
+                    | StaggerJitter.Magnitude amount -> amount, amount
+                    | StaggerJitter.Range(first, last) -> first, last
+                finite "jitter first" first
+                finite "jitter last" last
+                first, last)
+        let random = createRandom options.Seed
         let dimensions =
             let positive name value = if value = 0u then invalidArg name "Grid dimensions must be positive."
             match options.Grid with
@@ -89,7 +127,7 @@ module Stagger =
                 Some(float columns, float rows, float layers, true)
         let originIndex =
             match options.Origin with
-            | StaggerOrigin.First -> 0.
+            | StaggerOrigin.First | StaggerOrigin.Random -> 0.
             | StaggerOrigin.Last -> float total - 1.
             | StaggerOrigin.Center -> (float total - 1.) / 2.
             | StaggerOrigin.Index index -> float index
@@ -139,6 +177,13 @@ module Stagger =
             if options.Reversed then
                 distance <- if options.Axis.IsSome then -distance else abs(maximum - distance)
             distances[index] <- distance
+        let jitterSamples = jitter |> Option.map(fun _ -> Array.init totalLength (fun _ -> random -1. 1. 4))
+        if options.Origin = StaggerOrigin.Random then
+            for last in totalLength - 1 .. -1 .. 0 do
+                let index = int (random 0. (float last) 0)
+                let previous = distances[last]
+                distances[last] <- distances[index]
+                distances[index] <- previous
         let start =
             match options.Start with
             | Some value when value <> 0. -> value
@@ -150,4 +195,12 @@ module Stagger =
             let distance = if mapped < totalLength then distances[mapped] else Double.NaN
             let term = spacing * roundDistance distance
             let output = start + (if Double.IsNaN term || term = 0. then 0. else term)
+            let output =
+                match jitter, jitterSamples with
+                | Some(first, last), Some samples ->
+                    let progress = if maximum = 0. then 0. else distance / maximum
+                    let magnitude = first + (last - first) * progress
+                    let sample = if mapped < samples.Length then samples[mapped] else Double.NaN
+                    output + sample * magnitude
+                | _ -> output
             match options.Modifier with Some modify -> modify output | None -> output)

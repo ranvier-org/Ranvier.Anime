@@ -3666,6 +3666,312 @@
         989.2,
         990
       ]
+    },
+    {
+      "name": "randomSeedZero",
+      "value": 10,
+      "parameters": {
+        "from": "random",
+        "seed": 0
+      },
+      "values": [
+        60,
+        70,
+        50,
+        40,
+        30,
+        10,
+        0,
+        20
+      ]
+    },
+    {
+      "name": "randomSeedPositive",
+      "value": [
+        10,
+        110
+      ],
+      "parameters": {
+        "from": "random",
+        "seed": 12345
+      },
+      "values": [
+        38.57142857142857,
+        24.285714285714285,
+        95.71428571428572,
+        81.42857142857143,
+        10,
+        67.14285714285714,
+        52.85714285714286,
+        110
+      ]
+    },
+    {
+      "name": "randomSeedNegative",
+      "value": 10,
+      "parameters": {
+        "from": "random",
+        "seed": -14
+      },
+      "values": [
+        20,
+        10,
+        40,
+        50,
+        60,
+        0,
+        30,
+        70
+      ]
+    },
+    {
+      "name": "randomSeedFractional",
+      "value": 10,
+      "parameters": {
+        "from": "random",
+        "seed": 1.75
+      },
+      "values": [
+        0,
+        30,
+        20,
+        70,
+        60,
+        10,
+        40,
+        50
+      ]
+    },
+    {
+      "name": "randomSeedLarge",
+      "value": 10,
+      "parameters": {
+        "from": "random",
+        "seed": 1000000000001
+      },
+      "values": [
+        0,
+        20,
+        50,
+        60,
+        10,
+        70,
+        30,
+        40
+      ]
+    },
+    {
+      "name": "randomReversedEase",
+      "value": 10,
+      "parameters": {
+        "from": "random",
+        "seed": 42,
+        "reversed": true,
+        "ease": "inQuad"
+      },
+      "values": [
+        70,
+        57.1,
+        18.6,
+        68.60000000000001,
+        34.300000000000004,
+        0,
+        64.3,
+        47.1
+      ]
+    },
+    {
+      "name": "jitterMagnitude",
+      "value": 10,
+      "parameters": {
+        "seed": 42,
+        "jitter": 5
+      },
+      "values": [
+        1.011,
+        8.681000000000001,
+        22.4645,
+        34.9675,
+        39.0355,
+        51.837,
+        63.313,
+        73.136
+      ]
+    },
+    {
+      "name": "jitterRange",
+      "value": [
+        10,
+        110
+      ],
+      "parameters": {
+        "from": "center",
+        "seed": 42,
+        "jitter": [
+          2,
+          9
+        ]
+      },
+      "values": [
+        111.8198,
+        79.58197142857144,
+        55.32164285714286,
+        27.266214285714284,
+        23.707014285714283,
+        54.694142857142865,
+        86.06677142857143,
+        115.6448
+      ]
+    },
+    {
+      "name": "jitterSigned",
+      "value": 10,
+      "parameters": {
+        "grid": [
+          3,
+          3
+        ],
+        "axis": "x",
+        "from": "center",
+        "seed": 17,
+        "jitter": [
+          -3,
+          5
+        ]
+      },
+      "values": [
+        -13.8973,
+        -0.8853,
+        10.488,
+        -3.6585,
+        1.0514999999999999,
+        14.8455,
+        -0.5960999999999999,
+        -2.2398000000000002,
+        9.5805
+      ]
+    },
+    {
+      "name": "jitterRandomOrder",
+      "value": [
+        0,
+        100
+      ],
+      "parameters": {
+        "from": "random",
+        "seed": 42,
+        "jitter": [
+          2,
+          9
+        ],
+        "ease": "inQuad",
+        "reversed": true
+      },
+      "values": [
+        68.64334285714287,
+        89.63368571428572,
+        102.36568571428573,
+        1.987,
+        47.952828571428576,
+        84.40565714285714,
+        105.96340000000001,
+        28.990628571428573
+      ]
+    },
+    {
+      "name": "jitterMapModifier",
+      "value": 10,
+      "parameters": {
+        "from": "random",
+        "seed": 42,
+        "jitter": 5,
+        "start": 7,
+        "map": "reverse",
+        "modifier": "double"
+      },
+      "values": [
+        140.272,
+        20.625999999999998,
+        77.674,
+        112.071,
+        163.935,
+        38.929,
+        51.362,
+        96.022
+      ]
+    },
+    {
+      "name": "jitterZero",
+      "value": 10,
+      "parameters": {
+        "from": "random",
+        "seed": 42,
+        "jitter": 0
+      },
+      "values": [
+        40,
+        20,
+        10,
+        70,
+        50,
+        30,
+        0,
+        60
+      ]
+    },
+    {
+      "name": "jitterSingle",
+      "value": 10,
+      "parameters": {
+        "seed": 42,
+        "jitter": [
+          2,
+          9
+        ]
+      },
+      "values": [
+        0.4044
+      ]
+    },
+    {
+      "name": "randomSingle",
+      "value": 10,
+      "parameters": {
+        "from": "random",
+        "seed": 42
+      },
+      "values": [
+        0
+      ]
+    },
+    {
+      "name": "jitterZeroTotal",
+      "value": 10,
+      "parameters": {
+        "seed": 42,
+        "jitter": 5,
+        "total": 0
+      },
+      "values": [
+        "NaN",
+        "NaN",
+        "NaN"
+      ]
+    },
+    {
+      "name": "jitterShortTotal",
+      "value": 10,
+      "parameters": {
+        "seed": 42,
+        "jitter": 5,
+        "total": 2
+      },
+      "values": [
+        1.011,
+        8.681000000000001,
+        "NaN",
+        "NaN"
+      ]
     }
   ],
   "timing": [
