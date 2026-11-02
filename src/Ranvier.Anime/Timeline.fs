@@ -7,6 +7,7 @@ open Ranvier.Dom
 /// <remarks>Use the scheduler's owning thread. Disposal is terminal and preserves child values.</remarks>
 type Timeline(scheduler: FrameScheduler) =
     let children = System.Collections.Generic.List<TimelineEntry>()
+    let propertySiblings = System.Collections.Generic.Dictionary<NumericProperty, System.Collections.Generic.List<NumericPropertyTrack>>()
     let labels = System.Collections.Generic.Dictionary<string, float>(System.StringComparer.Ordinal)
     let mutable duration = 0.
     let mutable elapsed = 0.
@@ -30,15 +31,13 @@ type Timeline(scheduler: FrameScheduler) =
         cancelled <- true
         stopFrame()
         children.Clear()
+        propertySiblings.Clear()
         labels.Clear()
-    let roundChildTime value =
-        let scaled = value * 1e12
-        let rounded = Math.Round(scaled, MidpointRounding.ToEven)
-        (if abs(scaled - rounded) = 0.5 then Math.Ceiling scaled else rounded) / 1e12
-    let renderWith ancestorLive muteCallbacks requestedTime =
+    let roundChildTime value = PropertyNumbers.round 1e12 value
+    let renderMode ancestorLive muteCallbacks force internalRender requestedTime =
         let expected = generation
         let previous = sampledTime
-        let time = Math.Min(requestedTime, duration)
+        let time = if internalRender then requestedTime else Math.Min(requestedTime, duration)
         sampledTime <- requestedTime
         elapsed <- Math.Clamp(requestedTime, 0., duration)
         completed <- elapsed >= duration
@@ -51,19 +50,22 @@ type Timeline(scheduler: FrameScheduler) =
             let childTime = roundChildTime (time - entry.Offset)
             if canWrite() && not(backwards && childTime > entry.Duration) then
                 match entry with
-                | TimelineEntry.Numeric(_, child) when time >= entry.Offset || previous >= entry.Offset ->
+                | TimelineEntry.Property track ->
+                    track.Sample(childTime, force, internalRender, muteCallbacks, backwards, elapsed > 0., canWrite)
+                | TimelineEntry.Numeric(_, child) when not internalRender && (time >= entry.Offset || previous >= entry.Offset) ->
                     child.Pause()
                     child.SeekGuarded(Math.Clamp(childTime, 0., entry.Duration), canWrite)
-                | TimelineEntry.Nested(_, _, child) when time >= entry.Offset || previous >= entry.Offset ->
+                | TimelineEntry.Nested(_, _, child) when not internalRender && (time >= entry.Offset || previous >= entry.Offset) ->
                     child.Pause()
                     child.SeekGuarded(Math.Clamp(childTime, 0., entry.Duration), canWrite)
-                | TimelineEntry.Callback(_, callback, state) ->
+                | TimelineEntry.Callback(_, callback, state) when not internalRender ->
                     if not muteCallbacks &&
                        ((elapsed > 0. && not backwards && childTime > 0. && not state.Value) ||
                         (backwards && childTime <= 1e-11 && state.Value)) then
                         state.Value <- not backwards
                         callback()
                 | _ -> ()
+    let renderWith ancestorLive muteCallbacks time = renderMode ancestorLive muteCallbacks false false time
     let render muteCallbacks time = renderWith (fun () -> true) muteCallbacks time
     let rec queue () =
         if playing && not cancelled && pending.IsNone then
@@ -79,17 +81,19 @@ type Timeline(scheduler: FrameScheduler) =
                         reraise()))
 
 
-    let seek canWrite muteCallbacks milliseconds =
+    let seekWithForce force canWrite muteCallbacks milliseconds =
         ensureLive()
         finite "milliseconds" milliseconds
         stopFrame()
         anchor <- scheduler.Now() - milliseconds
         try
-            renderWith canWrite muteCallbacks milliseconds
+            renderMode canWrite muteCallbacks force false milliseconds
             queue()
         with _ ->
             cancel()
             reraise()
+
+    let seek canWrite muteCallbacks milliseconds = seekWithForce false canWrite muteCallbacks milliseconds
 
     let addChild (entry: TimelineEntry) =
         let finish = entry.Offset + entry.Duration
@@ -148,6 +152,70 @@ type Timeline(scheduler: FrameScheduler) =
         let offset = this.ResolvePosition(?position = position)
         addChild (TimelineEntry.Nested(offset, child.Duration, child))
         this
+
+    /// <summary>Adds a numeric replace track sharing the supplied property's identity with sibling tracks.</summary>
+    /// <remarks>
+    /// Durations use source 12-place precision; positive values rounded to zero are rejected. Default easing is linear.
+    /// Adding a track pauses and resets controller time without dispatching property writes. Explicit from values bypass start capture.
+    /// </remarks>
+    member this.Animate(property: NumericProperty, target: float, milliseconds: float, ?position: TimelinePosition,
+                        ?ease: (float -> float), ?from: float, ?modifier: (float -> float)) =
+        ensureLive()
+        if isNull (box property) then nullArg "property"
+        finite "target" target
+        finite "milliseconds" milliseconds
+        if milliseconds < 0. then invalidArg "milliseconds" "Duration must be nonnegative."
+        from |> Option.iter (finite "from")
+        let position = this.ResolvePosition(?position = position)
+        let offset = position - (if milliseconds <= 1e-11 then 1e-11 else 0.)
+        let updateDuration = PropertyNumbers.round 1e12 (if milliseconds = 0. then 1e-11 else milliseconds)
+        if updateDuration = 0. then invalidArg "milliseconds" "Positive duration rounds to zero at source timing precision."
+        let normalizedDuration = if Double.IsPositiveInfinity updateDuration then 1e12 else updateDuration
+        finite "position" (offset + normalizedDuration)
+        playing <- false
+        stopFrame()
+        let expected = generation
+        let canWrite () = expected = generation && not cancelled
+        try
+            renderMode canWrite true false true offset
+            if canWrite() then
+                let siblings =
+                    match propertySiblings.TryGetValue property with
+                    | true, siblings -> siblings
+                    | _ ->
+                        let siblings = System.Collections.Generic.List<NumericPropertyTrack>()
+                        propertySiblings.Add(property, siblings)
+                        siblings
+                match NumericPropertyTrack.Create(property, siblings, from, target, offset, normalizedDuration, updateDuration,
+                                                  defaultArg ease id, defaultArg modifier id, canWrite) with
+                | Some track when canWrite() ->
+                    children.Add(TimelineEntry.Property track)
+                    duration <- Math.Max(duration, offset + normalizedDuration)
+                    if duration = 0. then duration <- 1e-11
+                    track.Sample(0., true, true, true, false, false, canWrite)
+                    if canWrite() then renderMode canWrite true true true 0.
+                    if canWrite() then
+                        for entry in children do
+                            match entry with
+                            | TimelineEntry.Property track -> track.ResetTimer()
+                            | TimelineEntry.Callback(_, _, state) -> state.Value <- false
+                            | _ -> ()
+                        completed <- false
+                | _ ->
+                    if siblings.Count = 0 then propertySiblings.Remove property |> ignore
+            this
+        with _ ->
+            cancel()
+            reraise()
+
+    /// <summary>Adds a numeric replace track from unsigned whole milliseconds, converted exactly to the precise duration path.</summary>
+    member this.Animate(property: NumericProperty, target: float, milliseconds: uint, ?position: TimelinePosition,
+                        ?ease: (float -> float), ?from: float, ?modifier: (float -> float)) =
+        this.Animate(property, target, float milliseconds, ?position = position, ?ease = ease, ?from = from, ?modifier = modifier)
+
+    /// <summary>Schedules an instantaneous numeric property replacement at a position.</summary>
+    member this.Set(property: NumericProperty, value: float, ?position: TimelinePosition) =
+        this.Animate(property, value, 0., ?position = position, ease = Ease.create (Power 2.) Out)
 
     /// <summary>Adds a callback track at an explicit position or the current timeline end.</summary>
     /// <remarks>Callbacks run on forward/backward crossings. State changes precede user code to make reentrant seeks finite.</remarks>
@@ -216,10 +284,13 @@ type Timeline(scheduler: FrameScheduler) =
     member this.Reset() =
         this.Pause()
         let expected = generation + 1
-        this.Seek(0., muteCallbacks = true)
+        seekWithForce true (fun () -> true) true 0.
         if generation = expected then
             for entry in children do
-                match entry with TimelineEntry.Callback(_, _, state) -> state.Value <- false | _ -> ()
+                match entry with
+                | TimelineEntry.Callback(_, _, state) -> state.Value <- false
+                | TimelineEntry.Property track -> track.ResetTimer()
+                | _ -> ()
 
     /// <summary>Rewinds and starts the timeline.</summary>
     member this.Restart() =
@@ -235,15 +306,22 @@ type Timeline(scheduler: FrameScheduler) =
     interface IDisposable with member _.Dispose() = cancel()
 
 and private TimelineEntry =
+    | Property of track: NumericPropertyTrack
     | Numeric of offset: float * child: NumericAnimation
     | Nested of offset: float * duration: float * child: Timeline
     | Callback of offset: float * callback: (unit -> unit) * completed: bool ref
 
     member this.Offset =
-        match this with Numeric(offset, _) | Nested(offset, _, _) | Callback(offset, _, _) -> offset
+        match this with
+        | Property track -> track.Offset
+        | Numeric(offset, _) | Nested(offset, _, _) | Callback(offset, _, _) -> offset
 
     member this.Duration =
-        match this with Numeric(_, child) -> child.Duration | Nested(_, duration, _) -> duration | Callback _ -> 1e-11
+        match this with
+        | Property track -> track.Duration
+        | Numeric(_, child) -> child.Duration
+        | Nested(_, duration, _) -> duration
+        | Callback _ -> 1e-11
 
 /// <summary>Optional Ranvier ownership for borrowed-child timelines.</summary>
 [<RequireQualifiedAccess>]

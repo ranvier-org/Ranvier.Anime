@@ -2,14 +2,17 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
-import { eases } from '../upstream/anime/src/easings/eases/index.js';
-import { cubicBezier } from '../upstream/anime/src/easings/cubic-bezier/index.js';
-import { steps } from '../upstream/anime/src/easings/steps/index.js';
-import { spring } from '../upstream/anime/src/easings/spring/index.js';
-import { stagger } from '../upstream/anime/src/utils/stagger.js';
-import { animate } from '../upstream/anime/src/animation/index.js';
-import { createTimeline } from '../upstream/anime/src/timeline/index.js';
-import { parseTimelinePosition } from '../upstream/anime/src/timeline/position.js';
+import { createHash } from 'node:crypto';
+Date.now = () => 0;
+const { eases } = await import('../upstream/anime/src/easings/eases/index.js');
+const { cubicBezier } = await import('../upstream/anime/src/easings/cubic-bezier/index.js');
+const { steps } = await import('../upstream/anime/src/easings/steps/index.js');
+const { spring } = await import('../upstream/anime/src/easings/spring/index.js');
+const { stagger } = await import('../upstream/anime/src/utils/stagger.js');
+const { animate } = await import('../upstream/anime/src/animation/index.js');
+const { createTimeline } = await import('../upstream/anime/src/timeline/index.js');
+const { parseTimelinePosition } = await import('../upstream/anime/src/timeline/position.js');
+const { createSeededRandom } = await import('../upstream/anime/src/utils/random.js');
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const provenance = JSON.parse(readFileSync(resolve(root, 'upstream-provenance.json'), 'utf8'));
@@ -234,7 +237,67 @@ const nestedTimelines = [false, true].map(muted => {
   parent.cancel(); child.cancel();
   return {name: muted ? 'mutedParent' : 'nested', muted, samples, resetEvents};
 });
+const propertyCases = [
+  {name: 'sequential', tracks: [{to: 100, duration: 100, position: 0}, {to: 200, duration: 100, position: 100}]},
+  {name: 'gap', tracks: [{to: 100, duration: 100, position: 0}, {to: 200, duration: 100, position: 150}]},
+  {name: 'overlap', tracks: [{to: 100, duration: 100, position: 0}, {to: 200, duration: 100, position: 50}]},
+  {name: 'shortTakeover', tracks: [{to: 100, duration: 200, position: 0}, {to: 200, duration: 50, position: 50}]},
+  {name: 'equalStarts', tracks: [{to: 100, duration: 100, position: 0}, {to: 200, duration: 100, position: 0}]},
+  {name: 'earlierInsertion', tracks: [{to: 100, duration: 100, position: 100}, {to: 200, duration: 100, position: 0}]},
+  {name: 'middleInsertion', tracks: [{to: 100, duration: 100, position: 0}, {to: 200, duration: 100, position: 100}, {to: 300, duration: 100, position: 200}, {to: 50, duration: 50, position: 50}]},
+  {name: 'explicitFrom', tracks: [{to: 100, duration: 100, position: 0}, {from: 300, to: 200, duration: 100, position: 150}]},
+  {name: 'futureFrom', tracks: [{from: 20, to: 100, duration: 100, position: 100}]},
+  {name: 'negativeStart', tracks: [{to: 100, duration: 100, position: -50}, {to: 200, duration: 100, position: 25}]},
+  {name: 'setBetween', tracks: [{to: 100, duration: 100, position: 0}, {set: 40, position: 50}, {to: 200, duration: 100, position: 100}]},
+  {name: 'setsOnly', tracks: [{set: 10, position: 25}, {set: 20, position: 75}]},
+  {name: 'setAtZero', tracks: [{set: 10, position: 0}, {to: 100, duration: 100, position: 25}]},
+  {name: 'setTinyBoundary', tracks: [{set: 10, position: 50}], times: [0, 50 - 2e-11, 50 - 1e-11, 50 - 0.5e-11, 50, 50 + 0.5e-11, 50, 50 - 0.5e-11, 50 - 1e-11, 0]},
+  {name: 'setZeroTinyBoundary', tracks: [{set: 10, position: 0}], times: [-2e-11, -1e-11, -0.5e-11, 0, 0.5e-11, 1e-11, 0, -0.5e-11, -1e-11, -2e-11, 0]},
+  {name: 'durationTiny14', tracks: [{to: 100, duration: 1.4e-11, position: 0}], times: [0, 7e-12, 1.4e-11, 7e-12, 0]},
+  {name: 'durationTiny16', tracks: [{to: 100, duration: 1.6e-11, position: 0}], times: [0, 7e-12, 1.6e-11, 8e-12, 0]},
+  {name: 'durationBelowMinimum', tracks: [{to: 100, duration: 5e-12, position: 0}], times: [-1e-11, -7e-12, -5e-12, 0, -7e-12, -1e-11]},
+  {name: 'zeroAnimationDuration', tracks: [{to: 100, duration: 0, position: 0}], times: [-1e-11, -5e-12, 0, 1e-11, -5e-12, -1e-11]},
+  {name: 'overflowedTweenDuration', tracks: [{to: 100, duration: 1e308, position: 0}], times: [0, 1, 100, 1e12, 100, 0]},
+  {name: 'easedOverlap', tracks: [{to: 100, duration: 100, position: 0, ease: 'inQuad'}, {to: 200, duration: 100, position: 50, ease: 'outQuad'}]},
+  {name: 'modifiedCapture', tracks: [{to: 100, duration: 100, position: 0, modifier: 'double'}, {to: 200, duration: 100, position: 50}]},
+  {name: 'overshootCapture', tracks: [{to: 100, duration: 100, position: 0, ease: 'constantOvershoot'}, {to: 200, duration: 100, position: 50}]},
+  {name: 'fractional', tracks: [{to: 1, duration: 0.1, position: 0.1}, {to: 2, duration: 0.2, position: 0.2}], times: [0, 0.1, 0.15, 0.2, 0.3, 0.4, 0.3, 0.2, 0.15, 0.1, 0]},
+];
+const propertyRandom = createSeededRandom(1977);
+for (let index = 0; index < 32; index++) {
+  const positions = [-25, 0, 25, 50, 75, 100, 150];
+  const durations = [25, 50, 100, 150];
+  const tracks = Array.from({length: propertyRandom(3, 6)}, () => {
+    const position = positions[propertyRandom(0, positions.length - 1)];
+    if (propertyRandom(0, 4) === 0) return {set: propertyRandom(-100, 300), position};
+    return {to: propertyRandom(-100, 300), duration: durations[propertyRandom(0, durations.length - 1)], position,
+      from: propertyRandom(0, 3) === 0 ? propertyRandom(-100, 300) : undefined,
+      ease: ['linear', 'inQuad', 'outQuad'][propertyRandom(0, 2)],
+      modifier: propertyRandom(0, 4) === 0 ? 'double' : undefined};
+  });
+  propertyCases.push({name: `generated${index}`, tracks});
+}
+const timelineProperties = propertyCases.map(({name, tracks, times}) => {
+  const target = {value: 0};
+  const timeline = createTimeline({autoplay: false});
+  tracks.forEach(track => {
+    if (track.set !== undefined) timeline.set(target, {value: track.set}, track.position);
+    else timeline.add(target, {value: track.from === undefined ? track.to : [track.from, track.to], duration: track.duration,
+      ease: track.ease === 'constantOvershoot' ? () => 1.25 : track.ease || 'linear', modifier: track.modifier === 'double' ? value => value * 2 : undefined}, track.position);
+  });
+  const initial = target.value, duration = timeline.duration;
+  if (timeline._offset !== 0) throw new Error('Reference timeline must use the controlled zero clock');
+  const samples = (times || [-25, 0, 25, 49, 50, 51, 75, 100, 125, 150, 175, 200, 250, 300, 200, 175, 150, 125, 100, 75, 50, 49, 25, 0, -25, 0]).map(time => {
+    timeline.seek(time);
+    return {time, value: target.value};
+  });
+  timeline.reset();
+  const resetValue = target.value;
+  timeline.cancel();
+  return {name, tracks, initial, duration, samples, resetValue};
+});
 const fixture = {
+  clock: {milliseconds: 0, description: 'Date.now is fixed before loading the unmodified source engine'},
   upstreamCommit: revision,
   version: JSON.parse(readFileSync(resolve(upstream, 'package.json'), 'utf8')).version,
   named,
@@ -249,6 +312,7 @@ const fixture = {
   timelineRepeatedSync,
   timelineCallbacks,
   nestedTimelines,
+  timelineProperties,
   timing: [0.5, 1, 4294967295, 1000000000001].map(duration => {
     const target = { value: 0 };
     const animation = animate(target, { value: 100, duration, ease: 'linear', autoplay: false });
@@ -277,5 +341,7 @@ for (const group of [...fixture.named, ...fixture.curves, ...fixture.springs]) {
   if (group.values.some(([, value]) => !Number.isFinite(value))) throw new Error(`Nonfinite sample: ${group.name}`);
 }
 mkdirSync(resolve(root, 'tests/reference'), { recursive: true });
-writeFileSync(resolve(root, 'tests/reference/pure.json'), JSON.stringify(fixture, null, 2) + '\n');
-console.log(`Captured ${named.length} named easings, 3 curves, ${springs.length} springs and ${staggering.length} stagger cases from ${revision}`);
+const fixtureText = JSON.stringify(fixture, null, 2) + '\n';
+writeFileSync(resolve(root, 'tests/reference/pure.json'), fixtureText);
+console.log(`Captured ${named.length} named easings, 3 curves, ${springs.length} springs, ${staggering.length} numeric stagger and ${timelineProperties.length} property cases from ${revision}`);
+console.log(`Fixture SHA256 ${createHash('sha256').update(fixtureText).digest('hex')}`);

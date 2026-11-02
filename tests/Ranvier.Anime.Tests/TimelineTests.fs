@@ -18,6 +18,29 @@ let private animation clock duration initial target =
     tween, value
 
 let tests = testList "timeline synchronization" [
+    for fixture in fixtures "timelineProperties" do
+        testCase ("property " + fixture.GetProperty("name").GetString()) <| fun _ ->
+            let clock = new ManualFrameScheduler()
+            let mutable value = 0.
+            let property = NumericProperty((fun () -> value), (fun number -> value <- number))
+            use timeline = new Timeline(clock)
+            for track in fixture.GetProperty("tracks").EnumerateArray() do
+                let field name = match track.TryGetProperty(name: string) with true, value -> Some value | _ -> None
+                let position = TimelinePosition.At(track.GetProperty("position").GetDouble())
+                match field "set" with
+                | Some value -> timeline.Set(property, value.GetDouble(), position) |> ignore
+                | None ->
+                    timeline.Animate(property, track.GetProperty("to").GetDouble(), track.GetProperty("duration").GetDouble(), position,
+                        ?from = (field "from" |> Option.map _.GetDouble()),
+                        ?ease = (field "ease" |> Option.map(fun value -> if value.GetString() = "constantOvershoot" then fun _ -> 1.25 else Ease.named(value.GetString()))),
+                        ?modifier = (field "modifier" |> Option.map(fun _ -> fun number -> number * 2.))) |> ignore
+            Expect.equal value (fixture.GetProperty("initial").GetDouble()) "source initialization"
+            Expect.floatClose Accuracy.high timeline.Duration (fixture.GetProperty("duration").GetDouble()) "source property duration"
+            for sample in fixture.GetProperty("samples").EnumerateArray() do
+                timeline.Seek(sample.GetProperty("time").GetDouble())
+                Expect.floatClose Accuracy.high value (sample.GetProperty("value").GetDouble()) $"source property sample {sample.GetRawText()}"
+            timeline.Reset()
+            Expect.floatClose Accuracy.high value (fixture.GetProperty("resetValue").GetDouble()) "source property reset"
     for fixture in fixtures "timelineCallbacks" do
         testCase (fixture.GetProperty("name").GetString()) <| fun _ ->
             let clock = new ManualFrameScheduler()
@@ -38,6 +61,93 @@ let tests = testList "timeline synchronization" [
                     timeline.Seek(sample.GetProperty("time").GetDouble(), muteCallbacks = muted)
                 let expected = sample.GetProperty("events").EnumerateArray() |> Seq.map _.GetString() |> Seq.toArray
                 Expect.sequenceEqual events expected $"source callbacks at {sample.GetRawText()}"
+    testCase "numeric property handles compose independently and preserve unrelated state" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use timeline = new Timeline(clock)
+        let mutable a, b, unrelated = 0., 100., 7.
+        let first = NumericProperty((fun () -> a), (fun number -> a <- number))
+        let second = NumericProperty((fun () -> b), (fun number -> b <- number))
+        timeline.Animate(first, 100., 100., TimelinePosition.At 0.).Animate(second, 200., 100., TimelinePosition.At 0.) |> ignore
+        Expect.equal (a, b) (0., 100.) "internal preparation does not dispatch writes"
+        timeline.Seek 50.
+        Expect.equal (a, b, unrelated) (50., 150., 7.) "stable handles identify separate properties"
+    testCase "property easing cancellation prevents final dispatch" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use timeline = new Timeline(clock)
+        let mutable value = 0.
+        let mutable armed = false
+        let property = NumericProperty((fun () -> value), (fun number -> value <- number))
+        timeline.Animate(property, 100., 100., ease = (fun progress ->
+            if armed then timeline.Cancel()
+            progress)) |> ignore
+        armed <- true
+        timeline.Seek 50.
+        Expect.equal value 0. "no property write after cancellation inside easing"
+    testCase "property modifier seek supersedes the interrupted dispatch" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use timeline = new Timeline(clock)
+        let mutable value = 0.
+        let mutable armed = false
+        let property = NumericProperty((fun () -> value), (fun number -> value <- number))
+        timeline.Animate(property, 100., 100., modifier = (fun number ->
+            if armed then
+                armed <- false
+                timeline.Seek 10.
+            number)) |> ignore
+        armed <- true
+        timeline.Seek 50.
+        Expect.equal (value, timeline.CurrentTime) (10., 10.) "nested sample wins"
+    testCase "property reads cannot publish an insertion after a newer seek" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use timeline = new Timeline(clock)
+        let mutable a, b = 0., 0.
+        let first = NumericProperty((fun () -> a), (fun number -> a <- number))
+        timeline.Animate(first, 100., 100., TimelinePosition.At 0.) |> ignore
+        let second = NumericProperty((fun () -> timeline.Seek 75.; b), (fun number -> b <- number))
+        timeline.Animate(second, 100., 100., TimelinePosition.At 0.) |> ignore
+        Expect.equal (a, b, timeline.CurrentTime) (75., 0., 75.) "superseded insertion did not publish"
+        timeline.Seek 100.
+        Expect.equal b 0. "no phantom track"
+    testCase "ancestor guards protect owned property tracks" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use parent = new Timeline(clock)
+        use child = new Timeline(clock)
+        let mutable value = 0.
+        let mutable armed = false
+        let property = NumericProperty((fun () -> value), (fun number -> value <- number))
+        child.Animate(property, 100., 100., ease = (fun progress ->
+            if armed then parent.Cancel()
+            progress)) |> ignore
+        parent.Sync child |> ignore
+        armed <- true
+        parent.Seek 50.
+        Expect.equal value 0. "ancestor cancellation spans property easing"
+        armed <- false
+        child.Seek 25.
+        Expect.equal value 25. "borrowed child remains usable"
+    testCase "invalid property duration fails before calling accessors" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use timeline = new Timeline(clock)
+        let mutable reads = 0
+        let property = NumericProperty((fun () -> reads <- reads + 1; 0.), ignore)
+        Expect.throwsT<ArgumentException> (fun () -> timeline.Animate(property, 100., -1.) |> ignore) "negative duration"
+        Expect.equal reads 0 "input validation precedes capture"
+    testCase "property authoring accepts unsigned whole milliseconds without losing the precise path" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use timeline = new Timeline(clock)
+        let mutable value = 0.
+        let property = NumericProperty((fun () -> value), (fun number -> value <- number))
+        timeline.Animate(property, 100., UInt32.MaxValue) |> ignore
+        Expect.equal timeline.Duration (float UInt32.MaxValue) "exact whole-millisecond conversion"
+        timeline.Seek(float UInt32.MaxValue / 2.)
+        Expect.equal value 50. "half of the unsigned duration"
+    testCase "positive durations rounding to zero are rejected before property capture" <| fun _ ->
+        let clock = new ManualFrameScheduler()
+        use timeline = new Timeline(clock)
+        let mutable reads = 0
+        let property = NumericProperty((fun () -> reads <- reads + 1; 0.), ignore)
+        Expect.throwsT<ArgumentException> (fun () -> timeline.Animate(property, 100., 1e-13) |> ignore) "unrepresentable source timing"
+        Expect.equal reads 0 "no capture for an invalid timing value"
     for fixture in fixtures "nestedTimelines" do
         testCase (fixture.GetProperty("name").GetString()) <| fun _ ->
             let clock = new ManualFrameScheduler()

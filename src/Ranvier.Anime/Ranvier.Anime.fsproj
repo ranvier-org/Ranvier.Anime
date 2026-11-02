@@ -9,6 +9,8 @@
     <Compile Include="Stagger.fs" />
     <Compile Include="CssStagger.fs" />
     <Compile Include="NumericAnimation.fs" />
+    <Compile Include="NumericProperty.fs" />
+    <Compile Include="PropertyTrack.fs" />
     <Compile Include="TimelinePosition.fs" />
     <Compile Include="Timeline.fs" />
     <Compile Include="Reactive.fs" />

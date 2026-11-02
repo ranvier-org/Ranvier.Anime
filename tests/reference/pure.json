@@ -1,4 +1,8 @@
 {
+  "clock": {
+    "milliseconds": 0,
+    "description": "Date.now is fixed before loading the unmodified source engine"
+  },
   "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
   "version": "4.5.0",
   "named": [
@@ -5547,6 +5551,6897 @@
       "resetEvents": [
         "child"
       ]
+    }
+  ],
+  "timelineProperties": [
+    {
+      "name": "sequential",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 0
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 100
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 50,
+          "value": 50
+        },
+        {
+          "time": 51,
+          "value": 51
+        },
+        {
+          "time": 75,
+          "value": 75
+        },
+        {
+          "time": 100,
+          "value": 100
+        },
+        {
+          "time": 125,
+          "value": 125
+        },
+        {
+          "time": 150,
+          "value": 150
+        },
+        {
+          "time": 175,
+          "value": 175
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 175
+        },
+        {
+          "time": 150,
+          "value": 150
+        },
+        {
+          "time": 125,
+          "value": 125
+        },
+        {
+          "time": 100,
+          "value": 100
+        },
+        {
+          "time": 75,
+          "value": 75
+        },
+        {
+          "time": 50,
+          "value": 50
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "gap",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 0
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 150
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 50,
+          "value": 50
+        },
+        {
+          "time": 51,
+          "value": 51
+        },
+        {
+          "time": 75,
+          "value": 75
+        },
+        {
+          "time": 100,
+          "value": 100
+        },
+        {
+          "time": 125,
+          "value": 100
+        },
+        {
+          "time": 150,
+          "value": 100
+        },
+        {
+          "time": 175,
+          "value": 125
+        },
+        {
+          "time": 200,
+          "value": 150
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 150
+        },
+        {
+          "time": 175,
+          "value": 125
+        },
+        {
+          "time": 150,
+          "value": 100
+        },
+        {
+          "time": 125,
+          "value": 100
+        },
+        {
+          "time": 100,
+          "value": 100
+        },
+        {
+          "time": 75,
+          "value": 75
+        },
+        {
+          "time": 50,
+          "value": 50
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "overlap",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 0
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 50
+        }
+      ],
+      "initial": 0,
+      "duration": 150,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 50,
+          "value": 50
+        },
+        {
+          "time": 51,
+          "value": 51.5
+        },
+        {
+          "time": 75,
+          "value": 87.5
+        },
+        {
+          "time": 100,
+          "value": 125
+        },
+        {
+          "time": 125,
+          "value": 162.5
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 125,
+          "value": 162.5
+        },
+        {
+          "time": 100,
+          "value": 125
+        },
+        {
+          "time": 75,
+          "value": 87.5
+        },
+        {
+          "time": 50,
+          "value": 50
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "shortTakeover",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 200,
+          "position": 0
+        },
+        {
+          "to": 200,
+          "duration": 50,
+          "position": 50
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 12.5
+        },
+        {
+          "time": 49,
+          "value": 24.5
+        },
+        {
+          "time": 50,
+          "value": 25
+        },
+        {
+          "time": 51,
+          "value": 28.5
+        },
+        {
+          "time": 75,
+          "value": 112.5
+        },
+        {
+          "time": 100,
+          "value": 200
+        },
+        {
+          "time": 125,
+          "value": 200
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 125,
+          "value": 200
+        },
+        {
+          "time": 100,
+          "value": 200
+        },
+        {
+          "time": 75,
+          "value": 112.5
+        },
+        {
+          "time": 50,
+          "value": 25
+        },
+        {
+          "time": 49,
+          "value": 24.5
+        },
+        {
+          "time": 25,
+          "value": 12.5
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "equalStarts",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 0
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 0
+        }
+      ],
+      "initial": 0,
+      "duration": 100,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 50
+        },
+        {
+          "time": 49,
+          "value": 98
+        },
+        {
+          "time": 50,
+          "value": 100
+        },
+        {
+          "time": 51,
+          "value": 102
+        },
+        {
+          "time": 75,
+          "value": 150
+        },
+        {
+          "time": 100,
+          "value": 200
+        },
+        {
+          "time": 125,
+          "value": 200
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 125,
+          "value": 200
+        },
+        {
+          "time": 100,
+          "value": 200
+        },
+        {
+          "time": 75,
+          "value": 150
+        },
+        {
+          "time": 50,
+          "value": 100
+        },
+        {
+          "time": 49,
+          "value": 98
+        },
+        {
+          "time": 25,
+          "value": 50
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "earlierInsertion",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 100
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 0
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 50
+        },
+        {
+          "time": 49,
+          "value": 98
+        },
+        {
+          "time": 50,
+          "value": 100
+        },
+        {
+          "time": 51,
+          "value": 102
+        },
+        {
+          "time": 75,
+          "value": 150
+        },
+        {
+          "time": 100,
+          "value": 200
+        },
+        {
+          "time": 125,
+          "value": 25
+        },
+        {
+          "time": 150,
+          "value": 50
+        },
+        {
+          "time": 175,
+          "value": 75
+        },
+        {
+          "time": 200,
+          "value": 100
+        },
+        {
+          "time": 250,
+          "value": 100
+        },
+        {
+          "time": 300,
+          "value": 100
+        },
+        {
+          "time": 200,
+          "value": 100
+        },
+        {
+          "time": 175,
+          "value": 75
+        },
+        {
+          "time": 150,
+          "value": 50
+        },
+        {
+          "time": 125,
+          "value": 25
+        },
+        {
+          "time": 100,
+          "value": 0
+        },
+        {
+          "time": 75,
+          "value": 150
+        },
+        {
+          "time": 50,
+          "value": 100
+        },
+        {
+          "time": 49,
+          "value": 98
+        },
+        {
+          "time": 25,
+          "value": 50
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "middleInsertion",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 0
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 100
+        },
+        {
+          "to": 300,
+          "duration": 100,
+          "position": 200
+        },
+        {
+          "to": 50,
+          "duration": 50,
+          "position": 50
+        }
+      ],
+      "initial": 0,
+      "duration": 300,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 50,
+          "value": 50
+        },
+        {
+          "time": 51,
+          "value": 50
+        },
+        {
+          "time": 75,
+          "value": 50
+        },
+        {
+          "time": 100,
+          "value": 50
+        },
+        {
+          "time": 125,
+          "value": 50
+        },
+        {
+          "time": 150,
+          "value": 50
+        },
+        {
+          "time": 175,
+          "value": 50
+        },
+        {
+          "time": 200,
+          "value": 50
+        },
+        {
+          "time": 250,
+          "value": 50
+        },
+        {
+          "time": 300,
+          "value": 50
+        },
+        {
+          "time": 200,
+          "value": 50
+        },
+        {
+          "time": 175,
+          "value": 50
+        },
+        {
+          "time": 150,
+          "value": 50
+        },
+        {
+          "time": 125,
+          "value": 50
+        },
+        {
+          "time": 100,
+          "value": 50
+        },
+        {
+          "time": 75,
+          "value": 50
+        },
+        {
+          "time": 50,
+          "value": 50
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "explicitFrom",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 0
+        },
+        {
+          "from": 300,
+          "to": 200,
+          "duration": 100,
+          "position": 150
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 50,
+          "value": 50
+        },
+        {
+          "time": 51,
+          "value": 51
+        },
+        {
+          "time": 75,
+          "value": 75
+        },
+        {
+          "time": 100,
+          "value": 100
+        },
+        {
+          "time": 125,
+          "value": 100
+        },
+        {
+          "time": 150,
+          "value": 300
+        },
+        {
+          "time": 175,
+          "value": 275
+        },
+        {
+          "time": 200,
+          "value": 250
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 250
+        },
+        {
+          "time": 175,
+          "value": 275
+        },
+        {
+          "time": 150,
+          "value": 300
+        },
+        {
+          "time": 125,
+          "value": 300
+        },
+        {
+          "time": 100,
+          "value": 100
+        },
+        {
+          "time": 75,
+          "value": 75
+        },
+        {
+          "time": 50,
+          "value": 50
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "futureFrom",
+      "tracks": [
+        {
+          "from": 20,
+          "to": 100,
+          "duration": 100,
+          "position": 100
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 0
+        },
+        {
+          "time": 49,
+          "value": 0
+        },
+        {
+          "time": 50,
+          "value": 0
+        },
+        {
+          "time": 51,
+          "value": 0
+        },
+        {
+          "time": 75,
+          "value": 0
+        },
+        {
+          "time": 100,
+          "value": 20
+        },
+        {
+          "time": 125,
+          "value": 40
+        },
+        {
+          "time": 150,
+          "value": 60
+        },
+        {
+          "time": 175,
+          "value": 80
+        },
+        {
+          "time": 200,
+          "value": 100
+        },
+        {
+          "time": 250,
+          "value": 100
+        },
+        {
+          "time": 300,
+          "value": 100
+        },
+        {
+          "time": 200,
+          "value": 100
+        },
+        {
+          "time": 175,
+          "value": 80
+        },
+        {
+          "time": 150,
+          "value": 60
+        },
+        {
+          "time": 125,
+          "value": 40
+        },
+        {
+          "time": 100,
+          "value": 20
+        },
+        {
+          "time": 75,
+          "value": 20
+        },
+        {
+          "time": 50,
+          "value": 20
+        },
+        {
+          "time": 49,
+          "value": 20
+        },
+        {
+          "time": 25,
+          "value": 20
+        },
+        {
+          "time": 0,
+          "value": 20
+        },
+        {
+          "time": -25,
+          "value": 20
+        },
+        {
+          "time": 0,
+          "value": 20
+        }
+      ],
+      "resetValue": 20
+    },
+    {
+      "name": "negativeStart",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": -50
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 25
+        }
+      ],
+      "initial": 0,
+      "duration": 125,
+      "samples": [
+        {
+          "time": -25,
+          "value": 25
+        },
+        {
+          "time": 0,
+          "value": 50
+        },
+        {
+          "time": 25,
+          "value": 75
+        },
+        {
+          "time": 49,
+          "value": 105
+        },
+        {
+          "time": 50,
+          "value": 106.25
+        },
+        {
+          "time": 51,
+          "value": 107.5
+        },
+        {
+          "time": 75,
+          "value": 137.5
+        },
+        {
+          "time": 100,
+          "value": 168.75
+        },
+        {
+          "time": 125,
+          "value": 200
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 125,
+          "value": 200
+        },
+        {
+          "time": 100,
+          "value": 168.75
+        },
+        {
+          "time": 75,
+          "value": 137.5
+        },
+        {
+          "time": 50,
+          "value": 106.25
+        },
+        {
+          "time": 49,
+          "value": 105
+        },
+        {
+          "time": 25,
+          "value": 75
+        },
+        {
+          "time": 0,
+          "value": 50
+        },
+        {
+          "time": -25,
+          "value": 25
+        },
+        {
+          "time": 0,
+          "value": 50
+        }
+      ],
+      "resetValue": 50
+    },
+    {
+      "name": "setBetween",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 0
+        },
+        {
+          "set": 40,
+          "position": 50
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 100
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 50,
+          "value": 40
+        },
+        {
+          "time": 51,
+          "value": 40
+        },
+        {
+          "time": 75,
+          "value": 40
+        },
+        {
+          "time": 100,
+          "value": 40
+        },
+        {
+          "time": 125,
+          "value": 80
+        },
+        {
+          "time": 150,
+          "value": 120
+        },
+        {
+          "time": 175,
+          "value": 160
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 160
+        },
+        {
+          "time": 150,
+          "value": 120
+        },
+        {
+          "time": 125,
+          "value": 80
+        },
+        {
+          "time": 100,
+          "value": 40
+        },
+        {
+          "time": 75,
+          "value": 40
+        },
+        {
+          "time": 50,
+          "value": 40
+        },
+        {
+          "time": 49,
+          "value": 49
+        },
+        {
+          "time": 25,
+          "value": 25
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "setsOnly",
+      "tracks": [
+        {
+          "set": 10,
+          "position": 25
+        },
+        {
+          "set": 20,
+          "position": 75
+        }
+      ],
+      "initial": 0,
+      "duration": 75,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 10
+        },
+        {
+          "time": 49,
+          "value": 10
+        },
+        {
+          "time": 50,
+          "value": 10
+        },
+        {
+          "time": 51,
+          "value": 10
+        },
+        {
+          "time": 75,
+          "value": 20
+        },
+        {
+          "time": 100,
+          "value": 20
+        },
+        {
+          "time": 125,
+          "value": 20
+        },
+        {
+          "time": 150,
+          "value": 20
+        },
+        {
+          "time": 175,
+          "value": 20
+        },
+        {
+          "time": 200,
+          "value": 20
+        },
+        {
+          "time": 250,
+          "value": 20
+        },
+        {
+          "time": 300,
+          "value": 20
+        },
+        {
+          "time": 200,
+          "value": 20
+        },
+        {
+          "time": 175,
+          "value": 20
+        },
+        {
+          "time": 150,
+          "value": 20
+        },
+        {
+          "time": 125,
+          "value": 20
+        },
+        {
+          "time": 100,
+          "value": 20
+        },
+        {
+          "time": 75,
+          "value": 20
+        },
+        {
+          "time": 50,
+          "value": 10
+        },
+        {
+          "time": 49,
+          "value": 10
+        },
+        {
+          "time": 25,
+          "value": 10
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "setAtZero",
+      "tracks": [
+        {
+          "set": 10,
+          "position": 0
+        },
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 25
+        }
+      ],
+      "initial": 0,
+      "duration": 125,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 10
+        },
+        {
+          "time": 25,
+          "value": 10
+        },
+        {
+          "time": 49,
+          "value": 31.599999999999998
+        },
+        {
+          "time": 50,
+          "value": 32.5
+        },
+        {
+          "time": 51,
+          "value": 33.400000000000006
+        },
+        {
+          "time": 75,
+          "value": 55
+        },
+        {
+          "time": 100,
+          "value": 77.5
+        },
+        {
+          "time": 125,
+          "value": 100
+        },
+        {
+          "time": 150,
+          "value": 100
+        },
+        {
+          "time": 175,
+          "value": 100
+        },
+        {
+          "time": 200,
+          "value": 100
+        },
+        {
+          "time": 250,
+          "value": 100
+        },
+        {
+          "time": 300,
+          "value": 100
+        },
+        {
+          "time": 200,
+          "value": 100
+        },
+        {
+          "time": 175,
+          "value": 100
+        },
+        {
+          "time": 150,
+          "value": 100
+        },
+        {
+          "time": 125,
+          "value": 100
+        },
+        {
+          "time": 100,
+          "value": 77.5
+        },
+        {
+          "time": 75,
+          "value": 55
+        },
+        {
+          "time": 50,
+          "value": 32.5
+        },
+        {
+          "time": 49,
+          "value": 31.599999999999998
+        },
+        {
+          "time": 25,
+          "value": 10
+        },
+        {
+          "time": 0,
+          "value": 10
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 10
+        }
+      ],
+      "resetValue": 10
+    },
+    {
+      "name": "setTinyBoundary",
+      "tracks": [
+        {
+          "set": 10,
+          "position": 50
+        }
+      ],
+      "initial": 0,
+      "duration": 50,
+      "samples": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 49.99999999998,
+          "value": 0
+        },
+        {
+          "time": 49.99999999999,
+          "value": 0
+        },
+        {
+          "time": 49.999999999995,
+          "value": 7.5
+        },
+        {
+          "time": 50,
+          "value": 10
+        },
+        {
+          "time": 50.000000000005,
+          "value": 10
+        },
+        {
+          "time": 50,
+          "value": 10
+        },
+        {
+          "time": 49.999999999995,
+          "value": 7.5
+        },
+        {
+          "time": 49.99999999999,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "setZeroTinyBoundary",
+      "tracks": [
+        {
+          "set": 10,
+          "position": 0
+        }
+      ],
+      "initial": 0,
+      "duration": 1e-11,
+      "samples": [
+        {
+          "time": -2e-11,
+          "value": 0
+        },
+        {
+          "time": -1e-11,
+          "value": 0
+        },
+        {
+          "time": -5e-12,
+          "value": 7.5
+        },
+        {
+          "time": 0,
+          "value": 10
+        },
+        {
+          "time": 5e-12,
+          "value": 10
+        },
+        {
+          "time": 1e-11,
+          "value": 10
+        },
+        {
+          "time": 0,
+          "value": 10
+        },
+        {
+          "time": -5e-12,
+          "value": 7.5
+        },
+        {
+          "time": -1e-11,
+          "value": 0
+        },
+        {
+          "time": -2e-11,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 10
+        }
+      ],
+      "resetValue": 10
+    },
+    {
+      "name": "durationTiny14",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 1.4e-11,
+          "position": 0
+        }
+      ],
+      "initial": 0,
+      "duration": 1.4e-11,
+      "samples": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 7e-12,
+          "value": 50
+        },
+        {
+          "time": 1.4e-11,
+          "value": 100
+        },
+        {
+          "time": 7e-12,
+          "value": 50
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "durationTiny16",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 1.6e-11,
+          "position": 0
+        }
+      ],
+      "initial": 0,
+      "duration": 1.6e-11,
+      "samples": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 7e-12,
+          "value": 43.75
+        },
+        {
+          "time": 1.6e-11,
+          "value": 100
+        },
+        {
+          "time": 8e-12,
+          "value": 50
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "durationBelowMinimum",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 5e-12,
+          "position": 0
+        }
+      ],
+      "initial": 0,
+      "duration": 1e-11,
+      "samples": [
+        {
+          "time": -1e-11,
+          "value": 0
+        },
+        {
+          "time": -7e-12,
+          "value": 60.00000000000001
+        },
+        {
+          "time": -5e-12,
+          "value": 100
+        },
+        {
+          "time": 0,
+          "value": 100
+        },
+        {
+          "time": -7e-12,
+          "value": 60.00000000000001
+        },
+        {
+          "time": -1e-11,
+          "value": 0
+        }
+      ],
+      "resetValue": 100
+    },
+    {
+      "name": "zeroAnimationDuration",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 0,
+          "position": 0
+        }
+      ],
+      "initial": 0,
+      "duration": 1e-11,
+      "samples": [
+        {
+          "time": -1e-11,
+          "value": 0
+        },
+        {
+          "time": -5e-12,
+          "value": 50
+        },
+        {
+          "time": 0,
+          "value": 100
+        },
+        {
+          "time": 1e-11,
+          "value": 100
+        },
+        {
+          "time": -5e-12,
+          "value": 50
+        },
+        {
+          "time": -1e-11,
+          "value": 0
+        }
+      ],
+      "resetValue": 100
+    },
+    {
+      "name": "overflowedTweenDuration",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 1e+308,
+          "position": 0
+        }
+      ],
+      "initial": 0,
+      "duration": 1000000000000,
+      "samples": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 1,
+          "value": 0
+        },
+        {
+          "time": 100,
+          "value": 0
+        },
+        {
+          "time": 1000000000000,
+          "value": 0
+        },
+        {
+          "time": 100,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "easedOverlap",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 0,
+          "ease": "inQuad"
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 50,
+          "ease": "outQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 150,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 6.25
+        },
+        {
+          "time": 49,
+          "value": 24.009999999999998
+        },
+        {
+          "time": 50,
+          "value": 25
+        },
+        {
+          "time": 51,
+          "value": 28.482500000000005
+        },
+        {
+          "time": 75,
+          "value": 101.5625
+        },
+        {
+          "time": 100,
+          "value": 156.25
+        },
+        {
+          "time": 125,
+          "value": 189.0625
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 125,
+          "value": 189.0625
+        },
+        {
+          "time": 100,
+          "value": 156.25
+        },
+        {
+          "time": 75,
+          "value": 101.5625
+        },
+        {
+          "time": 50,
+          "value": 25
+        },
+        {
+          "time": 49,
+          "value": 24.009999999999998
+        },
+        {
+          "time": 25,
+          "value": 6.25
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "modifiedCapture",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 0,
+          "modifier": "double"
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 50
+        }
+      ],
+      "initial": 0,
+      "duration": 150,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 50
+        },
+        {
+          "time": 49,
+          "value": 98
+        },
+        {
+          "time": 50,
+          "value": 100
+        },
+        {
+          "time": 51,
+          "value": 101
+        },
+        {
+          "time": 75,
+          "value": 125
+        },
+        {
+          "time": 100,
+          "value": 150
+        },
+        {
+          "time": 125,
+          "value": 175
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 125,
+          "value": 175
+        },
+        {
+          "time": 100,
+          "value": 150
+        },
+        {
+          "time": 75,
+          "value": 125
+        },
+        {
+          "time": 50,
+          "value": 100
+        },
+        {
+          "time": 49,
+          "value": 98
+        },
+        {
+          "time": 25,
+          "value": 50
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "overshootCapture",
+      "tracks": [
+        {
+          "to": 100,
+          "duration": 100,
+          "position": 0,
+          "ease": "constantOvershoot"
+        },
+        {
+          "to": 200,
+          "duration": 100,
+          "position": 50
+        }
+      ],
+      "initial": 0,
+      "duration": 150,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 125
+        },
+        {
+          "time": 25,
+          "value": 125
+        },
+        {
+          "time": 49,
+          "value": 125
+        },
+        {
+          "time": 50,
+          "value": 125
+        },
+        {
+          "time": 51,
+          "value": 125.75
+        },
+        {
+          "time": 75,
+          "value": 143.75
+        },
+        {
+          "time": 100,
+          "value": 162.5
+        },
+        {
+          "time": 125,
+          "value": 181.25
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 250,
+          "value": 200
+        },
+        {
+          "time": 300,
+          "value": 200
+        },
+        {
+          "time": 200,
+          "value": 200
+        },
+        {
+          "time": 175,
+          "value": 200
+        },
+        {
+          "time": 150,
+          "value": 200
+        },
+        {
+          "time": 125,
+          "value": 181.25
+        },
+        {
+          "time": 100,
+          "value": 162.5
+        },
+        {
+          "time": 75,
+          "value": 143.75
+        },
+        {
+          "time": 50,
+          "value": 125
+        },
+        {
+          "time": 49,
+          "value": 125
+        },
+        {
+          "time": 25,
+          "value": 125
+        },
+        {
+          "time": 0,
+          "value": 125
+        },
+        {
+          "time": -25,
+          "value": 125
+        },
+        {
+          "time": 0,
+          "value": 125
+        }
+      ],
+      "resetValue": 125
+    },
+    {
+      "name": "fractional",
+      "tracks": [
+        {
+          "to": 1,
+          "duration": 0.1,
+          "position": 0.1
+        },
+        {
+          "to": 2,
+          "duration": 0.2,
+          "position": 0.2
+        }
+      ],
+      "initial": 0,
+      "duration": 0.4,
+      "samples": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 0.1,
+          "value": 0
+        },
+        {
+          "time": 0.15,
+          "value": 0.5
+        },
+        {
+          "time": 0.2,
+          "value": 1
+        },
+        {
+          "time": 0.3,
+          "value": 1.5
+        },
+        {
+          "time": 0.4,
+          "value": 2
+        },
+        {
+          "time": 0.3,
+          "value": 1.5
+        },
+        {
+          "time": 0.2,
+          "value": 1
+        },
+        {
+          "time": 0.15,
+          "value": 0.5
+        },
+        {
+          "time": 0.1,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "generated0",
+      "tracks": [
+        {
+          "set": 189,
+          "position": 50
+        },
+        {
+          "set": -76,
+          "position": 25
+        },
+        {
+          "to": 164,
+          "duration": 50,
+          "position": 25,
+          "ease": "linear"
+        },
+        {
+          "to": 160,
+          "duration": 50,
+          "position": 25,
+          "ease": "inQuad"
+        },
+        {
+          "to": 121,
+          "duration": 50,
+          "position": 50,
+          "ease": "linear"
+        },
+        {
+          "to": 136,
+          "duration": 50,
+          "position": 50,
+          "ease": "inQuad",
+          "modifier": "double"
+        }
+      ],
+      "initial": 0,
+      "duration": 100,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": -76
+        },
+        {
+          "time": 49,
+          "value": -21.6256
+        },
+        {
+          "time": 50,
+          "value": -34
+        },
+        {
+          "time": 51,
+          "value": -33.8776
+        },
+        {
+          "time": 75,
+          "value": 42.5
+        },
+        {
+          "time": 100,
+          "value": 272
+        },
+        {
+          "time": 125,
+          "value": 272
+        },
+        {
+          "time": 150,
+          "value": 272
+        },
+        {
+          "time": 175,
+          "value": 272
+        },
+        {
+          "time": 200,
+          "value": 272
+        },
+        {
+          "time": 250,
+          "value": 272
+        },
+        {
+          "time": 300,
+          "value": 272
+        },
+        {
+          "time": 200,
+          "value": 272
+        },
+        {
+          "time": 175,
+          "value": 272
+        },
+        {
+          "time": 150,
+          "value": 272
+        },
+        {
+          "time": 125,
+          "value": 272
+        },
+        {
+          "time": 100,
+          "value": 272
+        },
+        {
+          "time": 75,
+          "value": 42.5
+        },
+        {
+          "time": 50,
+          "value": -17
+        },
+        {
+          "time": 49,
+          "value": -21.6256
+        },
+        {
+          "time": 25,
+          "value": -76
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "generated1",
+      "tracks": [
+        {
+          "to": 60,
+          "duration": 100,
+          "position": 100,
+          "from": 26,
+          "ease": "linear"
+        },
+        {
+          "to": -18,
+          "duration": 100,
+          "position": 50,
+          "ease": "linear"
+        },
+        {
+          "set": 103,
+          "position": 0
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 103
+        },
+        {
+          "time": 25,
+          "value": 103
+        },
+        {
+          "time": 49,
+          "value": 103
+        },
+        {
+          "time": 50,
+          "value": 0
+        },
+        {
+          "time": 51,
+          "value": -0.18
+        },
+        {
+          "time": 75,
+          "value": -4.5
+        },
+        {
+          "time": 100,
+          "value": -9
+        },
+        {
+          "time": 125,
+          "value": 34.5
+        },
+        {
+          "time": 150,
+          "value": 43
+        },
+        {
+          "time": 175,
+          "value": 51.5
+        },
+        {
+          "time": 200,
+          "value": 60
+        },
+        {
+          "time": 250,
+          "value": 60
+        },
+        {
+          "time": 300,
+          "value": 60
+        },
+        {
+          "time": 200,
+          "value": 60
+        },
+        {
+          "time": 175,
+          "value": 51.5
+        },
+        {
+          "time": 150,
+          "value": 43
+        },
+        {
+          "time": 125,
+          "value": 34.5
+        },
+        {
+          "time": 100,
+          "value": 26
+        },
+        {
+          "time": 75,
+          "value": -4.5
+        },
+        {
+          "time": 50,
+          "value": 0
+        },
+        {
+          "time": 49,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 103
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 103
+        }
+      ],
+      "resetValue": 103
+    },
+    {
+      "name": "generated2",
+      "tracks": [
+        {
+          "to": 213,
+          "duration": 100,
+          "position": -25,
+          "from": -13,
+          "ease": "linear"
+        },
+        {
+          "to": 176,
+          "duration": 25,
+          "position": 100,
+          "from": 82,
+          "ease": "outQuad"
+        },
+        {
+          "to": 41,
+          "duration": 50,
+          "position": 100,
+          "ease": "outQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 150,
+      "samples": [
+        {
+          "time": -25,
+          "value": -13
+        },
+        {
+          "time": 0,
+          "value": 43.5
+        },
+        {
+          "time": 25,
+          "value": 100
+        },
+        {
+          "time": 49,
+          "value": 154.24
+        },
+        {
+          "time": 50,
+          "value": 156.5
+        },
+        {
+          "time": 51,
+          "value": 158.76
+        },
+        {
+          "time": 75,
+          "value": 213
+        },
+        {
+          "time": 100,
+          "value": 213
+        },
+        {
+          "time": 125,
+          "value": 84
+        },
+        {
+          "time": 150,
+          "value": 41
+        },
+        {
+          "time": 175,
+          "value": 41
+        },
+        {
+          "time": 200,
+          "value": 41
+        },
+        {
+          "time": 250,
+          "value": 41
+        },
+        {
+          "time": 300,
+          "value": 41
+        },
+        {
+          "time": 200,
+          "value": 41
+        },
+        {
+          "time": 175,
+          "value": 41
+        },
+        {
+          "time": 150,
+          "value": 41
+        },
+        {
+          "time": 125,
+          "value": 84
+        },
+        {
+          "time": 100,
+          "value": 213
+        },
+        {
+          "time": 75,
+          "value": 213
+        },
+        {
+          "time": 50,
+          "value": 156.5
+        },
+        {
+          "time": 49,
+          "value": 154.24
+        },
+        {
+          "time": 25,
+          "value": 100
+        },
+        {
+          "time": 0,
+          "value": 43.5
+        },
+        {
+          "time": -25,
+          "value": -13
+        },
+        {
+          "time": 0,
+          "value": 43.5
+        }
+      ],
+      "resetValue": 43.5
+    },
+    {
+      "name": "generated3",
+      "tracks": [
+        {
+          "set": 29,
+          "position": 75
+        },
+        {
+          "to": 109,
+          "duration": 100,
+          "position": 100,
+          "from": 74,
+          "ease": "outQuad"
+        },
+        {
+          "to": 97,
+          "duration": 150,
+          "position": -25,
+          "ease": "inQuad"
+        },
+        {
+          "to": 271,
+          "duration": 150,
+          "position": 25,
+          "ease": "inQuad"
+        },
+        {
+          "to": -81,
+          "duration": 150,
+          "position": 0,
+          "from": 21,
+          "ease": "outQuad"
+        },
+        {
+          "to": -81,
+          "duration": 100,
+          "position": 75,
+          "ease": "outQuad",
+          "modifier": "double"
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 21
+        },
+        {
+          "time": 25,
+          "value": -10.166666666666657
+        },
+        {
+          "time": 49,
+          "value": -34.75546666666667
+        },
+        {
+          "time": 50,
+          "value": -35.66666666666666
+        },
+        {
+          "time": 51,
+          "value": -36.56880000000001
+        },
+        {
+          "time": 75,
+          "value": -111
+        },
+        {
+          "time": 100,
+          "value": -133.3125
+        },
+        {
+          "time": 125,
+          "value": -149.25
+        },
+        {
+          "time": 150,
+          "value": -158.8125
+        },
+        {
+          "time": 175,
+          "value": -162
+        },
+        {
+          "time": 200,
+          "value": -162
+        },
+        {
+          "time": 250,
+          "value": -162
+        },
+        {
+          "time": 300,
+          "value": -162
+        },
+        {
+          "time": 200,
+          "value": -162
+        },
+        {
+          "time": 175,
+          "value": -162
+        },
+        {
+          "time": 150,
+          "value": -158.8125
+        },
+        {
+          "time": 125,
+          "value": -149.25
+        },
+        {
+          "time": 100,
+          "value": -133.3125
+        },
+        {
+          "time": 75,
+          "value": -55.5
+        },
+        {
+          "time": 50,
+          "value": -35.66666666666666
+        },
+        {
+          "time": 49,
+          "value": -34.75546666666667
+        },
+        {
+          "time": 25,
+          "value": -10.166666666666657
+        },
+        {
+          "time": 0,
+          "value": 2.694444444444444
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 21
+        }
+      ],
+      "resetValue": 21
+    },
+    {
+      "name": "generated4",
+      "tracks": [
+        {
+          "set": -66,
+          "position": 100
+        },
+        {
+          "to": 178,
+          "duration": 50,
+          "position": -25,
+          "from": 142,
+          "ease": "linear"
+        },
+        {
+          "to": 293,
+          "duration": 25,
+          "position": 50,
+          "ease": "linear"
+        },
+        {
+          "to": 6,
+          "duration": 100,
+          "position": 150,
+          "ease": "outQuad",
+          "modifier": "double"
+        },
+        {
+          "to": 15,
+          "duration": 100,
+          "position": 25,
+          "ease": "linear"
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": 142
+        },
+        {
+          "time": 0,
+          "value": 160
+        },
+        {
+          "time": 25,
+          "value": 178
+        },
+        {
+          "time": 49,
+          "value": 138.88
+        },
+        {
+          "time": 50,
+          "value": 137.25
+        },
+        {
+          "time": 51,
+          "value": 135.62
+        },
+        {
+          "time": 75,
+          "value": 96.5
+        },
+        {
+          "time": 100,
+          "value": 55.75
+        },
+        {
+          "time": 125,
+          "value": 15
+        },
+        {
+          "time": 150,
+          "value": 15
+        },
+        {
+          "time": 175,
+          "value": 15
+        },
+        {
+          "time": 200,
+          "value": 15
+        },
+        {
+          "time": 250,
+          "value": 15
+        },
+        {
+          "time": 300,
+          "value": 15
+        },
+        {
+          "time": 200,
+          "value": 15
+        },
+        {
+          "time": 175,
+          "value": 15
+        },
+        {
+          "time": 150,
+          "value": 15
+        },
+        {
+          "time": 125,
+          "value": 15
+        },
+        {
+          "time": 100,
+          "value": 55.75
+        },
+        {
+          "time": 75,
+          "value": 96.5
+        },
+        {
+          "time": 50,
+          "value": 137.25
+        },
+        {
+          "time": 49,
+          "value": 138.88
+        },
+        {
+          "time": 25,
+          "value": 178
+        },
+        {
+          "time": 0,
+          "value": 160
+        },
+        {
+          "time": -25,
+          "value": 142
+        },
+        {
+          "time": 0,
+          "value": 160
+        }
+      ],
+      "resetValue": 160
+    },
+    {
+      "name": "generated5",
+      "tracks": [
+        {
+          "set": 148,
+          "position": 100
+        },
+        {
+          "to": -52,
+          "duration": 50,
+          "position": 150,
+          "ease": "inQuad"
+        },
+        {
+          "to": 121,
+          "duration": 100,
+          "position": 100,
+          "ease": "linear"
+        },
+        {
+          "to": -63,
+          "duration": 25,
+          "position": 0,
+          "from": 214,
+          "ease": "outQuad"
+        },
+        {
+          "set": 81,
+          "position": 25
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 214
+        },
+        {
+          "time": 25,
+          "value": 81
+        },
+        {
+          "time": 49,
+          "value": 81
+        },
+        {
+          "time": 50,
+          "value": 81
+        },
+        {
+          "time": 51,
+          "value": 81
+        },
+        {
+          "time": 75,
+          "value": 81
+        },
+        {
+          "time": 100,
+          "value": 81
+        },
+        {
+          "time": 125,
+          "value": 81
+        },
+        {
+          "time": 150,
+          "value": 81
+        },
+        {
+          "time": 175,
+          "value": 81
+        },
+        {
+          "time": 200,
+          "value": 81
+        },
+        {
+          "time": 250,
+          "value": 81
+        },
+        {
+          "time": 300,
+          "value": 81
+        },
+        {
+          "time": 200,
+          "value": 81
+        },
+        {
+          "time": 175,
+          "value": 81
+        },
+        {
+          "time": 150,
+          "value": 81
+        },
+        {
+          "time": 125,
+          "value": 81
+        },
+        {
+          "time": 100,
+          "value": 81
+        },
+        {
+          "time": 75,
+          "value": 81
+        },
+        {
+          "time": 50,
+          "value": 81
+        },
+        {
+          "time": 49,
+          "value": 81
+        },
+        {
+          "time": 25,
+          "value": 81
+        },
+        {
+          "time": 0,
+          "value": 214
+        },
+        {
+          "time": -25,
+          "value": 214
+        },
+        {
+          "time": 0,
+          "value": 214
+        }
+      ],
+      "resetValue": 214
+    },
+    {
+      "name": "generated6",
+      "tracks": [
+        {
+          "to": 183,
+          "duration": 100,
+          "position": 75,
+          "ease": "linear",
+          "modifier": "double"
+        },
+        {
+          "to": -54,
+          "duration": 150,
+          "position": 25,
+          "from": 244,
+          "ease": "linear",
+          "modifier": "double"
+        },
+        {
+          "to": 104,
+          "duration": 25,
+          "position": -25,
+          "ease": "outQuad"
+        },
+        {
+          "to": -53,
+          "duration": 50,
+          "position": 75,
+          "ease": "inQuad"
+        },
+        {
+          "to": -47,
+          "duration": 50,
+          "position": 25,
+          "ease": "linear",
+          "modifier": "double"
+        },
+        {
+          "to": -40,
+          "duration": 50,
+          "position": 50,
+          "ease": "inQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 175,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 104
+        },
+        {
+          "time": 25,
+          "value": 208
+        },
+        {
+          "time": 49,
+          "value": 63.03999999999999
+        },
+        {
+          "time": 50,
+          "value": 57
+        },
+        {
+          "time": 51,
+          "value": 56.9612
+        },
+        {
+          "time": 75,
+          "value": 32.75
+        },
+        {
+          "time": 100,
+          "value": -40
+        },
+        {
+          "time": 125,
+          "value": -40
+        },
+        {
+          "time": 150,
+          "value": -40
+        },
+        {
+          "time": 175,
+          "value": -40
+        },
+        {
+          "time": 200,
+          "value": -40
+        },
+        {
+          "time": 250,
+          "value": -40
+        },
+        {
+          "time": 300,
+          "value": -40
+        },
+        {
+          "time": 200,
+          "value": -40
+        },
+        {
+          "time": 175,
+          "value": -40
+        },
+        {
+          "time": 150,
+          "value": -40
+        },
+        {
+          "time": 125,
+          "value": -40
+        },
+        {
+          "time": 100,
+          "value": -40
+        },
+        {
+          "time": 75,
+          "value": 32.75
+        },
+        {
+          "time": 50,
+          "value": 57
+        },
+        {
+          "time": 49,
+          "value": 63.03999999999999
+        },
+        {
+          "time": 25,
+          "value": 208
+        },
+        {
+          "time": 0,
+          "value": 104
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 104
+        }
+      ],
+      "resetValue": 208
+    },
+    {
+      "name": "generated7",
+      "tracks": [
+        {
+          "to": 258,
+          "duration": 150,
+          "position": 75,
+          "from": -13,
+          "ease": "inQuad"
+        },
+        {
+          "to": -38,
+          "duration": 25,
+          "position": 75,
+          "ease": "outQuad"
+        },
+        {
+          "to": -75,
+          "duration": 150,
+          "position": 150,
+          "from": 282,
+          "ease": "outQuad"
+        },
+        {
+          "to": 214,
+          "duration": 100,
+          "position": -25,
+          "ease": "inQuad"
+        },
+        {
+          "to": 178,
+          "duration": 25,
+          "position": 0,
+          "ease": "inQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 300,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 13.375
+        },
+        {
+          "time": 25,
+          "value": 178
+        },
+        {
+          "time": 49,
+          "value": 178
+        },
+        {
+          "time": 50,
+          "value": 178
+        },
+        {
+          "time": 51,
+          "value": 178
+        },
+        {
+          "time": 75,
+          "value": 178
+        },
+        {
+          "time": 100,
+          "value": 178
+        },
+        {
+          "time": 125,
+          "value": 178
+        },
+        {
+          "time": 150,
+          "value": 178
+        },
+        {
+          "time": 175,
+          "value": 178
+        },
+        {
+          "time": 200,
+          "value": 178
+        },
+        {
+          "time": 250,
+          "value": 178
+        },
+        {
+          "time": 300,
+          "value": 178
+        },
+        {
+          "time": 200,
+          "value": 178
+        },
+        {
+          "time": 175,
+          "value": 178
+        },
+        {
+          "time": 150,
+          "value": 178
+        },
+        {
+          "time": 125,
+          "value": 178
+        },
+        {
+          "time": 100,
+          "value": 178
+        },
+        {
+          "time": 75,
+          "value": 178
+        },
+        {
+          "time": 50,
+          "value": 178
+        },
+        {
+          "time": 49,
+          "value": 178
+        },
+        {
+          "time": 25,
+          "value": 178
+        },
+        {
+          "time": 0,
+          "value": 13.375
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 13.375
+        }
+      ],
+      "resetValue": 13.375
+    },
+    {
+      "name": "generated8",
+      "tracks": [
+        {
+          "to": 148,
+          "duration": 150,
+          "position": -25,
+          "ease": "inQuad"
+        },
+        {
+          "to": 295,
+          "duration": 25,
+          "position": 50,
+          "ease": "inQuad",
+          "modifier": "double"
+        },
+        {
+          "to": 82,
+          "duration": 50,
+          "position": 100,
+          "ease": "inQuad"
+        },
+        {
+          "to": -22,
+          "duration": 50,
+          "position": 150,
+          "from": 116,
+          "ease": "linear"
+        },
+        {
+          "to": -80,
+          "duration": 50,
+          "position": -25,
+          "from": 187,
+          "ease": "outQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 187
+        },
+        {
+          "time": 0,
+          "value": -13.25
+        },
+        {
+          "time": 25,
+          "value": -80
+        },
+        {
+          "time": 49,
+          "value": -80
+        },
+        {
+          "time": 50,
+          "value": -80
+        },
+        {
+          "time": 51,
+          "value": -80
+        },
+        {
+          "time": 75,
+          "value": -80
+        },
+        {
+          "time": 100,
+          "value": -80
+        },
+        {
+          "time": 125,
+          "value": -80
+        },
+        {
+          "time": 150,
+          "value": -80
+        },
+        {
+          "time": 175,
+          "value": -80
+        },
+        {
+          "time": 200,
+          "value": -80
+        },
+        {
+          "time": 250,
+          "value": -80
+        },
+        {
+          "time": 300,
+          "value": -80
+        },
+        {
+          "time": 200,
+          "value": -80
+        },
+        {
+          "time": 175,
+          "value": -80
+        },
+        {
+          "time": 150,
+          "value": -80
+        },
+        {
+          "time": 125,
+          "value": -80
+        },
+        {
+          "time": 100,
+          "value": -80
+        },
+        {
+          "time": 75,
+          "value": -80
+        },
+        {
+          "time": 50,
+          "value": -80
+        },
+        {
+          "time": 49,
+          "value": -80
+        },
+        {
+          "time": 25,
+          "value": -80
+        },
+        {
+          "time": 0,
+          "value": -13.25
+        },
+        {
+          "time": -25,
+          "value": 187
+        },
+        {
+          "time": 0,
+          "value": -13.25
+        }
+      ],
+      "resetValue": -13.25
+    },
+    {
+      "name": "generated9",
+      "tracks": [
+        {
+          "to": -28,
+          "duration": 100,
+          "position": 100,
+          "from": 222,
+          "ease": "linear"
+        },
+        {
+          "to": 272,
+          "duration": 50,
+          "position": 50,
+          "ease": "outQuad"
+        },
+        {
+          "to": -56,
+          "duration": 150,
+          "position": 150,
+          "ease": "linear",
+          "modifier": "double"
+        },
+        {
+          "to": 246,
+          "duration": 100,
+          "position": 75,
+          "ease": "inQuad"
+        },
+        {
+          "to": 18,
+          "duration": 50,
+          "position": 75,
+          "ease": "linear"
+        },
+        {
+          "to": 19,
+          "duration": 50,
+          "position": -25,
+          "ease": "linear",
+          "modifier": "double"
+        }
+      ],
+      "initial": 0,
+      "duration": 300,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 19
+        },
+        {
+          "time": 25,
+          "value": 38
+        },
+        {
+          "time": 49,
+          "value": 38
+        },
+        {
+          "time": 50,
+          "value": 0
+        },
+        {
+          "time": 51,
+          "value": 10.771200000000022
+        },
+        {
+          "time": 75,
+          "value": 204
+        },
+        {
+          "time": 100,
+          "value": 111
+        },
+        {
+          "time": 125,
+          "value": 18
+        },
+        {
+          "time": 150,
+          "value": 18
+        },
+        {
+          "time": 175,
+          "value": 18
+        },
+        {
+          "time": 200,
+          "value": 18
+        },
+        {
+          "time": 250,
+          "value": 18
+        },
+        {
+          "time": 300,
+          "value": 18
+        },
+        {
+          "time": 200,
+          "value": 18
+        },
+        {
+          "time": 175,
+          "value": 18
+        },
+        {
+          "time": 150,
+          "value": 18
+        },
+        {
+          "time": 125,
+          "value": 18
+        },
+        {
+          "time": 100,
+          "value": 111
+        },
+        {
+          "time": 75,
+          "value": 204
+        },
+        {
+          "time": 50,
+          "value": 0
+        },
+        {
+          "time": 49,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 38
+        },
+        {
+          "time": 0,
+          "value": 19
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 19
+        }
+      ],
+      "resetValue": 19
+    },
+    {
+      "name": "generated10",
+      "tracks": [
+        {
+          "to": 30,
+          "duration": 100,
+          "position": 150,
+          "from": -66,
+          "ease": "linear",
+          "modifier": "double"
+        },
+        {
+          "to": 142,
+          "duration": 150,
+          "position": 25,
+          "ease": "inQuad",
+          "modifier": "double"
+        },
+        {
+          "to": -78,
+          "duration": 25,
+          "position": 150,
+          "ease": "linear"
+        },
+        {
+          "set": 165,
+          "position": 0
+        },
+        {
+          "set": 139,
+          "position": 50
+        },
+        {
+          "to": 143,
+          "duration": 100,
+          "position": 25,
+          "from": 247,
+          "ease": "inQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 165
+        },
+        {
+          "time": 25,
+          "value": 247
+        },
+        {
+          "time": 49,
+          "value": 241.0096
+        },
+        {
+          "time": 50,
+          "value": 240.5
+        },
+        {
+          "time": 51,
+          "value": 239.96959999999999
+        },
+        {
+          "time": 75,
+          "value": 221
+        },
+        {
+          "time": 100,
+          "value": 188.5
+        },
+        {
+          "time": 125,
+          "value": 143
+        },
+        {
+          "time": 150,
+          "value": 143
+        },
+        {
+          "time": 175,
+          "value": 143
+        },
+        {
+          "time": 200,
+          "value": 143
+        },
+        {
+          "time": 250,
+          "value": 143
+        },
+        {
+          "time": 300,
+          "value": 143
+        },
+        {
+          "time": 200,
+          "value": 143
+        },
+        {
+          "time": 175,
+          "value": 143
+        },
+        {
+          "time": 150,
+          "value": 143
+        },
+        {
+          "time": 125,
+          "value": 143
+        },
+        {
+          "time": 100,
+          "value": 188.5
+        },
+        {
+          "time": 75,
+          "value": 221
+        },
+        {
+          "time": 50,
+          "value": 240.5
+        },
+        {
+          "time": 49,
+          "value": 241.0096
+        },
+        {
+          "time": 25,
+          "value": 247
+        },
+        {
+          "time": 0,
+          "value": 165
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 165
+        }
+      ],
+      "resetValue": 165
+    },
+    {
+      "name": "generated11",
+      "tracks": [
+        {
+          "to": 65,
+          "duration": 25,
+          "position": 25,
+          "ease": "outQuad",
+          "modifier": "double"
+        },
+        {
+          "set": -34,
+          "position": 0
+        },
+        {
+          "to": -70,
+          "duration": 25,
+          "position": 50,
+          "ease": "linear"
+        },
+        {
+          "set": 10,
+          "position": 100
+        },
+        {
+          "set": 143,
+          "position": 0
+        },
+        {
+          "to": 186,
+          "duration": 100,
+          "position": 0,
+          "ease": "inQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 100,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 143
+        },
+        {
+          "time": 25,
+          "value": 145.6875
+        },
+        {
+          "time": 49,
+          "value": 153.3243
+        },
+        {
+          "time": 50,
+          "value": 153.75
+        },
+        {
+          "time": 51,
+          "value": 154.1843
+        },
+        {
+          "time": 75,
+          "value": 167.1875
+        },
+        {
+          "time": 100,
+          "value": 186
+        },
+        {
+          "time": 125,
+          "value": 186
+        },
+        {
+          "time": 150,
+          "value": 186
+        },
+        {
+          "time": 175,
+          "value": 186
+        },
+        {
+          "time": 200,
+          "value": 186
+        },
+        {
+          "time": 250,
+          "value": 186
+        },
+        {
+          "time": 300,
+          "value": 186
+        },
+        {
+          "time": 200,
+          "value": 186
+        },
+        {
+          "time": 175,
+          "value": 186
+        },
+        {
+          "time": 150,
+          "value": 186
+        },
+        {
+          "time": 125,
+          "value": 186
+        },
+        {
+          "time": 100,
+          "value": 186
+        },
+        {
+          "time": 75,
+          "value": 167.1875
+        },
+        {
+          "time": 50,
+          "value": 153.75
+        },
+        {
+          "time": 49,
+          "value": 153.3243
+        },
+        {
+          "time": 25,
+          "value": 145.6875
+        },
+        {
+          "time": 0,
+          "value": 143
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 143
+        }
+      ],
+      "resetValue": 143
+    },
+    {
+      "name": "generated12",
+      "tracks": [
+        {
+          "to": 144,
+          "duration": 50,
+          "position": 0,
+          "ease": "inQuad"
+        },
+        {
+          "to": 255,
+          "duration": 100,
+          "position": 50,
+          "ease": "linear"
+        },
+        {
+          "set": 254,
+          "position": 25
+        }
+      ],
+      "initial": 0,
+      "duration": 150,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 254
+        },
+        {
+          "time": 49,
+          "value": 254
+        },
+        {
+          "time": 50,
+          "value": 254
+        },
+        {
+          "time": 51,
+          "value": 254
+        },
+        {
+          "time": 75,
+          "value": 254
+        },
+        {
+          "time": 100,
+          "value": 254
+        },
+        {
+          "time": 125,
+          "value": 254
+        },
+        {
+          "time": 150,
+          "value": 254
+        },
+        {
+          "time": 175,
+          "value": 254
+        },
+        {
+          "time": 200,
+          "value": 254
+        },
+        {
+          "time": 250,
+          "value": 254
+        },
+        {
+          "time": 300,
+          "value": 254
+        },
+        {
+          "time": 200,
+          "value": 254
+        },
+        {
+          "time": 175,
+          "value": 254
+        },
+        {
+          "time": 150,
+          "value": 254
+        },
+        {
+          "time": 125,
+          "value": 254
+        },
+        {
+          "time": 100,
+          "value": 254
+        },
+        {
+          "time": 75,
+          "value": 254
+        },
+        {
+          "time": 50,
+          "value": 254
+        },
+        {
+          "time": 49,
+          "value": 254
+        },
+        {
+          "time": 25,
+          "value": 254
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "generated13",
+      "tracks": [
+        {
+          "to": 258,
+          "duration": 25,
+          "position": 0,
+          "ease": "outQuad"
+        },
+        {
+          "to": 23,
+          "duration": 100,
+          "position": 75,
+          "ease": "linear"
+        },
+        {
+          "to": 260,
+          "duration": 50,
+          "position": 50,
+          "ease": "linear"
+        },
+        {
+          "to": 228,
+          "duration": 150,
+          "position": 150,
+          "from": 286,
+          "ease": "linear"
+        }
+      ],
+      "initial": 0,
+      "duration": 300,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 258
+        },
+        {
+          "time": 49,
+          "value": 258
+        },
+        {
+          "time": 50,
+          "value": 258
+        },
+        {
+          "time": 51,
+          "value": 258.04
+        },
+        {
+          "time": 75,
+          "value": 259
+        },
+        {
+          "time": 100,
+          "value": 260
+        },
+        {
+          "time": 125,
+          "value": 260
+        },
+        {
+          "time": 150,
+          "value": 286
+        },
+        {
+          "time": 175,
+          "value": 276.3333333333333
+        },
+        {
+          "time": 200,
+          "value": 266.6666666666667
+        },
+        {
+          "time": 250,
+          "value": 247.33333333333334
+        },
+        {
+          "time": 300,
+          "value": 228
+        },
+        {
+          "time": 200,
+          "value": 266.6666666666667
+        },
+        {
+          "time": 175,
+          "value": 276.3333333333333
+        },
+        {
+          "time": 150,
+          "value": 286
+        },
+        {
+          "time": 125,
+          "value": 286
+        },
+        {
+          "time": 100,
+          "value": 260
+        },
+        {
+          "time": 75,
+          "value": 259
+        },
+        {
+          "time": 50,
+          "value": 258
+        },
+        {
+          "time": 49,
+          "value": 258
+        },
+        {
+          "time": 25,
+          "value": 258
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "generated14",
+      "tracks": [
+        {
+          "to": 66,
+          "duration": 150,
+          "position": 150,
+          "ease": "linear",
+          "modifier": "double"
+        },
+        {
+          "to": 5,
+          "duration": 50,
+          "position": 25,
+          "from": -36,
+          "ease": "inQuad"
+        },
+        {
+          "to": 93,
+          "duration": 100,
+          "position": 50,
+          "from": 97,
+          "ease": "linear",
+          "modifier": "double"
+        }
+      ],
+      "initial": 0,
+      "duration": 300,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": -36
+        },
+        {
+          "time": 49,
+          "value": -26.5536
+        },
+        {
+          "time": 50,
+          "value": 194
+        },
+        {
+          "time": 51,
+          "value": 193.92
+        },
+        {
+          "time": 75,
+          "value": 192
+        },
+        {
+          "time": 100,
+          "value": 190
+        },
+        {
+          "time": 125,
+          "value": 188
+        },
+        {
+          "time": 150,
+          "value": 186
+        },
+        {
+          "time": 175,
+          "value": 186
+        },
+        {
+          "time": 200,
+          "value": 186
+        },
+        {
+          "time": 250,
+          "value": 186
+        },
+        {
+          "time": 300,
+          "value": 186
+        },
+        {
+          "time": 200,
+          "value": 186
+        },
+        {
+          "time": 175,
+          "value": 186
+        },
+        {
+          "time": 150,
+          "value": 186
+        },
+        {
+          "time": 125,
+          "value": 188
+        },
+        {
+          "time": 100,
+          "value": 190
+        },
+        {
+          "time": 75,
+          "value": 192
+        },
+        {
+          "time": 50,
+          "value": -25.75
+        },
+        {
+          "time": 49,
+          "value": -26.5536
+        },
+        {
+          "time": 25,
+          "value": -36
+        },
+        {
+          "time": 0,
+          "value": -36
+        },
+        {
+          "time": -25,
+          "value": -36
+        },
+        {
+          "time": 0,
+          "value": -36
+        }
+      ],
+      "resetValue": -36
+    },
+    {
+      "name": "generated15",
+      "tracks": [
+        {
+          "to": 167,
+          "duration": 100,
+          "position": -25,
+          "ease": "outQuad"
+        },
+        {
+          "to": 122,
+          "duration": 50,
+          "position": 25,
+          "from": -31,
+          "ease": "inQuad"
+        },
+        {
+          "set": -61,
+          "position": 50
+        },
+        {
+          "set": 20,
+          "position": 150
+        },
+        {
+          "to": 137,
+          "duration": 100,
+          "position": 150,
+          "ease": "inQuad"
+        },
+        {
+          "to": -9,
+          "duration": 25,
+          "position": 25,
+          "ease": "outQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 73.0625
+        },
+        {
+          "time": 25,
+          "value": 125.25
+        },
+        {
+          "time": 49,
+          "value": -8.785200000000003
+        },
+        {
+          "time": 50,
+          "value": -9
+        },
+        {
+          "time": 51,
+          "value": -9
+        },
+        {
+          "time": 75,
+          "value": -9
+        },
+        {
+          "time": 100,
+          "value": -9
+        },
+        {
+          "time": 125,
+          "value": -9
+        },
+        {
+          "time": 150,
+          "value": -9
+        },
+        {
+          "time": 175,
+          "value": -9
+        },
+        {
+          "time": 200,
+          "value": -9
+        },
+        {
+          "time": 250,
+          "value": -9
+        },
+        {
+          "time": 300,
+          "value": -9
+        },
+        {
+          "time": 200,
+          "value": -9
+        },
+        {
+          "time": 175,
+          "value": -9
+        },
+        {
+          "time": 150,
+          "value": -9
+        },
+        {
+          "time": 125,
+          "value": -9
+        },
+        {
+          "time": 100,
+          "value": -9
+        },
+        {
+          "time": 75,
+          "value": -9
+        },
+        {
+          "time": 50,
+          "value": -9
+        },
+        {
+          "time": 49,
+          "value": -8.785200000000003
+        },
+        {
+          "time": 25,
+          "value": 125.25
+        },
+        {
+          "time": 0,
+          "value": 73.0625
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 73.0625
+        }
+      ],
+      "resetValue": 73.0625
+    },
+    {
+      "name": "generated16",
+      "tracks": [
+        {
+          "to": 54,
+          "duration": 100,
+          "position": 75,
+          "ease": "outQuad",
+          "modifier": "double"
+        },
+        {
+          "set": 279,
+          "position": 50
+        },
+        {
+          "to": 149,
+          "duration": 25,
+          "position": 25,
+          "ease": "outQuad"
+        },
+        {
+          "set": -96,
+          "position": -25
+        },
+        {
+          "to": 209,
+          "duration": 50,
+          "position": 50,
+          "from": -29,
+          "ease": "inQuad"
+        },
+        {
+          "to": 51,
+          "duration": 150,
+          "position": 75,
+          "ease": "outQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 225,
+      "samples": [
+        {
+          "time": -25,
+          "value": -96
+        },
+        {
+          "time": 0,
+          "value": -96
+        },
+        {
+          "time": 25,
+          "value": -96
+        },
+        {
+          "time": 49,
+          "value": 148.7616
+        },
+        {
+          "time": 50,
+          "value": -29
+        },
+        {
+          "time": 51,
+          "value": -28.9048
+        },
+        {
+          "time": 75,
+          "value": 30.5
+        },
+        {
+          "time": 100,
+          "value": 36.763888888888886
+        },
+        {
+          "time": 125,
+          "value": 41.888888888888886
+        },
+        {
+          "time": 150,
+          "value": 45.875
+        },
+        {
+          "time": 175,
+          "value": 48.72222222222222
+        },
+        {
+          "time": 200,
+          "value": 50.43055555555556
+        },
+        {
+          "time": 250,
+          "value": 51
+        },
+        {
+          "time": 300,
+          "value": 51
+        },
+        {
+          "time": 200,
+          "value": 50.43055555555556
+        },
+        {
+          "time": 175,
+          "value": 48.72222222222222
+        },
+        {
+          "time": 150,
+          "value": 45.875
+        },
+        {
+          "time": 125,
+          "value": 41.888888888888886
+        },
+        {
+          "time": 100,
+          "value": 36.763888888888886
+        },
+        {
+          "time": 75,
+          "value": 30.5
+        },
+        {
+          "time": 50,
+          "value": 279
+        },
+        {
+          "time": 49,
+          "value": 148.7616
+        },
+        {
+          "time": 25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": -96
+        },
+        {
+          "time": 0,
+          "value": -96
+        }
+      ],
+      "resetValue": -96
+    },
+    {
+      "name": "generated17",
+      "tracks": [
+        {
+          "set": 165,
+          "position": 50
+        },
+        {
+          "to": 298,
+          "duration": 50,
+          "position": 50,
+          "ease": "linear"
+        },
+        {
+          "set": 61,
+          "position": 0
+        }
+      ],
+      "initial": 0,
+      "duration": 100,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 61
+        },
+        {
+          "time": 25,
+          "value": 61
+        },
+        {
+          "time": 49,
+          "value": 61
+        },
+        {
+          "time": 50,
+          "value": 165
+        },
+        {
+          "time": 51,
+          "value": 167.66
+        },
+        {
+          "time": 75,
+          "value": 231.5
+        },
+        {
+          "time": 100,
+          "value": 298
+        },
+        {
+          "time": 125,
+          "value": 298
+        },
+        {
+          "time": 150,
+          "value": 298
+        },
+        {
+          "time": 175,
+          "value": 298
+        },
+        {
+          "time": 200,
+          "value": 298
+        },
+        {
+          "time": 250,
+          "value": 298
+        },
+        {
+          "time": 300,
+          "value": 298
+        },
+        {
+          "time": 200,
+          "value": 298
+        },
+        {
+          "time": 175,
+          "value": 298
+        },
+        {
+          "time": 150,
+          "value": 298
+        },
+        {
+          "time": 125,
+          "value": 298
+        },
+        {
+          "time": 100,
+          "value": 298
+        },
+        {
+          "time": 75,
+          "value": 231.5
+        },
+        {
+          "time": 50,
+          "value": 165
+        },
+        {
+          "time": 49,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 61
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 61
+        }
+      ],
+      "resetValue": 61
+    },
+    {
+      "name": "generated18",
+      "tracks": [
+        {
+          "to": 257,
+          "duration": 25,
+          "position": -25,
+          "ease": "outQuad",
+          "modifier": "double"
+        },
+        {
+          "set": 101,
+          "position": -25
+        },
+        {
+          "to": 271,
+          "duration": 25,
+          "position": 0,
+          "ease": "linear"
+        }
+      ],
+      "initial": 0,
+      "duration": 25,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 514
+        },
+        {
+          "time": 25,
+          "value": 271
+        },
+        {
+          "time": 49,
+          "value": 271
+        },
+        {
+          "time": 50,
+          "value": 271
+        },
+        {
+          "time": 51,
+          "value": 271
+        },
+        {
+          "time": 75,
+          "value": 271
+        },
+        {
+          "time": 100,
+          "value": 271
+        },
+        {
+          "time": 125,
+          "value": 271
+        },
+        {
+          "time": 150,
+          "value": 271
+        },
+        {
+          "time": 175,
+          "value": 271
+        },
+        {
+          "time": 200,
+          "value": 271
+        },
+        {
+          "time": 250,
+          "value": 271
+        },
+        {
+          "time": 300,
+          "value": 271
+        },
+        {
+          "time": 200,
+          "value": 271
+        },
+        {
+          "time": 175,
+          "value": 271
+        },
+        {
+          "time": 150,
+          "value": 271
+        },
+        {
+          "time": 125,
+          "value": 271
+        },
+        {
+          "time": 100,
+          "value": 271
+        },
+        {
+          "time": 75,
+          "value": 271
+        },
+        {
+          "time": 50,
+          "value": 271
+        },
+        {
+          "time": 49,
+          "value": 271
+        },
+        {
+          "time": 25,
+          "value": 271
+        },
+        {
+          "time": 0,
+          "value": 514
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 514
+        }
+      ],
+      "resetValue": 514
+    },
+    {
+      "name": "generated19",
+      "tracks": [
+        {
+          "to": 257,
+          "duration": 25,
+          "position": -25,
+          "ease": "outQuad"
+        },
+        {
+          "to": -56,
+          "duration": 50,
+          "position": -25,
+          "ease": "outQuad"
+        },
+        {
+          "to": 185,
+          "duration": 50,
+          "position": -25,
+          "ease": "inQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 25,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 46.25
+        },
+        {
+          "time": 25,
+          "value": 185
+        },
+        {
+          "time": 49,
+          "value": 185
+        },
+        {
+          "time": 50,
+          "value": 185
+        },
+        {
+          "time": 51,
+          "value": 185
+        },
+        {
+          "time": 75,
+          "value": 185
+        },
+        {
+          "time": 100,
+          "value": 185
+        },
+        {
+          "time": 125,
+          "value": 185
+        },
+        {
+          "time": 150,
+          "value": 185
+        },
+        {
+          "time": 175,
+          "value": 185
+        },
+        {
+          "time": 200,
+          "value": 185
+        },
+        {
+          "time": 250,
+          "value": 185
+        },
+        {
+          "time": 300,
+          "value": 185
+        },
+        {
+          "time": 200,
+          "value": 185
+        },
+        {
+          "time": 175,
+          "value": 185
+        },
+        {
+          "time": 150,
+          "value": 185
+        },
+        {
+          "time": 125,
+          "value": 185
+        },
+        {
+          "time": 100,
+          "value": 185
+        },
+        {
+          "time": 75,
+          "value": 185
+        },
+        {
+          "time": 50,
+          "value": 185
+        },
+        {
+          "time": 49,
+          "value": 185
+        },
+        {
+          "time": 25,
+          "value": 185
+        },
+        {
+          "time": 0,
+          "value": 46.25
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 46.25
+        }
+      ],
+      "resetValue": 46.25
+    },
+    {
+      "name": "generated20",
+      "tracks": [
+        {
+          "to": -91,
+          "duration": 50,
+          "position": -25,
+          "ease": "linear"
+        },
+        {
+          "to": 241,
+          "duration": 150,
+          "position": 0,
+          "ease": "outQuad",
+          "modifier": "double"
+        },
+        {
+          "to": 200,
+          "duration": 50,
+          "position": 150,
+          "ease": "inQuad"
+        },
+        {
+          "to": 289,
+          "duration": 100,
+          "position": 0,
+          "ease": "linear"
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": -45.5
+        },
+        {
+          "time": 25,
+          "value": 38.125
+        },
+        {
+          "time": 49,
+          "value": 118.405
+        },
+        {
+          "time": 50,
+          "value": 121.75
+        },
+        {
+          "time": 51,
+          "value": 125.095
+        },
+        {
+          "time": 75,
+          "value": 205.375
+        },
+        {
+          "time": 100,
+          "value": 289
+        },
+        {
+          "time": 125,
+          "value": 289
+        },
+        {
+          "time": 150,
+          "value": 289
+        },
+        {
+          "time": 175,
+          "value": 289
+        },
+        {
+          "time": 200,
+          "value": 289
+        },
+        {
+          "time": 250,
+          "value": 289
+        },
+        {
+          "time": 300,
+          "value": 289
+        },
+        {
+          "time": 200,
+          "value": 289
+        },
+        {
+          "time": 175,
+          "value": 289
+        },
+        {
+          "time": 150,
+          "value": 289
+        },
+        {
+          "time": 125,
+          "value": 289
+        },
+        {
+          "time": 100,
+          "value": 289
+        },
+        {
+          "time": 75,
+          "value": 205.375
+        },
+        {
+          "time": 50,
+          "value": 121.75
+        },
+        {
+          "time": 49,
+          "value": 118.405
+        },
+        {
+          "time": 25,
+          "value": 38.125
+        },
+        {
+          "time": 0,
+          "value": -45.5
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": -45.5
+        }
+      ],
+      "resetValue": -45.5
+    },
+    {
+      "name": "generated21",
+      "tracks": [
+        {
+          "set": 39,
+          "position": -25
+        },
+        {
+          "to": -21,
+          "duration": 25,
+          "position": 0,
+          "from": 117,
+          "ease": "inQuad"
+        },
+        {
+          "set": -99,
+          "position": 100
+        },
+        {
+          "to": -30,
+          "duration": 150,
+          "position": 100,
+          "ease": "inQuad",
+          "modifier": "double"
+        },
+        {
+          "to": 167,
+          "duration": 100,
+          "position": 75,
+          "ease": "linear"
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": 39
+        },
+        {
+          "time": 0,
+          "value": 117
+        },
+        {
+          "time": 25,
+          "value": -21
+        },
+        {
+          "time": 49,
+          "value": -21
+        },
+        {
+          "time": 50,
+          "value": -21
+        },
+        {
+          "time": 51,
+          "value": -21
+        },
+        {
+          "time": 75,
+          "value": -21
+        },
+        {
+          "time": 100,
+          "value": 26
+        },
+        {
+          "time": 125,
+          "value": 73
+        },
+        {
+          "time": 150,
+          "value": 120
+        },
+        {
+          "time": 175,
+          "value": 167
+        },
+        {
+          "time": 200,
+          "value": 167
+        },
+        {
+          "time": 250,
+          "value": 167
+        },
+        {
+          "time": 300,
+          "value": 167
+        },
+        {
+          "time": 200,
+          "value": 167
+        },
+        {
+          "time": 175,
+          "value": 167
+        },
+        {
+          "time": 150,
+          "value": 120
+        },
+        {
+          "time": 125,
+          "value": 73
+        },
+        {
+          "time": 100,
+          "value": 26
+        },
+        {
+          "time": 75,
+          "value": -21
+        },
+        {
+          "time": 50,
+          "value": -21
+        },
+        {
+          "time": 49,
+          "value": -21
+        },
+        {
+          "time": 25,
+          "value": -21
+        },
+        {
+          "time": 0,
+          "value": 117
+        },
+        {
+          "time": -25,
+          "value": 39
+        },
+        {
+          "time": 0,
+          "value": 117
+        }
+      ],
+      "resetValue": 117
+    },
+    {
+      "name": "generated22",
+      "tracks": [
+        {
+          "to": 184,
+          "duration": 150,
+          "position": 150,
+          "ease": "linear"
+        },
+        {
+          "to": 82,
+          "duration": 150,
+          "position": 0,
+          "ease": "inQuad"
+        },
+        {
+          "to": 79,
+          "duration": 150,
+          "position": 50,
+          "ease": "linear"
+        },
+        {
+          "set": -50,
+          "position": 25
+        }
+      ],
+      "initial": 0,
+      "duration": 300,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": -50
+        },
+        {
+          "time": 49,
+          "value": -50
+        },
+        {
+          "time": 50,
+          "value": -50
+        },
+        {
+          "time": 51,
+          "value": -50
+        },
+        {
+          "time": 75,
+          "value": -50
+        },
+        {
+          "time": 100,
+          "value": -50
+        },
+        {
+          "time": 125,
+          "value": -50
+        },
+        {
+          "time": 150,
+          "value": -50
+        },
+        {
+          "time": 175,
+          "value": -50
+        },
+        {
+          "time": 200,
+          "value": -50
+        },
+        {
+          "time": 250,
+          "value": -50
+        },
+        {
+          "time": 300,
+          "value": -50
+        },
+        {
+          "time": 200,
+          "value": -50
+        },
+        {
+          "time": 175,
+          "value": -50
+        },
+        {
+          "time": 150,
+          "value": -50
+        },
+        {
+          "time": 125,
+          "value": -50
+        },
+        {
+          "time": 100,
+          "value": -50
+        },
+        {
+          "time": 75,
+          "value": -50
+        },
+        {
+          "time": 50,
+          "value": -50
+        },
+        {
+          "time": 49,
+          "value": -50
+        },
+        {
+          "time": 25,
+          "value": -50
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "generated23",
+      "tracks": [
+        {
+          "to": 26,
+          "duration": 150,
+          "position": 50,
+          "from": 210,
+          "ease": "linear",
+          "modifier": "double"
+        },
+        {
+          "to": -91,
+          "duration": 150,
+          "position": 50,
+          "from": 102,
+          "ease": "linear"
+        },
+        {
+          "set": 115,
+          "position": 25
+        },
+        {
+          "to": 245,
+          "duration": 25,
+          "position": 75,
+          "ease": "outQuad"
+        },
+        {
+          "to": 71,
+          "duration": 100,
+          "position": -25,
+          "ease": "linear"
+        }
+      ],
+      "initial": 0,
+      "duration": 200,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 17.75
+        },
+        {
+          "time": 25,
+          "value": 115
+        },
+        {
+          "time": 49,
+          "value": 115
+        },
+        {
+          "time": 50,
+          "value": 102
+        },
+        {
+          "time": 51,
+          "value": 100.71333333333334
+        },
+        {
+          "time": 75,
+          "value": 69.83333333333334
+        },
+        {
+          "time": 100,
+          "value": 245
+        },
+        {
+          "time": 125,
+          "value": 245
+        },
+        {
+          "time": 150,
+          "value": 245
+        },
+        {
+          "time": 175,
+          "value": 245
+        },
+        {
+          "time": 200,
+          "value": 245
+        },
+        {
+          "time": 250,
+          "value": 245
+        },
+        {
+          "time": 300,
+          "value": 245
+        },
+        {
+          "time": 200,
+          "value": 245
+        },
+        {
+          "time": 175,
+          "value": 245
+        },
+        {
+          "time": 150,
+          "value": 245
+        },
+        {
+          "time": 125,
+          "value": 245
+        },
+        {
+          "time": 100,
+          "value": 245
+        },
+        {
+          "time": 75,
+          "value": 69.83333333333334
+        },
+        {
+          "time": 50,
+          "value": 102
+        },
+        {
+          "time": 49,
+          "value": 102
+        },
+        {
+          "time": 25,
+          "value": 115
+        },
+        {
+          "time": 0,
+          "value": 17.75
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 17.75
+        }
+      ],
+      "resetValue": 17.75
+    },
+    {
+      "name": "generated24",
+      "tracks": [
+        {
+          "to": 204,
+          "duration": 150,
+          "position": 100,
+          "from": 106,
+          "ease": "inQuad"
+        },
+        {
+          "to": 280,
+          "duration": 50,
+          "position": -25,
+          "ease": "outQuad"
+        },
+        {
+          "to": -92,
+          "duration": 150,
+          "position": 100,
+          "ease": "linear"
+        },
+        {
+          "to": 120,
+          "duration": 25,
+          "position": 25,
+          "from": 106,
+          "ease": "linear"
+        },
+        {
+          "to": 72,
+          "duration": 50,
+          "position": 50,
+          "from": -36,
+          "ease": "linear"
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 210
+        },
+        {
+          "time": 25,
+          "value": 106
+        },
+        {
+          "time": 49,
+          "value": 119.44
+        },
+        {
+          "time": 50,
+          "value": -36
+        },
+        {
+          "time": 51,
+          "value": -33.84
+        },
+        {
+          "time": 75,
+          "value": 18
+        },
+        {
+          "time": 100,
+          "value": 72
+        },
+        {
+          "time": 125,
+          "value": 72
+        },
+        {
+          "time": 150,
+          "value": 72
+        },
+        {
+          "time": 175,
+          "value": 72
+        },
+        {
+          "time": 200,
+          "value": 72
+        },
+        {
+          "time": 250,
+          "value": 72
+        },
+        {
+          "time": 300,
+          "value": 72
+        },
+        {
+          "time": 200,
+          "value": 72
+        },
+        {
+          "time": 175,
+          "value": 72
+        },
+        {
+          "time": 150,
+          "value": 72
+        },
+        {
+          "time": 125,
+          "value": 72
+        },
+        {
+          "time": 100,
+          "value": 72
+        },
+        {
+          "time": 75,
+          "value": 18
+        },
+        {
+          "time": 50,
+          "value": 120
+        },
+        {
+          "time": 49,
+          "value": 119.44
+        },
+        {
+          "time": 25,
+          "value": 280
+        },
+        {
+          "time": 0,
+          "value": 210
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 210
+        }
+      ],
+      "resetValue": 210
+    },
+    {
+      "name": "generated25",
+      "tracks": [
+        {
+          "to": 36,
+          "duration": 100,
+          "position": 75,
+          "from": 83,
+          "ease": "outQuad"
+        },
+        {
+          "set": 169,
+          "position": 50
+        },
+        {
+          "to": 132,
+          "duration": 25,
+          "position": 0,
+          "ease": "inQuad"
+        },
+        {
+          "to": 234,
+          "duration": 100,
+          "position": 75,
+          "from": 26,
+          "ease": "inQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 175,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 132
+        },
+        {
+          "time": 49,
+          "value": 132
+        },
+        {
+          "time": 50,
+          "value": 169
+        },
+        {
+          "time": 51,
+          "value": 169
+        },
+        {
+          "time": 75,
+          "value": 26
+        },
+        {
+          "time": 100,
+          "value": 39
+        },
+        {
+          "time": 125,
+          "value": 78
+        },
+        {
+          "time": 150,
+          "value": 143
+        },
+        {
+          "time": 175,
+          "value": 234
+        },
+        {
+          "time": 200,
+          "value": 234
+        },
+        {
+          "time": 250,
+          "value": 234
+        },
+        {
+          "time": 300,
+          "value": 234
+        },
+        {
+          "time": 200,
+          "value": 234
+        },
+        {
+          "time": 175,
+          "value": 234
+        },
+        {
+          "time": 150,
+          "value": 143
+        },
+        {
+          "time": 125,
+          "value": 78
+        },
+        {
+          "time": 100,
+          "value": 39
+        },
+        {
+          "time": 75,
+          "value": 26
+        },
+        {
+          "time": 50,
+          "value": 169
+        },
+        {
+          "time": 49,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": 132
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "generated26",
+      "tracks": [
+        {
+          "to": 177,
+          "duration": 100,
+          "position": 25,
+          "from": 224,
+          "ease": "linear"
+        },
+        {
+          "to": 36,
+          "duration": 150,
+          "position": 150,
+          "ease": "inQuad"
+        },
+        {
+          "to": 49,
+          "duration": 50,
+          "position": 75,
+          "ease": "inQuad",
+          "modifier": "double"
+        },
+        {
+          "to": 248,
+          "duration": 50,
+          "position": 100,
+          "ease": "linear",
+          "modifier": "double"
+        },
+        {
+          "set": 230,
+          "position": 0
+        },
+        {
+          "set": -84,
+          "position": -25
+        }
+      ],
+      "initial": 0,
+      "duration": 300,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": -84
+        },
+        {
+          "time": 25,
+          "value": -84
+        },
+        {
+          "time": 49,
+          "value": 212.72
+        },
+        {
+          "time": 50,
+          "value": 212.25
+        },
+        {
+          "time": 51,
+          "value": 211.78
+        },
+        {
+          "time": 75,
+          "value": 401
+        },
+        {
+          "time": 100,
+          "value": 650.5
+        },
+        {
+          "time": 125,
+          "value": 573.25
+        },
+        {
+          "time": 150,
+          "value": 496
+        },
+        {
+          "time": 175,
+          "value": 496
+        },
+        {
+          "time": 200,
+          "value": 496
+        },
+        {
+          "time": 250,
+          "value": 496
+        },
+        {
+          "time": 300,
+          "value": 496
+        },
+        {
+          "time": 200,
+          "value": 496
+        },
+        {
+          "time": 175,
+          "value": 496
+        },
+        {
+          "time": 150,
+          "value": 496
+        },
+        {
+          "time": 125,
+          "value": 573.25
+        },
+        {
+          "time": 100,
+          "value": 325.25
+        },
+        {
+          "time": 75,
+          "value": 200.5
+        },
+        {
+          "time": 50,
+          "value": 212.25
+        },
+        {
+          "time": 49,
+          "value": 212.72
+        },
+        {
+          "time": 25,
+          "value": 224
+        },
+        {
+          "time": 0,
+          "value": 230
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": -84
+        }
+      ],
+      "resetValue": -84
+    },
+    {
+      "name": "generated27",
+      "tracks": [
+        {
+          "to": 79,
+          "duration": 25,
+          "position": 0,
+          "from": 53,
+          "ease": "outQuad"
+        },
+        {
+          "to": -8,
+          "duration": 50,
+          "position": 75,
+          "ease": "inQuad",
+          "modifier": "double"
+        },
+        {
+          "to": 6,
+          "duration": 150,
+          "position": 100,
+          "ease": "linear"
+        },
+        {
+          "to": 258,
+          "duration": 100,
+          "position": 50,
+          "ease": "inQuad",
+          "modifier": "double"
+        },
+        {
+          "to": 16,
+          "duration": 25,
+          "position": 50,
+          "from": 205,
+          "ease": "outQuad"
+        },
+        {
+          "to": 43,
+          "duration": 50,
+          "position": 150,
+          "ease": "outQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 53
+        },
+        {
+          "time": 25,
+          "value": 79
+        },
+        {
+          "time": 49,
+          "value": 79
+        },
+        {
+          "time": 50,
+          "value": 205
+        },
+        {
+          "time": 51,
+          "value": 190.1824
+        },
+        {
+          "time": 75,
+          "value": 16
+        },
+        {
+          "time": 100,
+          "value": 16
+        },
+        {
+          "time": 125,
+          "value": 16
+        },
+        {
+          "time": 150,
+          "value": 16
+        },
+        {
+          "time": 175,
+          "value": 36.25
+        },
+        {
+          "time": 200,
+          "value": 43
+        },
+        {
+          "time": 250,
+          "value": 43
+        },
+        {
+          "time": 300,
+          "value": 43
+        },
+        {
+          "time": 200,
+          "value": 43
+        },
+        {
+          "time": 175,
+          "value": 36.25
+        },
+        {
+          "time": 150,
+          "value": 16
+        },
+        {
+          "time": 125,
+          "value": 16
+        },
+        {
+          "time": 100,
+          "value": 16
+        },
+        {
+          "time": 75,
+          "value": 16
+        },
+        {
+          "time": 50,
+          "value": 205
+        },
+        {
+          "time": 49,
+          "value": 205
+        },
+        {
+          "time": 25,
+          "value": 79
+        },
+        {
+          "time": 0,
+          "value": 53
+        },
+        {
+          "time": -25,
+          "value": 53
+        },
+        {
+          "time": 0,
+          "value": 53
+        }
+      ],
+      "resetValue": 53
+    },
+    {
+      "name": "generated28",
+      "tracks": [
+        {
+          "set": 283,
+          "position": 50
+        },
+        {
+          "set": -46,
+          "position": 25
+        },
+        {
+          "to": 149,
+          "duration": 50,
+          "position": 100,
+          "ease": "linear"
+        },
+        {
+          "to": -38,
+          "duration": 25,
+          "position": 75,
+          "ease": "outQuad"
+        },
+        {
+          "to": -22,
+          "duration": 100,
+          "position": 75,
+          "from": 80,
+          "ease": "inQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 175,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": -46
+        },
+        {
+          "time": 49,
+          "value": -46
+        },
+        {
+          "time": 50,
+          "value": 283
+        },
+        {
+          "time": 51,
+          "value": 283
+        },
+        {
+          "time": 75,
+          "value": 80
+        },
+        {
+          "time": 100,
+          "value": 73.625
+        },
+        {
+          "time": 125,
+          "value": 54.5
+        },
+        {
+          "time": 150,
+          "value": 22.625
+        },
+        {
+          "time": 175,
+          "value": -22
+        },
+        {
+          "time": 200,
+          "value": -22
+        },
+        {
+          "time": 250,
+          "value": -22
+        },
+        {
+          "time": 300,
+          "value": -22
+        },
+        {
+          "time": 200,
+          "value": -22
+        },
+        {
+          "time": 175,
+          "value": -22
+        },
+        {
+          "time": 150,
+          "value": 22.625
+        },
+        {
+          "time": 125,
+          "value": 54.5
+        },
+        {
+          "time": 100,
+          "value": 73.625
+        },
+        {
+          "time": 75,
+          "value": 80
+        },
+        {
+          "time": 50,
+          "value": 283
+        },
+        {
+          "time": 49,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": -46
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        }
+      ],
+      "resetValue": 0
+    },
+    {
+      "name": "generated29",
+      "tracks": [
+        {
+          "to": 94,
+          "duration": 100,
+          "position": 0,
+          "from": -4,
+          "ease": "outQuad"
+        },
+        {
+          "to": 68,
+          "duration": 25,
+          "position": 25,
+          "ease": "outQuad"
+        },
+        {
+          "to": 285,
+          "duration": 150,
+          "position": 75,
+          "ease": "linear"
+        },
+        {
+          "to": 104,
+          "duration": 100,
+          "position": 150,
+          "ease": "outQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": -4
+        },
+        {
+          "time": 25,
+          "value": 38.875
+        },
+        {
+          "time": 49,
+          "value": 67.9534
+        },
+        {
+          "time": 50,
+          "value": 68
+        },
+        {
+          "time": 51,
+          "value": 68
+        },
+        {
+          "time": 75,
+          "value": 68
+        },
+        {
+          "time": 100,
+          "value": 104.16666666666666
+        },
+        {
+          "time": 125,
+          "value": 140.33333333333331
+        },
+        {
+          "time": 150,
+          "value": 176.5
+        },
+        {
+          "time": 175,
+          "value": 144.78125
+        },
+        {
+          "time": 200,
+          "value": 122.125
+        },
+        {
+          "time": 250,
+          "value": 104
+        },
+        {
+          "time": 300,
+          "value": 104
+        },
+        {
+          "time": 200,
+          "value": 122.125
+        },
+        {
+          "time": 175,
+          "value": 144.78125
+        },
+        {
+          "time": 150,
+          "value": 176.5
+        },
+        {
+          "time": 125,
+          "value": 140.33333333333331
+        },
+        {
+          "time": 100,
+          "value": 104.16666666666666
+        },
+        {
+          "time": 75,
+          "value": 68
+        },
+        {
+          "time": 50,
+          "value": 68
+        },
+        {
+          "time": 49,
+          "value": 67.9534
+        },
+        {
+          "time": 25,
+          "value": 38.875
+        },
+        {
+          "time": 0,
+          "value": -4
+        },
+        {
+          "time": -25,
+          "value": -4
+        },
+        {
+          "time": 0,
+          "value": -4
+        }
+      ],
+      "resetValue": -4
+    },
+    {
+      "name": "generated30",
+      "tracks": [
+        {
+          "to": 52,
+          "duration": 50,
+          "position": 25,
+          "from": -43,
+          "ease": "outQuad"
+        },
+        {
+          "set": 206,
+          "position": 150
+        },
+        {
+          "to": 227,
+          "duration": 150,
+          "position": 100,
+          "from": 89,
+          "ease": "outQuad"
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": 0
+        },
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 25,
+          "value": -43
+        },
+        {
+          "time": 49,
+          "value": 26.311999999999998
+        },
+        {
+          "time": 50,
+          "value": 28.25
+        },
+        {
+          "time": 51,
+          "value": 30.11200000000001
+        },
+        {
+          "time": 75,
+          "value": 52
+        },
+        {
+          "time": 100,
+          "value": 89
+        },
+        {
+          "time": 125,
+          "value": 131.16666666666666
+        },
+        {
+          "time": 150,
+          "value": 165.66666666666666
+        },
+        {
+          "time": 175,
+          "value": 192.5
+        },
+        {
+          "time": 200,
+          "value": 211.66666666666666
+        },
+        {
+          "time": 250,
+          "value": 227
+        },
+        {
+          "time": 300,
+          "value": 227
+        },
+        {
+          "time": 200,
+          "value": 211.66666666666666
+        },
+        {
+          "time": 175,
+          "value": 192.5
+        },
+        {
+          "time": 150,
+          "value": 165.66666666666666
+        },
+        {
+          "time": 125,
+          "value": 131.16666666666666
+        },
+        {
+          "time": 100,
+          "value": 89
+        },
+        {
+          "time": 75,
+          "value": 52
+        },
+        {
+          "time": 50,
+          "value": 28.25
+        },
+        {
+          "time": 49,
+          "value": 26.311999999999998
+        },
+        {
+          "time": 25,
+          "value": -43
+        },
+        {
+          "time": 0,
+          "value": -43
+        },
+        {
+          "time": -25,
+          "value": -43
+        },
+        {
+          "time": 0,
+          "value": -43
+        }
+      ],
+      "resetValue": -43
+    },
+    {
+      "name": "generated31",
+      "tracks": [
+        {
+          "to": 106,
+          "duration": 25,
+          "position": -25,
+          "ease": "linear"
+        },
+        {
+          "to": -37,
+          "duration": 100,
+          "position": 150,
+          "from": -75,
+          "ease": "linear"
+        },
+        {
+          "to": 210,
+          "duration": 50,
+          "position": -25,
+          "from": -74,
+          "ease": "linear"
+        }
+      ],
+      "initial": 0,
+      "duration": 250,
+      "samples": [
+        {
+          "time": -25,
+          "value": -74
+        },
+        {
+          "time": 0,
+          "value": 68
+        },
+        {
+          "time": 25,
+          "value": 210
+        },
+        {
+          "time": 49,
+          "value": 210
+        },
+        {
+          "time": 50,
+          "value": 210
+        },
+        {
+          "time": 51,
+          "value": 210
+        },
+        {
+          "time": 75,
+          "value": 210
+        },
+        {
+          "time": 100,
+          "value": 210
+        },
+        {
+          "time": 125,
+          "value": 210
+        },
+        {
+          "time": 150,
+          "value": 210
+        },
+        {
+          "time": 175,
+          "value": 210
+        },
+        {
+          "time": 200,
+          "value": 210
+        },
+        {
+          "time": 250,
+          "value": 210
+        },
+        {
+          "time": 300,
+          "value": 210
+        },
+        {
+          "time": 200,
+          "value": 210
+        },
+        {
+          "time": 175,
+          "value": 210
+        },
+        {
+          "time": 150,
+          "value": 210
+        },
+        {
+          "time": 125,
+          "value": 210
+        },
+        {
+          "time": 100,
+          "value": 210
+        },
+        {
+          "time": 75,
+          "value": 210
+        },
+        {
+          "time": 50,
+          "value": 210
+        },
+        {
+          "time": 49,
+          "value": 210
+        },
+        {
+          "time": 25,
+          "value": 210
+        },
+        {
+          "time": 0,
+          "value": 68
+        },
+        {
+          "time": -25,
+          "value": -74
+        },
+        {
+          "time": 0,
+          "value": 68
+        }
+      ],
+      "resetValue": 68
     }
   ],
   "timing": [
