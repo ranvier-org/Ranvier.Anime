@@ -49,6 +49,8 @@ const springMutations = [['stiffness', 200], ['damping', 20], ['mass', 2], ['vel
   mutableSpring[property] = value;
   return { property, value, ...snapshotSpring(mutableSpring, property) };
 });
+const automatic2D = [{x: 0, y: 0}, {x: 20, y: 0}, {x: 50, y: 0}, {x: 0, y: 30}, {x: 20, y: 30}, {x: 50, y: 30}];
+const automatic3D = [{x: 0, y: 0, z: 0}, {x: 10, y: 0, z: 0}, {x: 0, y: 20, z: 10}, {x: 10, y: 20, z: 20}];
 const staggering = [
   { name: 'step', value: 10, parameters: {}, count: 5 },
   { name: 'center', value: 10, parameters: { from: 'center' }, count: 5 },
@@ -100,15 +102,32 @@ const staggering = [
   { name: 'randomSingle', value: 10, parameters: { from: 'random', seed: 42 }, count: 1 },
   { name: 'jitterZeroTotal', value: 10, parameters: { seed: 42, jitter: 5, total: 0 }, count: 3 },
   { name: 'jitterShortTotal', value: 10, parameters: { seed: 42, jitter: 5, total: 2 }, count: 4 },
-].map(({ name, value, parameters, count }) => {
+  { name: 'autoFirst', value: 10, parameters: { grid: true }, targets: automatic2D },
+  { name: 'autoCenter', value: [10, 110], parameters: { grid: true, from: 'center' }, targets: automatic2D },
+  { name: 'autoLast', value: 10, parameters: { grid: true, from: 'last' }, targets: automatic2D },
+  { name: 'autoIndex', value: 10, parameters: { grid: true, from: 2 }, targets: automatic2D },
+  { name: 'autoPosition', value: 10, parameters: { grid: true, from: [0.25, 0.75] }, targets: automatic2D },
+  { name: 'autoSignedX', value: 10, parameters: { grid: true, from: 'center', axis: 'x' }, targets: automatic2D },
+  { name: 'autoSignedY', value: 10, parameters: { grid: true, from: 'last', axis: 'y', reversed: true }, targets: automatic2D },
+  { name: 'auto3D', value: 10, parameters: { grid: true, from: 'center' }, targets: automatic3D },
+  { name: 'auto3DZ', value: 10, parameters: { grid: true, from: [0.5, 0.5], axis: 'z' }, targets: automatic3D },
+  { name: 'auto3DPosition', value: 10, parameters: { grid: true, from: [0.5, 0.5, 0.25] }, targets: automatic3D },
+  { name: 'autoRandomJitter', value: [10, 110], parameters: { grid: true, from: 'random', seed: 42, jitter: [2, 9], ease: 'inQuad', reversed: true }, targets: automatic2D },
+  { name: 'autoDuplicates', value: 10, parameters: { grid: true }, targets: [{x: 5, y: 5}, {x: 5, y: 5}, {x: 15, y: 5}] },
+  { name: 'autoMissing', value: 10, parameters: { grid: true, from: 'center' }, targets: [{x: 0, y: 0}, {}, {x: 100, y: 100}] },
+  { name: 'autoShortTotal', value: 10, parameters: { grid: true, total: 3 }, targets: automatic2D },
+  { name: 'autoLongTotal', value: 10, parameters: { grid: true, total: 9 }, targets: automatic2D },
+  { name: 'autoInvalidOrigin', value: 10, parameters: { grid: true, from: 20 }, targets: automatic2D },
+  { name: 'autoRectCenters', value: 10, parameters: { grid: true }, targets: [{rect: {left: 0, top: 0, width: 20, height: 10}}, {rect: {left: 20, top: 10, width: 40, height: 20}}, {rect: {left: 60, top: 30, width: 10, height: 10}}] },
+].map(({ name, value, parameters, count, targets: geometry }) => {
   const resolved = { ...parameters };
   if (parameters.ease === 'spring') resolved.ease = spring();
   if (parameters.map === 'reverse') resolved.use = (_, index, total) => total - 1 - index;
   if (parameters.map === 'invalid') resolved.use = (_, index, total) => total + index;
   if (parameters.modifier === 'double') resolved.modifier = value => value * 2;
   const evaluate = stagger(value, resolved);
-  const targets = Array.from({ length: count }, () => ({}));
-  return { name, value, parameters, values: targets.map((target, index) => {
+  const targets = geometry ? geometry.map(target => target.rect ? { getBoundingClientRect: () => ({...target.rect}) } : {...target}) : Array.from({ length: count }, () => ({}));
+  return { name, value, parameters, targets: geometry, values: targets.map((target, index) => {
     const output = evaluate(target, index, targets);
     return Number.isFinite(output) ? output : String(output);
   }) };
