@@ -4,6 +4,8 @@ Native F# Anime.js port in progress. Working home: `C:/wk/ranvier-anime`.
 
 Open `Ranvier.Anime.slnx` in Rider. It contains the library and test project and will be updated as projects are added.
 
+`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. The real-host normal and Traced managed smokes pass; strict NativeAOT currently exposes a public typed-CSS qualification gap. See [native integration evidence](docs/native-integration.md) for the pinned private graph, reproducible build operations and limits. This does not establish matched public Native/View acceptance.
+
 Project operations use Partas.Build 0.8.2 from the public Cloudsmith feed configured in `nuget.config`:
 
 ```powershell
