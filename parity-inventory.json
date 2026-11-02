@@ -1,0 +1,31 @@
+{
+  "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "statusMeaning": "All families below are inventoried, not implemented or verified. Presence of an upstream test file is not native acceptance evidence.",
+  "families": [
+    { "name": "engine and clocks", "source": "src/engine", "tests": ["engine", "seconds", "timings"] },
+    { "name": "timers and playback controls", "source": "src/timer", "tests": ["controls", "directions", "callbacks", "promises", "leaks"] },
+    { "name": "animations and composition", "source": "src/animation", "tests": ["animations", "tweens", "parameters", "keyframes", "function-based-values"] },
+    { "name": "targets and interpolation", "source": "src/core", "tests": ["targets", "values", "colors", "units", "transforms"] },
+    { "name": "timelines", "source": "src/timeline", "tests": ["timelines"] },
+    { "name": "animatables", "source": "src/animatable", "tests": ["animatables"] },
+    { "name": "easings and springs", "source": "src/easings", "tests": ["eases"] },
+    { "name": "stagger and utilities", "source": "src/utils", "tests": ["stagger", "utils"] },
+    { "name": "scopes and media conditions", "source": "src/scope", "tests": ["scope"] },
+    { "name": "scroll observation", "source": "src/events", "tests": ["scroll"] },
+    { "name": "dragging", "source": "src/draggable", "tests": ["draggables"] },
+    { "name": "layout transitions", "source": "src/layout", "tests": [], "note": "No layout-named suite in the inspected tests/suites listing; inspect other upstream fixtures and examples before defining coverage." },
+    { "name": "SVG", "source": "src/svg", "tests": ["svg"] },
+    { "name": "text splitting and scrambling", "source": "src/text", "tests": ["text"] },
+    { "name": "WAAPI facade", "source": "src/waapi", "tests": ["waapi"] },
+    { "name": "adapter registry and optional three.js integration", "source": "src/adapters", "tests": ["threejs"], "nativeAdaptationProposed": "Typed native object accessors; JavaScript three.js compatibility is not claimed." }
+  ],
+  "testPathConvention": "upstream/anime/tests/suites/<test>.test.js",
+  "initialRegressionPriorities": [
+    "Backward seek and overlap composition across timeline siblings",
+    "Repeated seek does not refire timeline calls without crossing",
+    "Restoration preserves style priority, absence and unrelated concurrent edits",
+    "Spring duration, clamping and negative velocity match baseline",
+    "Seeded jitter and automatic 2D/3D grid staggering match baseline",
+    "Cancellation and callback reentrancy cannot access a disposed native host"
+  ]
+}

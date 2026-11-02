@@ -1,0 +1,35 @@
+{
+  "recordedDate": "2026-11-03",
+  "purpose": "Initial source reconnaissance for the native Ranvier Anime.js port",
+  "developmentHome": "C:/wk/ranvier-anime",
+  "upstream": "https://github.com/juliangarnier/anime",
+  "existingBindingBaseline": "Anime.js 4.5.0, as documented by the current Ranvier.View bindings; exact upstream commit still to pin",
+  "sources": {
+    "viewCheckoutInspected": "C:/Users/shaya/RiderProjects/Ranvier.View",
+    "viewCheckoutHead": "3a423c8e504c0cdfb3e4ab2a8f5cbf3ea89cfd79",
+    "typedCss": "C:/Users/shaya/RiderProjects/Ranvier.Css",
+    "existingBindings": "C:/Users/shaya/RiderProjects/Ranvier.View/src/Fable.Ranvier.Anime",
+    "existingViewIntegration": "C:/Users/shaya/RiderProjects/Ranvier.View/src/Ranvier.View.Anime",
+    "nativeCoordination": "C:/wk/project2/current-coordination.json",
+    "requestedCoordinatorHandoff": "C:/wk/project2/anime-port-handoff.md"
+  },
+  "confirmedFromDocumentation": [
+    "Existing Fable bindings execute the JavaScript Anime engine and are not a native engine implementation.",
+    "The typed CSS bridge currently supports numeric custom-property tokens; broader CSS interpolation requires separate work.",
+    "The native coordinator checkpoint reports public Core alpha.55 and a still-qualifying matching Native/View successor."
+  ],
+  "decisions": [
+    "Partas.AnimeJs is excluded by explicit user instruction.",
+    "Prefer typed CSS authoring and preserve native CSS interoperability.",
+    "Use compositor acceleration only where the runtime supports it and behavior is verified.",
+    "Keep protected Project 2 producers and shared tooling untouched."
+  ],
+  "nextResearch": [
+    "Obtain the coordinator's recommended exact source baseline and native API entry points.",
+    "Pin upstream Anime.js source and inventory its complete feature surface.",
+    "Define behavioral equivalence checks for timing, interpolation, timelines, staggering, springs, controls and lifecycle.",
+    "Map SVG, scroll, draggable, text, layout and utility capabilities rather than silently narrowing parity.",
+    "Design the native engine and typed adapters before implementation."
+  ],
+  "verificationStatus": "Source reconnaissance only; no native implementation, build, test or performance claim."
+}

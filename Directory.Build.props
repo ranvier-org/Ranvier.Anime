@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <FSharpCoreImplicitPackageVersion>8.0.100</FSharpCoreImplicitPackageVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarnOn>$(WarnOn);3390</WarnOn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RestoreSources>https://api.nuget.org/v3/index.json</RestoreSources>
+  </PropertyGroup>
+</Project>

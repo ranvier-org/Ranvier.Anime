@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Ranvier.Anime</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="NumericAnimation.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Ranvier" Version="[0.1.1-preview.1]" />
+    <PackageReference Include="Ranvier.Dom" Version="[0.1.0-alpha.55]" />
+    <PackageReference Include="Ranvier.Css" Version="[0.1.1-alpha.1]" />
+  </ItemGroup>
+</Project>
