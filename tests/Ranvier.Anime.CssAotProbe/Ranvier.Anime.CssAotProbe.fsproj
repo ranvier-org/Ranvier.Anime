@@ -12,7 +12,7 @@
   <ItemGroup>
     <Compile Include="Program.fs" />
     <PackageReference Include="Ranvier.Css$(RanvierPackageSuffix)" Version="[$(RanvierCssVersion)]" />
-    <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssVersion)]" />
+    <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssBindingsVersion)]" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
   </ItemGroup>
 </Project>

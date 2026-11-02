@@ -3,24 +3,27 @@ module BuildDefs
 #i "nuget: https://nuget.cloudsmith.io/shayanhabibi/shayanhabibi-partas-build/v3/index.json"
 #r "nuget: Partas.Build, 0.8.2"
 #load "build.native.fsx"
+#load "build.provenance.fsx"
 #load "build.css-candidate.fsx"
+#load "build.evidence-tests.fsx"
 
 open Partas.Build
 
 let packageCache = System.IO.Path.Combine(__SOURCE_DIRECTORY__, "artifacts", "nuget-packages")
 
 let nativeRoot candidate =
-    System.IO.Path.Combine(__SOURCE_DIRECTORY__, "artifacts", if candidate then "native-css-70ac" else "native-smoke")
+    System.IO.Path.Combine(__SOURCE_DIRECTORY__, "artifacts", if candidate then "native-css-70ac" else "native-css-public-alpha2")
 
 let nativeCache candidate =
-    if candidate then System.IO.Path.Combine(__SOURCE_DIRECTORY__, "artifacts", "nuget-css-70ac") else packageCache
+    System.IO.Path.Combine(__SOURCE_DIRECTORY__, "artifacts", if candidate then "nuget-css-70ac" else "nuget-css-public-alpha2")
 
 let nativeNuget candidate = if candidate then "nuget.private-css.config" else "nuget.config"
 
 let cohortArguments config candidate =
     let traced, suffix = if config = "Debug" then "true", ".Traced" else "false", ""
     [$"-p:Configuration={config}"; $"-p:RanvierTrace={traced}"; $"-p:RanvierPackageSuffix={suffix}"] @
-    (if candidate then ["-p:RanvierCssVersion=0.1.1-alpha.1-css-aot.2"] else [])
+    (if candidate then ["-p:RanvierCssVersion=0.1.1-alpha.1-css-aot.2"; "-p:RanvierCssBindingsVersion=0.1.1-alpha.1-css-aot.2"]
+     else ["-p:RanvierCssVersion=0.1.1-alpha.2"; "-p:RanvierCssBindingsVersion=0.1.1-alpha.1"])
 
 let nativeArguments config candidate =
     cohortArguments config candidate @
@@ -85,6 +88,7 @@ let nativeRun = input {
     return stage "native source-cohort smoke" {
         workingDir output
         envVars [("OS", "Windows_NT")]
+        run (fun _ -> if aot then BuildProvenance.requirePublish __SOURCE_DIRECTORY__ (nativeRoot candidate) config |> ignore)
         run (fun _ -> BuildNative.verifyStage())
         run (fun _ -> BuildNative.verifyOutput output)
         run (fun _ -> BuildNative.runSmoke output aot ($"{nativeRoot candidate}/run-{config}-" + (if aot then "aot" else "jit") + ".log"))
@@ -100,8 +104,13 @@ let nativePublish = input {
     return stage "strict NativeAOT publish" {
         workingDir __SOURCE_DIRECTORY__
         envVars [("NUGET_PACKAGES", nativeCache candidate); ("OS", "Windows_NT")]
+        run (fun _ -> BuildProvenance.beginPublish __SOURCE_DIRECTORY__ (nativeRoot candidate) config)
         run (nativeCommand (["proxy"; "dotnet"; "publish"; "tests/Ranvier.Anime.NativeSmoke/Ranvier.Anime.NativeSmoke.fsproj"; "-c"; config; "-r"; "win-x64"] @ arguments @ ["--no-restore"; "-o"; output; "-p:ILLinkTreatWarningsAsErrors=true"; "-p:IlcTreatWarningsAsErrors=true"; "-p:TrimmerSingleWarn=false"; "-p:IlcGenerateDgmlFile=true"; $"-flp:logfile={log};verbosity=normal"]))
-        run (fun _ -> BuildNative.verifyPublishLog log)
+        run (fun _ ->
+            BuildNative.verifyPublishLog log
+            let packages =
+                System.Text.Json.JsonSerializer.SerializeToElement(BuildCssCandidate.packageProof config (nativeRoot candidate) (nativeCache candidate) candidate)
+            BuildProvenance.recordPublish __SOURCE_DIRECTORY__ (nativeRoot candidate) config packages)
     }
 }
 
@@ -228,13 +237,34 @@ let root = Command.root {
             return stage "preserve corrected private CSS replay" {
                 run (fun _ ->
                     BuildNative.verifyPublishLog ($"{nativeRoot true}/publish-{config}.log")
-                    BuildCssCandidate.capture config (nativeRoot true) (nativeCache true))
+                    BuildCssCandidate.capture config (nativeRoot true) (nativeCache true) true)
             }
         }
     }
     command "css-candidate-summary" {
         stage "summarize private candidate replay" {
-            run (fun _ -> BuildCssCandidate.summarize())
+            run (fun _ -> BuildCssCandidate.summarize true)
+        }
+    }
+    command "evidence-test" {
+        stage "native evidence regressions" {
+            run (fun _ -> BuildEvidenceTests.stalePublish())
+            run (fun _ -> BuildEvidenceTests.publishBinding())
+            run (fun _ -> BuildEvidenceTests.substitutedDll())
+            run (fun _ -> BuildEvidenceTests.timeout())
+        }
+    }
+    command "css-public-evidence" {
+        input {
+            let! config = configuration
+            return stage "preserve public CSS replay" {
+                run (fun _ -> BuildCssCandidate.capture config (nativeRoot false) (nativeCache false) false)
+            }
+        }
+    }
+    command "css-public-summary" {
+        stage "summarize public CSS replay" {
+            run (fun _ -> BuildCssCandidate.summarize false)
         }
     }
     command "native-stage" {

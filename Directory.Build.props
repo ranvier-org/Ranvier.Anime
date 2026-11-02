@@ -7,6 +7,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RanvierTrace Condition="'$(RanvierTrace)' == '' and '$(Configuration)' == 'Debug'">true</RanvierTrace>
     <RanvierPackageSuffix Condition="'$(RanvierTrace)' == 'true'">.Traced</RanvierPackageSuffix>
-    <RanvierCssVersion Condition="'$(RanvierCssVersion)' == ''">0.1.1-alpha.1</RanvierCssVersion>
+    <RanvierCssVersion Condition="'$(RanvierCssVersion)' == ''">0.1.1-alpha.2</RanvierCssVersion>
+    <RanvierCssBindingsVersion Condition="'$(RanvierCssBindingsVersion)' == ''">0.1.1-alpha.1</RanvierCssBindingsVersion>
   </PropertyGroup>
 </Project>

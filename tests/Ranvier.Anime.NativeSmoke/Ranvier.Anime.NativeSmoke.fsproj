@@ -17,7 +17,7 @@
     <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
     <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
-    <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssVersion)]" />
+    <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssBindingsVersion)]" />
   </ItemGroup>
   <Target Name="RequirePinnedSourceGraph" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(UseLocalRanvier)' != 'true'" Text="Run the native smoke through build.fsx to select its pinned private source graph." />

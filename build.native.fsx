@@ -104,6 +104,40 @@ let verifyPublishLog (path: string) =
         failures |> Seq.cast<Match> |> Seq.map _.Value |> String.concat "\n" |> failwith
     printfn "Native publish log has no IL diagnostics or unconditional-throw messages"
 
+/// <summary>Captures a caller-owned process using a bounded wait and the smoke's success protocol.</summary>
+let runCaptured (start: ProcessStartInfo) (executable: string) requireAot (logPath: string) (limitMilliseconds: int) =
+    if limitMilliseconds <= 0 then invalidArg "limitMilliseconds" "Expected a positive process deadline."
+    File.Delete(logPath + ".json")
+    File.WriteAllText(logPath, "Native smoke attempt started.\n")
+    let mutable recorded = false
+    let save (status: string) (exitCode: int) (outputText: string) (errorText: string) =
+        File.WriteAllText(logPath, outputText + errorText)
+        let receipt =
+            {| Status = status; ExitCode = exitCode; RequiredAot = requireAot; Executable = executable
+               ExecutableSha256 = if File.Exists executable then hash executable else ""
+               LogSha256 = hash logPath; CompletedUtc = DateTimeOffset.UtcNow.ToString("O") |}
+        File.WriteAllText(logPath + ".json", JsonSerializer.Serialize receipt)
+        recorded <- true
+    try
+        use child = Process.Start start
+        let stdout = child.StandardOutput.ReadToEndAsync()
+        let stderr = child.StandardError.ReadToEndAsync()
+        let timedOut = not(child.WaitForExit limitMilliseconds)
+        if timedOut then
+            child.Kill(true)
+            child.WaitForExit()
+        let outputText, errorText = stdout.GetAwaiter().GetResult(), stderr.GetAwaiter().GetResult()
+        let success = not timedOut && child.ExitCode = 0 && outputText.Contains("NATIVE_ANIME_SMOKE_PASS", StringComparison.Ordinal) &&
+                      (not requireAot || outputText.Contains("PASS consumer is NativeAOT", StringComparison.Ordinal))
+        let status = if timedOut then "timedOut" elif success then "succeeded" else "failed"
+        save status (if timedOut || (child.ExitCode = 0 && not success) then -1 else child.ExitCode) outputText errorText
+        Console.Write outputText
+        Console.Error.Write errorText
+        if not success then failwith ("Native smoke " + status + "; inspect the retained run log.")
+    with error ->
+        if not recorded then save "startFailed" -1 "" (error.ToString())
+        reraise()
+
 /// <summary>Runs the owned headless consumer and preserves its output, exit code and executable hash.</summary>
 let runSmoke (output: string) requireAot (logPath: string) =
     let executable = Path.Combine(output, "Ranvier.Anime.NativeSmoke.exe")
@@ -117,24 +151,7 @@ let runSmoke (output: string) requireAot (logPath: string) =
     start.ArgumentList.Add "proxy"
     start.ArgumentList.Add executable
     if requireAot then start.ArgumentList.Add "--require-aot"
-    use child = Process.Start start
-    let stdout = child.StandardOutput.ReadToEndAsync()
-    let stderr = child.StandardError.ReadToEndAsync()
-    if not(child.WaitForExit 30000) then
-        child.Kill(true)
-        child.WaitForExit()
-        failwith "Owned native smoke exceeded its 30-second limit."
-    let outputText, errorText = stdout.GetAwaiter().GetResult(), stderr.GetAwaiter().GetResult()
-    File.WriteAllText(logPath, outputText + errorText)
-    Console.Write outputText
-    Console.Error.Write errorText
-    if child.ExitCode <> 0 || not(outputText.Contains("NATIVE_ANIME_SMOKE_PASS", StringComparison.Ordinal)) ||
-       (requireAot && not(outputText.Contains("PASS consumer is NativeAOT", StringComparison.Ordinal))) then
-        failwith "Native consumer failed its exit/sentinel checks; inspect the retained run log."
-    let receipt =
-        {| ExitCode = child.ExitCode; RequiredAot = requireAot; Executable = executable; ExecutableSha256 = hash executable
-           LogSha256 = hash logPath; CompletedUtc = DateTimeOffset.UtcNow.ToString("O") |}
-    File.WriteAllText(logPath + ".json", JsonSerializer.Serialize receipt)
+    runCaptured start executable requireAot logPath 30000
 
 /// <summary>Preserves the failed strict typed-CSS publishes, exact dependency assets and compiler graph.</summary>
 let captureCssGap (configuration: string) =
