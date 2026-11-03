@@ -2,7 +2,7 @@
 
 Native F# Anime.js port in progress. Working home: `C:/wk/ranvier-anime`.
 
-Public numeric and CSS keyframes provide typed target-aware inputs, shared playback and property-scoped revert. Declaration/DeclarationOn use explicit typed initial values; CaptureInline/CaptureCss use actual inline/computed values. CSS keyframes and animatables snapshot shorthand longhands, aliases, priorities and logical precedence; opaque pending-variable cases remain open. Public numeric and CSS animatables provide cached retargetable handles and an independent group callback clock. Internal keyframe construction and playback match44 construction and106 playback traces. Public sparse rows/offsets, modern colors, SVG-specific contexts, global composition and the wider parity inventory remain open.
+Public numeric and CSS keyframes provide typed target-aware inputs, sparse duration rows, normalized offset keys, shared playback and property-scoped revert. Declaration/DeclarationOn use explicit typed initial values; CaptureInline/CaptureCss use actual inline/computed values. CSS keyframes and animatables snapshot shorthand longhands, aliases, priorities and logical precedence; opaque pending-variable cases remain open. Public numeric and CSS animatables provide cached retargetable handles and an independent group callback clock. Internal keyframe construction and playback match44 construction and106 playback traces. Broader function-return shapes, refresh, modern colors, SVG-specific contexts, global composition and the wider parity inventory remain open.
 
 Retarget an existing NumericProperty inside a Ranvier owner:
 
@@ -52,7 +52,7 @@ CssAnimation.declarationOn scheduler element
 
 Open `Ranvier.Anime.slnx` in Rider. It contains the library and test project and will be updated as projects are added.
 
-`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. The timer/numeric/timeline/declaration/context-unit, public numeric/CSS animatable and public numeric/CSS keyframe source passes normal and Traced JIT and strict NativeAOT PE execution against the fully public Core/DOM alpha.56, CSS alpha.2, View45 and NativeP7 CPU cohort. Nine managed package identities and all24 native members are verified against independent package audits. This qualifies the Windows headless CPU smoke; hardware acceleration and broader native feature coverage remain open. See [current public cohort evidence](docs/evidence/native-public45-p7-animatable-css-shorthands.json) and [native integration scope](docs/native-integration.md).
+`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. The timer/numeric/timeline/declaration/context-unit, public numeric/CSS animatable and public numeric/CSS keyframe source passes normal and Traced JIT and strict NativeAOT PE execution against the fully public Core/DOM alpha.56, CSS alpha.2, View45 and NativeP7 CPU cohort. Nine managed package identities and all24 native members are verified against independent package audits. This qualifies the Windows headless CPU smoke; hardware acceleration and broader native feature coverage remain open. See [current public cohort evidence](docs/evidence/native-public45-p7-public-keyframe-sequences.json) and [native integration scope](docs/native-integration.md).
 
 Project operations use Partas.Build 0.8.2 from the public Cloudsmith feed configured in `nuget.config`:
 
@@ -71,7 +71,22 @@ build ["test"]
 
 The command tree is shared with the CLI and returns a structured `RunResult`. Reload the definitions and rebind `build` after editing them. Load the definitions rather than the CLI shim, whose final line exits the process.
 
-The foundation supports numeric scheduling, easing, springs, staggering, nested timelines, callback tracks, scalar replace composition and sets, playback controls, stretching, cached numeric/CSS animatables, cancellation, Ranvier ownership and reactive drive. Typed CSS custom-property animations accept existing numeric values with matching units. All 1745 tests pass in normal Release and Traced Debug; XML documentation audit reports zero findings. Pinned source fixtures cover easing curves, scalar/color/compound interpolation, contextual units, springs, stagger distributions, timeline/property composition, shared playback, keyframe construction/playback, target-aware numeric/CSS inputs and animatable callbacks/revert. Full Anime.js parity and broader native coverage remain in progress. Direct dependencies reuse Ranvier, Ranvier.Dom, Ranvier.Css and Ranvier.Css.Dom; no replacement CSS or scheduler contract is introduced.
+The foundation supports numeric scheduling, easing, springs, staggering, nested timelines, callback tracks, scalar replace composition and sets, playback controls, stretching, cached numeric/CSS animatables, cancellation, Ranvier ownership and reactive drive. Typed CSS custom-property animations accept existing numeric values with matching units. All 1824 tests pass in normal Release and Traced Debug; XML documentation audit reports zero findings. Pinned source fixtures cover easing curves, scalar/color/compound interpolation, contextual units, springs, stagger distributions, timeline/property composition, shared playback, keyframe construction/playback, target-aware numeric/CSS inputs and animatable callbacks/revert. Full Anime.js parity and broader native coverage remain in progress. Direct dependencies reuse Ranvier, Ranvier.Dom, Ranvier.Css and Ranvier.Css.Dom; no replacement CSS or scheduler contract is introduced.
+
+Sparse rows animate several properties through one clock:
+
+```fsharp
+let sequence = KeyframeSequence<NumericProperty,float>.Rows [|
+    (KeyframeRow.values [|"x",100.|]).WithDuration 100u
+    (KeyframeRow.values [|"y",200.|]).WithDuration 200u
+|]
+use animation = Keyframes.Numeric(scheduler, [|"x",x; "y",y|], sequence,
+                                 owner=Api.getOwner())
+```
+
+Missing row properties hold their preceding endpoint. WithValueBy and row timing providers receive the actual typed target, target index/count and previous modified cache. Named numeric arrays support equal-size target groups; each property shares the same Timer. CSS sequences use KeyframeRow.declarations with existing Ranvier.Css declarations and the same Declaration/DeclarationOn/CaptureInline/CaptureCss factories. Row duration conveniences use uint; Precise variants accept fractional milliseconds and delays remain signed.
+
+KeyframeSequence.Offsets captures KeyframeOffset.at position values or KeyframeOffset.declarations position declarations. Positions are finite ratios of nominal duration; stable sorting and sparse per-property timing preserve source behavior, including duplicate positions and a zero initial key. WithEase applies to the following segment of each present property. Hex/rgb/hsl endpoints use legacy color interpolation; named/modern color resolution remains open. New numeric and actual source CSS-dispatch fixtures compare32 input/write/callback schedules; separate native probes verify geometry, element contexts, shared stretching, scoped revert and ownership. Immutable row/name lookup tables use FrozenDictionary with ordinal keys.
 
 `Keyframes.Numeric(scheduler, property, Keyframe.values [|0.;100.;50.|], duration=1000u)` accepts an existing `NumericProperty` and starts playback. Use `NumericPrecise` and `WithDurationPrecise` for fractional milliseconds. `Keyframe.toBy` and `WithFromBy` receive a typed target/index/count/previous-cache context; `WithDurationBy` accepts unsigned callback results. Pass `owner=Api.getOwner()` inside a Ranvier root to attach before property reads and callbacks. The returned `KeyframeAnimation.Playback` is the shared Timer; `Revert()` restores pre-construction snapshots while preserving unrelated properties. Explicit cancellation through either controller closes restoration; normal completion preserves it.
 

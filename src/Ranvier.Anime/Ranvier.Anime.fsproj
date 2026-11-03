@@ -13,6 +13,7 @@
     <Compile Include="ValueInterpolation.fs" />
     <Compile Include="KeyframeCompilation.fs" />
     <Compile Include="Keyframe.fs" />
+    <Compile Include="KeyframeSequences.fs" />
     <Compile Include="AnimatableValue.fs" />
     <Compile Include="PlaybackTiming.fs" />
     <Compile Include="PlaybackState.fs" />
@@ -31,6 +32,7 @@
     <Compile Include="CssSerialization.fs" />
     <Compile Include="CssPropertySnapshot.fs" />
     <Compile Include="Keyframes.fs" />
+    <Compile Include="KeyframeSequenceBinding.fs" />
     <Compile Include="AnimatableCss.fs" />
     <Compile Include="Css.fs" />
   </ItemGroup>

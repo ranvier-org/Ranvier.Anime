@@ -59,6 +59,18 @@ type Keyframe<'Target,'Value> private
         Keyframe(Some(FrameValue(None,Some read)),last,duration,delay,ease,modifier)
     /// <summary>Sets an explicit source endpoint.</summary>
     member _.WithFrom(value:'Value)=Keyframe(Some(FrameValue(Some value,None)),last,duration,delay,ease,modifier)
+    member private _.DurationInput=duration
+    member private _.DelayInput=delay
+    member private _.EaseInput=ease
+    member private _.ModifierInput=modifier
+    member private _.DestinationInput=last
+    /// <summary>Shares row timing providers without changing endpoint capture or callback evaluation order.</summary>
+    member internal _.WithTimingDefaults(defaults:Keyframe<'Target,'Value>) =
+        Keyframe(first,last,Option.orElse defaults.DurationInput duration,Option.orElse defaults.DelayInput delay,
+                 Option.orElse defaults.EaseInput ease,Option.orElse defaults.ModifierInput modifier)
+    /// <summary>Uses another offset key's destination provider as the explicit source endpoint.</summary>
+    member internal _.WithFromDestination(value:Keyframe<'Target,'Value>) =
+        Keyframe(value.DestinationInput,last,duration,delay,ease,modifier)
     /// <summary>Captures constant inputs for validation before target reads or callback effects.</summary>
     member internal _.Template(convert:'Value -> Literal) : FrameInput =
         {From=first |> Option.bind _.Constant |> Option.map convert;To=last |> Option.bind _.Constant |> Option.map convert

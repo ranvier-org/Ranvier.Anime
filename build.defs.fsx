@@ -432,6 +432,7 @@ let root = Command.root {
             run "rtk node tools/keyframes.mjs --playback"
             run "rtk node tools/keyframes.mjs --inputs"
             run "rtk node tools/keyframe-css.mjs"
+            run "rtk node tools/keyframe-sequences.mjs"
         }
     }
     command "css-metadata" {
@@ -443,6 +444,12 @@ let root = Command.root {
                 workingDir __SOURCE_DIRECTORY__
                 run ({ Cmd.create "rtk" "" with Arguments=["node";"tools/css-metadata.mjs";"--source";source] @ (if check then ["--check"] else []) })
             }
+        }
+    }
+    command "sequence-reference" {
+        stage "upstream sparse sequence reference" {
+            workingDir __SOURCE_DIRECTORY__
+            run "rtk node tools/keyframe-sequences.mjs"
         }
     }
     command "unit-reference" {
@@ -481,6 +488,7 @@ let root = Command.root {
             run "rtk node tools/keyframes.mjs --playback"
             run "rtk node tools/keyframes.mjs --inputs"
             run "rtk node tools/keyframe-css.mjs"
+            run "rtk node tools/keyframe-sequences.mjs"
         }
     }
 }

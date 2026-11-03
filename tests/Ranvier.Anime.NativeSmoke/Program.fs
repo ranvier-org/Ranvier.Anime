@@ -41,6 +41,184 @@ let main args =
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
+        do
+            let elements=[|host.Document.createElement "div" :?> HTMLElement;host.Document.createElement "div" :?> HTMLElement|]
+            let styles=elements |> Array.map(fun element -> (element:>ElementCSSInlineStyle).style)
+            for element in elements do host.Document.body.appendChild element |> ignore
+            for index in 0..1 do
+                styles[index].setProperty("width",(if index=0 then "7px" else "17px"))
+                styles[index].setProperty("height",(if index=0 then "11px" else "21px"))
+            let handles name=
+                styles |> Array.map(fun style ->
+                    NumericProperty((fun () -> Double.Parse(style.getPropertyValue(name).Replace("px",""),CultureInfo.InvariantCulture)),
+                                    (fun value -> StyleDeclaration.apply style (Declaration.create name (ValueInterpolation.number value+"px")))))
+            let sequence=KeyframeSequence<NumericProperty,float>.Rows [|
+                (KeyframeRow<NumericProperty,float>.Create [||]).WithValueBy("width",(fun context -> context.Target.Value+100.)).WithDuration 100u
+                (KeyframeRow<NumericProperty,float>.Create [||]).WithValueBy("height",(fun context -> context.Target.Value+200.)).WithDuration 100u |]
+            let mutable renders=0
+            use animation=Keyframes.Numeric(scheduler,[|"width",handles "width";"height",handles "height"|],sequence,duration=200u,
+                options={Ranvier.Anime.KeyframeAnimationOptions.Default with Autoplay=false;Ease=id;OnRender=(fun _ -> renders<-renders+1)})
+            renders<-0
+            animation.Playback.Seek 50.
+            require "public sparse numeric rows share one root callback across properties and native targets"
+                (renders=1 && animation.TargetCount=2 && abs(elements[0].getBoundingClientRect().width-57.)<0.02 &&
+                 abs(elements[1].getBoundingClientRect().width-67.)<0.02 && abs(elements[0].getBoundingClientRect().height-11.)<0.02)
+            animation.Playback.Stretch 400.
+            animation.Playback.Seek 300.
+            require "public numeric row stretching scales every native property on the same clock"
+                (abs(elements[0].getBoundingClientRect().width-107.)<0.02 && abs(elements[1].getBoundingClientRect().width-117.)<0.02 &&
+                 abs(elements[0].getBoundingClientRect().height-111.)<0.02 && abs(elements[1].getBoundingClientRect().height-121.)<0.02)
+            animation.Revert()
+            require "public numeric rows restore every captured native property"
+                (styles[0].getPropertyValue "width"="7px" && styles[0].getPropertyValue "height"="11px" &&
+                 styles[1].getPropertyValue "width"="17px" && styles[1].getPropertyValue "height"="21px")
+            for element in elements do host.Document.body.removeChild element |> ignore
+        do
+            let first=host.Document.createElement "div" :?> HTMLElement
+            let second=host.Document.createElement "div" :?> HTMLElement
+            first.setAttribute("class","anime-sequence-first")
+            second.setAttribute("class","anime-sequence-second")
+            let sheet=host.Document.createElement "style"
+            (sheet:>Node).textContent<-".anime-sequence-first { width:16px; height:12px; } .anime-sequence-second { width:32px; height:24px; }"
+            host.Document.head.appendChild sheet |> ignore
+            host.Document.body.appendChild first |> ignore
+            host.Document.body.appendChild second |> ignore
+            let firstStyle=(first:>ElementCSSInlineStyle).style
+            let secondStyle=(second:>ElementCSSInlineStyle).style
+            firstStyle.setProperty("font-size","16px")
+            secondStyle.setProperty("font-size","32px")
+            secondStyle.setProperty("height","8px",priority="important")
+            let originalChildren=host.Document.body.childNodes.length
+            let service=ComputedStyles.forHost host
+            let mutable reads=0
+            let computed={new ComputedStyleService with member _.Get(target,pseudo)=reads<-reads+1;service.Get(target,pseudo)}
+            let previous=ResizeArray<string>()
+            let sequence=KeyframeSequence<HTMLElement,Declaration>.Rows [|
+                (KeyframeRow<HTMLElement,Declaration>.Create [||])
+                    .WithValueBy("width",(fun context -> Css.width(Css.em(float context.Index+2.)))).WithDuration 100u
+                (KeyframeRow<HTMLElement,Declaration>.Create [||])
+                    .WithValueBy("height",(fun context ->
+                        previous.Add(Declaration.value context.PreviousValue.Value)
+                        Css.height(Css.px(200.+20.*float context.Index)))).WithDuration 100u |]
+            let mutable renders=0
+            use animation=Keyframes.CaptureCss(scheduler,computed,[|first;second|],sequence,duration=200u,
+                options={Ranvier.Anime.KeyframeAnimationOptions.Default with Autoplay=false;Ease=id;OnRender=(fun _ -> renders<-renders+1)})
+            renders<-0
+            animation.Playback.Seek 50.
+            require "public typed CSS rows capture each computed property and independent element unit context"
+                (reads=4 && previous.ToArray()=[|"12px";"8px"|] && renders=1 && animation.TargetCount=2 &&
+                 abs(first.getBoundingClientRect().width-24.)<0.02 && abs(second.getBoundingClientRect().width-64.)<0.02 &&
+                 abs(first.getBoundingClientRect().height-12.)<0.02 && abs(second.getBoundingClientRect().height-8.)<0.02 &&
+                 host.Document.body.childNodes.length=originalChildren)
+            animation.Playback.Stretch 400.
+            animation.Playback.Seek 300.
+            require "typed CSS row stretching preserves sparse holds without computed rereads"
+                (reads=4 && abs(first.getBoundingClientRect().width-32.)<0.02 && abs(second.getBoundingClientRect().width-96.)<0.02 &&
+                 abs(first.getBoundingClientRect().height-106.)<0.02 && abs(second.getBoundingClientRect().height-114.)<0.02)
+            firstStyle.setProperty("opacity","0.5")
+            animation.Revert()
+            require "typed CSS rows restore per-property absence priority stylesheet fallback and unrelated edits"
+                (firstStyle.getPropertyValue "width"="" && firstStyle.getPropertyValue "height"="" &&
+                 secondStyle.getPropertyValue "width"="" && secondStyle.getPropertyValue "height"="8px" &&
+                 secondStyle.getPropertyPriority "height"="important" && firstStyle.getPropertyValue "opacity"="0.5" &&
+                 abs(first.getBoundingClientRect().width-16.)<0.02 && abs(first.getBoundingClientRect().height-12.)<0.02)
+            host.Document.body.removeChild first |> ignore
+            host.Document.body.removeChild second |> ignore
+            host.Document.head.removeChild sheet |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            inlineStyle.setProperty("height","20px",priority="important")
+            inlineStyle.setProperty("color","red")
+            inlineStyle.setProperty("transform","translate(3px,4px)")
+            let originals=[|"width";"height";"color";"transform"|] |> Array.map(fun name -> name,inlineStyle.getPropertyValue name,inlineStyle.getPropertyPriority name)
+            let sequence=KeyframeSequence<HTMLElement,Declaration>.Offsets [|
+                (KeyframeOffset.declarations 0. [|Css.width(Css.px 0.);Css.height(Css.px 0.);Declaration.create "color" "#ff0000";Declaration.create "transform" "translate(0px,0px)"|]).WithEase(Ease.named "inQuad")
+                (KeyframeOffset.declarations 0.5 [|Css.width(Css.px 100.);Declaration.create "color" "#00ff00";Declaration.create "transform" "translate(100px,200px)"|]).WithEase(Ease.named "outQuad")
+                KeyframeOffset.declarations 1. [|Css.width(Css.px 200.);Css.height(Css.px 200.);Declaration.create "color" "#0000ff";Declaration.create "transform" "translate(200px,400px)"|] |]
+            use animation=Keyframes.CaptureCss(scheduler,ComputedStyles.forHost host,target,sequence,duration=200u,
+                options={Ranvier.Anime.KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            let start=target.getBoundingClientRect()
+            animation.Playback.Seek 50.
+            let first=target.getBoundingClientRect()
+            require "public typed offset keys transfer easing independently across sparse color geometry and compounds"
+                (abs(first.width-25.)<0.02 && abs(first.height-12.5)<0.02 &&
+                 abs(first.left-start.left-25.)<0.02 && abs(first.top-start.top-50.)<0.02)
+            animation.Playback.Seek 150.
+            let second=target.getBoundingClientRect()
+            let color=inlineStyle.getPropertyValue "color"
+            require "native offset playback retains preceding-property easing and legacy color channels"
+                (abs(second.width-175.)<0.02 && abs(second.height-112.5)<0.02 &&
+                 abs(second.left-start.left-175.)<0.02 && abs(second.top-start.top-350.)<0.02 &&
+                 (color.Contains("0, 128, 221") || color.Contains("0,128,221")))
+            inlineStyle.setProperty("opacity","0.5")
+            animation.Revert()
+            require "public CSS offsets restore every original property without replacing unrelated inline style"
+                ((originals |> Array.forall(fun (name,value,priority) -> inlineStyle.getPropertyValue name=value && inlineStyle.getPropertyPriority name=priority)) &&
+                 inlineStyle.getPropertyValue "opacity"="0.5")
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("width","7px")
+            inlineStyle.setProperty("height","11px",priority="important")
+            let sequence=KeyframeSequence<CSSStyleDeclaration,Declaration>.Rows [|KeyframeRow.declarations [|Css.width(Css.px 107.);Css.height(Css.px 211.)|]|]
+            use animation=Keyframes.CaptureInline(scheduler,inlineStyle,sequence,duration=100u,
+                options={Ranvier.Anime.KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            animation.Playback.Seek 50.
+            require "style-only sparse sequence overloads drive native declarations through shared playback"
+                (inlineStyle.getPropertyValue "width"="57px" && inlineStyle.getPropertyValue "height"="111px")
+            animation.Revert()
+            require "style-only multi-property snapshots restore original priority"
+                (inlineStyle.getPropertyValue "width"="7px" && inlineStyle.getPropertyValue "height"="11px" &&
+                 inlineStyle.getPropertyPriority "height"="important")
+            host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","7px")
+            inlineStyle.setProperty("height","11px")
+            let mutable calls=0
+            let computed=
+                { new ComputedStyleService with
+                    member _.Get(element,pseudo)=
+                        if pseudo.IsSome || not(obj.ReferenceEquals(element,(target:>Element))) then failwith "unexpected computed target"
+                        calls<-calls+1
+                        owner.Dispose()
+                        Unchecked.defaultof<CSSStyleDeclaration> }
+            let sequence=KeyframeSequence<HTMLElement,Declaration>.Rows [|KeyframeRow.declarations [|Css.width(Css.px 100.);Css.height(Css.px 200.)|]|]
+            let mutable interrupted=false
+            try Keyframes.CaptureCss(scheduler,computed,target,sequence,owner=owner) |> ignore
+            with :? ObjectDisposedException -> interrupted<-true
+            require "multi-property computed capture checks actual ownership before reading returned styles or later properties"
+                (interrupted && calls=1 && owner.IsDisposed && inlineStyle.getPropertyValue "width"="7px" && inlineStyle.getPropertyValue "height"="11px")
+            host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            let mutable armed=false
+            let mutable calls=0
+            let modify value=if armed then calls<-calls+1;owner.Dispose();value else value
+            let sequence=KeyframeSequence<HTMLElement,Declaration>.Rows [|KeyframeRow.declarations [|Css.width(Css.px 100.);Css.height(Css.px 200.)|]|]
+            use animation=Keyframes.DeclarationOn(scheduler,target,[|Css.width(Css.px 0.);Css.height(Css.px 0.)|],sequence,duration=100u,owner=owner,
+                options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id;Modifier=modify})
+            let before=inlineStyle.getPropertyValue "width",inlineStyle.getPropertyValue "height"
+            armed<-true
+            pumpUntil host (fun () -> animation.Cancelled)
+            require "scheduled multi-property CSS sequences stop all dispatch on actual owner disposal"
+                (calls=1 && owner.IsDisposed && (inlineStyle.getPropertyValue "width",inlineStyle.getPropertyValue "height")=before)
+            host.Document.body.removeChild target |> ignore
         for logicalFirst in [false;true] do
             let target=host.Document.createElement "div" :?> HTMLElement
             host.Document.body.appendChild target |> ignore

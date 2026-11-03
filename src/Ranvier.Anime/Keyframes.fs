@@ -88,7 +88,8 @@ type KeyframeAnimation internal(targetCount:int) =
             failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     interface IDisposable with member this.Dispose()=this.Cancel()
 
-module private KeyframeBinding =
+/// <summary>Owned construction helpers shared by single-property and sparse keyframe sequences.</summary>
+module internal KeyframeBinding =
     let validate (duration:float,options:KeyframeAnimationOptions) =
         if isNull(box options) || isNull(box options.Playback) then nullArg "options"
         let finite name value=if not(Double.IsFinite value) then invalidArg name "Expected finite milliseconds."

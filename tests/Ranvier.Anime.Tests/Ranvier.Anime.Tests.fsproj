@@ -11,6 +11,9 @@
     <Compile Include="KeyframePlaybackTests.fs" />
     <Compile Include="KeyframeNumericTests.fs" />
     <Compile Include="KeyframeCssTests.fs" />
+    <Compile Include="KeyframeSequenceTests.fs" />
+    <Compile Include="KeyframeSequenceInputTests.fs" />
+    <Compile Include="KeyframeSequenceContractTests.fs" />
     <Compile Include="CssSnapshotTests.fs" />
     <Compile Include="AnimatableValueTests.fs" />
     <Compile Include="AnimatableTrackTests.fs" />
@@ -43,6 +46,7 @@
     <None Include="../reference/keyframe-playback.json" Link="reference/keyframe-playback.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/keyframe-inputs.json" Link="reference/keyframe-inputs.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/keyframe-css.json" Link="reference/keyframe-css.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/keyframe-sequences.json" Link="reference/keyframe-sequences.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/unit-conversion.json" Link="reference/unit-conversion.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timer-controls.json" Link="reference/timer-controls.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/animation-playback.json" Link="reference/animation-playback.json" CopyToOutputDirectory="PreserveNewest" />
