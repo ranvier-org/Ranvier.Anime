@@ -45,10 +45,12 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
                     | _ -> alive<-false
     do clock.ConfigureRenderer(render,?totalDuration=(if iterationDuration=1e-11 then Some 1e-11 else None),
                                onStretch=(fun scale -> tweenTime<-tweenTime*scale))
-    let retarget (scalar:float option) (components:float array option) newDuration newEase =
+    let retarget (scalars:float array option) (components:float array option) newDuration newEase commit =
         live()
         newEase |> Option.iter(fun callback -> if isNull(box callback) then invalidArg "newEase" "An easing callback is required.")
-        scalar |> Option.iter(finite "value")
+        scalars |> Option.iter(fun targets ->
+            if targets.Length<>values.Length then invalidArg "targets" "Expected one scalar destination per captured target."
+            for target in targets do finite "value" target)
         components |> Option.iter(fun values -> for value in values do finite "components" value)
         for value in values do
             let componentTrack=value.Kind=ValueKind.Color || value.Kind=ValueKind.Complex
@@ -58,17 +60,18 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
             let current () = operationCurrent() && inherited()
             let staged=values |> Array.map(fun value -> value.Fork())
             let mutable alive=current()
-            for value in staged do
+            for index in 0..staged.Length-1 do
                 if alive then
                     alive <-
-                        match scalar,components with
-                        | Some target,_ -> value.RetargetScalar(target,modifier,current)
-                        | _,Some targets -> value.RetargetComponents(targets,modifier,current)
+                        match scalars,components with
+                        | Some targets,_ -> staged[index].RetargetScalar(targets[index],modifier,current)
+                        | _,Some targets -> staged[index].RetargetComponents(targets,modifier,current)
                         | _ -> false
             if alive && current() then
                 values<-staged
                 newEase |> Option.iter(fun callback -> ease<-callback)
                 tweenTime<-0.
+                commit |> Option.iter(fun action -> action())
                 true
             else false
         clock.Retarget(prepare,?newDuration=newDuration)
@@ -91,11 +94,16 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
     /// <summary>The captured scalar/unit/color/compound category.</summary>
     member _.Kind(index)=values[index].Kind
     /// <summary>Retargets a finite scalar, retaining omitted duration and easing.</summary>
-    member _.RetargetScalar(value,?newDuration:float,?newEase:float -> float)=retarget (Some value) None newDuration newEase
+    member _.RetargetScalar(value,?newDuration:float,?newEase:float -> float)=
+        retarget (Some(Array.create values.Length value)) None newDuration newEase None
+    /// <summary>Atomically retargets one finite scalar per captured target and commits adapter metadata with accepted endpoints.</summary>
+    member _.RetargetScalars(targets:float array,?newDuration:float,?newEase:float -> float,?onCommit:unit -> unit)=
+        if isNull targets then nullArg "targets"
+        retarget (Some(Array.copy targets)) None newDuration newEase onCommit
     /// <summary>Retargets supplied finite components, retaining omitted endpoints, duration and easing.</summary>
-    member _.RetargetComponents(components:float array,?newDuration:float,?newEase:float -> float)=
+    member _.RetargetComponents(components:float array,?newDuration:float,?newEase:float -> float,?onCommit:unit -> unit)=
         if isNull components then nullArg "components"
-        retarget None (Some(Array.copy components)) newDuration newEase
+        retarget None (Some(Array.copy components)) newDuration newEase onCommit
     /// <summary>Stops future dispatch; repeated cancellation is harmless.</summary>
     member _.Cancel()=clock.Cancel()
     interface IDisposable with member _.Dispose()=clock.Cancel()

@@ -2,7 +2,7 @@
 
 Native F# Anime.js port in progress. Working home: `C:/wk/ranvier-anime`.
 
-Current full suites pass1464/1464 normal Release and Traced Debug. Public numeric animatables add cached retargetable handles, an independent group callback clock, Ranvier ownership and property-scoped revert. Typed declaration playback connects scalar/unit, source colors, compound interpolation and contextual scalar units to the shared Timer. Public CSS animatable handles, modern colors, SVG-specific contexts and the wider parity inventory remain open.
+Current full suites pass1488/1488 normal Release and Traced Debug. Public numeric and CSS animatables provide cached retargetable handles, an independent group callback clock, Ranvier ownership and property-scoped revert. Typed declarations, inline capture and real computed-style capture support scalar/unit, source colors, compound interpolation and contextual scalar retargets. Modern colors, SVG-specific contexts, global composition, keyframes and the wider parity inventory remain open.
 
 Retarget an existing NumericProperty inside a Ranvier owner:
 
@@ -14,7 +14,19 @@ position.ToPrecise(200., duration = 125.5)
 targets.Revert()
 ```
 
-Numeric captures and initializes one property or a nonempty array of borrowed properties. Its getter reads the first target's animation cache; external target edits do not replace that cache. Omitted retarget duration/easing retain earlier settings. Revert restores captured values in authoring order and closes the group; unrelated properties survive. Cancel, disposal and callback faults are terminal and retain the last values. Cached getters remain readable. Source property noops after revert become ObjectDisposedException from native mutating handles. Component/CSS handles and inline priority/absence restoration remain subsequent work.
+Numeric captures and initializes one property or a nonempty array of borrowed properties. Its getter reads the first target's animation cache; external target edits do not replace that cache. Omitted retarget duration/easing retain earlier settings. Revert restores captured values in authoring order and closes the group; unrelated properties survive. Cancel, disposal and callback faults are terminal and retain the last values. Cached getters remain readable. Source property noops after revert become ObjectDisposedException from native mutating handles.
+
+The same group accepts existing typed CSS declarations:
+
+```fsharp
+use cssTargets = new Animatable(scheduler) |> Animatable.own
+let width = cssTargets.Declaration(style, Css.width(Css.px 10.), duration = 250u)
+width.To(Css.width(Css.px 100.))
+let cachedDeclaration = width.Value
+cssTargets.Revert()
+```
+
+Declaration captures the original inline value/priority/absence and renders its explicit start immediately. CaptureInline captures existing inline values; CaptureCss takes Ranvier's ComputedStyleService and existing elements to capture actual computed values. WebCore supplies the borrowed service through ComputedStyles.forHost host. DeclarationOn and CaptureCss use each element's scalar-unit context during retarget preparation. Each has a Precise variant and single/multiple-target overloads. Revert restores individual inline properties and stylesheet fallback while preserving unrelated edits. Style-only differing units reject. Typed compound destinations require matching templates; ToComponents accepts partial numeric destinations with retained omitted endpoints. Component getters return independent snapshots. No per-frame context measurement or replacement CSS contract is introduced.
 
 Inside a Ranvier owner, animate existing typed declarations and attach the returned timer:
 
@@ -40,7 +52,7 @@ CssAnimation.declarationOn scheduler element
 
 Open `Ranvier.Anime.slnx` in Rider. It contains the library and test project and will be updated as projects are added.
 
-`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. The timer/numeric/timeline/declaration/context-unit and public numeric animatable source passes normal and Traced JIT and strict NativeAOT PE execution against the fully public Core/DOM alpha.56, CSS alpha.2, View45 and NativeP7 CPU cohort. Nine managed package identities and all24 native members are verified against independent package audits. This qualifies the Windows headless CPU smoke; hardware acceleration and broader native feature coverage remain open. See [current public cohort evidence](docs/evidence/native-public45-p7-public-numeric-animatable.json) and [native integration scope](docs/native-integration.md).
+`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. The timer/numeric/timeline/declaration/context-unit and public numeric/CSS animatable source passes normal and Traced JIT and strict NativeAOT PE execution against the fully public Core/DOM alpha.56, CSS alpha.2, View45 and NativeP7 CPU cohort. Nine managed package identities and all24 native members are verified against independent package audits. This qualifies the Windows headless CPU smoke; hardware acceleration and broader native feature coverage remain open. See [current public cohort evidence](docs/evidence/native-public45-p7-public-css-animatable.json) and [native integration scope](docs/native-integration.md).
 
 Project operations use Partas.Build 0.8.2 from the public Cloudsmith feed configured in `nuget.config`:
 
@@ -59,9 +71,9 @@ build ["test"]
 
 The command tree is shared with the CLI and returns a structured `RunResult`. Reload the definitions and rebind `build` after editing them. Load the definitions rather than the CLI shim, whose final line exits the process.
 
-The foundation supports numeric scheduling, easing, springs, staggering, nested timelines, callback tracks, scalar replace composition and sets, playback controls, stretching, cached numeric animatables, cancellation, Ranvier ownership and reactive drive. Typed CSS custom-property animations accept existing numeric values with matching units. All 1464 tests pass in normal Release and Traced Debug; XML documentation audit reports zero findings. Pinned source fixtures cover easing curves, scalar/color/compound interpolation, contextual units, springs, stagger distributions, timeline/property composition, shared playback and animatable callbacks/revert. Full Anime.js parity and broader native coverage remain in progress. Direct dependencies reuse Ranvier, Ranvier.Dom, Ranvier.Css and Ranvier.Css.Dom; no replacement CSS or scheduler contract is introduced.
+The foundation supports numeric scheduling, easing, springs, staggering, nested timelines, callback tracks, scalar replace composition and sets, playback controls, stretching, cached numeric/CSS animatables, cancellation, Ranvier ownership and reactive drive. Typed CSS custom-property animations accept existing numeric values with matching units. All 1488 tests pass in normal Release and Traced Debug; XML documentation audit reports zero findings. Pinned source fixtures cover easing curves, scalar/color/compound interpolation, contextual units, springs, stagger distributions, timeline/property composition, shared playback and animatable callbacks/revert. Full Anime.js parity and broader native coverage remain in progress. Direct dependencies reuse Ranvier, Ranvier.Dom, Ranvier.Css and Ranvier.Css.Dom; no replacement CSS or scheduler contract is introduced.
 
-The playback timing kernel matches 55 source timer traces and 929 samples exactly, including repeat gaps, reversal/alternation, signed delay, skipped/forced samples and zero/fractional/infinite/overflow cases. Standalone controls match 51 traces, and scheduled timers match 18 admitted-frame traces. Numeric animations share that clock and match 46 source traces of property values, callbacks and state, including 24 generated schedules and signed-gap/int32 boundaries. Seven state, eleven scheduler/lifetime and three numeric interruption tests cover cancellation and validation.
+The playback timing kernel matches 55 source timer traces and 929 samples exactly, including repeat gaps, reversal/alternation, signed delay, skipped/forced samples and zero/fractional/infinite/overflow cases. Standalone controls match 51 traces, and scheduled timers match 34 admitted-frame traces. Numeric animations share that clock and match 52 source traces of property values, callbacks and state, including mutable stretching, generated schedules and signed-gap/int32 boundaries. Additional state, scheduler/lifetime and interruption tests cover cancellation and validation.
 
 Public timelines use the shared clock for root and owned-timer sampling. Sixty source traces now verify property/set writes, root/call events, owned timer callbacks and self-state, and borrowed timer/animation/nested callbacks and state. Fifty-two root-clock comparisons replay recorded child completion aggregates, with six phase/interruption cases. Sixteen lifetime/authoring tests and five review regressions cover cancellation, owner disposal, reentrant controls, geometry resizing and fault cleanup. Cases include signed delay/gaps, speed before rounding, low FPS, uint-sized/fractional/zero/forever durations and reverse-loop boundaries. Plain property-track lifecycle callbacks and the remaining timeline operations are still incomplete. Three resumed-borrowed source cases verify setter pause callbacks. Both important final-review findings were reproduced and fixed. New strict NativeAOT receipts bind the reviewed source; full Anime.js parity remains incomplete.
 

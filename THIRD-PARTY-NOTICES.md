@@ -18,6 +18,8 @@ The independent callback animation in `src/Ranvier.Anime/AnimatableGroup.fs` and
 
 The public numeric property handles and ordered rewind/restoration in `src/Ranvier.Anime/Animatable.fs` follow the pinned animatable lifecycle, with explicit Ranvier ownership and terminal native handles.
 
+Typed CSS cached getters and component retargeting in `src/Ranvier.Anime/AnimatableCss.fs` use the same pinned animatable behavior, with per-property inline restoration and Ranvier scalar-unit contexts.
+
 Contextual conversion in `src/Ranvier.Anime/CssUnits.fs` follows the pinned core units code's angle ratios and clone measurement procedure, with scoped cleanup and per-element construction measurements.
 
 The easing formulas retain Anime.js's credit to Robert Penner, Copyright (c) 2001 Robert Penner, from https://robertpenner.com/easing/.

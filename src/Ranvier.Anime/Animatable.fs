@@ -84,6 +84,24 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
     member _.Count=group.Count
     /// <summary>Whether cancellation, owner disposal, revert or a callback fault ended the group.</summary>
     member _.Cancelled=state=2 || group.Cancelled
+    /// <summary>Checks the complete group lifetime before adapter capture or mutation.</summary>
+    member internal _.EnsureLive()=live()
+    /// <summary>Validates adapter settings before property reads or contextual measurements.</summary>
+    member internal _.Prepare(duration,options)=live();AnimatableInputs.validate duration options
+    /// <summary>Registers restoration before initializing a typed adapter's guarded property track.</summary>
+    member internal _.Register(kernels,write,restore,duration,options:AnimatablePropertyOptions,precision) =
+        live()
+        let registration=AnimatableRegistration restore
+        registrations.Add registration
+        try
+            let track=group.Add(kernels,(fun index output -> if state<>2 then write index output),
+                                duration,options.Playback,options.Ease,options.Modifier,precision)
+            registration.Track<-Some track
+            live()
+            track
+        with _ ->
+            registrations.Remove registration |> ignore
+            reraise()
     /// <summary>Captures nonempty borrowed numeric targets with precise milliseconds, initializes and returns their handle.</summary>
     /// <remarks>Captures original accessor values for Revert. Invalid timing/options reject before reading accessors.</remarks>
     member _.NumericPrecise(properties:NumericProperty array,duration:float,?options:AnimatablePropertyOptions) =
@@ -103,17 +121,8 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
         let restore current =
             cleanupAll (seq {for index in 0..properties.Length-1 do
                                 yield fun () -> if current() then properties[index].Value<-originals[index]})
-        let registration=AnimatableRegistration restore
-        registrations.Add registration
-        try
-            let track=group.Add(kernels,(fun index output ->
-                if state<>2 then properties[index].Value<-output.Scalar.Value),duration,options.Playback,options.Ease,options.Modifier,precision)
-            registration.Track<-Some track
-            live()
-            AnimatableNumber(track,live)
-        with _ ->
-            registrations.Remove registration |> ignore
-            reraise()
+        let track=this.Register(kernels,(fun index output -> properties[index].Value<-output.Scalar.Value),restore,duration,options,precision)
+        AnimatableNumber(track,live)
     /// <summary>Captures one borrowed numeric target with precise milliseconds and optional property settings.</summary>
     member _.NumericPrecise(property:NumericProperty,duration:float,?options:AnimatablePropertyOptions) =
         this.NumericPrecise([|property|],duration,?options=options)

@@ -42,6 +42,94 @@ let main args =
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
         do
+            style.setProperty("width","7px",priority="important")
+            use group=new Animatable(scheduler)
+            let settings={AnimatablePropertyOptions.Default with Ease=id}
+            let width=group.Declaration(style,Css.width(Css.px 10.),duration=100u,options=settings)
+            width.To(Css.width(Css.px 110.))
+            width.Playback.Seek 50.
+            require "public CSS animatable uses typed declarations, cached units and native layout"
+                (Declaration.value width.Value="60px" && width.Magnitude=60. && style.getPropertyPriority "width"="important" &&
+                 abs(element.getBoundingClientRect().width-60.)<0.01)
+            let opacity=group.Declaration(style,Css.opacity(Css.number 0.),duration=100u,options=settings)
+            opacity.To(Css.opacity(Css.number 1.))
+            opacity.Playback.Seek 50.
+            let originalGeometry=element.getBoundingClientRect()
+            let transform=group.Declaration(style,Declaration.create "transform" "translate(10px,20px)",duration=100u,options=settings)
+            transform.ToComponents [|110.;220.|]
+            transform.Playback.Seek 50.
+            let geometry=element.getBoundingClientRect()
+            require "public CSS animatable component handles drive native transforms"
+                (Declaration.value transform.Value="translate(60px,120px)" &&
+                 abs(geometry.left-originalGeometry.left-60.)<0.02 && abs(geometry.top-originalGeometry.top-120.)<0.02)
+            let color=group.Declaration(style,Declaration.create "color" "#ff0000",duration=100u,options=settings)
+            color.To(Declaration.create "color" "#00ff00")
+            color.Playback.Seek 50.
+            require "public CSS animatable typed colors retain source cached channel interpolation"
+                (Declaration.value color.Value="rgba(180,180,0,1)" && color.Components.Length=4)
+            style.setProperty("height","23px")
+            group.Revert()
+            require "public CSS animatable restores inline value, importance and absence without replacing unrelated style"
+                (style.getPropertyValue "width"="7px" && style.getPropertyPriority "width"="important" &&
+                 style.getPropertyValue "opacity"="" && style.getPropertyValue "transform"="" && style.getPropertyValue "color"="" &&
+                 style.getPropertyValue "height"="23px" && width.Playback.Cancelled && transform.Playback.Cancelled)
+            style.removeProperty "width" |> ignore
+            style.removeProperty "height" |> ignore
+        do
+            let first=host.Document.createElement "div" :?> HTMLElement
+            let second=host.Document.createElement "div" :?> HTMLElement
+            first.setAttribute("class","anime-computed-first")
+            second.setAttribute("class","anime-computed-second")
+            let sheet=host.Document.createElement "style"
+            (sheet:>Node).textContent<-".anime-computed-first { width:16px; } .anime-computed-second { width:32px; }"
+            host.Document.head.appendChild sheet |> ignore
+            host.Document.body.appendChild first |> ignore
+            host.Document.body.appendChild second |> ignore
+            let firstStyle=(first:>ElementCSSInlineStyle).style
+            let secondStyle=(second:>ElementCSSInlineStyle).style
+            firstStyle.setProperty("font-size","16px")
+            secondStyle.setProperty("font-size","32px")
+            secondStyle.setProperty("width","8px",priority="important")
+            let computed=ComputedStyles.forHost host
+            use group=new Animatable(scheduler)
+            let handle=group.CaptureCss(computed,[|first;second|],"width",duration=100u,
+                                        options={AnimatablePropertyOptions.Default with Ease=id})
+            handle.To(Css.width(Css.em 2.))
+            handle.Playback.Seek 50.
+            require "public CSS animatable captures actual computed styles and converts retarget units per element"
+                (abs(first.getBoundingClientRect().width-24.)<0.02 && abs(second.getBoundingClientRect().width-36.)<0.02 &&
+                 Declaration.value handle.Value="24px" && secondStyle.getPropertyPriority "width"="important")
+            firstStyle.setProperty("height","33px")
+            group.Revert()
+            require "computed CSS animatable revert restores stylesheet fallback and each original inline priority"
+                (firstStyle.getPropertyValue "width"="" && abs(first.getBoundingClientRect().width-16.)<0.02 &&
+                 secondStyle.getPropertyValue "width"="8px" && secondStyle.getPropertyPriority "width"="important" &&
+                 firstStyle.getPropertyValue "height"="33px")
+            host.Document.body.removeChild first |> ignore
+            host.Document.body.removeChild second |> ignore
+            host.Document.head.removeChild sheet |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let mutable armed=false
+            let owner,group,handle=Api.createRoot(fun owner ->
+                let group=new Animatable(scheduler) |> Animatable.own
+                let modify value =
+                    if armed then owner.Dispose()
+                    value
+                let settings={AnimatablePropertyOptions.Default with Ease=id;Modifier=modify}
+                let handle=group.Declaration(style,Declaration.create "transform" "translate(0px,0px)",duration=100u,options=settings)
+                owner,group,handle)
+            use group=group
+            handle.ToComponents [|100.;200.|]
+            let initial=style.getPropertyValue "transform"
+            armed<-true
+            handle.Playback.Seek 50.
+            require "public CSS animatable owner disposal inside a component modifier prevents dispatch"
+                (owner.IsDisposed && group.Cancelled && handle.Playback.Cancelled && style.getPropertyValue "transform"=initial)
+            owner.Dispose()
+            style.removeProperty "transform" |> ignore
+        do
             let mutable current=42.
             let property=NumericProperty((fun () -> current),(fun next ->
                 current<-next

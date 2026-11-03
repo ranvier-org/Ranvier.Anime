@@ -29,6 +29,8 @@ type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundN
     member _.Fork() = AnimatableValue(first,last,roundNumbers,cachedNumber,Array.copy cachedComponents)
     /// <summary>The normalized endpoint category retained across retargets.</summary>
     member _.Kind=first.Kind
+    /// <summary>Copies captured unit and component-template metadata for typed adapter validation.</summary>
+    member _.Metadata={first with Components=Array.copy first.Components;Strings=Array.copy first.Strings}
     /// <summary>The cached modified scalar before the getter applies its modifier.</summary>
     member _.CachedScalar=cachedNumber
     /// <summary>An independent copy of cached color or compound components.</summary>
