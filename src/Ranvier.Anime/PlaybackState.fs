@@ -22,6 +22,7 @@ type internal PlaybackEvent =
 /// <summary>Playback callback and control state; clock input includes the initial delay.</summary>
 type internal PlaybackState(duration: float, iterations: float, delay: float, loopDelay: float,
                             initialReversed: bool, alternate: bool, callback: PlaybackEvent -> unit) =
+    let mutable duration = duration
     let mutable timing = PlaybackTiming(duration, iterations, delay, loopDelay)
     let mutable sample = timing.Sample(0., 0., initialReversed, alternate, false, PlaybackTickMode.Force)
     let mutable paused = true
@@ -103,7 +104,7 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let rec resume expected =
         if current expected && paused then
             paused <- false
-            if timing.Duration <= 1e-11 then render 1e-11 PlaybackTickMode.Force false
+            if timing.Duration <= 1e-11 && childRenderer.IsNone then render 1e-11 PlaybackTickMode.Force false
     and seek expected time mute =
         if not(System.Double.IsFinite time) then invalidArg "time" "Expected finite milliseconds."
         if current expected then
@@ -172,6 +173,13 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         childRenderer <- Some renderChildren
     /// <summary>Raw time preceding the current sample, used for forced property-render eligibility.</summary>
     member _.PreviousAbsoluteTime = previousAbsoluteTime
+    /// <summary>Updates iteration geometry while retaining the most recent sample until the next render.</summary>
+    member _.Resize(value: float) =
+        let next = PlaybackTiming(value, iterations, delay, loopDelay)
+        live()
+        change() |> ignore
+        duration <- value
+        timing <- next
     /// <summary>Overrides total geometry for source animation setter durations while preserving iteration count.</summary>
     member _.OverrideDuration(value: float) =
         if not(System.Double.IsFinite value) then invalidArg "value" "Expected finite total milliseconds."

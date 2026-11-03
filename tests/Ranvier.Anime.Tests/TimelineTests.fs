@@ -9,7 +9,11 @@ open Ranvier.Anime
 open Ranvier
 
 let private fixtures property =
-    use document = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "reference", "pure.json")))
+    let root =
+        match Environment.GetEnvironmentVariable "RANVIER_ANIME_REFERENCE_ROOT" with
+        | null | "" -> Path.Combine(AppContext.BaseDirectory, "reference")
+        | value -> value
+    use document = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "pure.json")))
     document.RootElement.GetProperty(property: string).EnumerateArray() |> Seq.map _.Clone() |> Seq.toList
 
 let private animation clock (duration: float) initial target =
@@ -304,13 +308,13 @@ let tests = testList "timeline synchronization" [
         use timeline = new Timeline(clock)
         timeline.Sync child |> ignore
         timeline.Play()
-        clock.Advance 25.; clock.RunFrame()
+        clock.Advance 13.; clock.RunFrame()
         Expect.equal value.Value 25. "scheduled child sample"
         timeline.Pause()
-        clock.Advance 25.; clock.RunFrame()
+        clock.Advance 13.; clock.RunFrame()
         Expect.equal value.Value 25. "paused"
         timeline.Play()
-        clock.Advance 25.; clock.RunFrame()
+        clock.Advance 13.; clock.RunFrame()
         Expect.equal value.Value 50. "resumed"
         timeline.Complete()
         Expect.equal value.Value 100. "complete"
@@ -320,7 +324,7 @@ let tests = testList "timeline synchronization" [
         Expect.isFalse timeline.Playing "reset remains paused"
         timeline.Complete()
         timeline.Restart()
-        clock.Advance 25.; clock.RunFrame()
+        clock.Advance 13.; clock.RunFrame()
         Expect.equal value.Value 25. "restart schedules from zero"
     testCase "reentrant cancellation prevents later sibling writes" <| fun _ ->
         let clock = new ManualFrameScheduler()

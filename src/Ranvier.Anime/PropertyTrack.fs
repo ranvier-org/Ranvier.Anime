@@ -28,6 +28,8 @@ type internal NumericPropertyTrack private (property: NumericProperty, first: fl
     let mutable tweenTime = 0.
     let mutable parentTime = 0.
     let mutable completed = false
+    let mutable backwardsValue = false
+    let mutable rendered = false
     let mutable cachedValue = cached
     let absoluteStart = PropertyNumbers.round 1e12 offset
     let absoluteEnd = PropertyNumbers.round 1e12 (offset + updateDuration)
@@ -35,6 +37,14 @@ type internal NumericPropertyTrack private (property: NumericProperty, first: fl
     member _.Offset = offset
     /// <summary>The normalized child duration in milliseconds.</summary>
     member _.Duration = duration
+    /// <summary>Whether the most recent sample completed this track.</summary>
+    member _.Completed = completed
+    /// <summary>Raw time at the preceding sample.</summary>
+    member _.CurrentTime = parentTime
+    /// <summary>Parent-directed playback direction at the preceding sample.</summary>
+    member _.Backwards = backwardsValue
+    /// <summary>Whether the most recent sample dispatched a value at positive child time.</summary>
+    member _.Rendered = rendered
     member private _.Start = absoluteStart
     member private _.End = absoluteEnd
     member private _.Cached = cachedValue
@@ -54,6 +64,8 @@ type internal NumericPropertyTrack private (property: NumericProperty, first: fl
     /// <summary>Samples a scalar sibling, caching internal renders and guarding dispatched writes after user callbacks.</summary>
     member _.Sample(localTime: float, force: bool, internalRender: bool, muted: bool,
                     backwards: bool, parentBegan: bool, canWrite: unit -> bool) =
+        rendered <- false
+        backwardsValue <- backwards
         let prior = System.Math.Clamp(parentTime, 0., duration)
         let delta = localTime - parentTime
         let current = System.Math.Clamp(localTime, 0., duration)
@@ -87,7 +99,10 @@ type internal NumericPropertyTrack private (property: NumericProperty, first: fl
                     let value = modifier (PropertyNumbers.interpolate first target progress)
                     if canWrite() then
                         if not(System.Double.IsFinite value) then invalidArg "modifier" "Expected a finite value."
-                        if internalRender then cachedValue <- value else property.Value <- value
+                        if internalRender then cachedValue <- value
+                        else
+                            property.Value <- value
+                            if canWrite() then rendered <- current > 0.
         if canWrite() then
             if setter then
                 if not muted && ((parentBegan && not backwards && localTime > 0. && not completed) ||

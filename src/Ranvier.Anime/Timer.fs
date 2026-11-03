@@ -46,6 +46,7 @@ type PlaybackOptions =
 type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions,
            ?onBegin: Timer -> unit, ?onBeforeUpdate: Timer -> unit, ?onUpdate: Timer -> unit,
            ?onLoop: Timer -> unit, ?onPause: Timer -> unit, ?onComplete: Timer -> unit) as this =
+    let mutable duration = duration
     let options = defaultArg options PlaybackOptions.Default
     let iterations = match options.Repeat with PlaybackRepeat.Count count -> float count + 1. | PlaybackRepeat.Forever -> infinity
     let callback event =
@@ -238,6 +239,15 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member internal _.ConfigureRenderer(renderer, ?totalDuration: float) =
         state.Renderer <- fun sample mode muted -> if renderingEnabled then renderer sample mode muted
         totalDuration |> Option.iter state.OverrideDuration
+    /// <summary>Configures the timeline child phases before rendering begins.</summary>
+    member internal _.ConfigureChildren(beforeLoop, renderChildren) =
+        state.ConfigureChildren(beforeLoop, renderChildren)
+    /// <summary>Updates timeline iteration geometry and resets with muted callbacks.</summary>
+    member internal _.Resize(value: float) =
+        operate (fun current ->
+            state.Resize value
+            duration <- value
+            if current() then state.Reset()) ignore
     /// <summary>Resets retargeted endpoints without dispatching a reset write, then resumes under one interruption guard.</summary>
     member internal _.Rebase(prepare: unit -> unit) =
         operate (fun current ->

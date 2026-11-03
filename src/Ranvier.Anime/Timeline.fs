@@ -3,117 +3,150 @@ namespace Ranvier.Anime
 open System
 open Ranvier.Dom
 
-/// <summary>A paused timeline borrowing animation/timeline children and sampling callback tracks through one scheduler.</summary>
-/// <remarks>Use the scheduler's owning thread. Disposal is terminal and preserves child values.</remarks>
-type Timeline(scheduler: FrameScheduler) =
+/// <summary>A paused timeline with shared repeat/direction controls, numeric property tracks and borrowed controllers.</summary>
+/// <remarks>Use the scheduler's owning thread. Resume includes a 12 ms clock lead. Disposal is terminal and preserves child values.</remarks>
+type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
+              ?onBegin: Timeline -> unit, ?onBeforeUpdate: Timeline -> unit,
+              ?onRender: Timeline -> unit, ?onUpdate: Timeline -> unit,
+              ?onLoop: Timeline -> unit, ?onPause: Timeline -> unit,
+              ?onComplete: Timeline -> unit) as this =
     let children = System.Collections.Generic.List<TimelineEntry>()
     let propertySiblings = System.Collections.Generic.Dictionary<NumericProperty, System.Collections.Generic.List<NumericPropertyTrack>>()
     let labels = System.Collections.Generic.Dictionary<string, float>(System.StringComparer.Ordinal)
     let mutable duration = 0.
-    let mutable elapsed = 0.
+    let mutable hasEntries = false
     let mutable sampledTime = 0.
-    let mutable anchor = 0.
-    let mutable playing = false
-    let mutable completed = false
     let mutable cancelled = false
     let mutable generation = 0
-    let mutable pending: System.IDisposable option = None
-
-    let finite name value = if not(System.Double.IsFinite value) then invalidArg name "Expected a finite time."
-    let ensureLive () = if cancelled then raise(System.ObjectDisposedException("Timeline"))
-    let stopFrame () =
-        generation <- generation + 1
-        let previous = pending
-        pending <- None
-        previous |> Option.iter _.Dispose()
+    let mutable ancestorLive = fun () -> true
+    let mutable internalRendering = false
+    let clock = new Timer(scheduler, 0., ?options=options,
+        onBegin=(fun _ -> onBegin |> Option.iter(fun callback -> callback this)),
+        onBeforeUpdate=(fun _ -> onBeforeUpdate |> Option.iter(fun callback -> callback this)),
+        onUpdate=(fun _ -> onUpdate |> Option.iter(fun callback -> callback this)),
+        onLoop=(fun _ -> onLoop |> Option.iter(fun callback -> callback this)),
+        onPause=(fun _ -> onPause |> Option.iter(fun callback -> callback this)),
+        onComplete=(fun _ -> onComplete |> Option.iter(fun callback -> callback this)))
+    let finite name value = if not(Double.IsFinite value) then invalidArg name "Expected a finite time."
+    let ensureLive () = if cancelled then raise(ObjectDisposedException("Timeline"))
+    let stopFrame () = generation <- generation + 1
     let cancel () =
-        playing <- false
         cancelled <- true
         stopFrame()
-        children.Clear()
-        propertySiblings.Clear()
-        labels.Clear()
-    let roundChildTime value = PropertyNumbers.round 1e12 value
-    let renderMode ancestorLive muteCallbacks force internalRender requestedTime =
+        try clock.Cancel()
+        finally
+            children.Clear()
+            propertySiblings.Clear()
+            labels.Clear()
+    let canRender expected clockGeneration () =
+        expected = generation && clockGeneration = clock.Generation && not cancelled && ancestorLive()
+    let resetTracks () =
+        for entry in children do
+            match entry with
+            | TimelineEntry.Property track -> track.ResetTimer()
+            | TimelineEntry.Callback(_, _, state) -> state.Completed <- false
+            | _ -> ()
+    let renderMode ancestor muteCallbacks force internalRender requestedTime =
         let expected = generation
+        let clockGeneration = clock.Generation
         let previous = sampledTime
-        let time = if internalRender then requestedTime else Math.Min(requestedTime, duration)
+        let time = requestedTime
         sampledTime <- requestedTime
-        elapsed <- Math.Clamp(requestedTime, 0., duration)
-        completed <- elapsed >= duration
-        if completed then playing <- false
-        let backwards = requestedTime < previous
-        let canWrite () = expected = generation && not cancelled && ancestorLive()
+        let backwards = if internalRender then requestedTime < previous else clock.Backwards
+        let canWrite () = canRender expected clockGeneration () && ancestor()
         let snapshots = children.ToArray()
         let snapshots = if backwards then Array.rev snapshots else snapshots
+        let mutable allComplete = true
+        let mutable rendered = false
         for entry in snapshots do
-            let childTime = roundChildTime (time - entry.Offset)
+            let childTime = PropertyNumbers.round 1e12 (time - entry.Offset)
             if canWrite() && not(backwards && childTime > entry.Duration) then
                 match entry with
                 | TimelineEntry.Property track ->
-                    track.Sample(childTime, force, internalRender, muteCallbacks, backwards, elapsed > 0., canWrite)
+                    track.Sample(childTime, force, internalRender, muteCallbacks, backwards, clock.Began, canWrite)
+                    rendered <- rendered || track.Rendered
+                    allComplete <- allComplete && track.Completed
                 | TimelineEntry.Numeric(_, child) when not internalRender && (time >= entry.Offset || previous >= entry.Offset) ->
                     child.Pause()
-                    child.SeekGuarded(Math.Clamp(childTime, 0., entry.Duration), canWrite)
+                    if canWrite() then child.SeekGuarded(Math.Clamp(childTime, 0., entry.Duration), canWrite)
+                    rendered <- rendered || childTime > 0.
+                    allComplete <- allComplete && childTime >= entry.Duration
                 | TimelineEntry.Nested(_, _, child) when not internalRender && (time >= entry.Offset || previous >= entry.Offset) ->
                     child.Pause()
-                    child.SeekGuarded(Math.Clamp(childTime, 0., entry.Duration), canWrite)
+                    if canWrite() then child.SeekGuarded(Math.Clamp(childTime, 0., entry.Duration), canWrite)
+                    rendered <- rendered || childTime > 0.
+                    allComplete <- allComplete && childTime >= entry.Duration
                 | TimelineEntry.Callback(_, callback, state) when not internalRender ->
+                    state.Time <- childTime
+                    state.Backwards <- backwards
                     if not muteCallbacks &&
-                       ((elapsed > 0. && not backwards && childTime > 0. && not state.Value) ||
-                        (backwards && childTime <= 1e-11 && state.Value)) then
-                        state.Value <- not backwards
+                       ((clock.Began && not backwards && childTime > 0. && not state.Completed) ||
+                        (backwards && childTime <= 1e-11 && state.Completed)) then
+                        state.Completed <- not backwards
                         callback()
-                | _ -> ()
-    let renderWith ancestorLive muteCallbacks time = renderMode ancestorLive muteCallbacks false false time
-    let render muteCallbacks time = renderWith (fun () -> true) muteCallbacks time
-    let rec queue () =
-        if playing && not cancelled && pending.IsNone then
-            let expected = generation
-            pending <- Some(scheduler.Frame(fun now ->
-                if expected = generation && playing && not cancelled then
-                    pending <- None
-                    try
-                        render false (now - anchor)
-                        if expected = generation then queue()
-                    with _ ->
-                        cancel()
-                        reraise()))
-
-
-    let seekWithForce force canWrite muteCallbacks milliseconds =
+                    allComplete <- allComplete && state.Completed
+                | _ -> allComplete <- false
+        if not internalRender && rendered && not muteCallbacks && canWrite() then
+            onRender |> Option.iter(fun callback -> callback this)
+        allComplete
+    let prepareLoop (sample: PlaybackSample) _ muted =
+        if not internalRendering then
+            let canWrite = canRender generation clock.Generation
+            for entry in children.ToArray() do
+                if canWrite() then
+                    if not sample.Backwards then
+                        match entry with
+                        | TimelineEntry.Property track ->
+                            if not track.Completed && not track.Backwards && track.CurrentTime < track.Duration then
+                                track.Sample(duration, true, true, muted, false, clock.Began, canWrite)
+                            if canWrite() then track.ResetTimer()
+                        | TimelineEntry.Callback(_, callback, state) ->
+                            if not state.Completed && not state.Backwards && state.Time < 1e-11 then
+                                state.Time <- duration
+                                state.Backwards <- false
+                                if not muted then
+                                    state.Completed <- true
+                                    callback()
+                            if canWrite() then state.Completed <- false
+                        | _ -> ()
+                    else
+                        match entry with
+                        | TimelineEntry.Callback(offset, callback, _) when not muted && (offset = 0. || offset + 1e-11 = duration) ->
+                            callback()
+                        | _ -> ()
+    do clock.ConfigureChildren(prepareLoop, fun sample mode muted ->
+        renderMode (fun () -> true) muted (mode = PlaybackTickMode.Force) internalRendering
+            (if internalRendering then 0. else sample.IterationTime))
+    let resize () =
+        internalRendering <- true
+        try clock.Resize duration finally internalRendering <- false
+    let seek ancestor muteCallbacks milliseconds =
         ensureLive()
         finite "milliseconds" milliseconds
         stopFrame()
-        anchor <- scheduler.Now() - milliseconds
-        try
-            renderMode canWrite muteCallbacks force false milliseconds
-            queue()
-        with _ ->
-            cancel()
-            reraise()
-
-    let seek canWrite muteCallbacks milliseconds = seekWithForce false canWrite muteCallbacks milliseconds
-
+        let previous = ancestorLive
+        ancestorLive <- fun () -> previous() && ancestor()
+        try clock.Seek(milliseconds, muteCallbacks=muteCallbacks)
+        finally ancestorLive <- previous
     let addChild (entry: TimelineEntry) =
         let finish = entry.Offset + entry.Duration
         finite "position" finish
         stopFrame()
+        let expected = generation
         match entry with
         | TimelineEntry.Numeric(_, child) -> child.Pause()
         | TimelineEntry.Nested(_, _, child) -> child.Pause()
         | _ -> ()
-        children.Add entry
-        duration <- Math.Max(duration, finish)
-        match entry with
-        | TimelineEntry.Callback _ when duration = 0. -> duration <- 1e-11
-        | _ -> ()
-        try
-            render true sampledTime
-            queue()
-        with _ ->
-            cancel()
-            reraise()
+        if expected = generation && not cancelled then
+            children.Add entry
+            hasEntries <- true
+            duration <- Math.Max(duration, finish)
+            try
+                resize()
+                if expected = generation && not cancelled then resetTracks()
+            with _ ->
+                cancel()
+                reraise()
 
     member private this.Contains(candidate: Timeline) =
         Object.ReferenceEquals(this, candidate) ||
@@ -172,12 +205,12 @@ type Timeline(scheduler: FrameScheduler) =
         if updateDuration = 0. then invalidArg "milliseconds" "Positive duration rounds to zero at source timing precision."
         let normalizedDuration = if Double.IsPositiveInfinity updateDuration then 1e12 else updateDuration
         finite "position" (offset + normalizedDuration)
-        playing <- false
+        clock.Pause()
         stopFrame()
         let expected = generation
         let canWrite () = expected = generation && not cancelled
         try
-            renderMode canWrite true false true offset
+            renderMode canWrite true false true offset |> ignore
             if canWrite() then
                 let siblings =
                     match propertySiblings.TryGetValue property with
@@ -190,17 +223,17 @@ type Timeline(scheduler: FrameScheduler) =
                                                   defaultArg ease id, defaultArg modifier id, canWrite) with
                 | Some track when canWrite() ->
                     children.Add(TimelineEntry.Property track)
+                    hasEntries <- true
                     duration <- Math.Max(duration, offset + normalizedDuration)
-                    if duration = 0. then duration <- 1e-11
                     track.Sample(0., true, true, true, false, false, canWrite)
-                    if canWrite() then renderMode canWrite true true true 0.
+                    if canWrite() then renderMode canWrite true true true 0. |> ignore
                     if canWrite() then
                         for entry in children do
                             match entry with
                             | TimelineEntry.Property track -> track.ResetTimer()
-                            | TimelineEntry.Callback(_, _, state) -> state.Value <- false
+                            | TimelineEntry.Callback(_, _, state) -> state.Completed <- false
                             | _ -> ()
-                        completed <- false
+                        resize()
                 | _ ->
                     if siblings.Count = 0 then propertySiblings.Remove property |> ignore
             this
@@ -223,7 +256,7 @@ type Timeline(scheduler: FrameScheduler) =
         ensureLive()
         if isNull (box callback) then nullArg "callback"
         let offset = this.ResolvePosition(?position = position) - 1e-11
-        addChild (TimelineEntry.Callback(offset, callback, ref false))
+        addChild (TimelineEntry.Callback(offset, callback, TimelineCallState()))
         this
 
     /// <summary>Borrows a child group using stagger offsets based on the timeline end before insertion.</summary>
@@ -244,72 +277,74 @@ type Timeline(scheduler: FrameScheduler) =
         Array.iter2(fun (child: NumericAnimation) offset -> this.Sync(child, TimelinePosition.At offset) |> ignore) children offsets
         this
 
-    /// <summary>The scheduled duration in milliseconds.</summary>
-    member _.Duration = duration
-
-    /// <summary>The last sampled or paused time in milliseconds.</summary>
-    member _.CurrentTime = elapsed
-
-    /// <summary>Whether the scheduler is advancing this timeline.</summary>
-    member _.Playing = playing
-
-    /// <summary>Whether the latest sample reached the end.</summary>
-    member _.Completed = completed
-
-    /// <summary>Samples a millisecond position, optionally suppressing this controller's direct callbacks.</summary>
-    /// <remarks>CurrentTime is clamped; negative samples cross signed offsets. Borrowed nested callbacks retain their own policy.</remarks>
+    /// <summary>Total duration including repeats and gaps, excluding initial delay.</summary>
+    member _.Duration = if hasEntries then clock.Duration else 0.
+    /// <summary>Duration of one timeline iteration.</summary>
+    member _.IterationDuration = duration
+    /// <summary>Last sampled time with source bounds and four-decimal precision.</summary>
+    member _.CurrentTime = clock.CurrentTime
+    /// <summary>Directional time within the current iteration.</summary>
+    member _.IterationCurrentTime = clock.IterationCurrentTime
+    /// <summary>Current signed source iteration index.</summary>
+    member _.CurrentIteration = clock.CurrentIteration
+    /// <summary>Whether a scheduled frame loop is active.</summary>
+    member _.Playing = not clock.Paused
+    /// <summary>Whether positive time has been sampled since reset.</summary>
+    member _.Began = clock.Began
+    /// <summary>Whether raw direction and iteration reversal produce backwards playback.</summary>
+    member _.Backwards = clock.Backwards
+    /// <summary>Whether the timeline and its direct tracks reached completion.</summary>
+    member _.Completed = clock.Completed
+    /// <summary>Whether the base playback direction is reversed.</summary>
+    member _.Reversed = clock.Reversed
+    /// <summary>Whether terminal cancellation ended this timeline's lifetime.</summary>
+    member _.Cancelled = cancelled
+    /// <summary>Bounded overall progress.</summary>
+    member _.Progress = clock.Progress
+    /// <summary>Finite playback multiplier, clamped to at least 1e-11.</summary>
+    member _.Speed
+        with get() = clock.Speed
+        and set value = finite "value" value; ensureLive(); stopFrame(); clock.Speed <- value
+    /// <summary>Finite frame-rate ceiling, clamped to at least 1e-11.</summary>
+    member _.Fps with get() = clock.Fps and set value = clock.Fps <- value
+    /// <summary>Samples milliseconds after initial delay, optionally muting direct callbacks.</summary>
     member _.Seek(milliseconds: float, ?muteCallbacks: bool) =
         seek (fun () -> true) (defaultArg muteCallbacks false) milliseconds
-
-    /// <summary>Samples a borrowed controller while retaining every ancestor's final-write guard.</summary>
+    /// <summary>Samples a borrowed controller with every ancestor's write guard.</summary>
     member internal _.SeekGuarded(milliseconds: float, canWrite: unit -> bool) = seek canWrite false milliseconds
-
-    /// <summary>Continues from the current time; completed timelines stay completed.</summary>
-    member _.Play() =
+    /// <summary>Resumes the current direction with the source clock lead.</summary>
+    member _.Resume() = ensureLive(); stopFrame(); clock.Resume()
+    /// <summary>Resumes forward playback, mirroring time when reversed.</summary>
+    member _.Play() = ensureLive(); stopFrame(); clock.Play()
+    /// <summary>Resumes reversed playback, mirroring time when forward.</summary>
+    member _.Reverse() = ensureLive(); stopFrame(); clock.Reverse()
+    /// <summary>Mirrors time and direction according to repeat parity.</summary>
+    member _.Alternate() = ensureLive(); stopFrame(); clock.Alternate()
+    /// <summary>Stops scheduling and retains the last sampled time.</summary>
+    member _.Pause() = stopFrame(); clock.Pause()
+    /// <summary>Rewinds with muted direct callbacks and resets direct track completion.</summary>
+    member _.Reset() =
         ensureLive()
-        if not playing && not completed then
-            playing <- true
-            anchor <- scheduler.Now() - elapsed
-            if duration = 0. then render false 0. else queue()
-
-    /// <summary>Stops scheduled frames while retaining elapsed time.</summary>
-    member _.Pause() =
-        if playing then
-            sampledTime <- Math.Min(scheduler.Now() - anchor, duration)
-            elapsed <- Math.Clamp(sampledTime, 0., duration)
-            playing <- false
-            stopFrame()
-
-    /// <summary>Pauses and rewinds children, suppressing and resetting direct callback tracks.</summary>
-    member this.Reset() =
-        this.Pause()
-        let expected = generation + 1
-        seekWithForce true (fun () -> true) true 0.
-        if generation = expected then
-            for entry in children do
-                match entry with
-                | TimelineEntry.Callback(_, _, state) -> state.Value <- false
-                | TimelineEntry.Property track -> track.ResetTimer()
-                | _ -> ()
-
-    /// <summary>Rewinds and starts the timeline.</summary>
+        stopFrame()
+        let expected = generation
+        clock.Reset()
+        if expected = generation && not cancelled then resetTracks()
+    /// <summary>Resets then resumes playback.</summary>
     member this.Restart() =
+        let expected = generation + 1
         this.Reset()
-        this.Play()
-
-    /// <summary>Samples the end and stops scheduling frames.</summary>
-    member this.Complete() = this.Seek duration
-
-    /// <summary>Stops future timeline writes and releases borrowed child references.</summary>
+        if not cancelled && generation = expected then this.Resume()
+    /// <summary>Samples the end, retaining the timeline's reusable native lifetime.</summary>
+    member this.Complete(?muteCallbacks: bool) = this.Seek(clock.Duration, ?muteCallbacks=muteCallbacks)
+    /// <summary>Stops future writes and releases borrowed references.</summary>
     member _.Cancel() = cancel()
-
     interface IDisposable with member _.Dispose() = cancel()
 
 and private TimelineEntry =
     | Property of track: NumericPropertyTrack
     | Numeric of offset: float * child: NumericAnimation
     | Nested of offset: float * duration: float * child: Timeline
-    | Callback of offset: float * callback: (unit -> unit) * completed: bool ref
+    | Callback of offset: float * callback: (unit -> unit) * completed: TimelineCallState
 
     member this.Offset =
         match this with
@@ -322,6 +357,11 @@ and private TimelineEntry =
         | Numeric(_, child) -> child.Duration
         | Nested(_, duration, _) -> duration
         | Callback _ -> 1e-11
+
+and private TimelineCallState() =
+    member val Completed = false with get, set
+    member val Backwards = false with get, set
+    member val Time = 0. with get, set
 
 /// <summary>Optional Ranvier ownership for borrowed-child timelines.</summary>
 [<RequireQualifiedAccess>]

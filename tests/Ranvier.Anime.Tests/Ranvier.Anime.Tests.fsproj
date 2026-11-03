@@ -13,6 +13,7 @@
     <Compile Include="TimerTests.fs" />
     <Compile Include="AnimationPlaybackTests.fs" />
     <Compile Include="TimelineClockTests.fs" />
+    <Compile Include="TimelinePlaybackTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

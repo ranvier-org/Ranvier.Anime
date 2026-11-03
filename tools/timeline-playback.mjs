@@ -60,6 +60,8 @@ const cases = [
   {name:'skipIterations', kind:'sets', parameters:{loop:4},steps:[0,25,475,475,25,0].map(seek)},
   {name:'skipIterationsBackwards', kind:'sets', parameters:{loop:4,alternate:true},steps:[0,25,375,475,25,0].map(seek)},
   {name:'callbackOnly', kind:'calls', parameters:{loop:2,alternate:true}},
+  {name:'zeroCallback', kind:'zeroCalls', parameters:{},steps:[{op:'resume'},frame(1),seek(0),{op:'reset'},seek(1)]},
+  {name:'zeroCallbackLoop', kind:'zeroCalls', parameters:{loop:2},steps:[0,1,0,1].map(seek)},
 ];
 
 const fixtures = cases.map(({name,kind,parameters,childParameters={},steps=times.map(seek)}) => {
@@ -103,6 +105,8 @@ const fixtures = cases.map(({name,kind,parameters,childParameters={},steps=times
     call('end',100);
   } else if (kind === 'calls') {
     call('start',0); call('middle',50); call('end',100);
+  } else if (kind === 'zeroCalls') {
+    call('start',0);
   } else if (kind === 'timer') {
     add('timer',{duration:100,...childParameters},25);
     call('end',timeline.iterationDuration);

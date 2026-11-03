@@ -6,6 +6,8 @@ The behavioral reference fixtures are generated from Anime.js. Preserve this not
 
 The playback timing geometry in `src/Ranvier.Anime/PlaybackTiming.fs`, callback/control transitions in `src/Ranvier.Anime/PlaybackState.fs`, clock anchoring/throttling in `src/Ranvier.Anime/Timer.fs` and numeric render eligibility in `src/Ranvier.Anime/NumericAnimation.fs` are derived from Anime.js's animation, timer, clock and core render logic at this commit.
 
+Timeline iteration/child traversal in `src/Ranvier.Anime/Timeline.fs` and scalar sibling eligibility/composition in `src/Ranvier.Anime/PropertyTrack.fs` also follow the pinned timeline and core render logic.
+
 The easing formulas retain Anime.js's credit to Robert Penner, Copyright (c) 2001 Robert Penner, from https://robertpenner.com/easing/.
 The cubic Bezier solver retains Anime.js's credit to https://github.com/gre/bezier-easing, Copyright (c) 2014 Gaëtan Renaudeau.
 These credits are preserved in the ported source as well as this notice.
