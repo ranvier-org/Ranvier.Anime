@@ -4,6 +4,18 @@ Upstream: https://github.com/juliangarnier/anime, v4.5.0, commit `2c9cf8ea00329f
 
 The behavioral reference fixtures are generated from Anime.js. Preserve this notice with derived source, tests and distributions.
 
+CSS snapshot expansion data in `src/Ranvier.Anime/CssPropertyMetadata.fs` is generated from WebKit's `Source/WebCore/css/CSSProperties.json` at commit `b95c91b1c0ee43cc86d25ff7af73038f67a88e04`, the WebKit revision recorded by the qualified NativeP7 payload. `tools/css-metadata.mjs` is the port's own generator; `tests/reference/css-metadata.json` records exact input/output hashes. The metadata's associated WebKit generator carries these terms, retained here with the generated data:
+
+Copyright (C) 2022-2023 Apple Inc. All rights reserved.
+Copyright (C) 2024-2026 Samuel Weinig <sam@webkit.org>
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY APPLE INC. AND ITS CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL APPLE INC. OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 The playback timing geometry in `src/Ranvier.Anime/PlaybackTiming.fs`, callback/control transitions in `src/Ranvier.Anime/PlaybackState.fs`, clock anchoring/throttling in `src/Ranvier.Anime/Timer.fs` and numeric render eligibility in `src/Ranvier.Anime/NumericAnimation.fs` are derived from Anime.js's animation, timer, clock and core render logic at this commit.
 
 Timeline iteration/child traversal in `src/Ranvier.Anime/Timeline.fs` and scalar sibling eligibility/composition in `src/Ranvier.Anime/PropertyTrack.fs` also follow the pinned timeline and core render logic.

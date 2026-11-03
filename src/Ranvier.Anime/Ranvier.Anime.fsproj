@@ -27,6 +27,9 @@
     <Compile Include="Timeline.fs" />
     <Compile Include="Reactive.fs" />
     <Compile Include="CssUnits.fs" />
+    <Compile Include="CssPropertyMetadata.fs" />
+    <Compile Include="CssSerialization.fs" />
+    <Compile Include="CssPropertySnapshot.fs" />
     <Compile Include="Keyframes.fs" />
     <Compile Include="AnimatableCss.fs" />
     <Compile Include="Css.fs" />

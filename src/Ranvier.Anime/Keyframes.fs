@@ -89,7 +89,6 @@ type KeyframeAnimation internal(targetCount:int) =
     interface IDisposable with member this.Dispose()=this.Cancel()
 
 module private KeyframeBinding =
-    let private cssShorthands = System.Collections.Generic.HashSet<string>(("all animation animation-range background background-position border border-block border-block-color border-block-style border-block-width border-block-start border-block-end border-bottom border-color border-image border-inline border-inline-color border-inline-style border-inline-width border-inline-start border-inline-end border-left border-radius border-right border-style border-top border-width column-rule columns contain-intrinsic-size container flex flex-flow font font-synthesis font-variant gap grid grid-area grid-column grid-row grid-template inset inset-block inset-inline list-style margin margin-block margin-inline mask mask-border offset outline overflow overscroll-behavior padding padding-block padding-inline place-content place-items place-self scroll-margin scroll-margin-block scroll-margin-inline scroll-padding scroll-padding-block scroll-padding-inline scroll-timeline text-decoration text-emphasis text-wrap transition view-timeline white-space").Split(' '),StringComparer.OrdinalIgnoreCase)
     let validate (duration:float,options:KeyframeAnimationOptions) =
         if isNull(box options) || isNull(box options.Playback) then nullArg "options"
         let finite name value=if not(Double.IsFinite value) then invalidArg name "Expected finite milliseconds."
@@ -163,7 +162,6 @@ module private KeyframeBinding =
              duration:float,options:KeyframeAnimationOptions,owner:Owner option) =
         let precision=validate(duration,options)
         if String.IsNullOrWhiteSpace name then invalidArg "name" "A CSS property name is required."
-        if cssShorthands.Contains name then invalidArg "name" "CSS shorthand keyframes require expanded longhand snapshots; use individual longhand properties."
         if isNull targets || targets.Length=0 then invalidArg "targets" "Expected nonempty CSS targets."
         if isNull authored then nullArg "frames"
         let targets=Array.copy targets
@@ -197,25 +195,14 @@ module private KeyframeBinding =
                     let style=read(fun () -> getStyle target)
                     if isNull(box style) then invalidArg "targets" "A style declaration is required."
                     style)
-            let originals=styles |> Array.map(fun style ->
-                let value=read(fun () -> style.getPropertyValue name)
-                let priority=read(fun () -> style.getPropertyPriority name)
-                let mutable present=not(String.IsNullOrEmpty value)
-                let length=if present then 0u else read(fun () -> style.length)
-                let mutable index=0u
-                while not present && index<length do
-                    present<-read(fun () -> style.item index)=name
-                    index<-index+1u
-                struct(value,priority,present))
-            let important=originals |> Array.map(fun struct(_,priority,_) -> constantImportant || priority="important")
+            let originals=styles |> Array.map(fun style -> CssPropertySnapshot.Capture(style,name,animation.EnsureLive))
+            let important=originals |> Array.map(fun original -> constantImportant || original.Important)
             animation.SetRestore(fun current ->
                 let mutable failure:exn option=None
                 for index in 0..originals.Length-1 do
                     if current() then
                         try
-                            let struct(value,priority,present)=originals[index]
-                            if present then styles[index].setProperty(name,value,priority=priority)
-                            else styles[index].removeProperty name |> ignore
+                            originals[index].Restore(styles[index],current)
                         with error -> if failure.IsNone then failure<-Some error
                 failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()))
             let properties=properties |> Array.mapi(fun index property ->
@@ -261,7 +248,8 @@ module private KeyframeBinding =
 
 /// <summary>Typed keyframe sequence construction on the native shared scheduler.</summary>
 /// <remarks>Empty frame arrays complete as an epsilon no-op and do not read their property accessors.</remarks>
-/// <remarks>CSS bindings currently accept longhands and custom properties. Shorthands reject before style access.</remarks>
+/// <remarks>CSS bindings snapshot affected longhands and preserve current logical-counterpart values during restoration.</remarks>
+/// <remarks>Unrecoverable pending shorthand values raise NotSupportedException before dispatch.</remarks>
 [<AbstractClass;Sealed>]
 type Keyframes private () =
     /// <summary>Animates nonempty numeric property handles using finite nonnegative precise milliseconds.</summary>

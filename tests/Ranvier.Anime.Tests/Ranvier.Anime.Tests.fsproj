@@ -11,6 +11,7 @@
     <Compile Include="KeyframePlaybackTests.fs" />
     <Compile Include="KeyframeNumericTests.fs" />
     <Compile Include="KeyframeCssTests.fs" />
+    <Compile Include="CssSnapshotTests.fs" />
     <Compile Include="AnimatableValueTests.fs" />
     <Compile Include="AnimatableTrackTests.fs" />
     <Compile Include="AnimatableNumberTests.fs" />

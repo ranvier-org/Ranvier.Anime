@@ -42,15 +42,162 @@ let main args =
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
         do
-            style.setProperty("margin-left","7px",priority="important")
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("margin-left","7px",priority="important")
+            inlineStyle.setProperty("margin-right","8px")
+            inlineStyle.setProperty("height","9px")
+            use animation=Keyframes.DeclarationOn(scheduler,target,Declaration.create "margin" "0px",
+                [|Keyframe.toValue(Declaration.create "margin" "100px")|],duration=100u,
+                options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            animation.Playback.Seek 50.
+            require "native CSS shorthand keyframes dispatch all expanded margin sides"
+                ([|"margin-top";"margin-right";"margin-bottom";"margin-left"|] |> Array.forall(fun name -> inlineStyle.getPropertyValue name="50px"))
+            inlineStyle.setProperty("height","23px")
+            animation.Revert()
+            require "native CSS shorthand revert preserves partial longhands and mixed priorities"
+                (inlineStyle.getPropertyValue "margin-left"="7px" && inlineStyle.getPropertyPriority "margin-left"="important" &&
+                 inlineStyle.getPropertyValue "margin-right"="8px" && inlineStyle.getPropertyPriority "margin-right"="" &&
+                 inlineStyle.getPropertyValue "margin-top"="" && inlineStyle.getPropertyValue "margin-bottom"="" &&
+                 inlineStyle.getPropertyValue "height"="23px")
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("border-image-slice","13",priority="important")
+            inlineStyle.setProperty("border-image-repeat","round")
+            use animation=Keyframes.DeclarationOn(scheduler,target,Declaration.create "border" "1px solid rgb(255,0,0)",
+                [|Keyframe.toValue(Declaration.create "border" "5px solid rgb(0,0,255)")|],duration=100u,
+                options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            animation.Playback.Seek 100.
+            require "native border keyframes exercise reset-only border image longhands"
+                (inlineStyle.getPropertyValue "border-image-slice"<>"13")
+            animation.Revert()
+            require "native border keyframes restore reset-only fields and their individual priority"
+                (inlineStyle.getPropertyValue "border-image-slice"="13" && inlineStyle.getPropertyPriority "border-image-slice"="important" &&
+                 inlineStyle.getPropertyValue "border-image-repeat"="round" && inlineStyle.getPropertyPriority "border-image-repeat"="" &&
+                 inlineStyle.getPropertyValue "border-top-width"="")
+            host.Document.body.removeChild target |> ignore
+        for property,originalLeaf in ["-webkit-border-radius","border-top-left-radius";"-webkit-margin-start","margin-inline-start"] do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty(originalLeaf,"7px",priority="important")
+            use animation=Keyframes.DeclarationOn(scheduler,target,Declaration.create property "0px",
+                [|Keyframe.toValue(Declaration.create property "100px")|],duration=100u,
+                options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            animation.Playback.Seek 50.
+            require ("native CSS alias dispatch "+property) (inlineStyle.getPropertyValue originalLeaf="50px")
+            animation.Revert()
+            require ("native CSS alias restores canonical original "+property)
+                (inlineStyle.getPropertyValue originalLeaf="7px" && inlineStyle.getPropertyPriority originalLeaf="important")
+            host.Document.body.removeChild target |> ignore
+        for logicalFirst in [false;true] do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            if logicalFirst then inlineStyle.setProperty("margin-inline-start","11px")
+            inlineStyle.setProperty("margin-left","7px")
+            if not logicalFirst then inlineStyle.setProperty("margin-inline-start","11px")
+            use animation=Keyframes.DeclarationOn(scheduler,target,Declaration.create "margin" "0px",
+                [|Keyframe.toValue(Declaration.create "margin" "100px")|],duration=100u,
+                options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            animation.Playback.Seek 50.
+            inlineStyle.setProperty("margin-inline-start","17px")
+            inlineStyle.setProperty("height","23px")
+            animation.Revert()
+            let computed=(ComputedStyles.forHost host).Get((target:>Element),None)
+            require ("native shorthand revert retains logical precedence "+logicalFirst.ToString())
+                (computed.getPropertyValue "margin-left"=(if logicalFirst then "7px" else "17px") &&
+                 inlineStyle.getPropertyValue "margin-inline-start"="17px" && inlineStyle.getPropertyValue "height"="23px")
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("all","initial")
+            inlineStyle.setProperty("width","7px")
+            inlineStyle.setProperty("direction","rtl")
+            inlineStyle.setProperty("--keep","1")
+            let snapshot=CssPropertySnapshot.Capture(inlineStyle,"all",ignore)
+            inlineStyle.setProperty("all","unset")
+            inlineStyle.setProperty("width","23px")
+            inlineStyle.setProperty("direction","ltr")
+            inlineStyle.setProperty("--keep","2")
+            snapshot.Restore(inlineStyle,(fun () -> true))
+            let computed=(ComputedStyles.forHost host).Get((target:>Element),None)
+            require "native all snapshots restore affected longhands and retain excluded properties"
+                (inlineStyle.getPropertyValue "color"="initial" && inlineStyle.getPropertyValue "width"="7px" &&
+                 computed.getPropertyValue "width"="7px" && inlineStyle.getPropertyValue "direction"="ltr" &&
+                 inlineStyle.getPropertyValue "--keep"="2")
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("--m","1px 2px")
+            inlineStyle.setProperty("margin","var(--m)")
+            require "native pending shorthand longhands serialize empty"
+                (inlineStyle.getPropertyValue "margin-top"="")
+            use animation=Keyframes.DeclarationOn(scheduler,target,Declaration.create "margin" "0px",
+                [|Keyframe.toValue(Declaration.create "margin" "100px")|],duration=100u,
+                options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            animation.Playback.Seek 50.
+            animation.Revert()
+            let computed=(ComputedStyles.forHost host).Get((target:>Element),None)
+            require "native shorthand revert retains original variable expression"
+                (computed.getPropertyValue "margin-top"="1px" && computed.getPropertyValue "margin-right"="2px" &&
+                 computed.getPropertyValue "margin-left"="2px" &&
+                 inlineStyle.cssText.Contains("var(--m)"))
+            inlineStyle.setProperty("--m","3px 4px")
+            let updated=(ComputedStyles.forHost host).Get((target:>Element),None)
+            require "restored shorthand variables remain reactive to native custom property changes"
+                (updated.getPropertyValue "margin-top"="3px" && updated.getPropertyValue "margin-right"="4px" &&
+                 updated.getPropertyValue "margin-left"="4px")
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("margin-left","7px")
+            inlineStyle.setProperty("--m","11px 13px")
+            inlineStyle.setProperty("margin-inline","var(--m)")
+            use animation=Keyframes.DeclarationOn(scheduler,target,Declaration.create "margin" "0px",
+                [|Keyframe.toValue(Declaration.create "margin" "100px")|],duration=100u,
+                options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            animation.Playback.Seek 50.
+            inlineStyle.setProperty("--n","17px 19px")
+            inlineStyle.setProperty("margin-inline","var(--n)")
+            animation.Revert()
+            let computed=(ComputedStyles.forHost host).Get((target:>Element),None)
+            require "native shorthand revert preserves current pending logical counterpart expression"
+                (computed.getPropertyValue "margin-left"="17px" && computed.getPropertyValue "margin-right"="19px" &&
+                 inlineStyle.cssText.Contains("var(--n)"))
+            inlineStyle.setProperty("--n","23px 29px")
+            let updated=(ComputedStyles.forHost host).Get((target:>Element),None)
+            require "retained pending counterparts keep native custom property dependence"
+                (updated.getPropertyValue "margin-left"="23px" && updated.getPropertyValue "margin-right"="29px")
+            host.Document.body.removeChild target |> ignore
+        for property in ["margin";"margin-top"] do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("--m","1px 2px")
+            inlineStyle.setProperty("margin","var(--m)")
+            if property="margin" then inlineStyle.setProperty("margin-left","7px",priority="important")
+            let before=inlineStyle.cssText
             let mutable rejected=false
             try
-                Keyframes.Declaration(scheduler,(style:>CSSStyleDeclaration),Declaration.create "margin" "0px",
-                                      [|Keyframe.toValue(Declaration.create "margin" "100px")|]) |> ignore
-            with :? ArgumentException as error when error.ParamName="name" -> rejected<-true
-            require "unsupported CSS keyframe shorthands reject without losing original longhand and priority"
-                (rejected && style.getPropertyValue "margin-left"="7px" && style.getPropertyPriority "margin-left"="important")
-            style.removeProperty "margin" |> ignore
+                Keyframes.DeclarationOn(scheduler,target,Declaration.create property "0px",
+                    [|Keyframe.toValue(Declaration.create property "100px")|]) |> ignore
+            with :? NotSupportedException -> rejected<-true
+            let computed=(ComputedStyles.forHost host).Get((target:>Element),None)
+            require ("opaque pending shorthand snapshot gap rejects before native dispatch "+property)
+                (rejected && inlineStyle.cssText=before && computed.getPropertyValue "margin-top"="1px" &&
+                 computed.getPropertyValue "margin-left"=(if property="margin" then "7px" else "2px"))
+            host.Document.body.removeChild target |> ignore
         do
             let rows=[|
                 {FrameRow.Values=[|"width",ValueInterpolation.Text "10px"|]

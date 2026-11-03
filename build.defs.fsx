@@ -434,6 +434,17 @@ let root = Command.root {
             run "rtk node tools/keyframe-css.mjs"
         }
     }
+    command "css-metadata" {
+        description "Regenerate or verify snapshot metadata from the matched WebKit Git blob"
+        input {
+            let! source = Input.option<string> "--source" |> Input.def "C:/wk/src"
+            and! check = Input.option<bool> "--check"
+            return stage "matched native CSS metadata" {
+                workingDir __SOURCE_DIRECTORY__
+                run ({ Cmd.create "rtk" "" with Arguments=["node";"tools/css-metadata.mjs";"--source";source] @ (if check then ["--check"] else []) })
+            }
+        }
+    }
     command "unit-reference" {
         stage "upstream unit conversion reference" {
             workingDir __SOURCE_DIRECTORY__

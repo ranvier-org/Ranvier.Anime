@@ -373,13 +373,13 @@ let cssContractTests=testList "public CSS keyframe contracts" [
         animation.Playback.Seek 150.
         Expect.equal (recorder.Value "width") "150px" "captured later endpoint"
 
-    testCase "unsupported CSS shorthands reject before style access or callbacks" <| fun _ ->
+    testCase "empty shorthand sequences skip unused style access" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         let recorder=CssStyle()
-        recorder.BeforeRead<-fun () -> failtest "shorthand style access"
+        recorder.BeforeRead<-fun () -> failtest "unused shorthand style access"
         for name in ["margin";"MARGIN";"border";"background";"font";"all";"grid-area";"padding-inline";"animation-range"] do
-            Expect.throwsT<ArgumentException> (fun () ->
-                Keyframes.CaptureInline(scheduler,(recorder:>CSSStyleDeclaration),name,
-                    [|Keyframe.toBy(fun _ -> failtest "shorthand callback")|]) |> ignore) name
+            use animation=Keyframes.CaptureInline(scheduler,(recorder:>CSSStyleDeclaration),name,[||])
+            Expect.isTrue animation.Playback.Completed name
+            animation.Revert()
         Expect.isEmpty recorder.Writes "no shorthand dispatch"
 ]
