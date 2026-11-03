@@ -108,6 +108,47 @@ let main args =
             require "native animatable owner disposal inside soft reset prevents dispatch"
                 (owned.Clock.Cancelled && modifierCalls=2 && ownedWrites=1 && not owned.Clock.InternalRender)
             owner.Dispose()
+        do
+            let mutable groupBegins=0
+            let mutable groupCompletions=0
+            use group=new AnimatableGroup(scheduler,onBegin=(fun _ -> groupBegins<-groupBegins+1),
+                                          onComplete=(fun _ -> groupCompletions<-groupCompletions+1))
+            let width=group.Add([|AnimatableValue(ValueInterpolation.Number 0.,None,false,None)|],
+                (fun _ output -> StyleDeclaration.apply style (Ranvier.Css.Css.width(Ranvier.Css.Css.px(Option.get output.Scalar)) |> Declaration.important)),
+                100.,PlaybackOptions.Default,id,id,4)
+            let height=group.Add([|AnimatableValue(ValueInterpolation.Number 0.,None,false,None)|],
+                (fun _ output -> StyleDeclaration.apply style (Ranvier.Css.Css.height(Ranvier.Css.Css.px(Option.get output.Scalar)))),
+                200.,PlaybackOptions.Default,id,id,4)
+            width.RetargetScalar 100.
+            height.RetargetScalar 200.
+            pumpUntil host (fun () -> group.Callbacks.Completed)
+            require "native animatable group callbacks finish after independent properties pause"
+                (groupBegins=1 && groupCompletions=1 && width.Clock.Completed && height.Clock.Completed &&
+                 group.Callbacks.CurrentTime=1000. && abs(element.getBoundingClientRect().width-100.)<0.01 &&
+                 abs(element.getBoundingClientRect().height-200.)<0.01 && style.getPropertyPriority "width"="important")
+        do
+            use groupGraph=new Graph()
+            use groupActivation=groupGraph.Activate()
+            let mutable groupBegins=0
+            let mutable groupUpdates=0
+            let mutable groupWrites=0
+            let owner,group,first,second=Api.createRoot(fun owner ->
+                let group=new AnimatableGroup(scheduler,onBegin=(fun _ -> groupBegins<-groupBegins+1;owner.Dispose()),
+                                              onUpdate=(fun _ -> groupUpdates<-groupUpdates+1))
+                Api.getOwner().Attach(group:>IDisposable)
+                let add ()=group.Add([|AnimatableValue(ValueInterpolation.Number 0.,None,false,None)|],
+                                    (fun _ _ -> groupWrites<-groupWrites+1),1000.,PlaybackOptions.Default,id,id,4)
+                owner,group,add(),add())
+            use group=group
+            first.RetargetScalar 100.
+            second.RetargetScalar 100.
+            pumpUntil host (fun () -> group.Cancelled)
+            let stopped=groupWrites
+            host.Cycle(milliseconds=10)
+            host.Frame()
+            require "native animatable group owner disposal interrupts callbacks and all property roots"
+                (groupBegins=1 && groupUpdates=0 && groupWrites=stopped && first.Clock.Cancelled && second.Clock.Cancelled)
+            owner.Dispose()
         let superseded=AnimatableValue(ValueInterpolation.Number 10.,None,false,None)
         superseded.RetargetScalar(100.,id,live) |> ignore
         let retargetAgain value = superseded.RetargetScalar(300.,id,live) |> ignore; value

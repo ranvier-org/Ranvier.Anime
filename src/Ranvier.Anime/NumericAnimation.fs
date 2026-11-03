@@ -104,6 +104,10 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     member _.Stretch(milliseconds:float) = clock.Stretch milliseconds
     /// <summary>Stretches total duration using unsigned whole milliseconds.</summary>
     member _.Stretch(milliseconds:uint) = clock.Stretch milliseconds
+    /// <summary>Retained controller state for the internal animatable callback clock.</summary>
+    member internal _.PlaybackClock=clock
+    /// <summary>Revives and resets the internal callback clock without replacing its identity.</summary>
+    member internal _.ReviveReset()=clock.ReviveReset()
     /// <summary>Starts from the currently rendered value using the current iteration duration and repeat options.</summary>
     member _.Retarget(target: float) =
         if clock.Cancelled then raise(ObjectDisposedException(nameof NumericAnimation))

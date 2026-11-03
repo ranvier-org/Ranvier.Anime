@@ -267,6 +267,12 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         pause()
     /// <summary>Resumes scheduling; zero-duration standalone timers complete immediately.</summary>
     member _.Resume() = run resume
+    /// <summary>Reopens an internal callback animation before resetting its retained clock history.</summary>
+    member _.ReviveForReset() =
+        if cancelled then
+            change() |> ignore
+            cancelled<-false
+            paused<-true
     /// <summary>Resets time and flags with muted render callbacks, restoring the initial direction policy.</summary>
     member _.Reset() = run (fun expected -> reset expected false)
     /// <summary>Refreshes caches during reset while exposing an internal-render context to the renderer.</summary>

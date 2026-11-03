@@ -301,6 +301,10 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             state.Resize value
             duration <- value
             if current() then state.Reset()) ignore
+    /// <summary>Revives the internal animatable callback controller and resets its retained clock history.</summary>
+    member internal _.ReviveReset() =
+        state.ReviveForReset()
+        this.Reset()
     /// <summary>Whether the current renderer invocation refreshes caches without target dispatch.</summary>
     member internal _.InternalRender = state.InternalRender
     /// <summary>Prepares endpoints, optional stretch, cache-only reset and resume under one interruption guard.</summary>

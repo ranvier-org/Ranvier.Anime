@@ -25,17 +25,45 @@ let private trackCases () =
     use doc=JsonDocument.Parse(File.ReadAllText(Path.Combine(root,"animatable.json")))
     Expect.equal (doc.RootElement.GetProperty("upstreamCommit").GetString()) "2c9cf8ea00329f6768c7d7902252ed977d75ce42" "pinned source"
     doc.RootElement.GetProperty("fixtures").EnumerateArray() |> Seq.map _.Clone() |> Seq.toList
-let private trackReplay (fixture:JsonElement) =
+let private trackReplayWithGroup useGroup (fixture:JsonElement) =
     let parameters=fixture.GetProperty("parameters")
     let originals=fixture.GetProperty("targets")
     let targetValues=Dictionary<struct(string*int),Literal>()
     let writes=ResizeArray<string*int*Literal>()
     let tracks=Dictionary<string,AnimatableTrack>()
     use scheduler=new ManualFrameScheduler()
-    use cleanup={new IDisposable with member _.Dispose()=for track in tracks.Values do track.Cancel()}
+    let mutable checking=true
+    use cleanup={new IDisposable with member _.Dispose()=checking<-false;for track in tracks.Values do track.Cancel()}
+    let mutable expectedEvents:JsonElement array=[||]
+    let mutable eventIndex=0
+    let verifyClock (expected:JsonElement) (clock:Timer) =
+        for name,actual in ["time",clock.CurrentTime;"rawTime",clock.Sample.AbsoluteTime;"duration",clock.Duration
+                            "iterationDuration",clock.IterationDuration;"delay",clock.Delay;"loopDelay",clock.LoopDelay] do
+            Expect.equal actual (expected.GetProperty(name).GetDouble()) name
+        for name,actual in ["began",clock.Began;"paused",clock.Paused;"completed",clock.Completed;"reversed",clock.Reversed] do
+            Expect.equal actual (expected.GetProperty(name).GetBoolean()) name
+    let verifyTargets (expected:JsonElement) =
+        for target in 0..expected.GetArrayLength()-1 do
+            for property in expected[target].EnumerateObject() do
+                trackEqualLiteral (trackLiteral property.Value) targetValues[struct(property.Name,target)]
+    let callback phase (animation:NumericAnimation) =
+        if checking then
+            Expect.isLessThan eventIndex expectedEvents.Length "unexpected group callback"
+            let expected=expectedEvents[eventIndex]
+            Expect.equal phase (expected.GetProperty("event").GetString()) "group callback phase"
+            verifyClock (expected.GetProperty("state")) animation.PlaybackClock
+            verifyTargets (expected.GetProperty("targets"))
+            eventIndex<-eventIndex+1
+    let group=
+        if useGroup then Some(new AnimatableGroup(scheduler,onBegin=callback "Begin",onBeforeUpdate=callback "BeforeUpdate",
+                                                  onRender=callback "Render",onUpdate=callback "Update",onLoop=callback "Loop",
+                                                  onPause=callback "Pause",onComplete=callback "Complete"))
+        else None
+    use groupCleanup={new IDisposable with member _.Dispose()=checking<-false;group |> Option.iter(fun group -> group.Cancel())}
     for target in 0..originals.GetArrayLength()-1 do
         for property in originals[target].EnumerateObject() do targetValues.Add(struct(property.Name,target),trackLiteral property.Value)
     let initial=fixture.GetProperty("initial")
+    expectedEvents<-initial.GetProperty("events").EnumerateArray() |> Seq.toArray
     for property in initial.GetProperty("state").GetProperty("properties").EnumerateObject() do
         let parameter=parameters.GetProperty property.Name
         let nested=parameter.ValueKind=JsonValueKind.Object
@@ -61,10 +89,16 @@ let private trackReplay (fixture:JsonElement) =
             let literal=match value.Scalar with Some number -> Number number | None -> Text value.Text
             targetValues[struct(property.Name,index)]<-literal
             writes.Add(property.Name,index,literal)
-        let track=new AnimatableTrack(scheduler,kernels,write,duration,options,Ease.named easeName,modifier,4)
+        let track=
+            match group with
+            | Some group -> group.Add(kernels,write,duration,options,Ease.named easeName,modifier,4)
+            | None -> new AnimatableTrack(scheduler,kernels,write,duration,options,Ease.named easeName,modifier,4)
         tracks.Add(property.Name,track)
-        track.Initialize()
+        if not useGroup then track.Initialize()
     let verify (state:JsonElement) (expectedWrites:JsonElement) =
+        group |> Option.iter(fun group ->
+            Expect.equal eventIndex expectedEvents.Length "group callback count"
+            verifyClock (state.GetProperty("callbacks")) group.Callbacks.PlaybackClock)
         Expect.equal writes.Count (expectedWrites.GetArrayLength()) "source write count"
         for index in 0..writes.Count-1 do
             let name,target,value=writes[index]
@@ -96,6 +130,8 @@ let private trackReplay (fixture:JsonElement) =
     verify (initial.GetProperty("state")) (initial.GetProperty("writes"))
     for sample in fixture.GetProperty("samples").EnumerateArray() |> Seq.takeWhile(fun sample -> sample.GetProperty("step").GetProperty("op").GetString()<>"revert") do
         writes.Clear()
+        expectedEvents<-sample.GetProperty("events").EnumerateArray() |> Seq.toArray
+        eventIndex<-0
         let step=sample.GetProperty("step")
         let property=trackOptional "property" step |> Option.map _.GetString() |> Option.defaultValue ""
         match step.GetProperty("op").GetString() with
@@ -147,7 +183,7 @@ let trackTests = testList "animatable shared track" [
     for fixture in trackCases() do
         let name=fixture.GetProperty("name").GetString()
         if not(["componentAlias";"noTargets";"emptyProperties"] |> List.contains name) then
-            testCase ("source "+name) <| fun _ -> trackReplay fixture
+            testCase ("source "+name) <| fun _ -> trackReplayWithGroup false fixture
     testCase "multi-target preparation discards earlier staged endpoints after a later pause" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         let writes=ResizeArray<int*float>()
@@ -263,4 +299,136 @@ let trackTests = testList "animatable shared track" [
         Expect.equal ((fork.Sample(1.,4,id,(fun () -> true)) |> Option.get).Text) "100px" "fork destination"
         Expect.equal ((kernel.Sample(0.,4,id,(fun () -> true)) |> Option.get).Text) "32px" "original independent cache"
         Expect.equal conversions 1 "normalization retained"
+]
+
+
+let groupTests = testList "animatable group callbacks" [
+    testCase "root disposal releases only pending timeout and microtask registrations" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let host=scheduler:>FrameScheduler
+        let mutable releases=0
+        let counted (lease:IDisposable)={new IDisposable with member _.Dispose()=releases<-releases+1;lease.Dispose()}
+        let monitor=
+            {new FrameScheduler with
+                member _.Now()=host.Now()
+                member _.Frame callback=host.Frame callback
+                member _.Timeout(delay,callback)=counted(host.Timeout(delay,callback))
+                member _.Microtask callback=counted(host.Microtask callback)
+                member _.Dispose()=()}
+        let queue=AnimatableFrameQueue(monitor)
+        let root=queue.CreateScheduler()
+        let mutable calls=0
+        root.Microtask(fun () -> calls<-calls+1) |> ignore
+        scheduler.RunMicrotasks()
+        root.Timeout(5.,fun () -> calls<-calls+1) |> ignore
+        scheduler.Advance 5.
+        let cancelled=root.Timeout(50.,fun () -> calls<-calls+1)
+        cancelled.Dispose()
+        root.Timeout(100.,fun () -> calls<-calls+1) |> ignore
+        root.Dispose()
+        Expect.equal releases 2 "completed and previously disposed work is no longer registered"
+        scheduler.Advance 200.
+        scheduler.RunMicrotasks()
+        Expect.equal calls 2 "only completed work ran"
+    testCase "callback controller retains identity when another property restarts a completed clock" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use group=new AnimatableGroup(scheduler)
+        let first=group.Add([|AnimatableValue(Number 0.,None,false,None)|],(fun _ _ -> ()),2000.,PlaybackOptions.Default,id,id,4)
+        let second=group.Add([|AnimatableValue(Number 0.,None,false,None)|],(fun _ _ -> ()),100.,PlaybackOptions.Default,id,id,4)
+        let callbacks=group.Callbacks
+        first.RetargetScalar 100.
+        scheduler.Advance 25.
+        scheduler.RunFrame()
+        scheduler.Advance 1100.
+        scheduler.RunFrame()
+        Expect.isTrue callbacks.Completed "independent callback duration"
+        Expect.isFalse first.Clock.Completed "long property continues"
+        second.RetargetScalar 100.
+        scheduler.Advance 25.
+        scheduler.RunFrame()
+        Expect.isTrue (obj.ReferenceEquals(callbacks,group.Callbacks)) "retained callback object"
+        Expect.isFalse callbacks.Completed "callback clock reset"
+    testCase "owner disposal in a group begin callback stops later phases and frames" <| fun _ ->
+        use graph=new Graph()
+        use activation=graph.Activate()
+        use scheduler=new ManualFrameScheduler()
+        let mutable begins=0
+        let mutable updates=0
+        let mutable writes=0
+        let owner,group,first,second=Api.createRoot(fun owner ->
+            let group=new AnimatableGroup(scheduler,onBegin=(fun _ -> begins<-begins+1;owner.Dispose()),onUpdate=(fun _ -> updates<-updates+1))
+            Api.getOwner().Attach(group:>IDisposable)
+            let add ()=group.Add([|AnimatableValue(Number 0.,None,false,None)|],(fun _ _ -> writes<-writes+1),100.,PlaybackOptions.Default,id,id,4)
+            owner,group,add(),add())
+        use group=group
+        first.RetargetScalar 100.
+        second.RetargetScalar 100.
+        scheduler.Advance 25.
+        scheduler.RunFrame()
+        let stopped=writes
+        scheduler.Advance 100.
+        scheduler.RunFrame()
+        Expect.equal begins 1 "one begin callback"
+        Expect.equal updates 0 "same callback tick interrupted"
+        Expect.equal writes stopped "no future property writes"
+        Expect.isTrue (group.Cancelled && first.Clock.Cancelled && second.Clock.Cancelled) "all owned lifetimes end"
+        owner.Dispose()
+    testCase "property callback failure cancels every group member and preserves the primary exception" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let primary=InvalidOperationException "group begin failure"
+        use group=new AnimatableGroup(scheduler,onBegin=(fun _ -> raise primary))
+        let add ()=group.Add([|AnimatableValue(Number 0.,None,false,None)|],(fun _ _ -> ()),100.,PlaybackOptions.Default,id,id,4)
+        let first,second=add(),add()
+        first.RetargetScalar 100.
+        second.RetargetScalar 100.
+        scheduler.Advance 25.
+        let mutable actual:exn option=None
+        try scheduler.RunFrame() with error -> actual<-Some error
+        Expect.isTrue (actual |> Option.exists(fun error -> obj.ReferenceEquals(error,primary))) "fault identity"
+        Expect.isTrue (group.Cancelled && first.Clock.Cancelled && second.Clock.Cancelled) "fault closes all members"
+    testCase "an empty group has an unstarted independent callback controller" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use group=new AnimatableGroup(scheduler)
+        Expect.equal group.Count 0 "empty track collection"
+        Expect.equal group.Callbacks.Duration 1000. "callback duration"
+        Expect.isTrue group.Callbacks.PlaybackClock.Paused "unstarted"
+        group.Cancel()
+        Expect.throwsT<ObjectDisposedException> (fun () -> group.Add([|AnimatableValue(Number 0.,None,false,None)|],(fun _ _ -> ()),100.,PlaybackOptions.Default,id,id,4) |> ignore) "terminal group lifetime"
+    testCase "root adapters preserve order and keep the host scheduler alive after disposal" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let queue=AnimatableFrameQueue(scheduler)
+        let first,second,later=queue.CreateScheduler(),queue.CreateScheduler(),queue.CreateScheduler()
+        let events=ResizeArray<string>()
+        let rec tickFirst _ =
+            events.Add "first"
+            first.Frame tickFirst |> ignore
+            later.Frame(fun _ -> events.Add "later") |> ignore
+        first.Frame tickFirst |> ignore
+        second.Frame(fun _ -> events.Add "second") |> ignore
+        scheduler.Advance 25.
+        scheduler.RunFrame()
+        Expect.sequenceEqual events ["first";"second";"later"] "cached-next traversal"
+        first.Dispose()
+        second.Dispose()
+        later.Dispose()
+        (scheduler:>FrameScheduler).Frame(fun _ -> events.Add "host") |> ignore
+        scheduler.Advance 25.
+        scheduler.RunFrame()
+        Expect.equal events[events.Count-1] "host" "host remains usable"
+    testCase "disposing an old frame lease cannot cancel its replacement" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let queue=AnimatableFrameQueue(scheduler)
+        use root=queue.CreateScheduler()
+        let events=ResizeArray<string>()
+        let old=root.Frame(fun _ -> events.Add "stale")
+        root.Frame(fun _ -> events.Add "current") |> ignore
+        old.Dispose()
+        scheduler.Advance 25.
+        scheduler.RunFrame()
+        Expect.sequenceEqual events ["current"] "new request survives old lease"
+
+    for fixture in trackCases() do
+        let name=fixture.GetProperty("name").GetString()
+        if not(["componentAlias";"noTargets";"emptyProperties"] |> List.contains name) then
+            testCase ("source group "+name) <| fun _ -> trackReplayWithGroup true fixture
 ]

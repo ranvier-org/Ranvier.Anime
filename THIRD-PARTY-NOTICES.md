@@ -14,6 +14,8 @@ Cached getters and retarget endpoint updates in `src/Ranvier.Anime/AnimatableVal
 
 Retarget playback and cache-only reset integration in `src/Ranvier.Anime/AnimatableTrack.fs` also follow the pinned animatable, animation and timer/render behavior.
 
+The independent callback animation in `src/Ranvier.Anime/AnimatableGroup.fs` and ordered root traversal in `src/Ranvier.Anime/AnimatableFrames.fs` follow the pinned animatable, engine, clock and linked-list helpers.
+
 Contextual conversion in `src/Ranvier.Anime/CssUnits.fs` follows the pinned core units code's angle ratios and clone measurement procedure, with scoped cleanup and per-element construction measurements.
 
 The easing formulas retain Anime.js's credit to Robert Penner, Copyright (c) 2001 Robert Penner, from https://robertpenner.com/easing/.
