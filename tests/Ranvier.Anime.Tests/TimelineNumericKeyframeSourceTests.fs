@@ -69,6 +69,7 @@ let verify (fixture:JsonElement) =
     for childIndex,child in input.GetProperty("children").EnumerateArray() |> Seq.indexed do
         let childId=child.GetProperty("id").GetString()
         let p=child.GetProperty "parameters"
+        let sequenceInput=optional "keyframes" p
         let propertyName=if optional "x" p |> Option.isSome then "x" else "y"
         let propertyIndex=if propertyName="x" then 0 else 1
         let targets=handles |> Array.map(fun properties -> properties[propertyIndex])
@@ -83,7 +84,7 @@ let verify (fixture:JsonElement) =
                 | "previous" -> defaultArg context.PreviousValue (values.[int context.Index].[0])+basis
                 | _ -> basis
             else value.GetDouble()
-        let raw=p.GetProperty(propertyName).EnumerateArray() |> Seq.toArray
+        let raw=if sequenceInput.IsSome then [||] else p.GetProperty(propertyName).EnumerateArray() |> Seq.toArray
         let frames=
             if raw |> Array.forall(fun value -> value.ValueKind=JsonValueKind.Number) then
                 Keyframe.values(raw |> Array.map _.GetDouble())
@@ -106,7 +107,30 @@ let verify (fixture:JsonElement) =
                                                            Composition=(if fixture.GetProperty("name").GetString().StartsWith("none-") then KeyframeComposition.None else KeyframeComposition.Replace)
                                                            OnBegin=cb "Begin";OnBeforeUpdate=cb "BeforeUpdate";OnRender=cb "Render";OnUpdate=cb "Update"
                                                            OnLoop=cb "Loop";OnPause=cb "Pause";OnComplete=cb "Complete"}
-        let controller=root.AddKeyframesPrecise(targets,frames,number "duration" 1000. p,position=TimelinePosition.At(child.GetProperty("at").GetDouble()),options=options)
+        let duration=number "duration" 1000. p
+        let position=TimelinePosition.At(child.GetProperty("at").GetDouble())
+        let controller=
+            match sequenceInput with
+            | None -> root.AddKeyframesPrecise(targets,frames,duration,position=position,options=options)
+            | Some input ->
+                let entries (value:JsonElement)=value.EnumerateObject() |> Seq.filter(fun item -> item.Name="x" || item.Name="y")
+                                               |> Seq.map(fun item -> item.Name,item.Value.GetDouble()) |> Seq.toArray
+                let sequence:KeyframeSequence<NumericProperty,float>=
+                    if input.ValueKind=JsonValueKind.Array then
+                        input.EnumerateArray() |> Seq.map(fun row ->
+                            let mutable value=KeyframeRow.values(entries row)
+                            optional "duration" row |> Option.iter(fun duration -> value<-value.WithDurationPrecise(duration.GetDouble()))
+                            optional "delay" row |> Option.iter(fun delay -> value<-value.WithDelay(delay.GetDouble()))
+                            optional "ease" row |> Option.iter(fun ease -> value<-value.WithEase(Ease.named(ease.GetString())))
+                            value) |> Seq.toArray |> KeyframeSequence.Rows
+                    else
+                        input.EnumerateObject() |> Seq.map(fun key ->
+                            let position=Double.Parse(key.Name.TrimEnd('%'),Globalization.CultureInfo.InvariantCulture)/100.
+                            let mutable value=KeyframeOffset.at position (entries key.Value)
+                            optional "ease" key.Value |> Option.iter(fun ease -> value<-value.WithEase(Ease.named(ease.GetString())))
+                            value) |> Seq.toArray |> KeyframeSequence.Offsets
+                let bindings=[|"x",handles |> Array.map(fun target -> target[0]);"y",handles |> Array.map(fun target -> target[1])|]
+                root.AddKeyframesPrecise(bindings,sequence,duration,position=position,options=options)
         children.Add(childId,controller)
         let actual=capture()
         let expected=construction[childIndex]
@@ -137,9 +161,9 @@ let private fixtures() =
     let supported=source.RootElement.GetProperty("fixtures").EnumerateArray()
                   |> Seq.filter(fun fixture ->
                       let name=fixture.GetProperty("name").GetString()
-                      not(["sparseRows";"sparseOffsets";"modifiedPredecessors";"relativeSiblingSource"] |> List.exists name.EndsWith))
+                      not(["modifiedPredecessors";"relativeSiblingSource"] |> List.exists name.EndsWith))
                   |> Seq.map _.Clone() |> Seq.toArray
-    Expect.equal supported.Length 34 "complete current numeric authoring coverage"
+    Expect.equal supported.Length 38 "complete current numeric authoring coverage"
     supported
 
 let sourceTests=testList "public owned numeric source traces" [

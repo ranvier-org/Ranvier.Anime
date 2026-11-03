@@ -41,6 +41,8 @@ Task1 evidence:36 isolated source schedules include cross-child providers and mo
 
 ## Task2: Owned child phase and construction
 
+Owned CSS/sparse numeric checkpoint: per-property typed CSS explicit/inline/computed factories and numeric sparse rows/offsets now reuse the existing pending-child transaction and shared installation. Numeric aliases share handle identity; CSS paths share captured inline-style identity, verified against actual matched native wrappers.38 of42 exact source schedules pass; four relative-value schedules remain open. Twelve CSS and eight sparse numeric contracts pass alongside all prior tests. Owned typed CSS sparse sequences and mixed scalar/keyframe arbitration remain required.
+
 Numeric adapter milestone: public AddKeyframes/AddKeyframesPrecise now construct existing KeyframeAnimation handles under pending lifetime and parent guards.34 exact source schedules compare complete construction, ordered effects/writes/events, root/child callback snapshots, resets and controls through this facade. Eleven internal factory contracts, ten numeric facade contracts and twelve owned sampling contracts cover interruption, actual ownership, admission, uint/precise timing, restoration and reentry. Numeric root integration and cross-child replacement pass; typed CSS, sparse row/offset and relative-value authoring plus mixed scalar/keyframe arbitration remain open. The unchecked items below still cover those complete interfaces.
 
 **Files:** PlaybackState.fs, Timer.fs, Timeline.fs, KeyframePlayback.fs, Keyframes.fs, KeyframeSequenceBinding.fs; new TimelineKeyframes.fs and TimelineKeyframeTests.fs; existing compile lists.
@@ -67,13 +69,15 @@ Registry checkpoint in progress:42 source schedules now include separate input-t
 
 The scoped registry review found skipped explicit-pair getter effects. Raw getter calls now occur for each shared explicit pair; unused malformed text remains unparsed when predecessor metadata supplies inheritance. Cancellation prevents later conversion/modifier callbacks and faults preserve identity. A second reproduced conflict allowed stale construction to overwrite an existing child's direct Seek. Publication now compares captured live geometry, cache identity and links before copying staged state; direct Seek and Stretch reject stale commits without per-frame registry counters. These are internal construction primitives; the public owned factory and complete source trace replay remain open.
 
-- [ ] RED: replay Task1 root/child callbacks, self-state and target snapshots using a minimal owned factory, not Sync.
-- [ ] GREEN: implement inherited mute/direction/FPS/loop and cache-only construction through one Timer child phase; pass source offsets into compilation.
-- [ ] Preserve all existing owned timer and borrowed tests; prove owner cancellation, reentry, getter faults, child cancellation, constructor interruption and no independent frame lease.
-- [ ] Implement same-parent overlap predecessor/cache/arbitration against the captured cases; retain independent-animation/global registry work explicitly if separate.
+- [x] RED: replay Task1 root/child callbacks, self-state and target snapshots using a minimal owned factory, not Sync.
+- [x] GREEN: implement inherited mute/direction/FPS/loop and cache-only construction through one Timer child phase; pass source offsets into compilation.
+- [x] Preserve all existing owned timer and borrowed tests; prove owner cancellation, reentry, getter faults, child cancellation, constructor interruption and no independent frame lease.
+- [x] Implement same-parent overlap predecessor/cache/arbitration against the captured cases; retain independent-animation/global registry work explicitly if separate.
 - [ ] Add numeric raw/explicit/row/offset and typed CSS inline/computed/declaration overloads, with uint/precise durations and existing scoped restoration.
 
 ## Task3: Qualify and record
+
+Owned CSS/sparse numeric qualification:1978/1978 complete normal/Traced suites, XML0 and byte-stable complete source regeneration pass. Actual matched public normal/Traced JIT and strict NativeAOT PEs pass new sparse alias replacement, cross-facade CSS replacement, contextual16/32px font units, host frame completion, scoped restoration and actual owner interruption after computed Get; all earlier native probes retain host.Errors0. Fresh scoped review found no Critical/Important issues. Evidence docs/evidence/native-public45-p7-owned-css-sequences.json verifies2 receipts/18 archives/70 library source hashes/2 consumers and359 authored/190 compiler inputs. All18 distinct final gates pass;19 attempts retain an initial graph mismatch caused by omitted per-mode restore, corrected by restoring each configuration before its native build. Both solution sets verify; compiler lease released. These gates qualify the implemented interfaces; the complete owned sequence/relative/mixed-track task remains open.
 
 Public numeric qualification:1954/1954 complete normal/Traced tests, XML0 and full source regeneration pass. Normal/Traced JIT and strict NativeAOT native layout/cache/takeover/muting/owner probes pass with all earlier probes and host.Errors0. Evidence docs/evidence/native-public45-p7-owned-numeric-timeline.json verifies2 receipts/18 archives/66 library hashes/2 consumers and357 authored/190 compiler inputs. One fresh scoped review's external-control context defect was reproduced and fixed; all existing timer source comparisons remain green. The full owned CSS/sequence/mixed-authoring milestone remains unfinished.
 

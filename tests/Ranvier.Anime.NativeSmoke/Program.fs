@@ -42,6 +42,126 @@ let main args =
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
         do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            inlineStyle.setProperty("height","20px")
+            let width=NumericProperty((fun () -> target.getBoundingClientRect().width),
+                (fun value -> StyleDeclaration.apply inlineStyle (Css.width(Css.px value))))
+            let height=NumericProperty((fun () -> target.getBoundingClientRect().height),
+                (fun value -> StyleDeclaration.apply inlineStyle (Css.height(Css.px value))))
+            use timeline=new Timeline(scheduler)
+            let options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id;Precision=None}
+            use first=timeline.AddKeyframes(width,Keyframe.values [|0.;100.;200.|],duration=200u,position=TimelinePosition.At 0.,options=options)
+            let sequence=KeyframeSequence<NumericProperty,float>.Rows [|KeyframeRow.values [|"alias",300.;"y",200.|]|]
+            use second=timeline.AddKeyframes([|"alias",width;"y",height|],sequence,duration=100u,position=TimelinePosition.At 75.,options=options)
+            require "owned sparse numeric timeline prepares actual native targets without dispatch"
+                (target.getBoundingClientRect().width=10. && target.getBoundingClientRect().height=20.)
+            timeline.Seek 125.
+            require "owned sparse numeric alias shares replacement identity with single-property native factory"
+                (target.getBoundingClientRect().width=187.5 && target.getBoundingClientRect().height=110.)
+            second.Revert()
+            require "owned sparse native revert restores both captured property values"
+                (target.getBoundingClientRect().width=10. && target.getBoundingClientRect().height=20.)
+            timeline.Cancel()
+            require "native sparse numeric children share root cancellation" (first.Cancelled && second.Cancelled)
+            host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            let repeated=(target:>ElementCSSInlineStyle).style
+            require "native inline style wrappers retain canonical identity for shared timeline replacement"
+                (obj.ReferenceEquals(inlineStyle,repeated))
+            inlineStyle.setProperty("width","10px",priority="important")
+            let mutable renders=0
+            use timeline=new Timeline(scheduler,onRender=(fun _ -> renders<-renders+1))
+            owner.Attach timeline
+            let options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id;Precision=None}
+            let width value=Css.width(Css.px value)
+            use first=timeline.AddKeyframes((inlineStyle:>CSSStyleDeclaration),width 0.,
+                Keyframe.values [|width 0.;width 100.;width 200.|],duration=200u,position=TimelinePosition.At 0.,options=options)
+            use second=timeline.CaptureCssKeyframes(ComputedStyles.forHost host,target,"width",[|Keyframe.toValue(width 300.)|],
+                duration=100u,position=TimelinePosition.At 75.,options=options)
+            require "owned typed CSS factories prepare cross-facade siblings without native dispatch"
+                (inlineStyle.getPropertyValue "width"="10px" && renders=0)
+            timeline.Seek 125.
+            require "owned computed and explicit style factories share sampled native replacement"
+                (target.getBoundingClientRect().width=187.5 && inlineStyle.getPropertyPriority "width"="important" && renders=1)
+            timeline.Seek(50.,muteCallbacks=true)
+            require "owned CSS root muting preserves backward native replacement"
+                (target.getBoundingClientRect().width=50. && renders=1)
+            inlineStyle.setProperty("color","red")
+            second.Revert()
+            require "owned CSS revert restores scoped priority and retains unrelated native edits"
+                (inlineStyle.getPropertyValue "width"="10px" && inlineStyle.getPropertyPriority "width"="important" &&
+                 inlineStyle.getPropertyValue "color"<>"")
+            owner.Dispose()
+            require "native owner closes typed CSS root and both cross-facade children"
+                (timeline.Cancelled && first.Cancelled && second.Cancelled)
+            host.Document.body.removeChild target |> ignore
+        do
+            let targets=[|host.Document.createElement "div" :?> HTMLElement;host.Document.createElement "div" :?> HTMLElement|]
+            let styles=targets |> Array.map(fun target -> (target:>ElementCSSInlineStyle).style)
+            for index in 0..1 do
+                host.Document.body.appendChild targets[index] |> ignore
+                styles[index].setProperty("font-size",if index=0 then "16px" else "32px")
+                styles[index].setProperty("width",if index=0 then "10px" else "20px")
+            use timeline=new Timeline(scheduler)
+            let indices=ResizeArray<uint*uint>()
+            let frame=Keyframe.toBy(fun (context:KeyframeContext<HTMLElement,Declaration>) ->
+                indices.Add(context.Index,context.Count)
+                Css.width(Css.px(100.+float context.Index*100.)))
+            use child=timeline.AddKeyframes(targets,Css.width(Css.em 1.),[|frame|],duration=100u,
+                options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id;Precision=None})
+            require "owned typed CSS contextual construction retains original native styles"
+                (styles[0].getPropertyValue "width"="10px" && styles[1].getPropertyValue "width"="20px" &&
+                 indices.ToArray()=[|0u,2u;1u,2u|])
+            timeline.Seek 50.
+            require "owned element keyframes convert em in each actual native font context"
+                (targets[0].getBoundingClientRect().width=58. && targets[1].getBoundingClientRect().width=116.)
+            timeline.Resume()
+            pumpUntil host (fun () -> timeline.Completed)
+            require "actual native frame scheduling completes owned contextual CSS children"
+                (targets[0].getBoundingClientRect().width=100. && targets[1].getBoundingClientRect().width=200. && child.Playback.Completed)
+            child.Revert()
+            require "owned contextual CSS revert restores each original native width"
+                (styles[0].getPropertyValue "width"="10px" && styles[1].getPropertyValue "width"="20px")
+            for target in targets do host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            use timeline=new Timeline(scheduler)
+            owner.Attach timeline
+            let service=ComputedStyles.forHost host
+            let mutable reads=0
+            let computed=
+                {new ComputedStyleService with
+                    member _.Get(element,pseudo) =
+                        reads<-reads+1
+                        let result=service.Get(element,pseudo)
+                        owner.Dispose()
+                        result}
+            let mutable interrupted=false
+            try
+                timeline.CaptureCssKeyframes(computed,[|target;target|],"width",
+                    [|Keyframe.toValue(Css.width(Css.px 100.))|],duration=100u) |> ignore
+            with :? InvalidOperationException -> interrupted<-true
+            require "native owner disposal after computed service Get closes pending child before later reads"
+                (interrupted && timeline.Cancelled && reads=1 && inlineStyle.getPropertyValue "width"="10px")
+            require "owned computed CSS factory borrows the actual host style service"
+                ((service.Get((target:>Element),None)).getPropertyValue "width"="10px")
+            host.Document.body.removeChild target |> ignore
+        do
             use graph=new Graph()
             use activation=graph.Activate()
             let owner=Api.createRoot id

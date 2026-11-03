@@ -36,6 +36,8 @@
     <Compile Include="TimelineKeyframeTests.fs" />
     <Compile Include="TimelineOwnedFactoryTests.fs" />
     <Compile Include="TimelineNumericKeyframeTests.fs" />
+    <Compile Include="TimelineCssKeyframeTests.fs" />
+    <Compile Include="TimelineSequenceContractTests.fs" />
     <Compile Include="TimelineNumericKeyframeSourceTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

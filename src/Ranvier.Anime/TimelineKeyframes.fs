@@ -4,6 +4,43 @@ open System
 open Ranvier.Anime.ValueInterpolation
 
 module internal TimelineKeyframeBinding =
+    /// <summary>Compiles guarded captured properties and installs one owned driver with optional staged replacement siblings.</summary>
+    let install (context:TimelineChildContext,animation:KeyframeAnimation,defaults:FrameDefaults,properties:FrameProperty array,
+                 keys:struct(obj*string) array,resolve,original,write,css,precision,options:KeyframeAnimationOptions,current) =
+        let replacing=options.Composition=KeyframeComposition.Replace
+        let transaction=if replacing then Some(context.BeginSiblings keys) else None
+        let mutable handedOff=false
+        try
+            let defaults={defaults with Offset=context.Offset}
+            let program=
+                match transaction with
+                | Some siblings -> KeyframeCompilation.compileWithSiblings(defaults,properties,resolve,original,siblings.Compilation,current)
+                | None -> KeyframeCompilation.compileDynamic(false,defaults,properties,resolve,original,current)
+            match program with
+            | Some program when current() ->
+                let iterations=match options.Playback.Repeat with PlaybackRepeat.Count count -> float count+1. | PlaybackRepeat.Forever -> infinity
+                let total=PlaybackTiming(program.IterationDuration,iterations,program.Delay,options.Playback.LoopDelay).Duration
+                let nodes=transaction |> Option.map(fun siblings -> siblings.Bind(program,iterations,total))
+                animation.SetCleanup(fun () ->
+                    transaction |> Option.iter(fun siblings -> siblings.Rollback())
+                    nodes |> Option.iter context.RemoveSiblings)
+                let driver=new KeyframePlayback(context.Scheduler,program,write,replacing,css,precision,options.Playback,
+                    onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onRender=options.OnRender,
+                    onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete,?siblings=nodes)
+                animation.SetDriver driver
+                driver.Clock.OnCancel<-animation.Cancel
+                driver.Clock.OnFault<-animation.Cancel
+                driver.Initialize(timelineChild=true,notifyConstruction=true,canWrite=current)
+                if not(current()) then None
+                else
+                    handedOff<-true
+                    let commit()=match transaction with Some siblings -> siblings.Commit() | None -> true
+                    Some(TimelinePreparedChild(driver.Clock,(fun () -> driver.RenderVersion),commit,animation))
+            | _ -> None
+        finally
+            if not handedOff then transaction |> Option.iter(fun siblings -> siblings.Rollback())
+
+
     /// <summary>Validates and captures numeric authoring before parent effects, then constructs one timeline-owned animation.</summary>
     let numeric (timeline:Timeline,targets:NumericProperty array,authored:Keyframe<NumericProperty,float> array,
                  duration:float,options:KeyframeAnimationOptions,position:TimelinePosition option) =
@@ -41,43 +78,13 @@ module internal TimelineKeyframeBinding =
                             try targets[index].Value<-originals[index]
                             with error -> if failure.IsNone then failure<-Some error
                     failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()))
-                let replacing=options.Composition=KeyframeComposition.Replace
-                let transaction=if replacing then Some(context.BeginSiblings(targets |> Array.map(fun target -> struct(box target,"value")))) else None
-                let mutable handedOff=false
-                try
-                    let defaults={defaults with Offset=context.Offset}
-                    let resolve target frame (previous:FrameTween option) =
-                        authored[frame].Resolve(KeyframeContext(targets[target],uint target,uint targets.Length,
-                            previous |> Option.bind(fun tween -> tween.CachedEnd.Scalar)),number,current)
-                    let original index=Number(targets[index].Value)
-                    let program=
-                        match transaction with
-                        | Some siblings -> KeyframeCompilation.compileWithSiblings(defaults,properties,resolve,original,siblings.Compilation,current)
-                        | None -> KeyframeCompilation.compileDynamic(false,defaults,properties,resolve,original,current)
-                    match program with
-                    | Some program when current() ->
-                        let iterations=match options.Playback.Repeat with PlaybackRepeat.Count count -> float count+1. | PlaybackRepeat.Forever -> infinity
-                        let total=PlaybackTiming(program.IterationDuration,iterations,program.Delay,options.Playback.LoopDelay).Duration
-                        let nodes=transaction |> Option.map(fun siblings -> siblings.Bind(program,iterations,total))
-                        animation.SetCleanup(fun () ->
-                            transaction |> Option.iter(fun siblings -> siblings.Rollback())
-                            nodes |> Option.iter context.RemoveSiblings)
-                        let driver=new KeyframePlayback(context.Scheduler,program,(fun target _ output -> targets[target].Value<-output.Scalar.Value),
-                            replacing,false,precision,options.Playback,onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,
-                            onRender=options.OnRender,onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,
-                            onComplete=options.OnComplete,?siblings=nodes)
-                        animation.SetDriver driver
-                        driver.Clock.OnCancel<-animation.Cancel
-                        driver.Clock.OnFault<-animation.Cancel
-                        driver.Initialize(timelineChild=true,notifyConstruction=true,canWrite=current)
-                        if not(current()) then None
-                        else
-                            handedOff<-true
-                            let commit()=match transaction with Some siblings -> siblings.Commit() | None -> true
-                            Some(TimelinePreparedChild(driver.Clock,(fun () -> driver.RenderVersion),commit,animation))
-                    | _ -> None
-                finally
-                    if not handedOff then transaction |> Option.iter(fun siblings -> siblings.Rollback())),
+                let resolve target frame (previous:FrameTween option) =
+                    authored[frame].Resolve(KeyframeContext(targets[target],uint target,uint targets.Length,
+                        previous |> Option.bind(fun tween -> tween.CachedEnd.Scalar)),number,current)
+                let original index=Number(targets[index].Value)
+                let write target _ (output:Output)=targets[target].Value<-output.Scalar.Value
+                install(context,animation,defaults,properties,targets |> Array.map(fun target -> struct(box target,"value")),
+                        resolve,original,write,false,precision,options,current)),
             ?position=position,zeroDuration=(duration<=1e-11))
         |> Option.defaultWith(fun () -> invalidOp "Owned keyframe construction was superseded.")
 
