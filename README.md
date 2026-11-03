@@ -4,7 +4,7 @@ Native F# Anime.js port in progress. Working home: `C:/wk/ranvier-anime`.
 
 Open `Ranvier.Anime.slnx` in Rider. It contains the library and test project and will be updated as projects are added.
 
-`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. The reviewed timer/numeric/timeline source passes normal and Traced strict NativeAOT publication and real PE execution with public Core/DOM alpha.56 and CSS alpha.2, plus pinned private View/runtime. Independently audited public View packages have now arrived; consuming that package-only cohort and hardware qualification remain next. See [reviewed playback evidence](docs/evidence/native-core56-css2-hardened-playback-reviewed.json) and [native integration scope](docs/native-integration.md).
+`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. The timer/numeric/timeline source passes normal and Traced JIT and strict NativeAOT PE execution against the fully public Core/DOM alpha.56, CSS alpha.2, View45 and NativeP7 CPU cohort. Nine managed package identities and all24 native members are verified against independent package audits. This qualifies the Windows headless CPU smoke; hardware acceleration and broader native feature coverage remain open. See [public cohort evidence](docs/evidence/native-public45-p7.json) and [native integration scope](docs/native-integration.md).
 
 Project operations use Partas.Build 0.8.2 from the public Cloudsmith feed configured in `nuget.config`:
 

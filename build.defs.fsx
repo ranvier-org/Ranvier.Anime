@@ -7,6 +7,7 @@ module BuildDefs
 #load "build.provenance.fsx"
 #load "build.css-candidate.fsx"
 #load "build.evidence-tests.fsx"
+#load "build.public45.fsx"
 
 open Partas.Build
 
@@ -220,6 +221,106 @@ let root = Command.root {
     command "test" { restore; build; tests }
     command "audit" { description "Audit F# XML documentation using the supplied skill script"; audit }
     command "identity" { description "Verify app assemblies against the isolated public package restore"; identity }
+    command "public-native-audits" {
+        input {
+            let! view = Input.option<string> "--view"
+            and! native = Input.option<string> "--native"
+            return stage "preserve public cohort audits" {
+                run (fun _ -> BuildPublic45.copyAudits view native)
+            }
+        }
+    }
+    command "public-native-restore" {
+        input {
+            let! config = configuration
+            return stage "isolated public cohort restore" {
+                workingDir __SOURCE_DIRECTORY__
+                envVars [("NUGET_PACKAGES", BuildPublic45.cache); ("OS", "Windows_NT")]
+                run (fun _ -> BuildPublic45.verifyAudits())
+                run (nativeCommand (["dotnet"; "restore"; "Ranvier.Anime.Native.slnx"; "-r"; "win-x64"] @ BuildPublic45.arguments config @ ["--configfile"; "nuget.config"; "--force"; "--no-http-cache"]))
+            }
+        }
+    }
+    command "public-native-build" {
+        input {
+            let! config = configuration
+            return stage "build public cohort consumer" {
+                workingDir __SOURCE_DIRECTORY__
+                envVars [("NUGET_PACKAGES", BuildPublic45.cache); ("OS", "Windows_NT")]
+                run (fun _ -> BuildPublic45.verifyAudits())
+                run (nativeCommand (["dotnet"; "build"; "tests/Ranvier.Anime.NativeSmoke/Ranvier.Anime.NativeSmoke.fsproj"; "-c"; config; "-r"; "win-x64"] @ BuildPublic45.arguments config @ ["--no-restore"; $"-flp:logfile={BuildPublic45.stage}/build-{config}.log;verbosity=normal"]))
+            }
+        }
+    }
+    command "public-native-smoke" {
+        input {
+            let! config = configuration
+            return stage "fresh public cohort JIT smoke" {
+                workingDir __SOURCE_DIRECTORY__
+                envVars [("NUGET_PACKAGES", BuildPublic45.cache); ("OS", "Windows_NT")]
+                run (fun _ -> BuildPublic45.verifyAudits())
+                run (nativeCommand (["dotnet"; "build"; "tests/Ranvier.Anime.NativeSmoke/Ranvier.Anime.NativeSmoke.fsproj"; "-c"; config; "-r"; "win-x64"] @ BuildPublic45.arguments config @ ["--no-restore"; $"-flp:logfile={BuildPublic45.stage}/build-{config}.log;verbosity=normal"]))
+                run (fun _ ->
+                    let output = System.IO.Path.Combine(BuildPublic45.stage, "build", "bin", "Ranvier.Anime.NativeSmoke", config.ToLowerInvariant() + "_net10.0_win-x64")
+                    let managed = BuildPublic45.packageProof config false
+                    let native = BuildPublic45.nativeProof output
+                    let identity = System.Text.Json.JsonSerializer.Serialize({| Configuration = config; PublicCorePackages = true; PublicViewPackages = true; PublicNativePayload = true; HardwareAccelerationQualified = false; Managed = managed; Native = native |})
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(BuildPublic45.stage, "identity-" + config + "-jit.json"), identity)
+                    BuildNative.runSmoke output false (System.IO.Path.Combine(BuildPublic45.stage, "run-" + config + "-jit.log")))
+            }
+        }
+    }
+    command "public-native-publish" {
+        input {
+            let! config = configuration
+            let output = System.IO.Path.Combine(BuildPublic45.stage, "publish", config)
+            let log = System.IO.Path.Combine(BuildPublic45.stage, "publish-" + config + ".log")
+            return stage "strict public cohort NativeAOT publish" {
+                workingDir __SOURCE_DIRECTORY__
+                envVars [("NUGET_PACKAGES", BuildPublic45.cache); ("OS", "Windows_NT")]
+                run (fun _ -> BuildPublic45.verifyAudits())
+                run (fun _ -> BuildProvenance.beginPublish __SOURCE_DIRECTORY__ BuildPublic45.stage config)
+                run (nativeCommand (["proxy"; "dotnet"; "publish"; "tests/Ranvier.Anime.NativeSmoke/Ranvier.Anime.NativeSmoke.fsproj"; "-c"; config; "-r"; "win-x64"] @ BuildPublic45.arguments config @ ["--no-restore"; "-o"; output; "-p:ILLinkTreatWarningsAsErrors=true"; "-p:IlcTreatWarningsAsErrors=true"; "-p:TrimmerSingleWarn=false"; "-p:IlcGenerateDgmlFile=true"; $"-flp:logfile={log};verbosity=normal"]))
+                run (fun _ ->
+                    BuildNative.verifyPublishLog log
+                    BuildProvenance.recordPublish __SOURCE_DIRECTORY__ BuildPublic45.stage config (BuildPublic45.publicationProof config))
+            }
+        }
+    }
+    command "public-native-aot-run" {
+        input {
+            let! config = configuration
+            return stage "execute verified public cohort PE" {
+                envVars [("OS", "Windows_NT")]
+                run (fun _ -> BuildPublic45.runAot config)
+            }
+        }
+    }
+    command "public-native-evidence" {
+        input {
+            let! config = configuration
+            and! label = Input.option<string> "--label" |> Input.def ""
+            return stage "preserve executed public cohort evidence" {
+                run (fun _ -> BuildPublic45.capture config label)
+            }
+        }
+    }
+    command "public-native-summary" {
+        input {
+            let! label = Input.option<string> "--label" |> Input.def ""
+            return stage "summarize public cohort evidence" {
+                run (fun _ -> BuildPublic45.summarize label)
+            }
+        }
+    }
+    command "public-native-evidence-test" {
+        input {
+            let! config = configuration
+            return stage "reject public provenance substitutions" {
+                run (fun _ -> BuildPublic45.regressions config)
+            }
+        }
+    }
     command "native-restore" { nativeRestore }
     command "native-build" { nativeRestore; nativeBuild }
     command "native-run" { nativeRun }

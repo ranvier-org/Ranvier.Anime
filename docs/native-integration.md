@@ -2,6 +2,36 @@
 
 Development home: `C:/wk/ranvier-anime`. Open `Ranvier.Anime.Native.slnx` for the host consumer and focused CSS probe; the main solution retains portable managed tests.
 
+## Current public cohort
+
+Normal Release and Traced Debug now pass fresh JIT builds/runs and strict NativeAOT publications/PE executions using public NuGet packages only: Core0.1.1-preview.1, DOM0.1.0-alpha.56, CSS0.1.1-alpha.2, Bindings0.1.1-alpha.1, CSS-DOM0.1.0-alpha.1, View/View.Dom0.1.45, View.WebCore0.1.0-alpha.45 and WebCore/Native0.1.1-preview.7. The headless consumer builds only the port and consumer projects; View/Core are package dependencies. Normal and Traced modes use matching managed packages.
+
+`build.public45.fsx` owns `artifacts/nuget-public45-p7` and `artifacts/native-public45-p7`. Every run verifies nine managed identities from nupkg entry through extracted cache and app; strict PE evidence also verifies the actual ILC DLL inputs. Each nupkg has an independently pinned hash, nuspec source commit and public-feed provenance. The View audit pins source6b1119c8; native CPU/meta audits pin source6f10bea, ABI62, win-x64/slim and all24 exact payload members. Sdl packages in the eight-package View audit are not consumed by this headless host.
+
+The CPU package hash is `bfe3ec181b73de82d68f3bda62b512d08a012e26c694b15e6fb5f1c03d5f3ab9`. An initial audit-selection inference confused the separate26-file GPU receipt with CPU; hash verification rejected it before runtime. The corrected independently pinned seven-package audit identifies CPU explicitly. This was a consumer receipt-selection error, not an upstream mismatch. Neither the unused GPU receipt nor earlier private runtime files supply this public consumer.
+
+All current smoke sentinels pass: typed CSS/style/priority, native layout, frame scheduling, repeated/alternate animations and timelines, owned timer tracks, borrowed repeated timers, actual Ranvier ownership and cancellation during active callbacks, and zero host listener errors. Both PEs confirm dynamic code is unavailable. Strict publish logs have no IL diagnostics or unconditional-throw messages. Negative checks reject wrong audit bytes, producer-project substitution, altered managed/native DLLs and unsafe evidence labels, then restore and reverify owned files.
+
+Reproduce through the warm Partas.Build binding; copy the accepted audits once, then preserve each mode before another restore changes shared assets:
+
+```fsharp
+build ["public-native-audits"; "--view"; "C:/wk/project2/view-public-pin/public-package-audit.json"; "--native"; "C:/wk/project2/native-preview7-public-audit/seven-byte-audit.json"]
+build ["public-native-restore"; "-c"; "Release"]
+build ["public-native-smoke"; "-c"; "Release"]
+build ["public-native-evidence-test"; "-c"; "Release"]
+build ["public-native-publish"; "-c"; "Release"]
+build ["public-native-aot-run"; "-c"; "Release"]
+build ["public-native-evidence"; "-c"; "Release"]
+// Repeat restore/smoke/test/publish/run/evidence with Debug.
+build ["public-native-summary"]
+```
+
+[Public two-mode evidence](evidence/native-public45-p7.json) binds immutable `artifacts/qualification/native-public45-p7-{Release,Debug}` snapshots. Each preserves nine files: publish/run logs and receipts, assets, ILC response, PE and both independent audits. Capture requires a successful current-source publication and matching executed PE/log hashes; existing receipts cannot be overwritten.
+
+This is Windows headless CPU smoke coverage. It does not establish GPU presentation, hardware acceleration, Linux execution, host-destruction safety or full Anime.js parity. P7's independently confirmed first-owner worker-thread exit issue remains outside this main-thread consumer; the announced P8 fix has not been consumed here. The historical private/source replays below retain their original scope.
+
+## Historical source and package replays
+
 The current private source graph pins Core `6f5e063c06a48af2c3375c1c986cb5925e814d3d` and View `625b0e1baeaf2ccc023f69dd7f1e76626e27a084` in independent ignored clones under `upstream/core-aot` and `upstream/view-aot`. It uses public managed WebCore `0.1.1-preview.7` with the coordinator's private ABI62 runtime built from native source `6f10bea17d7a1f22e5e97d472819c055fba3ef06`. The owned runtime copy contains 26 verified files totaling 89,778,897 bytes. The producer reader was released after copying; subsequent operations use only the owned stage and retained manifest.
 
 Run operations from the warm SageFs build binding:
@@ -92,4 +122,4 @@ New `native-core56-css2-hardened-playback-reviewed-{Release,Debug}` archives pre
 
 Public View handoff has now arrived: coordinator audit `C:/wk/project2/view-public-pin/public-package-audit.json` pins all eight packages to producer main6b1119c8 / CI41557769303. View/View.Dom normal+Traced are0.1.45; WebCore/Sdl normal+Traced are0.1.0-alpha.45. Matching published Native/InteropP7 is ABI62. This port has read the receipt but has not yet restored or qualified that fully public graph; public flags in the current replay remain false. Coordinator reports the P7 first-owner worker-exit fix is only in the upcoming P8 cohort. No P8, GPU or public consumer acceptance is inferred.
 
-This closes the current timer/numeric NativeAOT replay requirement, with public Core/CSS and private View/runtime. It does not establish matched public View/native acceptance, host-destruction safety, full Anime.js parity, Linux execution or GPU presentation. Timeline clock integration and the remaining capability families stay open. Existing historical snapshots remain intact.
+Those earlier replays close their recorded timer/numeric NativeAOT requirement with public Core/CSS and private View/runtime. The public cohort section above supersedes their package status. Full property-track callbacks and the remaining capability families, host destruction, Linux and GPU coverage stay open. Existing historical snapshots remain intact.
