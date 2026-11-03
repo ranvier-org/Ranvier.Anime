@@ -42,6 +42,66 @@ let main args =
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
         do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            let registry=FrameSiblingRegistry()
+            let keys=[|struct(box target,"width")|]
+            let inputCaches=ResizeArray<float>()
+            let writes=ResizeArray<float>()
+            let current()=not owner.IsDisposed
+            let build offset (frames:FrameInput array) computed =
+                let property={FrameProperty.Target=0;Name="width";Original=ValueInterpolation.Number 10.;Frames=frames;ConvertUnit=None}
+                let transaction=registry.Begin(keys,current)
+                let resolve _ index (previous:FrameTween option) =
+                    if computed then
+                        let value=previous.Value.CachedEnd.Scalar.Value
+                        inputCaches.Add value
+                        Some {FrameInput.Default with To=Some(ValueInterpolation.Number(value+(if index=0 then 10. else 20.)))}
+                    else Some frames[index]
+                let program=KeyframeCompilation.compileWithSiblings({FrameDefaults.Default with Duration=200.;Offset=offset;Ease=id},[|property|],
+                    resolve,(fun _ -> ValueInterpolation.Number 10.),transaction.Compilation,current) |> Option.get
+                let nodes=transaction.Bind(program,1.,program.IterationDuration)
+                let driver=new KeyframePlayback(scheduler,program,(fun _ _ output ->
+                    writes.Add output.Scalar.Value
+                    StyleDeclaration.apply inlineStyle (Css.width(Css.px output.Scalar.Value))),
+                    true,false,-1,PlaybackOptions.Default,siblings=nodes)
+                owner.Attach driver
+                driver.Initialize(timelineChild=true)
+                if not(transaction.Commit()) then failwith "native sibling generation was superseded"
+                driver,nodes
+            let first,firstNodes=build 0. (KeyframeCompilation.values [|ValueInterpolation.Number 0.;ValueInterpolation.Number 100.;ValueInterpolation.Number 200.|]) false
+            use first=first
+            first.Clock.SampleChild(75.,PlaybackTickMode.Auto,true,240.,false,false,current,internalRender=true)
+            let second,_=build 75. [|FrameInput.Default;FrameInput.Default|] true
+            use second=second
+            require "native shared sibling construction separates tail200 sampled75 and raw predecessor100"
+                (target.getBoundingClientRect().width=10. && inputCaches.ToArray()=[|200.;200.|] &&
+                 firstNodes[0].Change=75. && firstNodes[1].Overridden)
+            second.Clock.SampleChild(-75.,PlaybackTickMode.Force,true,240.,true,false,current,internalRender=true)
+            first.Clock.SampleChild(0.,PlaybackTickMode.Force,true,240.,true,false,current,internalRender=true)
+            writes.Clear()
+            first.Clock.SampleChild(125.,PlaybackTickMode.Auto,true,240.,false,true,current)
+            second.Clock.SampleChild(50.,PlaybackTickMode.Auto,true,240.,false,true,current)
+            require "native replacement arbitration spans driver arrays and renders only the eligible takeover"
+                (target.getBoundingClientRect().width=142.5 && writes.ToArray()=[|142.5|])
+            second.Clock.SampleChild(-25.,PlaybackTickMode.Auto,true,240.,true,true,current)
+            first.Clock.SampleChild(50.,PlaybackTickMode.Auto,true,240.,true,true,current)
+            require "native shared sibling playback restores earlier geometry on a backward jump"
+                (target.getBoundingClientRect().width=50.)
+            owner.Dispose()
+            first.Clock.SampleChild(125.,PlaybackTickMode.Force,true,240.,false,true,current)
+            second.Clock.SampleChild(50.,PlaybackTickMode.Force,true,240.,false,true,current)
+            registry.Clear()
+            require "native shared sibling owner cancellation suppresses both drivers and releases links"
+                (first.Clock.Cancelled && second.Clock.Cancelled && target.getBoundingClientRect().width=50. &&
+                 isNull firstNodes[0].Next && isNull firstNodes[1].Previous)
+            host.Document.body.removeChild target |> ignore
+        do
             let target=host.Document.createElement "div" :?> HTMLElement
             host.Document.body.appendChild target |> ignore
             let inlineStyle=(target:>ElementCSSInlineStyle).style

@@ -5,95 +5,41 @@ open System.Collections.Generic
 open Ranvier.Dom
 open Ranvier.Anime.ValueInterpolation
 
-type private PlayingFrame(frame:FrameTween) =
-    member val Start=frame.Start with get,set
-    member val Delay=frame.Delay with get,set
-    member val Update=frame.UpdateDuration with get,set
-    member val Change=frame.UpdateDuration with get,set
-    member val AbsoluteStart=frame.AbsoluteStart with get,set
-    member val AbsoluteUpdateStart=frame.AbsoluteUpdateStart with get,set
-    member val AbsoluteEnd=frame.AbsoluteEnd with get,set
-    member val Time=0. with get,set
-    member val Value=frame.CachedEnd with get,set
-    member val Previous = -1 with get,set
-    member val Next = -1 with get,set
-    member val Overridden=false with get,set
-    member val Overlapped=false with get,set
-    member this.Scaled(scale:float) =
-        let normalize value =
-            if value<=1e-11 then 1e-11
-            else let rounded=PropertyNumbers.round 1e11 value in if Double.IsPositiveInfinity rounded then 1e12 else rounded
-        let next=PlayingFrame(frame)
-        next.Start<-this.Start*scale
-        next.Delay<-this.Delay*scale
-        next.Update<-normalize(this.Update*scale)
-        next.Change<-normalize(this.Change*scale)
-        next.AbsoluteStart<-this.AbsoluteStart*scale
-        next.AbsoluteUpdateStart<-this.AbsoluteUpdateStart*scale
-        next.AbsoluteEnd<-this.AbsoluteEnd*scale
-        next.Time<-this.Time*scale
-        next.Value<-this.Value
-        next.Previous<-this.Previous
-        next.Next<-this.Next
-        next.Overridden<-this.Overridden
-        next.Overlapped<-this.Overlapped
-        if [next.Start;next.Delay;next.AbsoluteStart;next.AbsoluteUpdateStart;next.AbsoluteEnd;next.Time] |> List.exists(fun value -> not(Double.IsFinite value)) then
-            invalidArg "scale" "Scaled frame geometry must remain finite."
-        next
-
 /// <summary>A paused compiled keyframe sequence using the shared timer, ordered guarded writes and per-frame history.</summary>
-/// <remarks>Initialize explicitly. Replace arbitration is limited to this program; precise geometry uses milliseconds.</remarks>
+/// <remarks>Initialize explicitly. Optional shared siblings provide same-timeline replacement; precise geometry uses milliseconds.</remarks>
 type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,write:int -> string -> Output -> unit,
                                replace:bool,roundNumbers:bool,precision:int,options:PlaybackOptions,
                                ?onBegin:Timer -> unit,?onBeforeUpdate:Timer -> unit,?onRender:Timer -> unit,
-                               ?onUpdate:Timer -> unit,?onLoop:Timer -> unit,?onPause:Timer -> unit,?onComplete:Timer -> unit) =
+                               ?onUpdate:Timer -> unit,?onLoop:Timer -> unit,?onPause:Timer -> unit,?onComplete:Timer -> unit,
+                               ?siblings:FrameSibling array) =
     do
         if isNull(box program) then nullArg "program"
         if isNull(box write) then nullArg "write"
         if precision < -1 || precision>308 then invalidArg "precision" "Expected disabled rounding or at most 308 decimal places."
     let definitions=Array.copy program.Tweens
-    let mutable frames=definitions |> Array.map PlayingFrame
+    let frames=
+        match siblings with
+        | Some nodes ->
+            if nodes.Length<>definitions.Length || nodes |> Array.exists isNull then invalidArg "siblings" "Expected one sibling node per compiled frame."
+            Array.copy nodes
+        | None ->
+            let child=obj()
+            definitions |> Array.map(fun frame -> FrameSibling(frame,child))
     let mutable offset=program.Offset
-    let overrideFrame index =
-        let frame=frames[index]
-        frame.Overlapped<-true
-        frame.Overridden<-true
-        frame.Change<-1e-11
-        frame.Time<-1e-11
     do
-        if replace then
-            let tails=Dictionary<struct(int*string),int>()
-            for index in 0..frames.Length-1 do
-                let frame=frames[index]
-                let definition=definitions[index]
+        if replace && siblings.IsNone then
+            let groups=Dictionary<struct(int*string),ResizeArray<FrameSibling>>()
+            for frame in frames do frame.Start<-frame.Start+program.Delay
+            for frame in frames do
+                let definition=frame.Definition
                 let key=struct(definition.Target,definition.Name)
-                let mutable previous=match tails.TryGetValue key with true,value -> value | _ -> -1
-                let mutable first=previous
-                while first>=0 && frames[first].Previous>=0 do first<-frames[first].Previous
-                let mutable sibling=first
-                while sibling>=0 && frames[sibling].AbsoluteStart<=frame.AbsoluteStart do
-                    sibling<-frames[sibling].Next
-                    if sibling>=0 && frames[sibling].AbsoluteStart>=frame.AbsoluteStart then
-                        while sibling>=0 do
-                            overrideFrame sibling
-                            sibling<-frames[sibling].Next
-                while previous>=0 && (frames[previous].Overridden || frames[previous].AbsoluteStart>frame.AbsoluteStart) do
-                    previous<-frames[previous].Previous
-                let next=if previous>=0 then frames[previous].Next else first
-                frame.Previous<-previous
-                frame.Next<-next
-                if previous>=0 then frames[previous].Next<-index
-                if next>=0 then frames[next].Previous<-index else tails[key]<-index
-                if previous>=0 then
-                    let prior=frames[previous]
-                    if prior.AbsoluteEnd>frame.AbsoluteUpdateStart then
-                        let rawStart=prior.Start+program.Delay
-                        let offset=prior.AbsoluteEnd-(rawStart+prior.Update)
-                        let changed=PropertyNumbers.round 1e12 (frame.AbsoluteUpdateStart-offset-rawStart)
-                        prior.Change<-changed
-                        prior.Time<-changed
-                        prior.Overlapped<-true
-                        if changed<1e-11 then overrideFrame previous
+                let nodes=
+                    match groups.TryGetValue key with
+                    | true,nodes -> nodes
+                    | _ -> let nodes=ResizeArray<FrameSibling>() in groups.Add(key,nodes);nodes
+                FrameSiblingComposition.select nodes frame.AbsoluteStart |> ignore
+                FrameSiblingComposition.add nodes frame
+            for index in 0..frames.Length-1 do frames[index].Start<-definitions[index].Start
     let effectiveOptions={options with Delay=program.Delay;Repeat=(if definitions.Length=0 then PlaybackRepeat.Count 0u else options.Repeat)}
     let mutable renderVersion=0L
     let clock=new Timer(scheduler,program.IterationDuration,options=effectiveOptions,
@@ -112,14 +58,14 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                 let previous=frame.Previous
                 let next=frame.Next
                 let ending=frame.AbsoluteStart+frame.Change
-                let takeover=if next<0 || frames[next].Overridden then ending else ending+frames[next].Delay
-                let history=(frame.Time<>frame.Change || absolute<=takeover || (previous>=0 && next<0)) &&
+                let takeover=if isNull next || next.Overridden then ending else ending+next.Delay
+                let history=(frame.Time<>frame.Change || absolute<=takeover || (not(isNull previous) && isNull next)) &&
                             (frame.Time<>0. || absolute>=frame.AbsoluteStart ||
-                             (next>=0 && not frames[next].Overridden && frames[next].Time<>0. && sample.IterationTime<frames[next].Start))
-                let eligible=(forced || history) && (previous<0 || sample.IterationTime>=frame.Start) &&
+                             (not(isNull next) && not next.Overridden && next.Time<>0. && sample.IterationTime<next.Start))
+                let eligible=(forced || history) && (isNull previous || sample.IterationTime>=frame.Start) &&
                              (not replace || (not frame.Overridden && (not frame.Overlapped || absolute<=ending) &&
-                                              (next<0 || frames[next].Overridden || absolute<=takeover) &&
-                                              (previous<0 || frames[previous].Overridden || absolute>=frames[previous].AbsoluteStart+frames[previous].Change+frame.Delay)))
+                                              (isNull next || next.Overridden || absolute<=takeover) &&
+                                              (isNull previous || previous.Overridden || absolute>=previous.AbsoluteStart+previous.Change+frame.Delay)))
                 if eligible then
                     frame.Time<-Math.Clamp(sample.IterationTime-frame.Start,0.,frame.Change)
                     let definition=definitions[index]
@@ -135,7 +81,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                                 rendered<-true
                             alive<-current()
                         | _ -> alive<-false
-                elif frame.Time<>0. && previous>=0 && sample.IterationTime<frame.Start then frame.Time<-0.
+                elif frame.Time<>0. && not(isNull previous) && sample.IterationTime<frame.Start then frame.Time<-0.
         if alive && current() && rendered && sample.AboveZero && not muted then onRender |> Option.iter(fun action -> action clock)
     do
         clock.Seek(0.,muteCallbacks=true)
@@ -144,7 +90,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                 let nextOffset=offset*scale
                 if not(Double.IsFinite nextOffset) then invalidArg "scale" "Scaled offset must remain finite."
                 let staged=frames |> Array.map(fun frame -> frame.Scaled scale)
-                frames<-staged
+                for index in 0..frames.Length-1 do staged[index].CopyTo(frames[index],id)
                 offset<-nextOffset))
     let mutable initialized=false
     /// <summary>The shared playback controller for this sequence.</summary>

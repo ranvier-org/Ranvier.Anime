@@ -25,6 +25,9 @@ const base=[
  {name:'scheduledSpeedFps',parameters:{frameRate:20,loop:1},children:[{id:'a',at:25,parameters:{x:[0,100,200],duration:200,playbackRate:2,frameRate:20}}],actions:[['resume'],['frame',1],['frame',20],['frame',25],['speed',2],['frame',100],['pause'],['frame',100],['reverse'],['frame',25],['reset'],['restart'],['frame',500]]},
  {name:'targetAwareTimeline',targets:[{x:10,y:20},{x:30,y:40}],children:[{id:'a',at:25,parameters:{x:[{to:{fn:'target',base:100,step:10},from:{fn:'index',base:0,step:10},duration:{fn:'index',base:100,step:25}},{to:{fn:'previous',base:100}}],duration:200}}]},
  {name:'previousAcrossChildren',children:[{id:'a',at:0,parameters:{x:[0,100],duration:100,modifier:'plusOne'}},{id:'b',at:100,parameters:{x:[{to:{fn:'previous',base:10}},{to:{fn:'previous',base:20}}],duration:200}}]},
+ {name:'overlapInputTail',children:[{id:'a',at:0,parameters:{x:[0,100,200],duration:200}},{id:'b',at:75,parameters:{x:[{to:{fn:'previous',base:10},duration:100},{to:{fn:'previous',base:20},duration:100}],duration:200}}]},
+ {name:'loopingPredecessor',children:[{id:'a',at:0,parameters:{x:[0,100,200],duration:200,loop:1}},{id:'b',at:250,parameters:{x:[300],duration:100}}]},
+ {name:'relativeSiblingSource',children:[{id:'a',at:0,parameters:{x:[0,100,200],duration:200}},{id:'b',at:75,parameters:{x:[{from:'+=5',to:300,duration:100}],duration:100}}]},
 ];
 const cases=base.flatMap(input=>['none','replace'].map(composition=>({...input,name:composition+'-'+input.name,composition})));
 if(process.argv[2]==='--case'){
@@ -119,6 +122,11 @@ if(process.argv[2]==='--case'){
  assert.equal(overlap.b[0].from,75,'new child inherits the internally sampled predecessor');
  const inputs=byName.get('replace-previousAcrossChildren').construction[1].effects.filter(effect=>effect.id==='b');
  assert.deepEqual(inputs.map(effect=>effect.previous),[101,111],'modified caches chain across children and within a child');
+ const split=byName.get('replace-overlapInputTail');
+ assert.deepEqual(split.construction[1].effects.filter(effect=>effect.id==='b').map(effect=>effect.previous),[200,200],'providers use the list tail before timing selection');
+ assert.deepEqual(split.programs.b.map(tween=>[tween.from,tween.to]),[[75,210],[210,220]],'sampled sibling source differs from callback tail and local raw chaining');
+ assert.deepEqual(byName.get('replace-loopingPredecessor').programs.a.map(tween=>tween.changeDuration),[1e-11,1e-11],'a later child overrides the overlapping repeated predecessor chain');
+ assert.equal(byName.get('replace-relativeSiblingSource').programs.b[0].from,105,'relative source uses raw predecessor destination rather than sampled75');
  const ordered=byName.get('replace-modifiedPredecessors').samples.find(sample=>sample.value===50).state.trace;
  const phase=item=>item.kind==='event'?item.id+':'+item.event:item.kind;
  const expectedPhases=['root:BeforeUpdate','root:Update','a:BeforeUpdate','effect','write','a:Render','a:Update','root:Render'];

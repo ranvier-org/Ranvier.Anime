@@ -12,6 +12,7 @@
     <Compile Include="PropertyTrack.fs" />
     <Compile Include="ValueInterpolation.fs" />
     <Compile Include="KeyframeCompilation.fs" />
+    <Compile Include="FrameSiblings.fs" />
     <Compile Include="Keyframe.fs" />
     <Compile Include="KeyframeSequences.fs" />
     <Compile Include="AnimatableValue.fs" />

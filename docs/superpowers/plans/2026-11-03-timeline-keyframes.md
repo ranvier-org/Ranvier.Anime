@@ -61,6 +61,10 @@ Sampling checkpoint:1876/1876 full normal/Traced tests, XML0, byte-stable comple
 
 Next registry implementation must distinguish the input provider's tail predecessor (chosen before timing callbacks) from the overlap-selected predecessor (chosen after timing is resolved). Capture an overlapping target-aware provider case to verify this distinction before coding it. Keep raw Last metadata separate from mutable current output: missing first endpoints can inherit sampled sibling output while relative source operands use raw to metadata. Cross-program playback links must span driver-local frame arrays. Stage registry mutations until guarded child publication succeeds so a cancelled/reentrant constructor cannot truncate existing siblings. Numeric identities reuse the existing NumericProperty handles; inspect actual Ranvier DOM identity behavior before choosing a CSS target key.
 
+Registry checkpoint in progress:42 source schedules now include separate input-tail/selected-cache inheritance, repeated predecessor override and relative source operands. Fixture SHA25654f12ba4f322e666dbad119c08669cab4ae409821cb7aa4b8856b4d8196a1af4. FrameSiblingRegistry stages reference-identity/ordinal-property groups, cross-driver links, cache snapshots, replacement truncation and child loop metadata. Standalone playback reuses the same composition rules. Twenty-two persisted Sage contracts and168 existing compiler/playback contracts pass; full compiled/native gates now pass for this source revision as recorded below.
+
+The scoped registry review found skipped explicit-pair getter effects. Raw getter calls now occur for each shared explicit pair; unused malformed text remains unparsed when predecessor metadata supplies inheritance. Cancellation prevents later conversion/modifier callbacks and faults preserve identity. A second reproduced conflict allowed stale construction to overwrite an existing child's direct Seek. Publication now compares captured live geometry, cache identity and links before copying staged state; direct Seek and Stretch reject stale commits without per-frame registry counters. These are internal construction primitives; the public owned factory and complete source trace replay remain open.
+
 - [ ] RED: replay Task1 root/child callbacks, self-state and target snapshots using a minimal owned factory, not Sync.
 - [ ] GREEN: implement inherited mute/direction/FPS/loop and cache-only construction through one Timer child phase; pass source offsets into compilation.
 - [ ] Preserve all existing owned timer and borrowed tests; prove owner cancellation, reentry, getter faults, child cancellation, constructor interruption and no independent frame lease.
@@ -68,6 +72,8 @@ Next registry implementation must distinguish the input provider's tail predeces
 - [ ] Add numeric raw/explicit/row/offset and typed CSS inline/computed/declaration overloads, with uint/precise durations and existing scoped restoration.
 
 ## Task3: Qualify and record
+
+Internal registry qualification: Registry checkpoint:1898/1898 full normal Release and Traced Debug tests, XML0 and complete source regeneration pass. Both public JIT and strict NativeAOT PEs pass shared sibling construction, cross-driver takeover, backward recovery and actual owner cancellation/link cleanup, with earlier native probes and host.Errors0. Immutable frame-siblings evidence verifies2 receipts/18 archives/64 current library hashes/2 consumers and strict Debug356 authored/190 compiler inputs. All15 warm Partas.Build gate records exit0; logs under artifacts/qualification/frame-sibling-final-gates. The public owned factory, mixed scalar/keyframe root integration and full42-trace owned replay remain required. The task checkboxes below still apply to the complete public owned factory.
 
 **Files:** NativeSmoke Program.fs; README, parity-inventory.json, implementation-ledger.md and native-integration.md.
 
