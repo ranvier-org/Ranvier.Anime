@@ -186,7 +186,8 @@ module internal KeyframeCompilation =
             name,(if frames.Length>0 && frames[0].Duration=Some 0. then frames[1..] else frames)) |> Seq.toArray
     /// <summary>Compiles complete captured sequences atomically; an interrupted modifier or converter returns None.</summary>
     /// <remarks>Default durations divide by frame count despite frame overrides. Raw endpoints chain before modifiers.</remarks>
-    let private compileCore replace (defaults:FrameDefaults,properties:FrameProperty array,canWrite:unit -> bool) =
+    let private compileCore replace (resolve:(int -> int -> FrameTween option -> FrameInput option) option)
+                            (readOriginal:(int -> Literal) option) (defaults:FrameDefaults,properties:FrameProperty array,canWrite:unit -> bool) =
         if isNull(box defaults) then nullArg "defaults"
         timing "duration" defaults.Duration |> ignore
         finite "delay" defaults.Delay
@@ -208,7 +209,7 @@ module internal KeyframeCompilation =
                 frame.Delay |> Option.iter(finite "delay")
                 frame.Ease |> Option.iter(callback "ease")
                 frame.Modifier |> Option.iter(callback "modifier")
-            if property.Frames.Length>0 then
+            if property.Frames.Length>0 && resolve.IsNone && readOriginal.IsNone then
                 let frame=property.Frames[0]
                 let needsOriginal=frame.From.IsNone || frame.To.IsNone || (frame.From |> Option.exists(fun value -> let data=decompose value in data.Kind=ValueKind.Number || data.Operator.IsSome))
                 if needsOriginal then decompose property.Original |> ignore
@@ -216,47 +217,58 @@ module internal KeyframeCompilation =
         let mutable alive=canWrite()
         let mutable initialDelay=nan
         let mutable endTime=nan
-        for property in properties do
-            let original=lazy(decompose property.Original)
+        for propertyIndex,property in Array.indexed properties do
+            let original=lazy(decompose(match readOriginal with Some read -> read propertyIndex | None -> property.Original))
             let siblings=ResizeArray<LocalSibling>()
             let mutable previous:Data option=None
+            let mutable previousTween:FrameTween option=None
             let mutable previousEnd=0.
             let mutable firstStart=nan
             for index in 0..property.Frames.Length-1 do
                 if alive then
-                    let frame=property.Frames[index]
-                    let duration=timing "duration" (defaultArg frame.Duration (defaults.Duration/float property.Frames.Length))
-                    let delay=defaultArg frame.Delay (if index=0 then defaults.Delay else 0.)
-                    let start=previousEnd+delay
-                    let nextEnd=PropertyNumbers.round 1e12 (start+duration)
-                    let absoluteStart=PropertyNumbers.round 1e12 (defaults.Offset+start)
-                    let selected=if replace then selectSibling siblings absoluteStart previous else previous
-                    let preceding=previous |> Option.map copy |> Option.defaultWith(fun () ->
-                        if frame.From.IsNone || frame.To.IsNone || (frame.From |> Option.exists(fun value -> let data=decompose value in data.Kind=ValueKind.Number || data.Operator.IsSome)) then copy original.Value
-                        else decompose(Number 0.))
-                    let mutable first=frame.From |> Option.map decompose |> Option.defaultWith(fun () -> copy preceding)
-                    let last=frame.To |> Option.map decompose |> Option.defaultWith(fun () -> copy preceding)
-                    let inherited=selected |> Option.map copy |> Option.defaultWith(fun () -> preceding)
-                    if frame.From.IsSome && frame.To.IsSome && first.Kind=ValueKind.Number && inherited.Kind=ValueKind.Unit then
-                        first<-{first with Kind=ValueKind.Unit;Unit=inherited.Unit}
-                    let first,last=normalizeData(property.ConvertUnit,inherited,first,last)
-                    alive<-canWrite()
-                    let ease=defaultArg frame.Ease defaults.Ease
-                    let modifier=defaultArg frame.Modifier defaults.Modifier
-                    let cached=
-                        if not alive then None
-                        elif last.Kind=ValueKind.Color then Some(compose(last,0.,Array.copy last.Components))
-                        else sample(false,last,last,1.,-1,modifier,canWrite) |> Option.map(fun struct(_,output) -> output)
-                    match cached with
-                    | Some cached when canWrite() ->
-                        let tween=FrameTween(property.Target,property.Name,first,last,start,delay,duration,
-                            absoluteStart,PropertyNumbers.round 1e12 (defaults.Offset+previousEnd),
-                            PropertyNumbers.round 1e12 (defaults.Offset+nextEnd),frame.From.IsSome,ease,modifier,cached)
-                        tweens.Add tween
-                        if replace then addSibling siblings tween
-                        if Double.IsNaN firstStart then firstStart<-start
-                        previous<-Some last
-                        previousEnd<-nextEnd
+                    let resolved=match resolve with Some read -> read propertyIndex index previousTween | None -> Some property.Frames[index]
+                    match resolved with
+                    | Some frame when canWrite() ->
+                        if isNull(box frame) then invalidArg "frames" "Frames are required."
+                        frame.From |> Option.iter(fun value -> decompose value |> ignore)
+                        frame.To |> Option.iter(fun value -> decompose value |> ignore)
+                        frame.Delay |> Option.iter(finite "delay")
+                        frame.Ease |> Option.iter(callback "ease")
+                        frame.Modifier |> Option.iter(callback "modifier")
+                        let duration=timing "duration" (defaultArg frame.Duration (defaults.Duration/float property.Frames.Length))
+                        let delay=defaultArg frame.Delay (if index=0 then defaults.Delay else 0.)
+                        let start=previousEnd+delay
+                        let nextEnd=PropertyNumbers.round 1e12 (start+duration)
+                        let absoluteStart=PropertyNumbers.round 1e12 (defaults.Offset+start)
+                        let selected=if replace then selectSibling siblings absoluteStart previous else previous
+                        let preceding=previous |> Option.map copy |> Option.defaultWith(fun () ->
+                            if frame.From.IsNone || frame.To.IsNone || (frame.From |> Option.exists(fun value -> let data=decompose value in data.Kind=ValueKind.Number || data.Operator.IsSome)) then copy original.Value
+                            else decompose(Number 0.))
+                        let mutable first=frame.From |> Option.map decompose |> Option.defaultWith(fun () -> copy preceding)
+                        let last=frame.To |> Option.map decompose |> Option.defaultWith(fun () -> copy preceding)
+                        let inherited=selected |> Option.map copy |> Option.defaultWith(fun () -> preceding)
+                        if frame.From.IsSome && frame.To.IsSome && first.Kind=ValueKind.Number && inherited.Kind=ValueKind.Unit then
+                            first<-{first with Kind=ValueKind.Unit;Unit=inherited.Unit}
+                        let first,last=normalizeData(property.ConvertUnit,inherited,first,last)
+                        alive<-canWrite()
+                        let ease=defaultArg frame.Ease defaults.Ease
+                        let modifier=defaultArg frame.Modifier defaults.Modifier
+                        let cached=
+                            if not alive then None
+                            elif last.Kind=ValueKind.Color then Some(compose(last,0.,Array.copy last.Components))
+                            else sample(false,last,last,1.,-1,modifier,canWrite) |> Option.map(fun struct(_,output) -> output)
+                        match cached with
+                        | Some cached when canWrite() ->
+                            let tween=FrameTween(property.Target,property.Name,first,last,start,delay,duration,
+                                absoluteStart,PropertyNumbers.round 1e12 (defaults.Offset+previousEnd),
+                                PropertyNumbers.round 1e12 (defaults.Offset+nextEnd),frame.From.IsSome,ease,modifier,cached)
+                            tweens.Add tween
+                            if replace then addSibling siblings tween
+                            if Double.IsNaN firstStart then firstStart<-start
+                            previous<-Some last
+                            previousTween<-Some tween
+                            previousEnd<-nextEnd
+                        | _ -> alive<-false
                     | _ -> alive<-false
             if Double.IsNaN initialDelay || firstStart<initialDelay then initialDelay<-firstStart
             if Double.IsNaN endTime || previousEnd>endTime then endTime<-previousEnd
@@ -268,6 +280,13 @@ module internal KeyframeCompilation =
             Some(FrameProgram(delay,duration,defaults.Offset,tweens |> Seq.map(fun tween -> tween.Trim delay) |> Seq.toArray))
 
     /// <summary>Compiles independent frame endpoints with guarded construction and source composition-none inheritance.</summary>
-    let compile (defaults,properties,canWrite)=compileCore false (defaults,properties,canWrite)
+    let compile (defaults,properties,canWrite)=compileCore false None None (defaults,properties,canWrite)
     /// <summary>Compiles endpoints using source replace predecessors within each target property sequence.</summary>
-    let compileReplacing (defaults,properties,canWrite)=compileCore true (defaults,properties,canWrite)
+    let compileReplacing (defaults,properties,canWrite)=compileCore true None None (defaults,properties,canWrite)
+
+    /// <summary>Resolves target-aware frames in source constructor order, retaining the preceding raw endpoints and modified cache.</summary>
+    let compileDynamic (replace,defaults,properties,resolve,readOriginal,canWrite)=
+        compileCore replace (Some resolve) (Some readOriginal) (defaults,properties,canWrite)
+
+    /// <summary>Validates captured constant templates and default timing without invoking modifiers or property accessors.</summary>
+    let validate (defaults,properties)=compileCore false None None (defaults,properties,(fun () -> false)) |> ignore

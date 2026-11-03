@@ -430,6 +430,7 @@ let root = Command.root {
             workingDir __SOURCE_DIRECTORY__
             run "rtk node tools/keyframes.mjs"
             run "rtk node tools/keyframes.mjs --playback"
+            run "rtk node tools/keyframes.mjs --inputs"
         }
     }
     command "unit-reference" {
@@ -466,6 +467,7 @@ let root = Command.root {
             run "rtk node tools/animatable.mjs"
             run "rtk node tools/keyframes.mjs"
             run "rtk node tools/keyframes.mjs --playback"
+            run "rtk node tools/keyframes.mjs --inputs"
         }
     }
 }

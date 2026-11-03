@@ -73,6 +73,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let mutable renderingEnabled = true
     let mutable parented = false
     let mutable onFault = fun () -> ()
+    let mutable onCancel = fun () -> ()
 
     let live () =
         if state.Cancelled then raise(ObjectDisposedException(nameof Timer))
@@ -148,9 +149,9 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
 
     let setTime time = setTimeGuarded (fun () -> true) time
 
-    let cancel () =
+    let cancel notify =
         stopFrame() |> ignore
-        state.Cancel()
+        try state.Cancel() finally if notify then onCancel()
     /// <summary>Accepts an unsigned whole-millisecond iteration duration.</summary>
     new(scheduler: FrameScheduler, duration: uint, ?options: PlaybackOptions,
         ?onBegin: Timer -> unit, ?onBeforeUpdate: Timer -> unit, ?onUpdate: Timer -> unit,
@@ -196,7 +197,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Stretches total duration using unsigned whole milliseconds.</summary>
     member _.Stretch(milliseconds:uint) = this.Stretch(float milliseconds)
     /// <summary>Ends the disposable lifetime; repeated cancellation is harmless.</summary>
-    member _.Cancel() = cancel()
+    member _.Cancel() = cancel true
     /// <summary>Last sampled time in milliseconds; setting it emits pause when active and then restores playback.</summary>
     member _.CurrentTime with get() = state.Sample.CurrentTime and set value = setTime value
     /// <summary>Gets bounded overall progress; setting scales by total duration and seeks with playback preserved.</summary>
@@ -271,6 +272,8 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member internal _.SetTimeGuarded(time, canWrite) = setTimeGuarded canWrite time
     /// <summary>Installs cleanup invoked after callback/render faults cancel this driver.</summary>
     member internal _.OnFault with set value = onFault <- value
+    /// <summary>Registers cleanup after explicit Cancel/Dispose; completion and internal revert retain restoration ownership.</summary>
+    member internal _.OnCancel with set value = onCancel <- value
     /// <summary>Initial delay of an owned timeline child.</summary>
     member internal _.Delay = state.Delay
     /// <summary>Current gap between repeated iterations.</summary>
@@ -310,7 +313,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         state.ReviveForReset()
         operate (fun current ->
             state.Tick(0.,PlaybackTickMode.Auto,true)
-            if current() then cancel()) ignore
+            if current() then cancel false) ignore
     /// <summary>Whether the current renderer invocation refreshes caches without target dispatch.</summary>
     member internal _.InternalRender = state.InternalRender
     /// <summary>Prepares endpoints, optional stretch, cache-only reset and resume under one interruption guard.</summary>
@@ -339,7 +342,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
                 try state.Reset() finally renderingEnabled <- true
             if current() then state.Resume()) (fun () -> reanchor 12.)
     interface IDisposable with
-        member _.Dispose() = cancel()
+        member _.Dispose() = cancel true
 
 /// <summary>Lifetime attachment for standalone playback timers.</summary>
 [<RequireQualifiedAccess>]

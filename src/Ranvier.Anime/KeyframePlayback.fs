@@ -92,7 +92,8 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                         prior.Time<-changed
                         prior.Overlapped<-true
                         if changed<1e-11 then overrideFrame previous
-    let clock=new Timer(scheduler,program.IterationDuration,options={options with Delay=program.Delay},
+    let effectiveOptions={options with Delay=program.Delay;Repeat=(if definitions.Length=0 then PlaybackRepeat.Count 0u else options.Repeat)}
+    let clock=new Timer(scheduler,program.IterationDuration,options=effectiveOptions,
                         ?onBegin=onBegin,?onBeforeUpdate=onBeforeUpdate,?onUpdate=onUpdate,
                         ?onLoop=onLoop,?onPause=onPause,?onComplete=onComplete)
     let render (sample:PlaybackSample) mode muted =
@@ -146,12 +147,12 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
     /// <summary>Independent per-frame time snapshots for source behavior verification.</summary>
     member _.Times=frames |> Array.map _.Time
     /// <summary>Notifies explicit-from construction once, then renders initial directional values with muted reset callbacks.</summary>
-    member _.Initialize()=
+    member _.Initialize(?notifyConstruction:bool)=
         let current=clock.CaptureWriteGuard()
         try
             if current() && not initialized then
                 initialized<-true
-                if definitions |> Array.exists _.HasFrom then onRender |> Option.iter(fun action -> action clock)
+                if defaultArg notifyConstruction true && (definitions |> Array.exists _.HasFrom) then onRender |> Option.iter(fun action -> action clock)
             if current() then clock.Reset()
         with _ ->
             try clock.Cancel() with _ -> ()

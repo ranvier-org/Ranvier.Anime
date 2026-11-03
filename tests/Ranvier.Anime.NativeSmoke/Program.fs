@@ -86,6 +86,47 @@ let main args =
                 (result.IsNone && owner.IsDisposed && calls=1)
             owner.Dispose()
         do
+            let before=style.getPropertyValue "width"
+            let priority=style.getPropertyPriority "width"
+            style.setProperty("width","7px",priority="important")
+            let property=NumericProperty(
+                (fun () -> Double.Parse(style.getPropertyValue("width").Replace("px",""),CultureInfo.InvariantCulture)),
+                (fun value -> StyleDeclaration.apply style (Declaration.important(Css.width(Css.px value)))))
+            let mutable evaluations=0
+            let frames=[|
+                (Keyframe.toBy(fun (context:KeyframeContext<NumericProperty,float>) -> evaluations<-evaluations+1;context.Target.Value+100.)).WithDuration 200u
+                (Keyframe.toBy(fun context -> evaluations<-evaluations+1;context.PreviousValue.Value+100.)).WithDuration 100u |]
+            use animation=Keyframes.Numeric(scheduler,property,frames,duration=300u,
+                                            options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            animation.Playback.Seek 100.
+            let first=element.getBoundingClientRect().width
+            animation.Playback.Seek 250.
+            let second=element.getBoundingClientRect().width
+            animation.Playback.Stretch 600u
+            animation.Playback.Seek 500.
+            style.setProperty("--keyframe-unrelated","42")
+            require "public numeric keyframes evaluate typed inputs once and drive native layout through shared stretch"
+                (evaluations=2 && abs(first-57.)<0.01 && abs(second-157.)<0.01 && abs(element.getBoundingClientRect().width-157.)<0.01)
+            animation.Revert()
+            require "public keyframe revert restores captured numeric properties and preserves unrelated native style"
+                (style.getPropertyValue "width"="7px" && style.getPropertyPriority "width"="important" &&
+                 style.getPropertyValue "--keyframe-unrelated"="42" && evaluations=2 && animation.Cancelled)
+            style.removeProperty "--keyframe-unrelated" |> ignore
+            if String.IsNullOrEmpty before then style.removeProperty "width" |> ignore else style.setProperty("width",before,priority=priority)
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let mutable calls=0
+            let property=NumericProperty((fun () -> 10.),(fun _ -> failwith "interrupted public keyframe dispatch"))
+            let frame=(Keyframe.toBy(fun (_:KeyframeContext<NumericProperty,float>) -> calls<-calls+1;owner.Dispose();100.))
+                         .WithFromBy(fun _ -> failwith "source callback after disposal")
+                         .WithDurationBy(fun _ -> failwith "duration callback after disposal")
+            let mutable interrupted=false
+            try Keyframes.Numeric(scheduler,property,[|frame|],owner=owner) |> ignore with :? ObjectDisposedException -> interrupted<-true
+            require "public native keyframe ownership precedes input callbacks and suppresses later construction effects"
+                (interrupted && calls=1 && owner.IsDisposed)
+        do
             let beforeWidth=style.getPropertyValue "width"
             let beforeHeight=style.getPropertyValue "height"
             let properties=[|

@@ -6,7 +6,8 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 const script=fileURLToPath(import.meta.url);
 const root=resolve(dirname(script),'..'),upstream=resolve(root,'upstream/anime');
-const playback=process.argv.includes('--playback');
+const inputMode=process.argv.includes('--inputs');
+const playback=process.argv.includes('--playback')||inputMode;
 let cases=[
  {name:'oneValue',original:{x:10},duration:100,properties:{x:[100]}},
  {name:'fromTo',original:{x:10},duration:100,properties:{x:[20,100]}},
@@ -66,6 +67,17 @@ if(playback){
  cases=[...base.map(input=>({...input,name:'none-'+input.name,composition:'none'})),
          ...[...base,...edges].map(input=>({...input,name:'replace-'+input.name,composition:'replace'}))];
 }
+if(inputMode)cases=[
+ {name:'targetIndexTiming',targets:[{x:10},{x:20},{x:30}],duration:300,properties:{x:[{to:{fn:'target',base:100,step:10},duration:{fn:'index',base:50,step:25},delay:{fn:'index',base:-5,step:10}},{to:{fn:'previous',base:20,step:5},duration:100,modifier:'plusOne'}]}},
+ {name:'fromToOrder',targets:[{x:10},{x:20}],duration:300,properties:{x:[{to:{fn:'target',base:100},from:{fn:'index',base:5,step:5},duration:{fn:'index',base:100,step:50},delay:{fn:'index',base:-10,step:5}},{to:200}]}},
+ {name:'previousModifiedCache',original:{x:10},duration:200,modifier:'double',properties:{x:[{to:{fn:'target',base:100}},{to:{fn:'previous',base:20}}]}},
+ {name:'mutatedOriginalIsReadAfterCallbacks',original:{x:10},duration:200,properties:{x:[{to:{fn:'mutate',base:40},duration:100},{to:{fn:'previous',base:100},duration:100}]}},
+ {name:'uintDurationInputs',targets:[{x:10},{x:20}],duration:100,properties:{x:[{to:{fn:'index',base:100,step:50},duration:{fn:'index',base:4294967295,step:-1}}]}},
+ {name:'fractionalTimingInputs',targets:[{x:10},{x:20}],duration:1,properties:{x:[{to:{fn:'target',base:100},duration:{fn:'index',base:0.125,step:0.125},delay:{fn:'index',base:0.1,step:0.05}},{to:200,duration:0.125}]}},
+ {name:'holdAfterCallback',original:{x:10},duration:300,properties:{x:[{to:{fn:'target',base:100}}, {}, {to:{fn:'previous',base:100}}]}},
+ {name:'emptyRepeated',original:{x:10},duration:100,loop:3,properties:{x:[]}},
+ {name:'dynamicDurationsOverrideSubprecisionDefaults',original:{x:10},duration:1e-12,properties:{x:[{to:{fn:'target',base:100},duration:{fn:'index',base:100}},{to:{fn:'previous',base:100},duration:{fn:'index',base:100}},{to:300,duration:{fn:'index',base:100}}]}},
+].map(input=>({...input,composition:'replace'}));
 if(process.argv[2]==='--case'){
  let now=0;
  Date.now=()=>now;
@@ -76,10 +88,17 @@ if(process.argv[2]==='--case'){
  const input=cases[Number(process.argv[3])]; assert.ok(input);
  if(input.offset!==undefined)engine._startTime=engine._lastTickTime-input.offset;
  const targets=structuredClone(input.targets??[input.original]);
- const modifier=name=>name==='double'?value=>value*2:name==='plusOne'?value=>value+1:value=>value;
- const convert=value=>{
-  if(Array.isArray(value))return value.map(convert);
-  if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,key==='modifier'?modifier(item):convert(item)]));
+ const calls=[];
+ const modifier=name=>value=>{if(inputMode)calls.push({field:'modifier',value});return name==='double'?value*2:name==='plusOne'?value+1:value;};
+ const convert=(value,field)=>{
+  if(value&&typeof value==='object'&&value.fn)return(target,index,all,previous)=>{
+   calls.push({field,index,count:all.length,previous:previous?previous._value:null,targetValue:target.x});
+   const base=(value.base??0)+(value.step??0)*index;
+   if(value.fn==='mutate')target.x=base;
+   return value.fn==='target'?target.x+base:value.fn==='previous'?(previous?previous._value:target.x)+base:base;
+  };
+  if(Array.isArray(value))return value.map(item=>convert(item,field));
+  if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,key==='modifier'?modifier(item):convert(item,key)]));
   return value;
  };
  const writes=[],events=[];
@@ -108,7 +127,7 @@ if(process.argv[2]==='--case'){
  });
  const construction={delay:cleanNumber(animation._delay),iterationDuration:cleanNumber(animation.iterationDuration),duration:cleanNumber(animation.duration),tweens};
  animation.init();
- const capture=()=>({targets:structuredClone(targets),time:cleanNumber(animation.currentTime),iterationTime:cleanNumber(animation.iterationCurrentTime),paused:animation.paused,completed:animation.completed,backwards:animation.backwards,...(playback?{events:events.splice(0),duration:cleanNumber(animation.duration),iterationDuration:cleanNumber(animation.iterationDuration),writes:writes.splice(0),tweenTimes:(()=>{const values=[];for(let t=animation._head;t;t=t._next)values.push(cleanNumber(t._currentTime));return values;})()}: {})});
+ const capture=()=>({targets:structuredClone(targets),time:cleanNumber(animation.currentTime),iterationTime:cleanNumber(animation.iterationCurrentTime),paused:animation.paused,completed:animation.completed,backwards:animation.backwards,...(inputMode?{calls:calls.splice(0)}:{}),...(playback?{events:events.splice(0),duration:cleanNumber(animation.duration),iterationDuration:cleanNumber(animation.iterationDuration),writes:writes.splice(0),tweenTimes:(()=>{const values=[];for(let t=animation._head;t;t=t._next)values.push(cleanNumber(t._currentTime));return values;})()}: {})});
  const initial=capture();
  const end=animation.duration;
  const times=input.times??[-25,0,10,25,50,75,100,end/4,end/2,end,end+25,end/2,0];
@@ -129,7 +148,7 @@ if(process.argv[2]==='--case'){
  const revision=execFileSync('git',['-C',upstream,'rev-parse','HEAD'],{encoding:'utf8'}).trim();
  const clean=()=>assert.equal(execFileSync('git',['-C',upstream,'status','--porcelain'],{encoding:'utf8'}).trim(),'');
  assert.equal(revision,'2c9cf8ea00329f6768c7d7902252ed977d75ce42');clean();
- const fixtures=cases.map((_,index)=>JSON.parse(execFileSync(process.execPath,[script,'--case',String(index),...(playback?['--playback']:[])],{encoding:'utf8',maxBuffer:8*1024*1024})));
+ const fixtures=cases.map((_,index)=>JSON.parse(execFileSync(process.execPath,[script,'--case',String(index),...(inputMode?['--inputs']:playback?['--playback']:[])],{encoding:'utf8',maxBuffer:8*1024*1024})));
  const byName=Object.fromEntries(fixtures.map(fixture=>[fixture.name,fixture]));
  if(!playback){
  assert.equal(byName.fromTo.construction.tweens.length,1);
@@ -142,6 +161,6 @@ if(process.argv[2]==='--case'){
  clean();
  const output=JSON.stringify({upstreamCommit:revision,version:JSON.parse(readFileSync(resolve(upstream,'package.json'),'utf8')).version,
   scope:playback?'Actual isolated JSAnimation none and same-parent replace write-order/playhead traces; not cross-animation arbitration or native CSS acceptance.':'Actual unmodified JSAnimation construction and seek snapshots, isolated per case; composition none isolates keyframe normalization from global arbitration. These are object targets, not native CSS acceptance.',fixtures},null,2)+'\n';
- writeFileSync(resolve(root,'tests/reference/'+(playback?'keyframe-playback':'keyframes')+'.json'),output);
+ writeFileSync(resolve(root,'tests/reference/'+(inputMode?'keyframe-inputs':playback?'keyframe-playback':'keyframes')+'.json'),output);
  console.log('Captured '+fixtures.length+' isolated keyframe traces; SHA256 '+createHash('sha256').update(output).digest('hex'));
 }
