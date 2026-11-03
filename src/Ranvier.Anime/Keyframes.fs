@@ -3,6 +3,8 @@ namespace Ranvier.Anime
 open System
 open Ranvier
 open Ranvier.Dom
+open Ranvier.Css
+open Ranvier.Css.Dom
 open Ranvier.Anime.ValueInterpolation
 
 /// <summary>Sequence-local endpoint arbitration; independent-animation composition remains separate.</summary>
@@ -87,6 +89,7 @@ type KeyframeAnimation internal(targetCount:int) =
     interface IDisposable with member this.Dispose()=this.Cancel()
 
 module private KeyframeBinding =
+    let private cssShorthands = System.Collections.Generic.HashSet<string>(("all animation animation-range background background-position border border-block border-block-color border-block-style border-block-width border-block-start border-block-end border-bottom border-color border-image border-inline border-inline-color border-inline-style border-inline-width border-inline-start border-inline-end border-left border-radius border-right border-style border-top border-width column-rule columns contain-intrinsic-size container flex flex-flow font font-synthesis font-variant gap grid grid-area grid-column grid-row grid-template inset inset-block inset-inline list-style margin margin-block margin-inline mask mask-border offset outline overflow overscroll-behavior padding padding-block padding-inline place-content place-items place-self scroll-margin scroll-margin-block scroll-margin-inline scroll-padding scroll-padding-block scroll-padding-inline scroll-timeline text-decoration text-emphasis text-wrap transition view-timeline white-space").Split(' '),StringComparer.OrdinalIgnoreCase)
     let validate (duration:float,options:KeyframeAnimationOptions) =
         if isNull(box options) || isNull(box options.Playback) then nullArg "options"
         let finite name value=if not(Double.IsFinite value) then invalidArg name "Expected finite milliseconds."
@@ -154,8 +157,111 @@ module private KeyframeBinding =
             try animation.Cancel() with _ -> ()
             reraise()
 
+    let css (scheduler:FrameScheduler,targets:'Target array,name:string,authored:Keyframe<'Target,Ranvier.Css.Declaration> array,
+             getStyle:'Target -> CSSStyleDeclaration,getConverter:'Target -> (float -> string -> string -> float) option,
+             initial:KeyframeAnimation -> 'Target -> CSSStyleDeclaration -> string,initialImportant:bool,
+             duration:float,options:KeyframeAnimationOptions,owner:Owner option) =
+        let precision=validate(duration,options)
+        if String.IsNullOrWhiteSpace name then invalidArg "name" "A CSS property name is required."
+        if cssShorthands.Contains name then invalidArg "name" "CSS shorthand keyframes require expanded longhand snapshots; use individual longhand properties."
+        if isNull targets || targets.Length=0 then invalidArg "targets" "Expected nonempty CSS targets."
+        if isNull authored then nullArg "frames"
+        let targets=Array.copy targets
+        let authored=Array.copy authored
+        if targets |> Array.exists(fun target -> isNull(box target)) then invalidArg "targets" "CSS targets are required."
+        if authored |> Array.exists(fun frame -> isNull(box frame)) then invalidArg "frames" "Frames are required."
+        let mutable constantImportant=initialImportant
+        let literal (value:Declaration) =
+            if Declaration.name value<>name then invalidArg "declaration" "Frame endpoints must name the captured property."
+            Text(Declaration.value value)
+        let template value=
+            constantImportant<-constantImportant || Declaration.isImportant value
+            literal value
+        let templates=authored |> Array.map(fun frame -> frame.Template template)
+        let properties=targets |> Array.mapi(fun index _ ->
+            {FrameProperty.Target=index;Name=name;Original=Number 0.;Frames=templates;ConvertUnit=None})
+        let defaults={FrameDefaults.Default with Duration=duration;Delay=options.Playback.Delay;Ease=options.Ease;Modifier=options.Modifier}
+        KeyframeCompilation.validate(defaults,properties)
+        let animation=new KeyframeAnimation(targets.Length)
+        try
+            owner |> Option.iter(fun owner -> owner.Attach animation)
+            let current=animation.Guard()
+            let read action =
+                animation.EnsureLive()
+                let value=action()
+                animation.EnsureLive()
+                value
+            let styles=
+                if authored.Length=0 then [||]
+                else targets |> Array.map(fun target ->
+                    let style=read(fun () -> getStyle target)
+                    if isNull(box style) then invalidArg "targets" "A style declaration is required."
+                    style)
+            let originals=styles |> Array.map(fun style ->
+                let value=read(fun () -> style.getPropertyValue name)
+                let priority=read(fun () -> style.getPropertyPriority name)
+                let mutable present=not(String.IsNullOrEmpty value)
+                let length=if present then 0u else read(fun () -> style.length)
+                let mutable index=0u
+                while not present && index<length do
+                    present<-read(fun () -> style.item index)=name
+                    index<-index+1u
+                struct(value,priority,present))
+            let important=originals |> Array.map(fun struct(_,priority,_) -> constantImportant || priority="important")
+            animation.SetRestore(fun current ->
+                let mutable failure:exn option=None
+                for index in 0..originals.Length-1 do
+                    if current() then
+                        try
+                            let struct(value,priority,present)=originals[index]
+                            if present then styles[index].setProperty(name,value,priority=priority)
+                            else styles[index].removeProperty name |> ignore
+                        with error -> if failure.IsNone then failure<-Some error
+                failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()))
+            let properties=properties |> Array.mapi(fun index property ->
+                {property with ConvertUnit=(if authored.Length=0 then None else getConverter targets[index])})
+            let resolve target frame previous =
+                let previous=previous |> Option.map(fun (tween:FrameTween) ->
+                    let value=Declaration.create name tween.CachedEnd.Text
+                    if important[target] then Declaration.important value else value)
+                let context=KeyframeContext(targets[target],uint target,uint targets.Length,previous)
+                let convert value =
+                    let result=literal value
+                    if Declaration.isImportant value then important[target]<-true
+                    result
+                authored[frame].Resolve(context,convert,current)
+            let readOriginal index=
+                let value=read(fun () -> initial animation targets[index] styles[index])
+                Text(if value="auto" then "0" else value)
+            let program=KeyframeCompilation.compileDynamic(options.Composition=KeyframeComposition.Replace,defaults,properties,resolve,readOriginal,current)
+            animation.EnsureLive()
+            let program=program |> Option.defaultWith(fun () -> invalidOp "Keyframe construction was superseded.")
+            let write target _ (output:Output) =
+                let value=Declaration.create name output.Text
+                StyleDeclaration.apply styles[target] (if important[target] then Declaration.important value else value)
+            let driver=new KeyframePlayback(scheduler,program,write,options.Composition=KeyframeComposition.Replace,true,precision,options.Playback,
+                                           onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onRender=options.OnRender,
+                                           onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete)
+            animation.SetDriver driver
+            driver.Clock.OnFault<-animation.Cancel
+            driver.Clock.OnCancel<-animation.Cancel
+            driver.Initialize(notifyConstruction=not options.Autoplay)
+            if current() && options.Autoplay then driver.Clock.Resume()
+            animation
+        with _ ->
+            try animation.Cancel() with _ -> ()
+            reraise()
+    let explicitInitial (declaration:Declaration) =
+        let name=Declaration.name declaration
+        let text=Declaration.value declaration
+        if String.IsNullOrWhiteSpace name then invalidArg "initial" "A CSS property name is required."
+        if (decompose(Text text)).Operator.IsSome then invalidArg "initial" "Use an absolute initial declaration."
+        name,text,Declaration.isImportant declaration
+    let elementStyle (element:HTMLElement)=((element:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+
 /// <summary>Typed keyframe sequence construction on the native shared scheduler.</summary>
 /// <remarks>Empty frame arrays complete as an epsilon no-op and do not read their property accessors.</remarks>
+/// <remarks>CSS bindings currently accept longhands and custom properties. Shorthands reject before style access.</remarks>
 [<AbstractClass;Sealed>]
 type Keyframes private () =
     /// <summary>Animates nonempty numeric property handles using finite nonnegative precise milliseconds.</summary>
@@ -175,3 +281,98 @@ type Keyframes private () =
     static member Numeric(scheduler:FrameScheduler,target:NumericProperty,frames:Keyframe<NumericProperty,float> array,
                           ?duration:uint,?options:KeyframeAnimationOptions,?owner:Owner) =
         Keyframes.Numeric(scheduler,[|target|],frames,?duration=duration,?options=options,?owner=owner)
+
+    /// <summary>Animates one typed property on nonempty style targets using explicit initial values and precise milliseconds.</summary>
+    /// <remarks>Scalar units must match. Revert restores original inline value, priority and presence; unrelated edits persist.</remarks>
+    static member DeclarationPrecise(scheduler:FrameScheduler,styles:CSSStyleDeclaration array,initial:Declaration,
+                                     frames:Keyframe<CSSStyleDeclaration,Declaration> array,duration:float,
+                                     ?options:KeyframeAnimationOptions,?owner:Owner) =
+        let name,text,important=KeyframeBinding.explicitInitial initial
+        KeyframeBinding.css(scheduler,styles,name,frames,id,(fun _ -> None),(fun _ _ _ -> text),important,duration,
+                            defaultArg options KeyframeAnimationOptions.Default,owner)
+    /// <summary>Animates one style target with an explicit typed initial value and precise milliseconds.</summary>
+    static member DeclarationPrecise(scheduler:FrameScheduler,style:CSSStyleDeclaration,initial:Declaration,
+                                     frames:Keyframe<CSSStyleDeclaration,Declaration> array,duration:float,
+                                     ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.DeclarationPrecise(scheduler,[|style|],initial,frames,duration,?options=options,?owner=owner)
+    /// <summary>Animates one typed property on nonempty style targets; unsigned default duration is 1000 ms.</summary>
+    static member Declaration(scheduler:FrameScheduler,styles:CSSStyleDeclaration array,initial:Declaration,
+                              frames:Keyframe<CSSStyleDeclaration,Declaration> array,?duration:uint,
+                              ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.DeclarationPrecise(scheduler,styles,initial,frames,float(defaultArg duration 1000u),?options=options,?owner=owner)
+    /// <summary>Animates one style target with an explicit initial value; unsigned default duration is 1000 ms.</summary>
+    static member Declaration(scheduler:FrameScheduler,style:CSSStyleDeclaration,initial:Declaration,
+                              frames:Keyframe<CSSStyleDeclaration,Declaration> array,?duration:uint,
+                              ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.Declaration(scheduler,[|style|],initial,frames,?duration=duration,?options=options,?owner=owner)
+    /// <summary>Animates one typed property on nonempty elements with per-element scalar-unit conversion and precise milliseconds.</summary>
+    static member DeclarationOnPrecise(scheduler:FrameScheduler,elements:HTMLElement array,initial:Declaration,
+                                       frames:Keyframe<HTMLElement,Declaration> array,duration:float,
+                                       ?options:KeyframeAnimationOptions,?owner:Owner) =
+        let name,text,important=KeyframeBinding.explicitInitial initial
+        KeyframeBinding.css(scheduler,elements,name,frames,KeyframeBinding.elementStyle,(fun element -> Some(CssUnits.convert element)),
+                            (fun _ _ _ -> text),important,duration,defaultArg options KeyframeAnimationOptions.Default,owner)
+    /// <summary>Animates one element with contextual units, an explicit initial value and precise milliseconds.</summary>
+    static member DeclarationOnPrecise(scheduler:FrameScheduler,element:HTMLElement,initial:Declaration,
+                                       frames:Keyframe<HTMLElement,Declaration> array,duration:float,
+                                       ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.DeclarationOnPrecise(scheduler,[|element|],initial,frames,duration,?options=options,?owner=owner)
+    /// <summary>Animates one typed property on nonempty elements with contextual units; unsigned default duration is 1000 ms.</summary>
+    static member DeclarationOn(scheduler:FrameScheduler,elements:HTMLElement array,initial:Declaration,
+                                frames:Keyframe<HTMLElement,Declaration> array,?duration:uint,
+                                ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.DeclarationOnPrecise(scheduler,elements,initial,frames,float(defaultArg duration 1000u),?options=options,?owner=owner)
+    /// <summary>Animates one element with contextual units; unsigned default duration is 1000 ms.</summary>
+    static member DeclarationOn(scheduler:FrameScheduler,element:HTMLElement,initial:Declaration,
+                                frames:Keyframe<HTMLElement,Declaration> array,?duration:uint,
+                                ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.DeclarationOn(scheduler,[|element|],initial,frames,?duration=duration,?options=options,?owner=owner)
+    /// <summary>Captures current inline values after frame callbacks and animates one property using precise milliseconds.</summary>
+    /// <remarks>Empty inline values start at zero. Scalar units must match. Revert restores pre-construction inline snapshots.</remarks>
+    static member CaptureInlinePrecise(scheduler:FrameScheduler,styles:CSSStyleDeclaration array,name:string,
+                                       frames:Keyframe<CSSStyleDeclaration,Declaration> array,duration:float,
+                                       ?options:KeyframeAnimationOptions,?owner:Owner) =
+        KeyframeBinding.css(scheduler,styles,name,frames,id,(fun _ -> None),(fun _ _ style -> style.getPropertyValue name),false,duration,
+                            defaultArg options KeyframeAnimationOptions.Default,owner)
+    /// <summary>Captures one inline property and animates it using precise milliseconds.</summary>
+    static member CaptureInlinePrecise(scheduler:FrameScheduler,style:CSSStyleDeclaration,name:string,
+                                       frames:Keyframe<CSSStyleDeclaration,Declaration> array,duration:float,
+                                       ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.CaptureInlinePrecise(scheduler,[|style|],name,frames,duration,?options=options,?owner=owner)
+    /// <summary>Captures one inline property on nonempty style targets; unsigned default duration is 1000 ms.</summary>
+    static member CaptureInline(scheduler:FrameScheduler,styles:CSSStyleDeclaration array,name:string,
+                                frames:Keyframe<CSSStyleDeclaration,Declaration> array,?duration:uint,
+                                ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.CaptureInlinePrecise(scheduler,styles,name,frames,float(defaultArg duration 1000u),?options=options,?owner=owner)
+    /// <summary>Captures one inline property; unsigned default duration is 1000 ms.</summary>
+    static member CaptureInline(scheduler:FrameScheduler,style:CSSStyleDeclaration,name:string,
+                                frames:Keyframe<CSSStyleDeclaration,Declaration> array,?duration:uint,
+                                ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.CaptureInline(scheduler,[|style|],name,frames,?duration=duration,?options=options,?owner=owner)
+    /// <summary>Captures computed values through Ranvier's service and per-element unit contexts using precise milliseconds.</summary>
+    /// <remarks>Frame callbacks precede initial computed reads. Revert restores original inline presence, value and priority.</remarks>
+    static member CaptureCssPrecise(scheduler:FrameScheduler,computed:ComputedStyleService,elements:HTMLElement array,name:string,
+                                    frames:Keyframe<HTMLElement,Declaration> array,duration:float,
+                                    ?options:KeyframeAnimationOptions,?owner:Owner) =
+        if isNull(box computed) then nullArg "computed"
+        let initial (animation:KeyframeAnimation) (element:HTMLElement) _ =
+            let style=computed.Get((element:>Element),None)
+            animation.EnsureLive()
+            style.getPropertyValue name
+        KeyframeBinding.css(scheduler,elements,name,frames,KeyframeBinding.elementStyle,(fun element -> Some(CssUnits.convert element)),
+                            initial,false,duration,defaultArg options KeyframeAnimationOptions.Default,owner)
+    /// <summary>Captures one computed element property through Ranvier's service using precise milliseconds.</summary>
+    static member CaptureCssPrecise(scheduler:FrameScheduler,computed:ComputedStyleService,element:HTMLElement,name:string,
+                                    frames:Keyframe<HTMLElement,Declaration> array,duration:float,
+                                    ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.CaptureCssPrecise(scheduler,computed,[|element|],name,frames,duration,?options=options,?owner=owner)
+    /// <summary>Captures computed values on nonempty elements with contextual units; unsigned default duration is 1000 ms.</summary>
+    static member CaptureCss(scheduler:FrameScheduler,computed:ComputedStyleService,elements:HTMLElement array,name:string,
+                             frames:Keyframe<HTMLElement,Declaration> array,?duration:uint,
+                             ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.CaptureCssPrecise(scheduler,computed,elements,name,frames,float(defaultArg duration 1000u),?options=options,?owner=owner)
+    /// <summary>Captures one computed element property with contextual units; unsigned default duration is 1000 ms.</summary>
+    static member CaptureCss(scheduler:FrameScheduler,computed:ComputedStyleService,element:HTMLElement,name:string,
+                             frames:Keyframe<HTMLElement,Declaration> array,?duration:uint,
+                             ?options:KeyframeAnimationOptions,?owner:Owner) =
+        Keyframes.CaptureCss(scheduler,computed,[|element|],name,frames,?duration=duration,?options=options,?owner=owner)

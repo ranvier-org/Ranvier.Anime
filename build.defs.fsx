@@ -431,6 +431,7 @@ let root = Command.root {
             run "rtk node tools/keyframes.mjs"
             run "rtk node tools/keyframes.mjs --playback"
             run "rtk node tools/keyframes.mjs --inputs"
+            run "rtk node tools/keyframe-css.mjs"
         }
     }
     command "unit-reference" {
@@ -468,6 +469,7 @@ let root = Command.root {
             run "rtk node tools/keyframes.mjs"
             run "rtk node tools/keyframes.mjs --playback"
             run "rtk node tools/keyframes.mjs --inputs"
+            run "rtk node tools/keyframe-css.mjs"
         }
     }
 }

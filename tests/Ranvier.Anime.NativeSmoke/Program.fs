@@ -42,6 +42,16 @@ let main args =
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
         do
+            style.setProperty("margin-left","7px",priority="important")
+            let mutable rejected=false
+            try
+                Keyframes.Declaration(scheduler,(style:>CSSStyleDeclaration),Declaration.create "margin" "0px",
+                                      [|Keyframe.toValue(Declaration.create "margin" "100px")|]) |> ignore
+            with :? ArgumentException as error when error.ParamName="name" -> rejected<-true
+            require "unsupported CSS keyframe shorthands reject without losing original longhand and priority"
+                (rejected && style.getPropertyValue "margin-left"="7px" && style.getPropertyPriority "margin-left"="important")
+            style.removeProperty "margin" |> ignore
+        do
             let rows=[|
                 {FrameRow.Values=[|"width",ValueInterpolation.Text "10px"|]
                  Frame={FrameInput.Default with Duration=Some 100.;Delay=Some 40.}}
@@ -85,6 +95,121 @@ let main args =
             require "keyframe compilation owner disposal discards the program and later component effects"
                 (result.IsNone && owner.IsDisposed && calls=1)
             owner.Dispose()
+        do
+            let names=["width";"height";"color";"transform"]
+            let originals=names |> List.map(fun name -> name,style.getPropertyValue name,style.getPropertyPriority name)
+            style.setProperty("width","7px",priority="important")
+            use width=Keyframes.Declaration(scheduler,style,Css.width(Css.px 10.),
+                [|(Keyframe.toValue(Css.width(Css.px 110.))).WithDuration 100u
+                  (Keyframe.toValue(Declaration.important(Css.width(Css.px 210.)))).WithDuration(50u).WithDelay(100.)|],
+                options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            width.Playback.Seek 150.
+            let gap=element.getBoundingClientRect().width
+            width.Playback.Seek 225.
+            let midpoint=element.getBoundingClientRect().width
+            style.setProperty("height","23px")
+            width.Revert()
+            require "public typed CSS keyframes retain gaps priority and scoped native restoration"
+                (abs(gap-110.)<0.02 && abs(midpoint-160.)<0.02 && style.getPropertyValue "width"="7px" &&
+                 style.getPropertyPriority "width"="important" && style.getPropertyValue "height"="23px")
+            style.setProperty("color","#ff0000")
+            let red=style.getPropertyValue "color"
+            let mutable colorInputs=0
+            use color=Keyframes.CaptureInline(scheduler,style,"color",
+                [|Keyframe.toValue(Declaration.create "color" "#00ff00")
+                  Keyframe.toBy(fun context -> colorInputs<-colorInputs+1;context.PreviousValue.Value)|],duration=200u,
+                options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            color.Playback.Seek 50.
+            let blended=style.getPropertyValue "color"
+            color.Revert()
+            require "public CSS keyframes retain legacy color interpolation and typed previous caches"
+                (blended.Contains("180") && colorInputs=1 && style.getPropertyValue "color"=red)
+            use transform=Keyframes.Declaration(scheduler,style,Declaration.create "transform" "translate(0px,0px)",
+                [|Keyframe.toValue(Declaration.create "transform" "translate(100px,200px)")|],duration=100u,
+                options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            let initialGeometry=element.getBoundingClientRect()
+            transform.Playback.Seek 50.
+            let moved=element.getBoundingClientRect()
+            require "public typed compound keyframes drive native transformed geometry"
+                (abs(moved.left-initialGeometry.left-50.)<0.02 && abs(moved.top-initialGeometry.top-100.)<0.02)
+            transform.Revert()
+            for name,value,priority in originals do
+                if String.IsNullOrEmpty value then style.removeProperty name |> ignore else style.setProperty(name,value,priority=priority)
+        do
+            let first=host.Document.createElement "div" :?> HTMLElement
+            let second=host.Document.createElement "div" :?> HTMLElement
+            first.setAttribute("class","anime-keyframe-first")
+            second.setAttribute("class","anime-keyframe-second")
+            let sheet=host.Document.createElement "style"
+            (sheet:>Node).textContent<-".anime-keyframe-first { width:16px; } .anime-keyframe-second { width:32px; }"
+            host.Document.head.appendChild sheet |> ignore
+            host.Document.body.appendChild first |> ignore
+            host.Document.body.appendChild second |> ignore
+            let firstStyle=(first:>ElementCSSInlineStyle).style
+            let secondStyle=(second:>ElementCSSInlineStyle).style
+            firstStyle.setProperty("font-size","16px")
+            secondStyle.setProperty("font-size","32px")
+            secondStyle.setProperty("width","8px",priority="important")
+            let originalChildren=host.Document.body.childNodes.length
+            let service=ComputedStyles.forHost host
+            let mutable reads=0
+            let computed={new ComputedStyleService with member _.Get(target,pseudo)=reads<-reads+1;service.Get(target,pseudo)}
+            let previous=ResizeArray<string>()
+            let frames=[|
+                Keyframe.toBy(fun (context:KeyframeContext<HTMLElement,Declaration>) -> Css.width(Css.em(float context.Index+2.)))
+                Keyframe.toBy(fun context -> previous.Add(Declaration.value context.PreviousValue.Value);Css.width(Css.em(float context.Index+3.))) |]
+            use animation=Keyframes.CaptureCss(scheduler,computed,[|first;second|],"width",frames,duration=200u,
+                                               options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            animation.Playback.Seek 50.
+            let firstMid,secondMid=first.getBoundingClientRect().width,second.getBoundingClientRect().width
+            animation.Playback.Seek 150.
+            require "public CSS keyframes use actual computed services and independent element unit contexts"
+                (reads=2 && previous.ToArray()=[|"2em";"3em"|] && abs(firstMid-24.)<0.02 && abs(secondMid-52.)<0.02 &&
+                 abs(first.getBoundingClientRect().width-40.)<0.02 && abs(second.getBoundingClientRect().width-112.)<0.02 &&
+                 host.Document.body.childNodes.length=originalChildren)
+            firstStyle.setProperty("height","33px")
+            animation.Revert()
+            require "computed keyframe revert restores stylesheet fallback and each original inline priority"
+                (reads=2 && firstStyle.getPropertyValue "width"="" && abs(first.getBoundingClientRect().width-16.)<0.02 &&
+                 secondStyle.getPropertyValue "width"="8px" && secondStyle.getPropertyPriority "width"="important" && firstStyle.getPropertyValue "height"="33px")
+            host.Document.body.removeChild first |> ignore
+            host.Document.body.removeChild second |> ignore
+            host.Document.head.removeChild sheet |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let mutable calls=0
+            let computed=
+                { new ComputedStyleService with
+                    member _.Get(_,pseudo)=
+                        if pseudo.IsSome then failwith "unexpected computed pseudo-element"
+                        calls<-calls+1
+                        owner.Dispose()
+                        Unchecked.defaultof<CSSStyleDeclaration> }
+            let before=style.getPropertyValue "width"
+            let mutable interrupted=false
+            try Keyframes.CaptureCss(scheduler,computed,element,"width",[|Keyframe.toValue(Css.width(Css.px 100.))|],owner=owner) |> ignore
+            with :? ObjectDisposedException -> interrupted<-true
+            require "computed keyframe ownership is checked after Get before reading its returned style"
+                (interrupted && calls=1 && owner.IsDisposed && style.getPropertyValue "width"=before)
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let mutable armed=false
+            let mutable calls=0
+            let modify value=if armed then calls<-calls+1;owner.Dispose();value else value
+            let original=style.getPropertyValue "transform"
+            use animation=Keyframes.DeclarationOn(scheduler,element,Declaration.create "transform" "translate(0px,0px)",
+                [|(Keyframe.toValue(Declaration.create "transform" "translate(100px,200px)")).WithModifier modify|],duration=100u,owner=owner,
+                options={KeyframeAnimationOptions.Default with Ease=id})
+            let before=style.getPropertyValue "transform"
+            armed<-true
+            pumpUntil host (fun () -> animation.Cancelled)
+            require "scheduled public CSS keyframes stop partial component effects on actual owner disposal"
+                (calls=1 && owner.IsDisposed && style.getPropertyValue "transform"=before)
+            if String.IsNullOrEmpty original then style.removeProperty "transform" |> ignore else style.setProperty("transform",original)
         do
             let before=style.getPropertyValue "width"
             let priority=style.getPropertyPriority "width"

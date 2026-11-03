@@ -14,7 +14,7 @@ Keyframe array/row/offset normalization, endpoint chaining and construction geom
 
 Per-keyframe history, same-parent replace eligibility, ordered dispatch and stretch behavior in `src/Ranvier.Anime/KeyframePlayback.fs` follow the pinned core renderer and animation composition logic.
 
-Typed frame callback evaluation and numeric keyframe binding in `src/Ranvier.Anime/Keyframe.fs` and `Keyframes.fs` adapt the pinned animation constructor and revert behavior to Ranvier ownership and captured property accessors.
+Typed frame callback evaluation and numeric/CSS keyframe binding in `src/Ranvier.Anime/Keyframe.fs` and `Keyframes.fs` adapt the pinned animation constructor and revert behavior to Ranvier ownership and captured property accessors. Native CSS restoration uses one pre-construction snapshot per property instead of replaying each source frame's inline snapshot.
 
 Cached getters and retarget endpoint updates in `src/Ranvier.Anime/AnimatableValue.fs` follow the pinned animatable code, with guarded atomic updates and snapshot component getters.
 
