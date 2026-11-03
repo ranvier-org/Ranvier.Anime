@@ -41,6 +41,126 @@ let main args =
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
+        for logicalFirst in [false;true] do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            if logicalFirst then inlineStyle.setProperty("margin-inline-start","11px")
+            inlineStyle.setProperty("margin-left","7px")
+            if not logicalFirst then inlineStyle.setProperty("margin-inline-start","11px")
+            use group=new Animatable(scheduler)
+            let handle=group.DeclarationOn(target,Declaration.create "margin" "0px",duration=100u)
+            handle.To(Declaration.create "margin" "100px",ease=id)
+            handle.Playback.Seek 50.
+            inlineStyle.setProperty("margin-inline-start","17px")
+            inlineStyle.setProperty("height","23px")
+            group.Revert()
+            let computed=(ComputedStyles.forHost host).Get((target:>Element),None)
+            require ("native CSS animatable retains logical precedence "+logicalFirst.ToString())
+                (computed.getPropertyValue "margin-left"=(if logicalFirst then "7px" else "17px") &&
+                 inlineStyle.getPropertyValue "margin-inline-start"="17px" && inlineStyle.getPropertyValue "height"="23px")
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("border-top-left-radius","7px",priority="important")
+            use group=new Animatable(scheduler)
+            let handle=group.DeclarationOn(target,Declaration.create "-webkit-border-radius" "0px",duration=100u)
+            handle.To(Declaration.create "-webkit-border-radius" "100px",ease=id)
+            handle.Playback.Seek 50.
+            require "native shorthand animatable getter retains its sampled cache"
+                (Declaration.value handle.Value="50px")
+            handle.To(Declaration.create "-webkit-border-radius" "200px",ease=id)
+            handle.Playback.Seek 50.
+            require "native shorthand alias retarget starts from its existing cache"
+                (inlineStyle.getPropertyValue "border-top-left-radius"="125px" && Declaration.value handle.Value="125px")
+            group.Revert()
+            require "native shorthand alias animatable restores canonical priority and absent corners"
+                (inlineStyle.getPropertyValue "border-top-left-radius"="7px" &&
+                 inlineStyle.getPropertyPriority "border-top-left-radius"="important" &&
+                 inlineStyle.getPropertyValue "border-bottom-right-radius"="")
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("margin","10px 20px 30px 40px")
+            use group=new Animatable(scheduler)
+            let handle=group.CaptureCss(ComputedStyles.forHost host,target,"margin",duration=100u,options={AnimatablePropertyOptions.Default with Ease=id})
+            handle.ToComponents [|100.;200.;300.;400.|]
+            handle.Playback.Seek 50.
+            require "native computed shorthand animatable drives captured component geometry"
+                (inlineStyle.getPropertyValue "margin-top"="55px" && inlineStyle.getPropertyValue "margin-right"="110px" &&
+                 inlineStyle.getPropertyValue "margin-bottom"="165px" && inlineStyle.getPropertyValue "margin-left"="220px")
+            inlineStyle.setProperty("height","23px")
+            group.Revert()
+            require "native computed shorthand animatable restores authored sides and unrelated edits"
+                (inlineStyle.getPropertyValue "margin"="10px 20px 30px 40px" && inlineStyle.getPropertyValue "height"="23px")
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("--m","1px 2px")
+            inlineStyle.setProperty("margin","var(--m)")
+            use group=new Animatable(scheduler)
+            let handle=group.DeclarationOn(target,Declaration.create "margin" "0px",duration=100u)
+            handle.To(Declaration.create "margin" "100px",ease=id)
+            handle.Playback.Seek 50.
+            group.Revert()
+            inlineStyle.setProperty("--m","3px 4px")
+            let computed=(ComputedStyles.forHost host).Get((target:>Element),None)
+            require "native shorthand animatable revert retains custom property dependence"
+                (inlineStyle.cssText.Contains("var(--m)") && computed.getPropertyValue "margin-top"="3px" &&
+                 computed.getPropertyValue "margin-right"="4px")
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("--m","1px 2px")
+            inlineStyle.setProperty("margin","var(--m)")
+            inlineStyle.setProperty("margin-left","7px",priority="important")
+            let before=inlineStyle.cssText
+            use group=new Animatable(scheduler)
+            let mutable rejected=false
+            try group.DeclarationOn(target,Declaration.create "margin" "0px") |> ignore
+            with :? NotSupportedException -> rejected<-true
+            require "opaque animatable snapshot admission preserves the native style and group"
+                (rejected && group.Count=0 && not group.Cancelled && inlineStyle.cssText=before)
+            let handle=group.DeclarationOn(target,Css.width(Css.px 0.),duration=50u)
+            handle.To(Css.width(Css.px 50.),ease=id)
+            handle.Playback.Seek 25.
+            require "native animatable group accepts another property after rejected opaque capture"
+                (inlineStyle.getPropertyValue "width"="25px")
+            group.Revert()
+            let computed=(ComputedStyles.forHost host).Get((target:>Element),None)
+            require "later animatable revert preserves the untouched opaque shorthand"
+                (inlineStyle.getPropertyValue "width"="" && computed.getPropertyValue "margin-top"="1px" &&
+                 computed.getPropertyValue "margin-left"="7px")
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=((target:>ElementCSSInlineStyle).style:>CSSStyleDeclaration)
+            inlineStyle.setProperty("margin-left","7px",priority="important")
+            inlineStyle.setProperty("margin-right","8px")
+            inlineStyle.setProperty("height","9px")
+            use group=new Animatable(scheduler)
+            let handle=group.DeclarationOn(target,Declaration.create "margin" "0px",duration=100u)
+            handle.To(Declaration.create "margin" "100px",duration=100u,ease=id)
+            handle.Playback.Seek 50.
+            require "native CSS animatable shorthand retarget drives expanded sides"
+                (inlineStyle.getPropertyValue "margin-left"="50px" && inlineStyle.getPropertyValue "margin-right"="50px")
+            inlineStyle.setProperty("height","23px")
+            group.Revert()
+            require "native CSS animatable shorthand revert retains mixed priorities and unrelated edits"
+                (inlineStyle.getPropertyValue "margin-left"="7px" && inlineStyle.getPropertyPriority "margin-left"="important" &&
+                 inlineStyle.getPropertyValue "margin-right"="8px" && inlineStyle.getPropertyPriority "margin-right"="" &&
+                 inlineStyle.getPropertyValue "margin-top"="" && inlineStyle.getPropertyValue "margin-bottom"="" &&
+                 inlineStyle.getPropertyValue "height"="23px")
+            host.Document.body.removeChild target |> ignore
         do
             let target=host.Document.createElement "div" :?> HTMLElement
             host.Document.body.appendChild target |> ignore

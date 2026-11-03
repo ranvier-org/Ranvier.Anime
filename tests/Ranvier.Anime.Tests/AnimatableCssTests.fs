@@ -16,6 +16,7 @@ type private CssCaptureStyle(?log:string -> string -> unit) =
     member val BeforeRead:unit -> unit=ignore with get,set
     member val AfterWrite:string -> unit=ignore with get,set
     member val BeforeRemove:string -> unit=ignore with get,set
+    member val Serialized:string option=None with get,set
     member _.Writes=writes
     member _.Seed(name,value,priority)=values[name]<-value,priority
     member _.Value name=match values.TryGetValue name with true,(value,_) -> value | _ -> ""
@@ -37,7 +38,9 @@ type private CssCaptureStyle(?log:string -> string -> unit) =
             value
         member this.item index=this.BeforeRead();values.Keys |> Seq.tryItem(int index) |> Option.defaultValue ""
         member this.length=this.BeforeRead();uint32 values.Count
-        member _.cssText with get()=failwith "Whole style access" and set _=failwith "Whole style replacement"
+        member this.cssText
+            with get()=this.Serialized |> Option.defaultWith(fun () -> failwith "Whole style access")
+            and set _=failwith "Whole style replacement"
         member _.parentRule=Unchecked.defaultof<CSSRule>
         member _.cssRules=Unchecked.defaultof<CSSRuleList>
 
@@ -325,4 +328,79 @@ let cssFacadeTests=testList "public CSS animatable" [
         Expect.isTrue (actual |> Option.exists(fun error -> obj.ReferenceEquals(error,primary))) "primary exception identity"
         Expect.isFalse (second.Contains "width") "other target absence restored"
         Expect.isTrue (group.Cancelled && handle.Playback.Cancelled) "all drivers closed"
+
+    testCase "opaque shorthand admission failure leaves the group usable and unregistered" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use group=new Animatable(scheduler)
+        let recorder=CssCaptureStyle()
+        for name in CssPropertyMetadata.leafNames "margin" do recorder.Seed(name,"","")
+        recorder.Serialized<-Some "margin-top:;margin-right:;margin-bottom:;margin-left:7px !important;"
+        Expect.throwsT<NotSupportedException> (fun () ->
+            group.Declaration(recorder,Declaration.create "margin" "0px") |> ignore) "opaque native snapshot required"
+        Expect.equal group.Count 0 "no registered track"
+        Expect.isFalse group.Cancelled "group lifetime retained"
+        Expect.isEmpty recorder.Writes "no initialization dispatch"
+        let handle=group.Declaration(recorder,Css.width(Css.px 0.),duration=100u,options=linear)
+        handle.To(Css.width(Css.px 100.))
+        handle.Playback.Seek 50.
+        Expect.equal (recorder.Value "width") "50px" "later valid property operates"
+        group.Revert()
+        Expect.isFalse (recorder.Contains "width") "later property restores absence"
+
+    testCase "snapshot enumeration cancellation stops later targets before registration" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use group=new Animatable(scheduler)
+        let first,second=CssCaptureStyle(),CssCaptureStyle()
+        first.Seed("width","7px","")
+        let mutable firstReads=0
+        let mutable secondReads=0
+        first.BeforeRead<-fun () -> firstReads<-firstReads+1;if firstReads=3 then group.Cancel()
+        second.BeforeRead<-fun () -> secondReads<-secondReads+1
+        Expect.throwsT<ObjectDisposedException> (fun () ->
+            group.Declaration([|first:>CSSStyleDeclaration;second:>CSSStyleDeclaration|],Css.width(Css.px 0.)) |> ignore) "capture cancellation"
+        Expect.equal (firstReads,secondReads,group.Count) (3,0,0) "guarded capture order"
+        Expect.isTrue group.Cancelled "group cancellation"
+        Expect.isEmpty first.Writes "no first initialization"
+        Expect.isEmpty second.Writes "no later initialization"
+
+    testCase "shorthand restoration continues through leaves and targets after the first fault" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use group=new Animatable(scheduler)
+        let first,second=CssCaptureStyle(),CssCaptureStyle()
+        first.Seed("margin-left","7px","important")
+        first.Seed("margin-right","8px","")
+        second.Seed("margin-left","17px","")
+        second.Seed("margin-right","18px","important")
+        let handle=group.Declaration([|first:>CSSStyleDeclaration;second:>CSSStyleDeclaration|],Declaration.create "margin" "0px",duration=100u,options=linear)
+        handle.To(Declaration.create "margin" "100px")
+        handle.Playback.Seek 50.
+        for style in [first;second] do
+            style.Seed("margin-left","50px","")
+            style.Seed("margin-right","50px","")
+        let primary=InvalidOperationException "first leaf restoration"
+        first.AfterWrite<-fun name -> if name="margin-left" then raise primary
+        let mutable seen:exn option=None
+        try group.Revert() with error -> seen<-Some error
+        Expect.isTrue (seen |> Option.exists(fun error -> obj.ReferenceEquals(error,primary))) "primary identity"
+        Expect.equal (first.Value "margin-right",second.Value "margin-left",second.Value "margin-right") ("8px","17px","18px") "remaining originals restored"
+        Expect.equal (first.Priority "margin-left",second.Priority "margin-right") ("important","important") "individual priority"
+        Expect.isTrue (group.Cancelled && handle.Playback.Cancelled) "terminal cleanup"
+
+    testCase "shorthand restoration cancellation stops later leaves and targets" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use group=new Animatable(scheduler)
+        let first,second=CssCaptureStyle(),CssCaptureStyle()
+        for style in [first;second] do
+            style.Seed("margin-left","7px","")
+            style.Seed("margin-right","8px","")
+        let handle=group.Declaration([|first:>CSSStyleDeclaration;second:>CSSStyleDeclaration|],Declaration.create "margin" "0px",duration=100u,options=linear)
+        handle.To(Declaration.create "margin" "100px")
+        handle.Playback.Seek 50.
+        first.Writes.Clear()
+        second.Writes.Clear()
+        first.AfterWrite<-fun name -> if name="margin-left" then group.Cancel()
+        group.Revert()
+        Expect.isFalse (first.Writes |> Seq.exists(fun (name,_,_) -> name="margin-right")) "later leaf suppressed"
+        Expect.isFalse (second.Writes |> Seq.exists(fun (name,_,_) -> name="margin-left" || name="margin-right")) "later target snapshot suppressed"
+        Expect.isTrue (group.Cancelled && handle.Playback.Cancelled) "terminal cancellation"
 ]

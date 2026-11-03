@@ -85,11 +85,6 @@ type AnimatableDeclaration internal (track:AnimatableTrack,name:string,metadata:
         live()
         track.RetargetComponents(values,?newDuration=duration,?newEase=ease)
 
-type private InlineCapture(value:string,priority:string,present:bool) =
-    member _.Value=value
-    member _.Priority=priority
-    member _.Present=present
-
 module private CssAnimatableCapture =
     let bind (group:Animatable,styles:CSSStyleDeclaration array,name:string,readInitial:int -> string -> string,
               initialImportant,converters,duration,options:AnimatablePropertyOptions) =
@@ -106,18 +101,12 @@ module private CssAnimatableCapture =
             result
         let originals=styles |> Array.map(fun style ->
             let value=read(fun () -> style.getPropertyValue name)
-            let priority=read(fun () -> style.getPropertyPriority name)
-            let mutable present=not(String.IsNullOrEmpty value)
-            let length=if present then 0u else read(fun () -> style.length)
-            let mutable index=0u
-            while not present && index<length do
-                present<-read(fun () -> style.item index)=name
-                index<-index+1u
-            InlineCapture(value,priority,present))
-        let starts=Array.mapi(fun index (original:InlineCapture) -> read(fun () -> readInitial index original.Value)) originals
+            let snapshot=CssPropertySnapshot.Capture(style,name,group.EnsureLive)
+            struct(value,snapshot))
+        let starts=Array.mapi(fun index struct(value,_) -> read(fun () -> readInitial index value)) originals
         let kernels=starts |> Array.map(fun value -> AnimatableValue(Text value,None,true,None))
         let metadata=kernels |> Array.map _.Metadata
-        let important=originals |> Array.map(fun original -> initialImportant || original.Priority="important")
+        let important=originals |> Array.map(fun struct(_,original) -> initialImportant || original.Important)
         let write index (output:Output) =
             let declaration=Declaration.create name output.Text
             StyleDeclaration.apply styles[index] (if important[index] then Declaration.important declaration else declaration)
@@ -126,9 +115,8 @@ module private CssAnimatableCapture =
             for index in 0..styles.Length-1 do
                 if current() then
                     try
-                        let original=originals[index]
-                        if original.Present then styles[index].setProperty(name,original.Value,priority=original.Priority)
-                        else styles[index].removeProperty name |> ignore
+                        let struct(_,original)=originals[index]
+                        original.Restore(styles[index],current)
                     with error -> if failure.IsNone then failure<-Some error
             failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
         let track=group.Register(kernels,write,restore,duration,options,precision)
@@ -150,6 +138,7 @@ module private CssAnimatableCapture =
         elements,styles,converters
 
 /// <summary>Typed declaration authoring and native CSS capture for existing animatable groups.</summary>
+/// <remarks>Revert restores expanded longhands and logical precedence. Unrecoverable pending snapshots reject before dispatch.</remarks>
 [<AutoOpen>]
 module AnimatableCssExtensions =
     type Animatable with
