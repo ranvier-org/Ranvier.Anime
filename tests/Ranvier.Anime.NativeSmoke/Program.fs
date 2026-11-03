@@ -44,6 +44,54 @@ let main args =
         do
             use graph=new Graph()
             use activation=graph.Activate()
+            ScopeNativeProbe.run host.Document (MediaQueries.provider host)
+            require "native scope selectors media refresh and actual ownership" true
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            use scope=Api.runWithOwner owner (fun () -> new Scope())
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px","important")
+            inlineStyle.setProperty("height","20px","important")
+            let originals=ResizeArray<float*float>()
+            let timelines=ResizeArray<Timeline>()
+            let sequences=ResizeArray<Ranvier.Anime.KeyframeAnimation>()
+            scope.Add(fun _ ->
+                originals.Add(target.getBoundingClientRect().width,target.getBoundingClientRect().height)
+                let timeline=new Timeline(scheduler) |> Timeline.own
+                timelines.Add timeline
+                let width=NumericProperty((fun () -> target.getBoundingClientRect().width),
+                    (fun value -> StyleDeclaration.apply inlineStyle (Declaration.important(Css.width(Css.px value)))))
+                timeline.Animate(width,100.,100u,from=0.) |> ignore
+                let sequence=Keyframes.CaptureCss(scheduler,ComputedStyles.forHost host,target,"height",
+                    [|Keyframe.toValue(Css.height(Css.px 220.))|],duration=100u,
+                    options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id;Autoplay=false;Precision=None})
+                sequences.Add sequence
+                timeline.Seek 50.
+                sequence.Playback.Seek 50.
+                None) |> ignore
+            require "automatic scope members render through actual native CSS and layout"
+                (target.getBoundingClientRect().width=50. && target.getBoundingClientRect().height=120.)
+            scope.Refresh() |> ignore
+            require "native scope refresh restores before capturing replacement members"
+                ((originals |> Seq.toList)=[(10.,20.);(10.,20.)] && timelines[0].Cancelled && sequences[0].Cancelled)
+            owner.Dispose()
+            require "actual scope owner restores typed CSS snapshots and scalar originals"
+                (target.getBoundingClientRect().width=10. && target.getBoundingClientRect().height=20.
+                 && inlineStyle.getPropertyPriority "width"="important" && inlineStyle.getPropertyPriority "height"="important")
+            host.Cycle(milliseconds=100)
+            host.Frame()
+            require "disposed scope leaves no native member scheduling or cleanup faults"
+                (scope.IsDisposed && (timelines |> Seq.forall _.Cancelled) && (sequences |> Seq.forall _.Cancelled)
+                 && owner.ErrorCount=0 && scope.Errors.Count=0
+                 && target.getBoundingClientRect().width=10. && target.getBoundingClientRect().height=20.)
+            host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
             let owner=Api.createRoot id
             let target=host.Document.createElement "div" :?> HTMLElement
             host.Document.body.appendChild target |> ignore

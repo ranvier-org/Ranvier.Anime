@@ -487,6 +487,14 @@ let root = Command.root {
             run "rtk node tools/timeline-keyframes.mjs"
             run "rtk node tools/timeline-css-keyframes.mjs"
             run "rtk node tools/timeline-mixed-keyframes.mjs"
+            run "rtk node tools/timeline-revert.mjs"
+        }
+    }
+    command "scope-reference" {
+        stage "upstream scope and restoration reference" {
+            workingDir __SOURCE_DIRECTORY__
+            run "rtk node tools/scope-reference.mjs"
+            run "rtk node tools/timeline-revert.mjs"
         }
     }
     command "unit-reference" {
@@ -530,6 +538,8 @@ let root = Command.root {
             run "rtk node tools/timeline-keyframes.mjs"
             run "rtk node tools/timeline-css-keyframes.mjs"
             run "rtk node tools/timeline-mixed-keyframes.mjs"
+            run "rtk node tools/timeline-revert.mjs"
+            run "rtk node tools/scope-reference.mjs"
         }
     }
 }

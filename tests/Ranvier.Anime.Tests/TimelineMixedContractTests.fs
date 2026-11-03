@@ -22,16 +22,20 @@ let tests=testList "mixed scalar and keyframe contracts" [
             root.Complete()
             Expect.equal value last "exact endpoint"
 
-    testCase "scalar explicit source preserves getter bypass on the shared driver" <| fun _ ->
+    testCase "scalar explicit source captures its original for restoration" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         use root=new Timeline(scheduler)
         let mutable value=7.
-        let property=NumericProperty((fun () -> failtest "explicit source getter"),(fun next -> value<-next))
+        let mutable reads=0
+        let property=NumericProperty((fun () -> reads<-reads+1;value),(fun next -> value<-next))
         let result=root.Animate(property,110.,100u,from=10.)
         Expect.isTrue (obj.ReferenceEquals(root,result)) "fluent scalar result"
         Expect.equal value 7. "cache-only construction"
+        Expect.equal reads 1 "original capture also applies to explicit sources"
         root.Seek 50.
         Expect.equal value 60. "explicit scalar endpoints"
+        root.Revert()
+        Expect.equal value 7. "original restored independently of explicit source"
 
     testCase "a scalar getter seek aborts pending publication and retains the fluent root" <| fun _ ->
         use scheduler=new ManualFrameScheduler()

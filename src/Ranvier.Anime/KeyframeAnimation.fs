@@ -41,6 +41,8 @@ type KeyframeAnimationOptions =
 /// </remarks>
 [<Sealed>]
 type KeyframeAnimation internal(targetCount:int) =
+    let ownerAllowsWrite=ScopeRegistration.captureWriteGuard()
+    let mutable constructionComplete=false
     let mutable driver:KeyframePlayback option=None
     let mutable active=true
     let mutable reverting=false
@@ -48,19 +50,32 @@ type KeyframeAnimation internal(targetCount:int) =
     let mutable restore:((unit -> bool) -> unit) option=None
     let mutable cleanup:(unit -> unit) option=None
     /// <summary>Checks that construction still belongs to this lifetime.</summary>
-    member internal _.EnsureLive()=if not active then raise(ObjectDisposedException(nameof KeyframeAnimation))
+    member internal _.EnsureLive()=
+        if not active || not(ownerAllowsWrite()) || (not constructionComplete && not(ScopeRegistration.canConstruct())) then
+            raise(ObjectDisposedException(nameof KeyframeAnimation))
     /// <summary>Captures the current construction or restoration generation.</summary>
     member internal _.Guard()=
         let expected=generation
-        fun () -> active && expected=generation
+        fun () -> active && expected=generation && ownerAllowsWrite() && (constructionComplete || ScopeRegistration.canConstruct())
     /// <summary>Registers captured restoration before initialization invokes user code.</summary>
     member internal _.SetRestore(action)=restore<-Some action
     /// <summary>Registers terminal sibling cleanup before construction can publish or invoke user callbacks.</summary>
     member internal _.SetCleanup(action)=cleanup<-Some action
     /// <summary>Installs the prepared shared driver before initialization.</summary>
-    member internal _.SetDriver(value)=driver<-Some value
+    member internal this.SetDriver(value)=
+        driver<-Some value
+        if ScopeRegistration.canConstruct() && ownerAllowsWrite() then
+            constructionComplete<-true
+            ScopeRegistration.register this.Revert
+        else this.Cancel()
     /// <summary>The existing shared Timer controller, including precise seek, repeat, direction and stretch controls.</summary>
     member _.Playback=match driver with Some driver -> driver.Clock | None -> invalidOp "The sequence is still being constructed."
+    /// <summary>Captures the installed clock's iteration, direction and scheduling anchor.</summary>
+    member internal this.CaptureScopeTime() = this.Playback.CaptureScopeTime()
+    /// <summary>Restores the installed clock while this captured-property lifetime remains live.</summary>
+    member internal this.RestoreScopeTime(snapshot: ScopeClockSnapshot) =
+        this.EnsureLive()
+        this.Playback.RestoreScopeTime snapshot
     /// <summary>Number of captured targets.</summary>
     member _.TargetCount=targetCount
     /// <summary>Whether explicit disposal, ownership, completion or a callback fault has cancelled playback.</summary>
@@ -88,6 +103,19 @@ type KeyframeAnimation internal(targetCount:int) =
             attempt(fun () -> driver |> Option.iter(fun value -> value.Clock.RewindForRevert()))
             if current() then attempt(fun () -> restore |> Option.iter(fun action -> action current))
             attempt this.Cancel
+            reverting<-false
+            failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
+    /// <summary>Restores captured properties after the parent rewind, then closes this child's lifetime.</summary>
+    member internal this.RestoreFromParent(parentCurrent:unit -> bool)=
+        if active && not reverting then
+            reverting<-true
+            let ownCurrent=this.Guard()
+            let current()=ownCurrent() && parentCurrent()
+            let mutable failure:exn option=None
+            try
+                if current() then restore |> Option.iter(fun action -> action current)
+            with error -> failure<-Some error
+            try this.Cancel() with error -> if failure.IsNone then failure<-Some error
             reverting<-false
             failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     interface IDisposable with member this.Dispose()=this.Cancel()

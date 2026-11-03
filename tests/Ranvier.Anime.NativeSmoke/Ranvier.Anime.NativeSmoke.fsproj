@@ -13,6 +13,7 @@
     <DefineConstants>$(DefineConstants);EXPECT_TRACED</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ScopeNativeProbe.fs" />
     <Compile Include="Program.fs" />
     <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
     <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" Condition="'$(NativeSmokeGraph)' != 'public45'" />

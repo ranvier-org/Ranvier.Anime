@@ -20,7 +20,8 @@ type internal TimelineChildContext(scheduler:Ranvier.Dom.FrameScheduler,offset:f
     member _.RemoveSiblings(nodes)=siblings.Remove nodes
 
 /// <summary>A constructed child awaiting guarded timeline publication.</summary>
-type internal TimelinePreparedChild<'T>(clock:Timer,renderVersion:unit -> int64,commit:unit -> bool,result:'T) =
+type internal TimelinePreparedChild<'T>(clock:Timer,renderVersion:unit -> int64,commit:unit -> bool,result:'T,
+                                       restore:(unit -> bool) -> unit) =
     /// <summary>The child controller whose scheduling and disposal belong to the timeline.</summary>
     member _.Clock=clock
     /// <summary>The current target dispatch generation, unchanged by cache-only or skipped samples.</summary>
@@ -29,6 +30,8 @@ type internal TimelinePreparedChild<'T>(clock:Timer,renderVersion:unit -> int64,
     member _.Commit()=commit()
     /// <summary>The factory's observable child handle.</summary>
     member _.Result=result
+    /// <summary>Restores captured properties while the parent's lifetime and operation remain current.</summary>
+    member _.Restore(current)=restore current
 
 /// <summary>Owned driver installation with staged same-timeline replacement publication.</summary>
 module internal TimelineKeyframeInstallation =
@@ -55,7 +58,7 @@ module internal TimelineKeyframeInstallation =
                 let driver=new KeyframePlayback(context.Scheduler,program,write,replacing,css,precision,options.Playback,
                     onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onRender=options.OnRender,
                     onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete,?siblings=nodes,finiteScalar=finiteScalar)
-                animation.SetDriver driver
+                ScopeRegistration.run ignore (fun () -> animation.SetDriver driver)
                 driver.Clock.OnCancel<-animation.Cancel
                 driver.Clock.OnFault<-animation.Cancel
                 driver.Initialize(timelineChild=true,notifyConstruction=true,canWrite=current)
@@ -63,7 +66,7 @@ module internal TimelineKeyframeInstallation =
                 else
                     handedOff<-true
                     let commit()=match transaction with Some siblings -> siblings.Commit() | None -> true
-                    Some(TimelinePreparedChild(driver.Clock,(fun () -> driver.RenderVersion),commit,animation))
+                    Some(TimelinePreparedChild(driver.Clock,(fun () -> driver.RenderVersion),commit,animation,animation.RestoreFromParent))
             | _ -> None
         finally
             if not handedOff then transaction |> Option.iter(fun siblings -> siblings.Rollback())

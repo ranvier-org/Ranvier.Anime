@@ -37,6 +37,15 @@ type PlaybackOptions =
                          "; Alternate="; this.Alternate.ToString(); "; Speed="; this.Speed.ToString("R", culture)
                          "; FrameRate="; this.FrameRate.ToString("R", culture); ")" |]
 
+/// <summary>Iteration and scheduling state transferred when a scope reconstructs a playback controller.</summary>
+[<Struct>]
+type internal ScopeClockSnapshot =
+    { Iteration: int
+      IterationProgress: float
+      Reversed: bool
+      Alternate: bool
+      Anchor: float }
+
 /// <summary>A paused standalone timer on the scheduler's thread, with nonnegative duration in milliseconds.</summary>
 /// <remarks>
 /// Positive infinity represents unbounded iteration duration. Cancellation is terminal.
@@ -152,6 +161,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let cancel notify =
         stopFrame() |> ignore
         try state.Cancel() finally if notify then onCancel()
+    do ScopeRegistration.register this.RewindForRevert
     /// <summary>Accepts an unsigned whole-millisecond iteration duration.</summary>
     new(scheduler: FrameScheduler, duration: uint, ?options: PlaybackOptions,
         ?onBegin: Timer -> unit, ?onBeforeUpdate: Timer -> unit, ?onUpdate: Timer -> unit,
@@ -270,6 +280,21 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         totalDuration |> Option.iter state.OverrideDuration
     /// <summary>Assigns current time with pause/seek/resume semantics while every ancestor remains live.</summary>
     member internal _.SetTimeGuarded(time, canWrite) = setTimeGuarded canWrite time
+    /// <summary>Captures rounded iteration progress, direction policy and the scheduling anchor before scope reversion.</summary>
+    member internal _.CaptureScopeTime() : ScopeClockSnapshot =
+        { Iteration = this.CurrentIteration
+          IterationProgress = this.IterationProgress
+          Reversed = this.Reversed
+          Alternate = options.Alternate
+          Anchor = anchor }
+    /// <summary>Restores source setter semantics and then the original clock anchor, while cancellation remains terminal.</summary>
+    member internal _.RestoreScopeTime(snapshot: ScopeClockSnapshot) =
+        live()
+        this.SeekIteration(uint(Math.Max(0,snapshot.Iteration)))
+        if not state.Cancelled then
+            let backwards = snapshot.Reversed <> (snapshot.Alternate && snapshot.Iteration % 2 <> 0)
+            this.IterationProgress <- if backwards then 1. - snapshot.IterationProgress else snapshot.IterationProgress
+            if not state.Cancelled then anchor <- snapshot.Anchor
     /// <summary>Installs cleanup invoked after callback/render faults cancel this driver.</summary>
     member internal _.OnFault with set value = onFault <- value
     /// <summary>Registers cleanup after explicit Cancel/Dispose; completion and internal revert retain restoration ownership.</summary>
@@ -353,5 +378,5 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
 module Timer =
     /// <summary>Attaches the timer to the current Ranvier owner, which cancels it on disposal.</summary>
     let own (timer: Timer) =
-        Api.getOwner().Attach timer
+        ScopeRegistration.attach timer
         timer

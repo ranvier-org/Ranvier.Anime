@@ -1,0 +1,77 @@
+{
+  "status": "passed",
+  "scope": "Portable scope/restoration foundation only",
+  "recordedUtc": "2026-11-03T16:30:26.531187+00:00",
+  "baseHead": "dc21e60dbf085b12bbee264db1004cb6800b37e0",
+  "stagedDiffSha256": "853563e6288830337d8a89003c957bbafeaf5d28821282dbab8ed53c0c872990",
+  "freezePath": "portable-scope-foundation-freeze.json",
+  "freezeSha256": "93d5f247ab27e65585c9284f648ce50658468e9dd83ada2308b4df2bb8b38cd0",
+  "originalFreezePath": "C:\\wk\\ranvier-anime-lanes\\acceptance\\foundation-portable-retry-freeze.json",
+  "originalFreezeSha256": "7515140045b31f71f882c08b55e7150fbef5840862220a25fade96f2ea3b3125",
+  "originalReceiptSha256": "f3fab6957aeef60c236c81ae78816f34a77ab2f7f442a8310cc1b1c2af3f5890",
+  "packaging": "Copied JSON uses LF line endings. Gate and authored-input hashes retain their original values. After validation, only the ledger and these evidence documents were updated.",
+  "frozenTrackedFiles": 219,
+  "allFrozenBytesUnchangedAfterReference": true,
+  "unfilteredTests": {
+    "Release": 2182,
+    "TracedDebug": 2182,
+    "ignored": 0,
+    "failed": 0,
+    "errored": 0
+  },
+  "structuralXmlFindings": 0,
+  "gates": [
+    {
+      "name": "test-Release-retry",
+      "arguments": [
+        "test",
+        "-c",
+        "Release"
+      ],
+      "log": "C:\\wk\\ranvier-anime\\artifacts\\qualification\\foundation-portable-gates\\20261103T162840266-test-Release-retry.log",
+      "logSha256": "2f01d3a901cf30a842b1511d9a2fded1ac4a4fee9e00fbf467cb2996b7b2c377",
+      "receiptSha256": "dc984ed03c0a18af11f0dfb87244ca9e01bc68cc1aad11b6d133adab04f1f866",
+      "exitCode": 0
+    },
+    {
+      "name": "test-Debug",
+      "arguments": [
+        "test",
+        "-c",
+        "Debug"
+      ],
+      "log": "C:\\wk\\ranvier-anime\\artifacts\\qualification\\foundation-portable-gates\\20261103T162857194-test-Debug.log",
+      "logSha256": "6fa402c04f7e09bfa33da9c20fc46d128e6f015ca84ff017a02340083d61d6e7",
+      "receiptSha256": "4f76393363e9da8df040f57eb17d0e9658182baf70d8f7df0e2e2dff6bb78ec5",
+      "exitCode": 0
+    },
+    {
+      "name": "xml",
+      "arguments": [
+        "audit",
+        "--script",
+        "C:/Users/shaya/RiderProjects/Ranvier/.claude/skills/fsharp-xml-docs/scripts/audit.fsx"
+      ],
+      "log": "C:\\wk\\ranvier-anime\\artifacts\\qualification\\foundation-portable-gates\\20261103T162915202-xml.log",
+      "logSha256": "90a47ae7ce5b1a7e338995204212ece6efd60e4c29610d26e3480772a85268cb",
+      "receiptSha256": "fe11e3bf0775307a6288163f83d87f411bd06f86404bc8a305bcf1b5d37c3172",
+      "exitCode": 0
+    },
+    {
+      "name": "reference",
+      "arguments": [
+        "reference"
+      ],
+      "log": "C:\\wk\\ranvier-anime\\artifacts\\qualification\\foundation-portable-gates\\20261103T162921516-reference.log",
+      "logSha256": "d54e705aaf2da0a075dab43bff5e4f7fa9ba11302f46be368c73946bb52a4093",
+      "receiptSha256": "7ae38d2713337519ca53bd8a64ff9e627d60e121c406c64bdff5ce691b0547b9",
+      "exitCode": 0
+    }
+  ],
+  "preservedFailures": "portable-scope-foundation-failed.json",
+  "releasedLease": "adbfcac2203f450588796858ff261072",
+  "nativeRun": false,
+  "NativeAotRun": false,
+  "FullNativeQualified": false,
+  "HardwareAccelerationQualified": false
+}

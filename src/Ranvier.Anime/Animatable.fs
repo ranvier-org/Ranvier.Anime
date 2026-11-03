@@ -68,16 +68,18 @@ type private AnimatableRegistration(restore:(unit -> bool) -> unit) =
 type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBeforeUpdate:NumericAnimation -> unit,
                 ?onRender:NumericAnimation -> unit,?onUpdate:NumericAnimation -> unit,?onLoop:NumericAnimation -> unit,
                 ?onPause:NumericAnimation -> unit,?onComplete:NumericAnimation -> unit) as this =
+    let ownerAllowsWrite=ScopeRegistration.captureWriteGuard()
     let group=new AnimatableGroup(scheduler,?onBegin=onBegin,?onBeforeUpdate=onBeforeUpdate,?onRender=onRender,?onUpdate=onUpdate,
                                   ?onLoop=onLoop,?onPause=onPause,?onComplete=onComplete)
     let registrations=ResizeArray<AnimatableRegistration>()
     let mutable state=0
-    let live () = if state<>0 || group.Cancelled then raise(ObjectDisposedException(nameof Animatable))
+    let live () = if state<>0 || group.Cancelled || not(ownerAllowsWrite()) then raise(ObjectDisposedException(nameof Animatable))
     let cleanupAll actions =
         let mutable failure:exn option=None
         for action in actions do
             try action() with error -> if failure.IsNone then failure<-Some error
         failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
+    do ScopeRegistration.register this.Revert
     /// <summary>The independent callback animation; its default duration is 1000 ms.</summary>
     member _.Callbacks=group.Callbacks
     /// <summary>Number of attached property handles.</summary>
@@ -94,7 +96,7 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
         let registration=AnimatableRegistration restore
         registrations.Add registration
         try
-            let track=group.Add(kernels,(fun index output -> if state<>2 then write index output),
+            let track=group.Add(kernels,(fun index output -> if state<>2 && ownerAllowsWrite() then write index output),
                                 duration,options.Playback,options.Ease,options.Modifier,precision)
             registration.Track<-Some track
             live()
@@ -144,7 +146,7 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
         if state=0 && group.Cancelled then this.Cancel()
         elif state=0 then
             state<-1
-            let current () = state=1
+            let current () = state=1 && ownerAllowsWrite()
             let captured=registrations.ToArray()
             cleanupAll (seq {
                 for registration in captured do
@@ -159,5 +161,5 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
 module Animatable =
     /// <summary>Attaches the group to the current Ranvier owner, which cancels every member on disposal.</summary>
     let own (animatable:Animatable) =
-        Api.getOwner().Attach(animatable:>IDisposable)
+        ScopeRegistration.attach(animatable:>IDisposable)
         animatable

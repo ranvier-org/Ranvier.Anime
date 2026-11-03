@@ -22,10 +22,13 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
     let mutable values=kernels |> Array.map(fun value -> value.Fork())
     let mutable ease=initialEase
     let mutable tweenTime=0.
-    let clock=new Timer(scheduler,iterationDuration,options=options,?onBegin=onBegin,?onPause=onPause,?onComplete=onComplete)
-    let live () = if clock.Cancelled then raise(ObjectDisposedException(nameof AnimatableTrack))
+    let ownerAllowsWrite=ScopeRegistration.captureWriteGuard()
+    let clock=ScopeRegistration.run ignore (fun () ->
+        new Timer(scheduler,iterationDuration,options=options,?onBegin=onBegin,?onPause=onPause,?onComplete=onComplete))
+    let live () = if clock.Cancelled || not(ownerAllowsWrite()) then raise(ObjectDisposedException(nameof AnimatableTrack))
     let render (sample:PlaybackSample) mode muted =
-        let current=clock.CaptureWriteGuard()
+        let timerCurrent=clock.CaptureWriteGuard()
+        let current()=timerCurrent() && ownerAllowsWrite()
         let iteration=clock.IterationDuration
         let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
         let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=200.
@@ -57,7 +60,7 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
             if componentTrack<>components.IsSome then invalidArg "value" "Destination shape must match every captured property."
         let prepare operationCurrent =
             let inherited=clock.CaptureWriteGuard()
-            let current () = operationCurrent() && inherited()
+            let current () = operationCurrent() && inherited() && ownerAllowsWrite()
             let staged=values |> Array.map(fun value -> value.Fork())
             let mutable alive=current()
             for index in 0..staged.Length-1 do

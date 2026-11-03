@@ -18,7 +18,10 @@
     <Compile Include="AnimatableValue.fs" />
     <Compile Include="PlaybackTiming.fs" />
     <Compile Include="PlaybackState.fs" />
+    <Compile Include="ScopeRegistration.fs" />
     <Compile Include="Timer.fs" />
+    <Compile Include="Scope.fs" />
+    <Compile Include="ScopeTimer.fs" />
     <Compile Include="KeyframePlayback.fs" />
     <Compile Include="KeyframeAnimation.fs" />
     <Compile Include="AnimatableTrack.fs" />
@@ -29,6 +32,7 @@
     <Compile Include="TimelinePosition.fs" />
     <Compile Include="TimelineConstruction.fs" />
     <Compile Include="Timeline.fs" />
+    <Compile Include="ScopeAnimation.fs" />
     <Compile Include="Reactive.fs" />
     <Compile Include="CssUnits.fs" />
     <Compile Include="CssPropertyMetadata.fs" />

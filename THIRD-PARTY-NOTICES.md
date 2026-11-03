@@ -20,6 +20,8 @@ The playback timing geometry in `src/Ranvier.Anime/PlaybackTiming.fs`, callback/
 
 Timeline iteration/child traversal in `src/Ranvier.Anime/Timeline.fs` and scalar sibling eligibility/composition in `src/Ranvier.Anime/PropertyTrack.fs` also follow the pinned timeline and core render logic.
 
+Scope resource groups, methods, media refresh and keepTime reconstruction in `src/Ranvier.Anime/Scope.fs`, `ScopeTimer.fs` and `ScopeAnimation.fs` derive from the pinned scope implementation. The port uses actual Ranvier owners and typed clock snapshots, with terminal native restoration handles.
+
 Endpoint decomposition, homogenization and scalar/color/compound interpolation in `src/Ranvier.Anime/ValueInterpolation.fs` derive from the pinned core values, colors, helpers, render and animation code.
 
 Keyframe array/row/offset normalization, endpoint chaining and construction geometry in `src/Ranvier.Anime/KeyframeCompilation.fs` follow the pinned animation keyframe generation and tween construction logic.

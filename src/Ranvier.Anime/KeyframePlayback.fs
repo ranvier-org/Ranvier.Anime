@@ -18,6 +18,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
         if isNull(box write) then nullArg "write"
         if precision < -1 || precision>308 then invalidArg "precision" "Expected disabled rounding or at most 308 decimal places."
     let finiteScalar=defaultArg finiteScalar false
+    let ownerAllowsWrite=ScopeRegistration.captureWriteGuard()
     let definitions=Array.copy program.Tweens
     let frames=
         match siblings with
@@ -44,11 +45,12 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
             for index in 0..frames.Length-1 do frames[index].Start<-definitions[index].Start
     let effectiveOptions={options with Delay=program.Delay;Repeat=(if definitions.Length=0 then PlaybackRepeat.Count 0u else options.Repeat)}
     let mutable renderVersion=0L
-    let clock=new Timer(scheduler,program.IterationDuration,options=effectiveOptions,
+    let clock=ScopeRegistration.run ignore (fun () -> new Timer(scheduler,program.IterationDuration,options=effectiveOptions,
                         ?onBegin=onBegin,?onBeforeUpdate=onBeforeUpdate,?onUpdate=onUpdate,
-                        ?onLoop=onLoop,?onPause=onPause,?onComplete=onComplete)
+                        ?onLoop=onLoop,?onPause=onPause,?onComplete=onComplete))
     let render (sample:PlaybackSample) mode muted =
-        let current=clock.CaptureWriteGuard()
+        let timerCurrent=clock.CaptureWriteGuard()
+        let current()=timerCurrent() && ownerAllowsWrite()
         let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
         let forced=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=200.
         let absolute=PropertyNumbers.round 1e12 (offset+clock.Delay+sample.IterationTime)

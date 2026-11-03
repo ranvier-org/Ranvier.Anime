@@ -21,22 +21,25 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
     let mutable hasEntries = false
     let mutable sampledTime = 0.
     let mutable cancelled = false
+    let mutable reverting = false
+    let restorations=System.Collections.Generic.List<(unit -> bool) -> unit>()
     let mutable generation = 0
-    let mutable ancestorLive = fun () -> true
+    let mutable ancestorLive = ScopeRegistration.captureWriteGuard()
     let mutable internalRendering = false
     let mutable internalTime=0.
-    let clock = new Timer(scheduler, 0., ?options=options,
+    let clock = ScopeRegistration.run ignore (fun () -> new Timer(scheduler, 0., ?options=options,
         onBegin=(fun _ -> onBegin |> Option.iter(fun callback -> callback this)),
         onBeforeUpdate=(fun _ -> onBeforeUpdate |> Option.iter(fun callback -> callback this)),
         onUpdate=(fun _ -> onUpdate |> Option.iter(fun callback -> callback this)),
         onLoop=(fun _ -> onLoop |> Option.iter(fun callback -> callback this)),
         onPause=(fun _ -> onPause |> Option.iter(fun callback -> callback this)),
-        onComplete=(fun _ -> onComplete |> Option.iter(fun callback -> callback this)))
+        onComplete=(fun _ -> onComplete |> Option.iter(fun callback -> callback this))))
     let finite name value = if not(Double.IsFinite value) then invalidArg name "Expected a finite time."
     let ensureLive () = if cancelled then raise(ObjectDisposedException("Timeline"))
     let stopFrame () = generation <- generation + 1
     let cancel () =
         cancelled <- true
+        restorations.Clear()
         stopFrame()
         let mutable firstError : Exception option = None
         try clock.Cancel() with error -> firstError <- Some error
@@ -191,6 +194,8 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
                 cancel()
                 reraise()
 
+    do ScopeRegistration.register this.Revert
+
     /// <summary>Constructs an owned animation; work superseded before publication is disposed and returns None.</summary>
     /// <remarks>Once published, the child handle is returned even when a reset callback supersedes initialization or cancels it.</remarks>
     member internal this.TryAddOwned(construct:TimelineChildContext -> TimelinePreparedChild<'T> option,
@@ -200,7 +205,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         let offset=this.ResolvePosition(?position=position)-(if defaultArg zeroDuration false then 1e-11 else 0.)
         stopFrame()
         let expected=generation
-        let current()=expected=generation && not cancelled && ancestorLive()
+        let current()=expected=generation && not cancelled && ancestorLive() && ScopeRegistration.canConstruct()
         let attached=System.Collections.Generic.List<IDisposable>()
         let mutable published=false
         let attach (child:IDisposable) =
@@ -224,6 +229,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
                         if not(prepared.Commit()) || not(current()) then None
                         else
                             children.Add(TimelineEntry.OwnedAnimation(offset,prepared.Clock,prepared.RenderVersion))
+                            restorations.Add prepared.Restore
                             published<-true
                             for child in attached do pending.Remove child |> ignore
                             hasEntries<-true
@@ -269,8 +275,9 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         ensureLive()
         if Double.IsNaN milliseconds || milliseconds < 0. then invalidArg "milliseconds" "Expected nonnegative milliseconds."
         let offset = this.ResolvePosition(?position=position) - (if milliseconds <= 1e-11 then 1e-11 else 0.)
-        let child = new Timer(scheduler, milliseconds, ?options=options, ?onBegin=onBegin, ?onBeforeUpdate=onBeforeUpdate,
-                              ?onUpdate=onUpdate, ?onLoop=onLoop, ?onPause=onPause, ?onComplete=onComplete)
+        let child = ScopeRegistration.run ignore (fun () ->
+            new Timer(scheduler, milliseconds, ?options=options, ?onBegin=onBegin, ?onBeforeUpdate=onBeforeUpdate,
+                      ?onUpdate=onUpdate, ?onLoop=onLoop, ?onPause=onPause, ?onComplete=onComplete))
         try
             child.AttachToTimeline()
             addChild(TimelineEntry.OwnedTimer(offset,child))
@@ -336,7 +343,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
     /// <summary>Adds a numeric replace track sharing the supplied property's identity with sibling tracks.</summary>
     /// <remarks>
     /// Durations use source 12-place precision; positive values rounded to zero are rejected. Default easing is linear.
-    /// Adding a track pauses and resets controller time without dispatching property writes. Explicit from values bypass start capture.
+    /// Adding a track pauses and resets controller time without dispatching property writes. Originals are captured for Revert.
     /// </remarks>
     member this.Animate(property: NumericProperty, target: float, milliseconds: float, ?position: TimelinePosition,
                         ?ease: (float -> float), ?from: float, ?modifier: (float -> float)) =
@@ -363,11 +370,22 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
                 let result=action value
                 if permission() && not(Double.IsFinite result) then invalidArg name "Expected a finite value."
                 result
+            let mutable originalValue:float option=None
+            let captureOriginal()=
+                match originalValue with
+                | Some value -> value
+                | None ->
+                    let value=property.Value
+                    if current() then
+                        originalValue<-Some value
+                        animation.SetRestore(fun permission -> if permission() then property.Value<-value)
+                    value
+            if from.IsSome then captureOriginal() |> ignore
             let frame={FrameInput.Default with From=from |> Option.map ValueInterpolation.Number;To=Some(ValueInterpolation.Number target)}
             let properties=[|{FrameProperty.Target=0;Name="value";Original=ValueInterpolation.Number 0.;Frames=[|frame|];ConvertUnit=None}|]
             let defaults={FrameDefaults.Default with Duration=milliseconds;Ease=guarded "ease" (defaultArg ease id);Modifier=guarded "modifier" (defaultArg modifier id)}
             let options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=defaults.Ease;Modifier=defaults.Modifier;Precision=None}
-            let original _=match from with Some value -> ValueInterpolation.Number value | None -> ValueInterpolation.Number property.Value
+            let original _=ValueInterpolation.Number(captureOriginal())
             let prepared=TimelineKeyframeInstallation.scalar(context,animation,defaults,properties,[|struct(box property,"value")|],
                 (fun _ _ _ -> if current() then Some frame else None),original,(fun _ _ output -> property.Value<-output.Scalar.Value),
                 false,-1,options,current)
@@ -421,6 +439,13 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
     member _.IterationCurrentTime = clock.IterationCurrentTime
     /// <summary>Current signed source iteration index.</summary>
     member _.CurrentIteration = clock.CurrentIteration
+    /// <summary>Captures the shared clock's iteration, direction and scheduling anchor.</summary>
+    member internal _.CaptureScopeTime() = clock.CaptureScopeTime()
+    /// <summary>Restores iteration setters with child rendering, then the retained scheduling anchor.</summary>
+    member internal _.RestoreScopeTime(snapshot: ScopeClockSnapshot) =
+        ensureLive()
+        stopFrame()
+        externalControl(fun () -> clock.RestoreScopeTime snapshot)
     /// <summary>Whether a scheduled frame loop is active.</summary>
     member _.Playing = not clock.Paused
     /// <summary>Whether positive time has been sampled since reset.</summary>
@@ -478,6 +503,23 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         if not cancelled && generation = expected then this.Resume()
     /// <summary>Samples the end, retaining the timeline's reusable native lifetime.</summary>
     member this.Complete(?muteCallbacks: bool) = this.Seek(clock.Duration, ?muteCallbacks=muteCallbacks)
+    /// <summary>Rewinds, restores owned properties in reverse insertion order and cancels; repeated calls are harmless.</summary>
+    /// <remarks>Borrowed controllers rewind and retain their independent lifetime. Explicit cancellation closes restoration.</remarks>
+    member _.Revert() =
+        if not cancelled && not reverting then
+            reverting<-true
+            stopFrame()
+            let expected=generation
+            let current()=not cancelled && generation=expected && ancestorLive()
+            let actions=restorations.ToArray()
+            let mutable failure:exn option=None
+            let attempt action=try action() with error -> if failure.IsNone then failure<-Some error
+            attempt clock.RewindForRevert
+            for index=actions.Length-1 downto 0 do
+                if current() then attempt(fun () -> actions[index] current)
+            attempt cancel
+            reverting<-false
+            failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     /// <summary>Stops future writes and releases borrowed references.</summary>
     member _.Cancel() = cancel()
     interface IDisposable with member _.Dispose() = cancel()
@@ -523,6 +565,5 @@ and private TimelineCallState() =
 module Timeline =
     /// <summary>Registers terminal cancellation with the current Ranvier owner.</summary>
     let own (timeline: Timeline) =
-        let owner = Ranvier.Api.getOwner()
-        owner.Attach timeline
+        ScopeRegistration.attach timeline
         timeline

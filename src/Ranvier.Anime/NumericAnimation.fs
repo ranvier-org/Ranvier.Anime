@@ -18,6 +18,8 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
                       ?onComplete: NumericAnimation -> unit) as this =
     let ease = defaultArg ease id
     let options = defaultArg options PlaybackOptions.Default
+    let ownerAllowsWrite = ScopeRegistration.captureWriteGuard()
+    let mutable constructionAccepted = true
     let finite name value =
         if not(Double.IsFinite value) then invalidArg name "Expected a finite number."
     do
@@ -29,22 +31,34 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     let iterationDuration = PropertyNumbers.round 1e12 (if duration = 0. then 1e-11 else duration)
     do
         if iterationDuration = 0. then invalidArg "duration" "Positive duration rounds to zero at source timing precision."
+    do if not(ownerAllowsWrite()) then raise(ObjectDisposedException "Owner")
     let mutable first = read()
     do finite "read" first
+    let original = first
+    let mutable restorationActive = true
+    let mutable restorationGeneration = 0
+    let mutable reverting = false
+    let mutable completionAllowsRestoration = false
+    let closeRestoration () =
+        if restorationActive then
+            restorationActive <- false
+            restorationGeneration <- restorationGeneration + 1
     let mutable last = target
     let mutable tweenTime = 0.
     let mutable ancestorLive = fun () -> true
-    let clock = new Timer(scheduler, iterationDuration, options=options,
-                          onBegin=(fun _ -> onBegin |> Option.iter(fun callback -> callback this)),
-                          onBeforeUpdate=(fun _ -> onBeforeUpdate |> Option.iter(fun callback -> callback this)),
-                          onUpdate=(fun _ -> onUpdate |> Option.iter(fun callback -> callback this)),
-                          onLoop=(fun _ -> onLoop |> Option.iter(fun callback -> callback this)),
-                          onPause=(fun _ -> onPause |> Option.iter(fun callback -> callback this)),
-                          onComplete=(fun _ -> onComplete |> Option.iter(fun callback -> callback this)))
+    let notify callback =
+        if constructionAccepted && ownerAllowsWrite() then callback |> Option.iter(fun action -> action this)
+    let clock = ScopeRegistration.run ignore (fun () -> new Timer(scheduler, iterationDuration, options=options,
+                          onBegin=(fun _ -> notify onBegin),
+                          onBeforeUpdate=(fun _ -> notify onBeforeUpdate),
+                          onUpdate=(fun _ -> notify onUpdate),
+                          onLoop=(fun _ -> notify onLoop),
+                          onPause=(fun _ -> notify onPause),
+                          onComplete=(fun _ -> notify onComplete)))
     let render (sample: PlaybackSample) mode muted =
         let iterationDuration = clock.IterationDuration
         let expected = clock.Generation
-        let canWrite () = expected = clock.Generation && not clock.Cancelled && ancestorLive()
+        let canWrite () = expected = clock.Generation && not clock.Cancelled && ancestorLive() && constructionAccepted && ownerAllowsWrite()
         let delta = sample.AbsoluteTime - clock.PreviousAbsoluteTime
         let force = mode = PlaybackTickMode.Force || (if sample.Backwards then -delta else delta) >= 200.
         let absoluteTime = PropertyNumbers.round 1e12 (clock.Delay + sample.IterationTime)
@@ -61,6 +75,10 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
                     onRender |> Option.iter(fun callback -> callback this)
     do clock.ConfigureRenderer(render, ?totalDuration=(if iterationDuration = 1e-11 then Some 1e-11 else None),
                                onStretch=(fun scale -> tweenTime <- tweenTime*scale))
+    do clock.OnFault <- closeRestoration
+    do clock.OnCancel <- closeRestoration
+    do constructionAccepted <- ScopeRegistration.canConstruct() && ownerAllowsWrite()
+    do if constructionAccepted then ScopeRegistration.register this.Revert else this.Cancel()
 
     /// <summary>Accepts an unsigned whole-millisecond duration through the precise float clock.</summary>
     new(scheduler: FrameScheduler, read: unit -> float, write: float -> unit, target: float, duration: uint,
@@ -99,24 +117,57 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     /// <summary>Resets and resumes playback.</summary>
     member _.Restart() = clock.Restart()
     /// <summary>Samples the end and cancels unless a callback supersedes the operation.</summary>
-    member _.Complete(?muteCallbacks: bool) = clock.Complete(?muteCallbacks=muteCallbacks)
+    member _.Complete(?muteCallbacks: bool) =
+        completionAllowsRestoration <- false
+        try
+            clock.Complete(?muteCallbacks=muteCallbacks)
+            completionAllowsRestoration <- clock.Completed
+        with _ -> closeRestoration(); reraise()
     /// <summary>Stretches total duration and delay geometry while retaining the current property value and playhead.</summary>
     member _.Stretch(milliseconds:float) = clock.Stretch milliseconds
     /// <summary>Stretches total duration using unsigned whole milliseconds.</summary>
     member _.Stretch(milliseconds:uint) = clock.Stretch milliseconds
     /// <summary>Retained controller state for the internal animatable callback clock.</summary>
     member internal _.PlaybackClock=clock
+    /// <summary>Captures the shared timer's rounded iteration progress, direction policy and scheduling anchor.</summary>
+    member internal _.CaptureScopeTime() = clock.CaptureScopeTime()
+    /// <summary>Restores iteration setters and the original scheduling anchor through the shared timer.</summary>
+    member internal _.RestoreScopeTime(snapshot: ScopeClockSnapshot) =
+        if not constructionAccepted || not(ownerAllowsWrite()) then
+            this.Cancel()
+            raise(ObjectDisposedException "Owner")
+        clock.RestoreScopeTime snapshot
     /// <summary>Revives and resets the internal callback clock without replacing its identity.</summary>
     member internal _.ReviveReset()=clock.ReviveReset()
     /// <summary>Starts from the currently rendered value using the current iteration duration and repeat options.</summary>
     member _.Retarget(target: float) =
         if clock.Cancelled then raise(ObjectDisposedException(nameof NumericAnimation))
+        if not constructionAccepted || not(ownerAllowsWrite()) then
+            closeRestoration()
+            clock.Cancel()
+            raise(ObjectDisposedException "Owner")
         finite "target" target
         let value = read()
         finite "read" value
         clock.Rebase(fun () -> first <- value; last <- target; tweenTime <- 0.)
     /// <summary>Stops future writes; repeated cancellation is harmless.</summary>
-    member _.Cancel() = clock.Cancel()
+    member _.Cancel() = closeRestoration(); clock.Cancel()
+    /// <summary>Rewinds with muted callbacks and restores the immutable construction value, then cancels playback.</summary>
+    /// <remarks>Explicit cancellation closes restoration. Reentrant cancellation during rewind suppresses the final restoration write.</remarks>
+    member _.Revert() =
+        if restorationActive && not reverting && (not clock.Cancelled || completionAllowsRestoration) then
+            reverting <- true
+            let expected = restorationGeneration
+            let current () = restorationActive && restorationGeneration = expected && constructionAccepted && ownerAllowsWrite()
+            let mutable failure : exn option = None
+            let attempt action =
+                try action() with error -> if failure.IsNone then failure <- Some error
+            attempt clock.RewindForRevert
+            if current() then attempt(fun () -> write original)
+            closeRestoration()
+            attempt clock.Cancel
+            reverting <- false
+            failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     /// <summary>Last sampled time with source bounds and four-decimal precision.</summary>
     member _.CurrentTime = clock.CurrentTime
     /// <summary>Bounded directional time inside the current iteration.</summary>
@@ -145,7 +196,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     member _.Speed with get() = clock.Speed and set value = clock.Speed <- value
     /// <summary>Finite callback frame-rate setting, clamped to at least 1e-11.</summary>
     member _.Fps with get() = clock.Fps and set value = clock.Fps <- value
-    interface IDisposable with member _.Dispose() = clock.Cancel()
+    interface IDisposable with member _.Dispose() = this.Cancel()
 
 /// <summary>Numeric tweens with explicit scheduling and optional Ranvier ownership.</summary>
 [<RequireQualifiedAccess>]
@@ -170,5 +221,5 @@ module Animation =
         animateWith spring.Ease scheduler read write target spring.SettlingDuration
     /// <summary>Attaches a tween to the current Ranvier owner, which cancels it on disposal.</summary>
     let own (animation: NumericAnimation) =
-        Api.getOwner().Attach animation
+        ScopeRegistration.attach animation
         animation

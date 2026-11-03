@@ -27,7 +27,7 @@ let private build (root:Timeline) identity offset (frames:FrameInput array) comp
         context.Attach driver
         driver.Clock.OnCancel<-(fun () -> context.RemoveSiblings nodes)
         driver.Initialize(timelineChild=true,notifyConstruction=true,canWrite=context.CanWrite)
-        Some(TimelinePreparedChild(driver.Clock,(fun () -> driver.RenderVersion),transaction.Commit,driver))),
+        Some(TimelinePreparedChild(driver.Clock,(fun () -> driver.RenderVersion),transaction.Commit,driver,ignore))),
         position=TimelinePosition.At offset) |> Option.get
 
 let tests=testList "owned timeline factory transactions" [
@@ -41,7 +41,7 @@ let tests=testList "owned timeline factory transactions" [
             child.ConfigureRenderer(fun sample _ _ ->
                 if armed then armed<-false;root.Seek(25.,muteCallbacks=true)
                 if not child.InternalRender then value<-sample.IterationTime)
-            Some(TimelinePreparedChild(child,(fun () -> 0L),(fun () -> true),child)))
+            Some(TimelinePreparedChild(child,(fun () -> 0L),(fun () -> true),child,ignore)))
         Expect.isSome result "published child remains an owned root entry"
         Expect.equal (root.CurrentTime,result.Value.CurrentTime,value) (25.,25.,25.) "nested seek supersedes the outer cache reset"
         root.Cancel()
@@ -81,7 +81,7 @@ let tests=testList "owned timeline factory transactions" [
             root.Cancel()
             Expect.isTrue child.Cancelled "pending cancellation is synchronous"
             Expect.isFalse (context.CanWrite()) "later providers must stop"
-            Some(TimelinePreparedChild(child,(fun () -> 0L),(fun () -> failtest "cancelled commit"),child)))
+            Some(TimelinePreparedChild(child,(fun () -> 0L),(fun () -> failtest "cancelled commit"),child,ignore)))
         Expect.isNone result "cancelled child is not published"
 
     testCase "a parent seek supersedes construction without cancelling the parent or its time" <| fun _ ->
@@ -93,7 +93,7 @@ let tests=testList "owned timeline factory transactions" [
             let child=attachTimer context
             pending<-Some child
             root.Seek(25.,muteCallbacks=true)
-            Some(TimelinePreparedChild(child,(fun () -> 0L),(fun () -> failtest "superseded commit"),child)))
+            Some(TimelinePreparedChild(child,(fun () -> 0L),(fun () -> failtest "superseded commit"),child,ignore)))
         Expect.isNone result "superseded construction not published"
         Expect.isTrue pending.Value.Cancelled "pending lifetime released"
         Expect.isFalse root.Cancelled "nested control remains reusable"
@@ -119,7 +119,7 @@ let tests=testList "owned timeline factory transactions" [
         let result=root.TryAddOwned(fun context ->
             let child=attachTimer context
             pending<-Some child
-            Some(TimelinePreparedChild(child,(fun () -> 0L),(fun () -> false),child)))
+            Some(TimelinePreparedChild(child,(fun () -> 0L),(fun () -> false),child,ignore)))
         Expect.isNone result "stale sibling transaction rejected"
         Expect.isTrue pending.Value.Cancelled "unpublished child disposed"
         Expect.isFalse prior.Cancelled "existing child retained"
@@ -152,7 +152,7 @@ let tests=testList "owned timeline factory transactions" [
             let child=attachTimer context
             owner.Dispose()
             Expect.isTrue child.Cancelled "actual owner interrupts pending child"
-            Some(TimelinePreparedChild(child,(fun () -> 0L),(fun () -> failtest "owner-disposed commit"),child)))
+            Some(TimelinePreparedChild(child,(fun () -> 0L),(fun () -> failtest "owner-disposed commit"),child,ignore)))
         Expect.isNone result "owner-disposed generation cannot publish"
 
     testCase "cancelled child attach is disposed instead of retained" <| fun _ ->
