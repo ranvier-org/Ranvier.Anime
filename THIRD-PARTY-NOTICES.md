@@ -10,6 +10,8 @@ Timeline iteration/child traversal in `src/Ranvier.Anime/Timeline.fs` and scalar
 
 Endpoint decomposition, homogenization and scalar/color/compound interpolation in `src/Ranvier.Anime/ValueInterpolation.fs` derive from the pinned core values, colors, helpers, render and animation code.
 
+Contextual conversion in `src/Ranvier.Anime/CssUnits.fs` follows the pinned core units code's angle ratios and clone measurement procedure, with scoped cleanup and per-element construction measurements.
+
 The easing formulas retain Anime.js's credit to Robert Penner, Copyright (c) 2001 Robert Penner, from https://robertpenner.com/easing/.
 The cubic Bezier solver retains Anime.js's credit to https://github.com/gre/bezier-easing, Copyright (c) 2014 Gaëtan Renaudeau.
 These credits are preserved in the ported source as well as this notice.

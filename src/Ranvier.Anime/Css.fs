@@ -62,11 +62,7 @@ module CssAnimation =
     let customProperty scheduler style variable first last duration =
         customPropertyWithOptions PlaybackOptions.Default scheduler style variable first last duration
 
-    /// <summary>Starts source-compatible declaration playback with precise milliseconds and explicit interpolation/callback options.</summary>
-    /// <remarks>Endpoints must name one property. Scalar endpoint units must match.
-    /// Color syntax and compound templates follow the source without contextual conversion.
-    /// Retains inline importance; an important endpoint requests importance throughout. The returned Timer owns cancellation.</remarks>
-    let declarationPreciseWith (options:DeclarationAnimationOptions) (scheduler:FrameScheduler) (style:CSSStyleDeclaration)
+    let private declarationUsing convertUnit (options:DeclarationAnimationOptions) (scheduler:FrameScheduler) (style:CSSStyleDeclaration)
                                (first:Declaration) (last:Declaration) (duration:float) =
         if isNull(box options) then nullArg "options"
         if isNull(box options.Playback) then invalidArg "options" "Playback settings are required."
@@ -87,12 +83,18 @@ module CssAnimation =
             | _ -> invalidArg "options" "Precision exceeds the finite decimal scale."
         let name=Declaration.name first
         if String.IsNullOrWhiteSpace name || name<>Declaration.name last then invalidArg "last" "Endpoints must name one nonempty property."
-        let original=style.getPropertyValue name
-        let interpolate=ValueInterpolation.prepareCss (ValueInterpolation.Text original)
-                            (ValueInterpolation.Text(Declaration.value first)) (ValueInterpolation.Text(Declaration.value last))
-        let important=Declaration.isImportant first || Declaration.isImportant last || style.getPropertyPriority name="important"
         let iterationDuration=PropertyNumbers.round 1e12 (if duration=0. then 1e-11 else duration)
         if iterationDuration=0. then invalidArg "duration" "Positive duration rounds to zero at source timing precision."
+        let original=style.getPropertyValue name
+        let interpolate : float -> int -> (float -> float) -> (unit -> bool) -> ValueInterpolation.Output option =
+            match convertUnit with
+            | None ->
+                ValueInterpolation.prepareCss (ValueInterpolation.Text original)
+                    (ValueInterpolation.Text(Declaration.value first)) (ValueInterpolation.Text(Declaration.value last))
+            | Some convert ->
+                ValueInterpolation.prepareCssWith convert (ValueInterpolation.Text original)
+                    (ValueInterpolation.Text(Declaration.value first)) (ValueInterpolation.Text(Declaration.value last))
+        let important=Declaration.isImportant first || Declaration.isImportant last || style.getPropertyPriority name="important"
         let mutable tweenTime=0.
         let clock=new Timer(scheduler,iterationDuration,options=options.Playback,
                             onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onUpdate=options.OnUpdate,
@@ -124,6 +126,13 @@ module CssAnimation =
             (clock:>IDisposable).Dispose()
             reraise()
 
+    /// <summary>Starts source-compatible declaration playback with precise milliseconds and explicit interpolation/callback options.</summary>
+    /// <remarks>Endpoints must name one property. Scalar endpoint units must match.
+    /// Color syntax and compound templates follow the source without contextual conversion.
+    /// Retains inline importance; an important endpoint requests importance throughout. The returned Timer owns cancellation.</remarks>
+    let declarationPreciseWith options scheduler style first last duration =
+        declarationUsing None options scheduler style first last duration
+
     /// <summary>Starts declaration playback with unsigned whole milliseconds and explicit interpolation/callback options.</summary>
     let declarationWith options scheduler style first last (duration:uint) =
         declarationPreciseWith options scheduler style first last (float duration)
@@ -135,3 +144,23 @@ module CssAnimation =
     /// <summary>Starts linear declaration playback with unsigned whole milliseconds and default options.</summary>
     let declaration scheduler style first last (duration:uint) =
         declarationWith DeclarationAnimationOptions.Default scheduler style first last duration
+
+    /// <summary>Starts precise declaration playback using the target element's scalar unit context.</summary>
+    /// <remarks>Measures a shallow clone at construction and removes it before rendering; no per-frame measurements or cross-context cache.
+    /// Common source angles use direct ratios. Modern color resolution remains outside this adapter.</remarks>
+    let declarationOnPreciseWith options scheduler (element:HTMLElement) first last duration =
+        if isNull(box element) then nullArg "element"
+        let style=(element:>ElementCSSInlineStyle).style
+        declarationUsing (Some(CssUnits.convert element)) options scheduler style first last duration
+
+    /// <summary>Starts element-context declaration playback with unsigned whole milliseconds and explicit options.</summary>
+    let declarationOnWith options scheduler element first last (duration:uint) =
+        declarationOnPreciseWith options scheduler element first last (float duration)
+
+    /// <summary>Starts linear element-context declaration playback with precise milliseconds.</summary>
+    let declarationOnPrecise scheduler element first last duration =
+        declarationOnPreciseWith DeclarationAnimationOptions.Default scheduler element first last duration
+
+    /// <summary>Starts linear element-context declaration playback with unsigned whole milliseconds.</summary>
+    let declarationOn scheduler element first last (duration:uint) =
+        declarationOnWith DeclarationAnimationOptions.Default scheduler element first last duration

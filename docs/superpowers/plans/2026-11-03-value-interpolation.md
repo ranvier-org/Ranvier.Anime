@@ -13,7 +13,8 @@ Public CSS authoring reuses Ranvier.Css.Declaration/Value and native CSS service
 - [x] Capture clean pinned-source animation outputs and decomposition data for colors/units/compound values/relative operators, including precision, overshoot, component modifiers and generated cases.
 - [x] Reproduce placeholder failures in SageFs; port and prove the internal interpolation kernel, including source edge cases and reentrant modifier guards.
 - [x] Integrate explicit source-literal declaration interpolation and shared Timer playback; preserve priority, ownership and callback cancellation.
-- [ ] Add contextual color/unit normalization after verifying the native API. Keep the supported endpoint contract explicit until then.
+- [x] Add HTML scalar-unit normalization through verified native clone/measurement APIs; see contextual-units plan.
+- [ ] Add contextual color normalization and SVG-specific unit contexts. Keep supported endpoints explicit.
 - [x] Run complete normal/Traced suites, XML audit, source regeneration and one scoped review for the implemented adapter; qualify it with fresh public-cohort JIT/NativeAOT evidence. Maintain both solutions and full parity inventory.
 
 Reconnaissance: RuntimeApi exposes renderValue/tryNumericValue, not color channels. Declaration.name/value/isImportant are available through DeclarationModule. Native ComputedStyleService.Get, StyleValueService.Parse/ParseAll and StyleMapService.Computed exist; there is no Window type in the inspected DOM assembly. FCS external project resolution remains unknown, so real loaded assembly inspection and SageFs type checks supply bounded API evidence. The coordinator's source-only answer below confirms the boundary.

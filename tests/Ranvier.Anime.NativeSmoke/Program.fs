@@ -161,6 +161,60 @@ let main args =
         require "native declaration owner cancellation interrupts component modifiers"
             (modifierCalls = 1 && declarationUpdates = 0 && style.getPropertyValue "transform" = retainedTransform)
         declarationOwner.Dispose()
+        let unitParent=host.Document.createElement "div":?>HTMLElement
+        host.Document.body.appendChild unitParent |> ignore
+        let unitParentStyle=(unitParent:>ElementCSSInlineStyle).style
+        unitParentStyle.setProperty("width","400px")
+        let unitFirst=host.Document.createElement "div":?>HTMLElement
+        let unitSecond=host.Document.createElement "div":?>HTMLElement
+        unitParent.appendChild unitFirst |> ignore
+        unitParent.appendChild unitSecond |> ignore
+        let unitFirstStyle=(unitFirst:>ElementCSSInlineStyle).style
+        let unitSecondStyle=(unitSecond:>ElementCSSInlineStyle).style
+        unitFirstStyle.setProperty("font-size","16px")
+        unitSecondStyle.setProperty("font-size","32px")
+        unitFirstStyle.setProperty("width","7px",priority="important")
+        use emFirst=CssAnimation.declarationOn scheduler unitFirst
+                        (Ranvier.Css.Css.width(Ranvier.Css.Css.em 1.)) (Ranvier.Css.Css.width(Ranvier.Css.Css.px 100.)) 100u
+        require "native unit context resolves em and retains priority"
+            (unitFirstStyle.getPropertyValue "width"="16px" && unitFirstStyle.getPropertyPriority "width"="important")
+        emFirst.Seek 50.
+        require "native contextual em interpolation drives layout" (abs(unitFirst.getBoundingClientRect().width-58.)<0.02)
+        emFirst.Cancel()
+        use emSecond=CssAnimation.declarationOn scheduler unitSecond
+                        (Ranvier.Css.Css.width(Ranvier.Css.Css.em 1.)) (Ranvier.Css.Css.width(Ranvier.Css.Css.px 100.)) 100u
+        require "native unit contexts do not share stale font ratios" (unitSecondStyle.getPropertyValue "width"="32px")
+        emSecond.Cancel()
+        use percentWidth=CssAnimation.declarationOn scheduler unitFirst
+                            (Ranvier.Css.Css.width(Ranvier.Css.Css.px 40.)) (Ranvier.Css.Css.width(Ranvier.Css.Css.percent 50.)) 100u
+        percentWidth.Seek 50.
+        require "native unit context resolves containing-block percentages"
+            (unitFirstStyle.getPropertyValue "width"="30%" && abs(unitFirst.getBoundingClientRect().width-120.)<0.02)
+        percentWidth.Cancel()
+        use physicalWidth=CssAnimation.declarationOn scheduler unitFirst
+                            (Ranvier.Css.Css.width(Ranvier.Css.Css.cm 1.)) (Ranvier.Css.Css.width(Ranvier.Css.Css.px 100.)) 100u
+        require "native unit context retains source integer baseline measurements"
+            (unitFirstStyle.getPropertyValue "width"="37.8px")
+        physicalWidth.Cancel()
+        let rootElement=host.Document.documentElement:?>HTMLElement
+        let rootStyle=(rootElement:>ElementCSSInlineStyle).style
+        let priorRootFont=rootStyle.getPropertyValue "font-size"
+        let priorRootPriority=rootStyle.getPropertyPriority "font-size"
+        try
+            rootStyle.setProperty("font-size","20px")
+            use remWidth=CssAnimation.declarationOn scheduler unitFirst
+                            (Ranvier.Css.Css.width(Ranvier.Css.Css.rem 1.)) (Ranvier.Css.Css.width(Ranvier.Css.Css.px 100.)) 100u
+            require "native unit context resolves root-relative lengths" (unitFirstStyle.getPropertyValue "width"="20px")
+            remWidth.Cancel()
+        finally
+            if priorRootFont="" then rootStyle.removeProperty "font-size" |> ignore
+            else rootStyle.setProperty("font-size",priorRootFont,priority=priorRootPriority)
+        use angle=CssAnimation.declarationOn scheduler unitSecond
+                    (Ranvier.Css.Css.rotate(Ranvier.Css.Css.turn 0.5)) (Ranvier.Css.Css.rotate(Ranvier.Css.Css.deg 270.)) 100u
+        angle.Seek 50.
+        require "native unit context converts angles without length probes" (unitSecondStyle.getPropertyValue "rotate"="225deg")
+        angle.Cancel()
+        require "native unit conversion removes all temporary clones" (unitParent.childNodes.length=2u)
         let mutable writes = 0
         let owner, signal = Api.createRoot(fun owner ->
             let signal = Api.createSignal 0.

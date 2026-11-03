@@ -18,6 +18,7 @@
     <Compile Include="TimelinePosition.fs" />
     <Compile Include="Timeline.fs" />
     <Compile Include="Reactive.fs" />
+    <Compile Include="CssUnits.fs" />
     <Compile Include="Css.fs" />
   </ItemGroup>
   <ItemGroup>

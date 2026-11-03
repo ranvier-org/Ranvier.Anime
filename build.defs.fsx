@@ -419,10 +419,17 @@ let root = Command.root {
             }
         }
     }
+    command "unit-reference" {
+        stage "upstream unit conversion reference" {
+            workingDir __SOURCE_DIRECTORY__
+            run "rtk node tools/unit-conversion.mjs"
+        }
+    }
     command "value-reference" {
         stage "upstream value interpolation reference" {
             workingDir __SOURCE_DIRECTORY__
             run "rtk node tools/value-interpolation.mjs"
+            run "rtk node tools/unit-conversion.mjs"
         }
     }
     command "easing-reference" {

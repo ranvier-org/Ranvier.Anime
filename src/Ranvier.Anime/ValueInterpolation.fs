@@ -150,7 +150,7 @@ module internal ValueInterpolation =
                         let components=digitsPattern.Matches text |> Seq.cast<Match> |> Seq.map(fun item -> parse item.Value) |> Seq.toArray
                         {scalar 0. with Kind=ValueKind.Complex;Components=components;Strings=digitsPattern.Split text}
     let private relative first last op = match op with '-' -> first-last | '+' -> first+last | _ -> first*last
-    let private prepareWith roundNumbers original first last =
+    let private prepareWith roundNumbers (convertUnit:(float -> string -> string -> float) option) original first last =
         let mutable first=decompose first
         let mutable last=decompose last
         match first.Operator with Some op -> first<-{first with Number=relative (decompose original).Number first.Number op} | None -> ()
@@ -166,7 +166,18 @@ module internal ValueInterpolation =
             elif first.Kind=ValueKind.Color || last.Kind=ValueKind.Color then
                 if first.Kind=ValueKind.Color then last<-{last with Kind=ValueKind.Color;Components=Array.zeroCreate 4}
                 else first<-{first with Kind=ValueKind.Color;Components=Array.zeroCreate 4}
-        if first.Unit<>last.Unit then invalidArg "last" "Endpoint units require native conversion."
+        if first.Unit<>last.Unit then
+            match convertUnit with
+            | None -> invalidArg "last" "Endpoint units require native conversion."
+            | Some convert ->
+                if not(String.IsNullOrEmpty last.Unit) then
+                    let value=convert first.Number first.Unit last.Unit
+                    finite "converted value" value
+                    first<-{first with Number=value;Unit=last.Unit}
+                else
+                    let value=convert last.Number last.Unit first.Unit
+                    finite "converted value" value
+                    last<-{last with Number=value;Unit=first.Unit}
         if first.Components.Length<>last.Components.Length then
             let longest=if first.Components.Length>last.Components.Length then first else last
             let fill value={value with Components=Array.init longest.Components.Length (fun i -> if i<value.Components.Length then value.Components[i] else 0.);Strings=Array.copy longest.Strings}
@@ -209,7 +220,10 @@ module internal ValueInterpolation =
                     Some {Scalar=None;Text=text;Components=values}
 
     /// <summary>Captures object endpoints and returns a guarded sampler; differing units require native conversion.</summary>
-    let prepare original first last = prepareWith false original first last
+    let prepare original first last = prepareWith false None original first last
 
     /// <summary>Captures CSS endpoints, rounding intermediate unitless scalars before modifiers as source CSS dispatch does.</summary>
-    let prepareCss original first last = prepareWith true original first last
+    let prepareCss original first last = prepareWith true None original first last
+
+    /// <summary>Converts differing scalar unit metadata after source relative operators and endpoint homogenization.</summary>
+    let prepareCssWith convertUnit original first last = prepareWith true (Some convertUnit) original first last

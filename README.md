@@ -2,7 +2,7 @@
 
 Native F# Anime.js port in progress. Working home: `C:/wk/ranvier-anime`.
 
-Current full suites pass1246/1246 normal Release and Traced Debug. Typed declaration playback now connects scalar/unit, source colors and compound interpolation to the shared Timer. Fresh public CPU JIT and strict NativeAOT PEs pass; [declaration evidence](docs/evidence/native-public45-p7-declarations.json) binds the current source. Contextual color/unit normalization and the wider parity inventory remain open.
+Current full suites pass1275/1275 normal Release and Traced Debug. Typed declaration playback connects scalar/unit, source colors and compound interpolation to the shared Timer; element-context factories now resolve differing scalar units through native layout. Fresh public CPU JIT and strict NativeAOT PEs pass; [unit evidence](docs/evidence/native-public45-p7-units.json) binds the current source. Modern colors, SVG-specific contexts and the wider parity inventory remain open.
 
 Inside a Ranvier owner, animate existing typed declarations and attach the returned timer:
 
@@ -14,11 +14,21 @@ CssAnimation.declaration scheduler style
 
 `declarationPrecise` accepts fractional float milliseconds. `declarationWith` and `declarationPreciseWith` accept `DeclarationAnimationOptions` for easing, component modifiers, precision, repeat/direction/speed and Timer callbacks. Priority is retained. Scalar endpoint units must match; compound templates follow Anime.js rules without contextual conversion. The legacy color/compound literal behavior is covered, rather than treating every valid CSS expression as safely interpolable.
 
+Use the HTML element-context variant for differing scalar units, on the element and scheduler's owning host thread:
+
+```fsharp
+CssAnimation.declarationOn scheduler element
+    (Css.width (Css.em 1.)) (Css.width (Css.px 100.)) 250u
+|> Timer.own
+```
+
+`declarationOnPrecise`, `declarationOnWith` and `declarationOnPreciseWith` retain the same duration/options choices. Conversion measures a shallow clone once at construction and removes it before rendering; frames use captured endpoints. Separate font/layout contexts do not reuse Anime.js's global conversion cache. The source's integer width measurements and zero-width fallback remain observable. Common source angles use direct ratios; angle/length mixing is rejected.
+
 `Ease.linear [| LinearStop.Value 0.; LinearStop.At(1.5, 0.5); LinearStop.Value 1. |]` retains overshoot and uses normalized positions. Stops keep authored order; repeated positions may produce nonfinite results as upstream does. Empty input is identity and one value is constant. `Ease.irregular 10u 1.` captures a random monotonic curve once; `Ease.irregularWith draw 10u 1.` injects finite [0,1) draws for reproducibility. Sampling never draws again. Counts0–2 yield the two endpoints. Finite signed randomness is supported.
 
 Open `Ranvier.Anime.slnx` in Rider. It contains the library and test project and will be updated as projects are added.
 
-`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. The timer/numeric/timeline/declaration source passes normal and Traced JIT and strict NativeAOT PE execution against the fully public Core/DOM alpha.56, CSS alpha.2, View45 and NativeP7 CPU cohort. Nine managed package identities and all24 native members are verified against independent package audits. This qualifies the Windows headless CPU smoke; hardware acceleration and broader native feature coverage remain open. See [current public cohort evidence](docs/evidence/native-public45-p7-declarations.json) and [native integration scope](docs/native-integration.md).
+`Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe. The timer/numeric/timeline/declaration/context-unit source passes normal and Traced JIT and strict NativeAOT PE execution against the fully public Core/DOM alpha.56, CSS alpha.2, View45 and NativeP7 CPU cohort. Nine managed package identities and all24 native members are verified against independent package audits. This qualifies the Windows headless CPU smoke; hardware acceleration and broader native feature coverage remain open. See [current public cohort evidence](docs/evidence/native-public45-p7-units.json) and [native integration scope](docs/native-integration.md).
 
 Project operations use Partas.Build 0.8.2 from the public Cloudsmith feed configured in `nuget.config`:
 
@@ -37,7 +47,7 @@ build ["test"]
 
 The command tree is shared with the CLI and returns a structured `RunResult`. Reload the definitions and rebind `build` after editing them. Load the definitions rather than the CLI shim, whose final line exits the process.
 
-The foundation supports numeric scheduling, easing, springs, staggering, nested timelines, callback tracks, scalar replace composition and sets, pause/resume, seek, retargeting, cancellation, Ranvier ownership and reactive drive. Typed CSS custom-property animations accept existing numeric values with matching units. All 1246 tests pass in normal Release and Traced Debug; XML documentation audit reports zero findings. Easing comparisons cover 46 upstream default names and three original curves at nine sample points each, plus158 curve/domain fixtures at18 points each. Interpolation adds138 decomposition,137 object and137 CSS composition fixtures at11 progress values, with number formatting and interruption checks. Spring fixtures cover twelve constructor cases, six sequential parameter changes and numeric runner integration. Stagger fixtures cover 67 numeric/geometry/random distributions and seven unit distributions. Timeline references cover 29 positions, three synchronized-child traces, seven staggered-position cases, six callback traces, two nested-controller traces and 56 property schedules. Full Anime.js parity and broader native coverage remain in progress. Direct dependencies reuse Ranvier, Ranvier.Dom, Ranvier.Css and Ranvier.Css.Dom; no replacement CSS or scheduler contract is introduced.
+The foundation supports numeric scheduling, easing, springs, staggering, nested timelines, callback tracks, scalar replace composition and sets, pause/resume, seek, retargeting, cancellation, Ranvier ownership and reactive drive. Typed CSS custom-property animations accept existing numeric values with matching units. All 1275 tests pass in normal Release and Traced Debug; XML documentation audit reports zero findings. Easing comparisons cover 46 upstream default names and three original curves at nine sample points each, plus158 curve/domain fixtures at18 points each. Interpolation adds138 decomposition,137 object and137 CSS composition fixtures at11 progress values, with number formatting and interruption checks. Contextual units add16 conversion and six source animation fixtures plus cleanup/cache/frame checks. Spring fixtures cover twelve constructor cases, six sequential parameter changes and numeric runner integration. Stagger fixtures cover 67 numeric/geometry/random distributions and seven unit distributions. Timeline references cover 29 positions, three synchronized-child traces, seven staggered-position cases, six callback traces, two nested-controller traces and 56 property schedules. Full Anime.js parity and broader native coverage remain in progress. Direct dependencies reuse Ranvier, Ranvier.Dom, Ranvier.Css and Ranvier.Css.Dom; no replacement CSS or scheduler contract is introduced.
 
 The playback timing kernel matches 55 source timer traces and 929 samples exactly, including repeat gaps, reversal/alternation, signed delay, skipped/forced samples and zero/fractional/infinite/overflow cases. Standalone controls match 51 traces, and scheduled timers match 18 admitted-frame traces. Numeric animations share that clock and match 46 source traces of property values, callbacks and state, including 24 generated schedules and signed-gap/int32 boundaries. Seven state, eleven scheduler/lifetime and three numeric interruption tests cover cancellation and validation.
 
