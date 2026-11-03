@@ -42,6 +42,8 @@
     <Compile Include="TimelineCssSequenceSourceTests.fs" />
     <Compile Include="TimelineSequenceContractTests.fs" />
     <Compile Include="TimelineNumericKeyframeSourceTests.fs" />
+    <Compile Include="TimelineMixedKeyframeSourceTests.fs" />
+    <Compile Include="TimelineMixedContractTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -66,5 +68,6 @@
     <None Include="../reference/timeline-playback.json" Link="reference/timeline-playback.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timeline-keyframes.json" Link="reference/timeline-keyframes.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timeline-css-keyframes.json" Link="reference/timeline-css-keyframes.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-mixed-keyframes.json" Link="reference/timeline-mixed-keyframes.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

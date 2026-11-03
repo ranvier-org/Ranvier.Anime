@@ -6,16 +6,18 @@ open Ranvier.Dom
 open Ranvier.Anime.ValueInterpolation
 
 /// <summary>A paused compiled keyframe sequence using the shared timer, ordered guarded writes and per-frame history.</summary>
-/// <remarks>Initialize explicitly. Optional shared siblings provide same-timeline replacement; precise geometry uses milliseconds.</remarks>
+/// <remarks>Initialize explicitly. Shared siblings provide same-timeline replacement; precise geometry uses milliseconds.
+/// Finite scalar interpolation preserves finite endpoints when their difference overflows.</remarks>
 type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,write:int -> string -> Output -> unit,
                                replace:bool,roundNumbers:bool,precision:int,options:PlaybackOptions,
                                ?onBegin:Timer -> unit,?onBeforeUpdate:Timer -> unit,?onRender:Timer -> unit,
                                ?onUpdate:Timer -> unit,?onLoop:Timer -> unit,?onPause:Timer -> unit,?onComplete:Timer -> unit,
-                               ?siblings:FrameSibling array) =
+                               ?siblings:FrameSibling array,?finiteScalar:bool) =
     do
         if isNull(box program) then nullArg "program"
         if isNull(box write) then nullArg "write"
         if precision < -1 || precision>308 then invalidArg "precision" "Expected disabled rounding or at most 308 decimal places."
+    let finiteScalar=defaultArg finiteScalar false
     let definitions=Array.copy program.Tweens
     let frames=
         match siblings with
@@ -83,7 +85,12 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                     let progress=definition.Ease(frame.Time/frame.Update)
                     alive<-current()
                     if alive then
-                        match ValueInterpolation.sample(roundNumbers,definition.First,definition.Last,progress,precision,definition.Modifier,current) with
+                        let output=
+                            if finiteScalar then
+                                let value=definition.Modifier(PropertyNumbers.interpolate definition.First.Number definition.Last.Number progress)
+                                if current() then Some(struct(value,ValueInterpolation.compose(definition.First,value,[||]))) else None
+                            else ValueInterpolation.sample(roundNumbers,definition.First,definition.Last,progress,precision,definition.Modifier,current)
+                        match output with
                         | Some struct(_,output) when current() ->
                             frame.Value<-output
                             if not clock.InternalRender then

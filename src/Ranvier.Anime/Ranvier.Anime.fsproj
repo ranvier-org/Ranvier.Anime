@@ -20,12 +20,14 @@
     <Compile Include="PlaybackState.fs" />
     <Compile Include="Timer.fs" />
     <Compile Include="KeyframePlayback.fs" />
+    <Compile Include="KeyframeAnimation.fs" />
     <Compile Include="AnimatableTrack.fs" />
     <Compile Include="NumericAnimation.fs" />
     <Compile Include="AnimatableFrames.fs" />
     <Compile Include="AnimatableGroup.fs" />
     <Compile Include="Animatable.fs" />
     <Compile Include="TimelinePosition.fs" />
+    <Compile Include="TimelineConstruction.fs" />
     <Compile Include="Timeline.fs" />
     <Compile Include="Reactive.fs" />
     <Compile Include="CssUnits.fs" />

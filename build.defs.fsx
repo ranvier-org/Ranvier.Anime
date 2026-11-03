@@ -419,6 +419,24 @@ let root = Command.root {
             }
         }
     }
+    command "lane-reference" {
+        description "Run a parallel port lane's source oracle"
+        input {
+            let! script = Input.option<string> "--script" |> Input.def ""
+            return stage "parallel lane source reference" {
+                workingDir __SOURCE_DIRECTORY__
+                envVars [("RANVIER_ANIME_ROOT", __SOURCE_DIRECTORY__)]
+                run (fun _ ->
+                    if System.String.IsNullOrWhiteSpace script then invalidArg "--script" "Supply a lane oracle script."
+                    let path=System.IO.Path.GetFullPath script
+                    let root=System.IO.Path.GetFullPath("C:/wk/ranvier-anime-lanes")+System.IO.Path.DirectorySeparatorChar.ToString()
+                    if not(path.StartsWith(root,System.StringComparison.OrdinalIgnoreCase)) ||
+                       System.IO.Path.GetExtension(path)<>".mjs" || not(System.IO.File.Exists path) then
+                        invalidArg "--script" "Expected an existing .mjs file inside the parallel lane directory.")
+                run (nativeCommand ["node"; script])
+            }
+        }
+    }
     command "animatable-reference" {
         stage "upstream animatable reference" {
             workingDir __SOURCE_DIRECTORY__
@@ -468,6 +486,7 @@ let root = Command.root {
             workingDir __SOURCE_DIRECTORY__
             run "rtk node tools/timeline-keyframes.mjs"
             run "rtk node tools/timeline-css-keyframes.mjs"
+            run "rtk node tools/timeline-mixed-keyframes.mjs"
         }
     }
     command "unit-reference" {
@@ -510,6 +529,7 @@ let root = Command.root {
             run "rtk node tools/keyframe-sequences.mjs"
             run "rtk node tools/timeline-keyframes.mjs"
             run "rtk node tools/timeline-css-keyframes.mjs"
+            run "rtk node tools/timeline-mixed-keyframes.mjs"
         }
     }
 }

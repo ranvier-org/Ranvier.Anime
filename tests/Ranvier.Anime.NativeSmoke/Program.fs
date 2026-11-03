@@ -42,6 +42,94 @@ let main args =
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
         do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            let property=NumericProperty((fun () -> target.getBoundingClientRect().width),
+                (fun value -> StyleDeclaration.apply inlineStyle (Css.width(Css.px value))))
+            let mutable renders=0
+            use timeline=new Timeline(scheduler,onRender=(fun _ -> renders<-renders+1))
+            owner.Attach timeline
+            timeline.Animate(property,100.,100u,from=0.,position=TimelinePosition.At 0.) |> ignore
+            use child=timeline.AddKeyframes(property,[|Keyframe.toValue 200.;Keyframe.toValue 300.|],duration=200u,
+                position=TimelinePosition.At 50.,options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id;Precision=None})
+            require "mixed scalar-first construction leaves native geometry untouched" (target.getBoundingClientRect().width=10. && renders=0)
+            timeline.Seek 100.
+            require "owned keyframes inherit the sampled native scalar predecessor and notify one root render"
+                (target.getBoundingClientRect().width=125. && renders=1)
+            timeline.Seek(25.,muteCallbacks=true)
+            require "mixed scalar-first native playback recovers backward with inherited muting"
+                (target.getBoundingClientRect().width=25. && renders=1)
+            child.Revert()
+            require "mixed keyframe revert preserves its native preconstruction snapshot" (target.getBoundingClientRect().width=10.)
+            owner.Dispose()
+            host.Cycle(milliseconds=100)
+            host.Frame()
+            require "actual owner closes mixed native scalar and keyframe scheduling"
+                (timeline.Cancelled && child.Cancelled && target.getBoundingClientRect().width=10.)
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            let property=NumericProperty((fun () -> target.getBoundingClientRect().width),
+                (fun value -> StyleDeclaration.apply inlineStyle (Css.width(Css.px value))))
+            use timeline=new Timeline(scheduler)
+            use child=timeline.AddKeyframes(property,Keyframe.values [|0.;100.;200.|],duration=200u,
+                position=TimelinePosition.At 0.,options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id;Precision=None})
+            timeline.Animate(property,400.,100u,position=TimelinePosition.At 75.) |> ignore
+            require "mixed keyframe-first scalar construction remains cache-only" (target.getBoundingClientRect().width=10.)
+            timeline.Seek 125.
+            require "scalar facade inherits sampled native keyframe predecessor through shared siblings"
+                (target.getBoundingClientRect().width=237.5)
+            timeline.Set(property,500.,position=TimelinePosition.At 125.) |> ignore
+            require "mixed native set construction preserves the current target" (target.getBoundingClientRect().width=237.5)
+            timeline.Seek 125.
+            require "mixed native set arbitrates scalar and keyframe predecessors" (target.getBoundingClientRect().width=500.)
+            timeline.Seek(25.,muteCallbacks=true)
+            require "mixed native set and scalar takeover retain earlier keyframe recovery" (target.getBoundingClientRect().width=25.)
+            timeline.Cancel()
+            host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            inlineStyle.setProperty("height","20px")
+            let mutable writes=0
+            let width=NumericProperty((fun () -> target.getBoundingClientRect().width),
+                (fun value -> writes<-writes+1;StyleDeclaration.apply inlineStyle (Css.width(Css.px value))))
+            let height=NumericProperty((fun () -> target.getBoundingClientRect().height),
+                (fun value -> writes<-writes+1;StyleDeclaration.apply inlineStyle (Css.height(Css.px value))))
+            let mutable armed=false
+            use timeline=new Timeline(scheduler)
+            owner.Attach timeline
+            timeline.Animate(width,100.,100u,from=0.,position=TimelinePosition.At 0.,
+                modifier=(fun value -> if armed then owner.Dispose();Double.NaN else value)) |> ignore
+            use child=timeline.AddKeyframes(height,Keyframe.values [|0.;200.|],duration=100u,
+                position=TimelinePosition.At 0.,options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id;Precision=None})
+            armed<-true
+            timeline.Resume()
+            pumpUntil host (fun () -> timeline.Cancelled)
+            require "native scalar modifier owner disposal suppresses invalid output and later keyframe dispatch"
+                (writes=0 && child.Cancelled && target.getBoundingClientRect().width=10. && target.getBoundingClientRect().height=20.)
+            host.Document.body.removeChild target |> ignore
+        do
+            let mutable value= -1e308
+            let property=NumericProperty((fun () -> value),(fun next -> value<-next))
+            use timeline=new Timeline(scheduler)
+            timeline.Animate(property,1e308,100u) |> ignore
+            timeline.Seek 50.
+            require "native scalar facade retains finite interpolation when endpoint subtraction overflows" (value=0.)
+        do
             let target=host.Document.createElement "div" :?> HTMLElement
             host.Document.body.appendChild target |> ignore
             let inlineStyle=(target:>ElementCSSInlineStyle).style

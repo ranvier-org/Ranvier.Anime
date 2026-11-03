@@ -3,33 +3,6 @@ namespace Ranvier.Anime
 open System
 open Ranvier.Dom
 
-/// <summary>Guarded access to timeline scheduling, insertion position, pending lifetime and staged siblings during construction.</summary>
-type internal TimelineChildContext(scheduler:FrameScheduler,offset:float,canWrite:unit -> bool,
-                                   attach:IDisposable -> unit,siblings:FrameSiblingRegistry) =
-    /// <summary>The timeline's scheduler; children share its clock thread.</summary>
-    member _.Scheduler=scheduler
-    /// <summary>Resolved signed insertion position before child delay, including the zero-duration epsilon adjustment.</summary>
-    member _.Offset=offset
-    /// <summary>Whether the parent and construction generation still permit user effects and publication.</summary>
-    member _.CanWrite()=canWrite()
-    /// <summary>Registers child cancellation before getters or other construction callbacks can dispose the parent.</summary>
-    member _.Attach(child:IDisposable)=attach child
-    /// <summary>Captures a staged sibling transaction for reference identities and ordinal property names.</summary>
-    member _.BeginSiblings(keys)=siblings.Begin(keys,canWrite)
-    /// <summary>Unlinks a cancelled child's replacement nodes while preserving prior source override history.</summary>
-    member _.RemoveSiblings(nodes)=siblings.Remove nodes
-
-/// <summary>A constructed child awaiting guarded timeline publication.</summary>
-type internal TimelinePreparedChild<'T>(clock:Timer,renderVersion:unit -> int64,commit:unit -> bool,result:'T) =
-    /// <summary>The child controller whose scheduling and disposal belong to the timeline.</summary>
-    member _.Clock=clock
-    /// <summary>The current target dispatch generation, unchanged by cache-only or skipped samples.</summary>
-    member _.RenderVersion()=renderVersion()
-    /// <summary>Publishes staged sibling changes if all captured guards still hold.</summary>
-    member _.Commit()=commit()
-    /// <summary>The factory's observable child handle.</summary>
-    member _.Result=result
-
 /// <summary>A paused timeline with shared repeat/direction controls, numeric property tracks and borrowed controllers.</summary>
 /// <remarks>Use the scheduler's owning thread. Resume includes a 12 ms clock lead. Disposal is terminal and preserves child values.</remarks>
 type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
@@ -379,41 +352,28 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         if updateDuration = 0. then invalidArg "milliseconds" "Positive duration rounds to zero at source timing precision."
         let normalizedDuration = if Double.IsPositiveInfinity updateDuration then 1e12 else updateDuration
         finite "position" (offset + normalizedDuration)
-        stopFrame()
-        let expected = generation
-        let canWrite () = expected = generation && not cancelled
-        try
-            clock.Pause()
-            if canWrite() then renderMode canWrite true PlaybackTickMode.Auto true offset |> ignore
-            if canWrite() then
-                let siblings =
-                    match propertySiblings.TryGetValue property with
-                    | true, siblings -> siblings
-                    | _ ->
-                        let siblings = System.Collections.Generic.List<NumericPropertyTrack>()
-                        propertySiblings.Add(property, siblings)
-                        siblings
-                match NumericPropertyTrack.Create(property, siblings, from, target, offset, normalizedDuration, updateDuration,
-                                                  defaultArg ease id, defaultArg modifier id, canWrite) with
-                | Some track when canWrite() ->
-                    children.Add(TimelineEntry.Property track)
-                    hasEntries <- true
-                    duration <- Math.Max(duration, offset + normalizedDuration)
-                    track.Sample(0., true, true, true, false, false, canWrite)
-                    if canWrite() then renderMode canWrite true PlaybackTickMode.Force true 0. |> ignore
-                    if canWrite() then
-                        for entry in children do
-                            match entry with
-                            | TimelineEntry.Property track -> track.ResetTimer()
-                            | TimelineEntry.Callback(_, _, state) -> state.Completed <- false
-                            | _ -> ()
-                        resize()
-                | _ ->
-                    if siblings.Count = 0 then propertySiblings.Remove property |> ignore
-            this
-        with _ ->
-            cancel()
-            reraise()
+        this.TryAddOwned((fun context ->
+            let animation=new Ranvier.Anime.KeyframeAnimation(1)
+            context.Attach animation
+            let active=animation.Guard()
+            let current()=active() && context.CanWrite()
+            let mutable capture=(fun () -> current)
+            let guarded name action value =
+                let permission=capture()
+                let result=action value
+                if permission() && not(Double.IsFinite result) then invalidArg name "Expected a finite value."
+                result
+            let frame={FrameInput.Default with From=from |> Option.map ValueInterpolation.Number;To=Some(ValueInterpolation.Number target)}
+            let properties=[|{FrameProperty.Target=0;Name="value";Original=ValueInterpolation.Number 0.;Frames=[|frame|];ConvertUnit=None}|]
+            let defaults={FrameDefaults.Default with Duration=milliseconds;Ease=guarded "ease" (defaultArg ease id);Modifier=guarded "modifier" (defaultArg modifier id)}
+            let options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=defaults.Ease;Modifier=defaults.Modifier;Precision=None}
+            let original _=match from with Some value -> ValueInterpolation.Number value | None -> ValueInterpolation.Number property.Value
+            let prepared=TimelineKeyframeInstallation.scalar(context,animation,defaults,properties,[|struct(box property,"value")|],
+                (fun _ _ _ -> if current() then Some frame else None),original,(fun _ _ output -> property.Value<-output.Scalar.Value),
+                false,-1,options,current)
+            if prepared.IsSome then capture<-(fun () -> animation.Playback.CaptureWriteGuard())
+            prepared),position=TimelinePosition.At position,zeroDuration=(milliseconds<=1e-11)) |> ignore
+        this
 
     /// <summary>Adds a numeric replace track from unsigned whole milliseconds, converted exactly to the precise duration path.</summary>
     member this.Animate(property: NumericProperty, target: float, milliseconds: uint, ?position: TimelinePosition,
