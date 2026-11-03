@@ -35,6 +35,8 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let mutable lastTime = 0.
     let mutable generation = 0
     let mutable previousAbsoluteTime = 0.
+    let mutable parentContext : (bool * bool * (unit -> bool)) option = None
+    let mutable completingSetter = false
     let mutable renderer : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
     let mutable childRenderer : (PlaybackSample -> PlaybackTickMode -> bool -> bool) option = None
     let mutable prepareLoop : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
@@ -51,13 +53,15 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         let previousIteration = sample.Iteration
         let wasCompleted = completed
         previousAbsoluteTime <- sample.AbsoluteTime
-        let next = timing.Sample(previousAbsoluteTime, time, reversed, alternate, wasCompleted, mode)
+        let next = timing.Sample(previousAbsoluteTime, time, reversed, alternate, wasCompleted, mode,
+                                 ?parentBackwards=(parentContext |> Option.map(fun (backwards,_,_) -> backwards)), child=parentContext.IsSome)
         sample <- next
-        let current () = expected = generation && not cancelled
+        let current () = expected = generation && not cancelled && (parentContext |> Option.forall(fun (_,_,live) -> live()))
+        let parentAllowsLifecycle () = parentContext |> Option.forall(fun (_,parentBegan,_) -> not next.Backwards && parentBegan)
         let emit event = if not mute && current() then callback event
         if next.AboveZero && not began then
             began <- true
-            emit PlaybackEvent.Begin
+            if parentAllowsLifecycle() then emit PlaybackEvent.Begin
         elif next.AbsoluteTime <= 0. then
             began <- false
         if childRenderer.IsNone && current() && next.AboveZero && next.Iteration <> previousIteration then emit PlaybackEvent.Loop
@@ -69,12 +73,20 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             if childRenderer.IsNone && current() then renderer next mode mute
             if next.AboveZero then emit PlaybackEvent.Update
         if current() then
-            if next.AboveZero && next.AtEnd then
+            if parentContext.IsSome && timing.Duration <= 1e-11 then
+                let _,parentBegan,_ = parentContext.Value
+                if not mute && not completingSetter &&
+                   ((parentBegan && not next.Backwards && next.AbsoluteTime > 0. && not completed) ||
+                    (next.Backwards && next.AbsoluteTime <= 1e-11 && completed)) then
+                    completingSetter <- true
+                    try emit PlaybackEvent.Complete finally completingSetter <- false
+                    if current() then completed <- not next.Backwards
+            elif next.AboveZero && next.AtEnd then
                 if System.Double.IsFinite iterations && float next.Iteration >= iterations - 1. then
                     paused <- true
                     if childRenderer.IsNone && not wasCompleted then
                         completed <- true
-                        emit PlaybackEvent.Complete
+                        if parentAllowsLifecycle() then emit PlaybackEvent.Complete
             else completed <- false
         match childRenderer with
         | Some renderChildren when current() ->
@@ -196,6 +208,17 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     /// <summary>Samples controller callbacks and any configured child phase using a source tick mode.</summary>
     member _.Tick(time: float, mode: PlaybackTickMode, mute: bool) =
         run (fun _ -> render time mode mute)
+    /// <summary>Samples an owned timeline child with inherited direction, lifecycle filtering and ancestor interruption.</summary>
+    member _.TickChild(time, mode, mute, backwards, parentBegan, canWrite) =
+        let previous = parentContext
+        parentContext <- Some(backwards, parentBegan, canWrite)
+        try run (fun _ -> render time mode mute)
+        finally parentContext <- previous
+    /// <summary>Resets child lifecycle flags while retaining its clock sample history.</summary>
+    member _.ResetChildFlags() =
+        paused <- true
+        began <- false
+        completed <- false
     /// <summary>Seeks in milliseconds after the initial delay and retains the preceding scheduling state.</summary>
     member _.Seek(time: float, mute: bool) = run (fun expected -> seek expected time mute)
     /// <summary>Pauses scheduling and emits the pause callback once for an active controller.</summary>

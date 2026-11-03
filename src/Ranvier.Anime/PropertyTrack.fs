@@ -63,7 +63,8 @@ type internal NumericPropertyTrack private (property: NumericProperty, first: fl
     member _.ResetTimer() = completed <- false
     /// <summary>Samples a scalar sibling, caching internal renders and guarding dispatched writes after user callbacks.</summary>
     member _.Sample(localTime: float, force: bool, internalRender: bool, muted: bool,
-                    backwards: bool, parentBegan: bool, canWrite: unit -> bool) =
+                    backwards: bool, parentBegan: bool, canWrite: unit -> bool, ?skipRender: bool) =
+        let skipRender = defaultArg skipRender false
         rendered <- false
         backwardsValue <- backwards
         let prior = System.Math.Clamp(parentTime, 0., duration)
@@ -74,8 +75,9 @@ type internal NumericPropertyTrack private (property: NumericProperty, first: fl
         let setter = duration <= 1e-11
         let iteration = if atEnd then duration else localTime
         let eligible =
-            force || (localTime >= 0. && localTime <= duration) || (localTime <= 0. && prior > 0.) ||
-            (localTime >= duration && prior <> duration) ||
+            force || (not skipRender && ((localTime >= 0. && localTime <= duration) ||
+            (localTime <= 0. && prior > 0.) || (localTime >= duration && prior <> duration))) ||
+            (iteration >= duration && prior <> duration) || (iteration <= 0. && prior > 0. && not atEnd) ||
             (localTime <= prior && prior = duration && completed) || (atEnd && not completed && setter)
         if eligible && canWrite() then
             let absolute = PropertyNumbers.round 1e12 (offset + iteration)

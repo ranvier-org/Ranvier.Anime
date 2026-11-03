@@ -63,7 +63,7 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
     member _.Duration = duration
     /// <summary>Samples raw time without mutating callback, scheduler or ownership state.</summary>
     member _.Sample(previousAbsoluteTime: float, time: float, reversed: bool, alternate: bool, completed: bool,
-                    mode: PlaybackTickMode) : PlaybackSample =
+                    mode: PlaybackTickMode, ?parentBackwards: bool, ?child: bool) : PlaybackSample =
         if System.Double.IsNaN previousAbsoluteTime then invalidArg "previousAbsoluteTime" "Expected a defined clock time."
         if System.Double.IsNaN time then invalidArg "time" "Expected a defined clock time."
         let absolute = time - delay
@@ -88,11 +88,11 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
             if atEnd then (if isReversed then 0. else duration)
             elif isReversed then iterationDuration - iterationElapsed
             else iterationElapsed
-        let backwards = (absolute < previousAbsoluteTime) <> isReversed
+        let backwards = (defaultArg parentBackwards (absolute < previousAbsoluteTime)) <> isReversed
         let endTime = delay + iterationDuration
         let shouldRender =
             mode = PlaybackTickMode.Force ||
-            (mode = PlaybackTickMode.Auto && ((time >= delay && time <= endTime) ||
+            (mode = PlaybackTickMode.Auto && ((time >= (if defaultArg child false && delay > 0. then 0. else delay) && time <= endTime) ||
                                             (time <= delay && previous > delay) ||
                                             (time >= endTime && previous <> duration))) ||
             (iterationTime >= endTime && previous <> duration) ||

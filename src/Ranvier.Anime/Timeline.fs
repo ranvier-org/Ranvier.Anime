@@ -12,6 +12,8 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
               ?onComplete: Timeline -> unit) as this =
     let children = System.Collections.Generic.List<TimelineEntry>()
     let propertySiblings = System.Collections.Generic.Dictionary<NumericProperty, System.Collections.Generic.List<NumericPropertyTrack>>()
+    let borrowedProperties = System.Collections.Generic.Dictionary<obj, NumericProperty>(System.Collections.Generic.ReferenceEqualityComparer.Instance)
+    let mutable borrowedGuard = fun () -> true
     let labels = System.Collections.Generic.Dictionary<string, float>(System.StringComparer.Ordinal)
     let mutable duration = 0.
     let mutable hasEntries = false
@@ -33,20 +35,30 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
     let cancel () =
         cancelled <- true
         stopFrame()
-        try clock.Cancel()
-        finally
-            children.Clear()
-            propertySiblings.Clear()
-            labels.Clear()
+        let mutable firstError : Exception option = None
+        try clock.Cancel() with error -> firstError <- Some error
+        for entry in children.ToArray() do
+            match entry with
+            | TimelineEntry.OwnedTimer(_, timer) ->
+                try timer.Cancel()
+                with error -> if firstError.IsNone then firstError <- Some error
+            | _ -> ()
+        children.Clear()
+        propertySiblings.Clear()
+        borrowedProperties.Clear()
+        labels.Clear()
+        firstError |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
+    do clock.OnFault <- cancel
     let canRender expected clockGeneration () =
         expected = generation && clockGeneration = clock.Generation && not cancelled && ancestorLive()
     let resetTracks () =
         for entry in children do
             match entry with
-            | TimelineEntry.Property track -> track.ResetTimer()
+            | TimelineEntry.Property track | TimelineEntry.Borrowed(track, _, _) -> track.ResetTimer()
+            | TimelineEntry.OwnedTimer(_, timer) -> timer.ResetChildFlags()
             | TimelineEntry.Callback(_, _, state) -> state.Completed <- false
-            | _ -> ()
-    let renderMode ancestor muteCallbacks force internalRender requestedTime =
+    let renderMode ancestor muteCallbacks mode internalRender requestedTime =
+        let force = mode = PlaybackTickMode.Force
         let expected = generation
         let clockGeneration = clock.Generation
         let previous = sampledTime
@@ -59,23 +71,25 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         let mutable allComplete = true
         let mutable rendered = false
         for entry in snapshots do
-            let childTime = PropertyNumbers.round 1e12 (time - entry.Offset)
+            let childTime = PropertyNumbers.round 1e12 ((time - entry.Offset) * entry.Speed)
             if canWrite() && not(backwards && childTime > entry.Duration) then
                 match entry with
                 | TimelineEntry.Property track ->
-                    track.Sample(childTime, force, internalRender, muteCallbacks, backwards, clock.Began, canWrite)
+                    track.Sample(childTime, force, internalRender, muteCallbacks, backwards, clock.Began, canWrite, skipRender=(mode = PlaybackTickMode.Skip))
                     rendered <- rendered || track.Rendered
                     allComplete <- allComplete && track.Completed
-                | TimelineEntry.Numeric(_, child) when not internalRender && (time >= entry.Offset || previous >= entry.Offset) ->
-                    child.Pause()
-                    if canWrite() then child.SeekGuarded(Math.Clamp(childTime, 0., entry.Duration), canWrite)
-                    rendered <- rendered || childTime > 0.
-                    allComplete <- allComplete && childTime >= entry.Duration
-                | TimelineEntry.Nested(_, _, child) when not internalRender && (time >= entry.Offset || previous >= entry.Offset) ->
-                    child.Pause()
-                    if canWrite() then child.SeekGuarded(Math.Clamp(childTime, 0., entry.Duration), canWrite)
-                    rendered <- rendered || childTime > 0.
-                    allComplete <- allComplete && childTime >= entry.Duration
+                | TimelineEntry.OwnedTimer(_, child) ->
+                    child.SampleChild(childTime, mode, muteCallbacks, clock.Fps, backwards, clock.Began, canWrite)
+                    allComplete <- allComplete && (child.Completed || child.Cancelled)
+                | TimelineEntry.Borrowed(track, _, _) ->
+                    let previousGuard = borrowedGuard
+                    borrowedGuard <- canWrite
+                    try
+                        track.Sample(childTime, force, internalRender, muteCallbacks, backwards, clock.Began, canWrite,
+                                     skipRender=(mode = PlaybackTickMode.Skip))
+                        rendered <- rendered || track.Rendered
+                        allComplete <- allComplete && track.Completed
+                    finally borrowedGuard <- previousGuard
                 | TimelineEntry.Callback(_, callback, state) when not internalRender ->
                     state.Time <- childTime
                     state.Backwards <- backwards
@@ -96,10 +110,14 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
                 if canWrite() then
                     if not sample.Backwards then
                         match entry with
-                        | TimelineEntry.Property track ->
+                        | TimelineEntry.Property track | TimelineEntry.Borrowed(track, _, _) ->
                             if not track.Completed && not track.Backwards && track.CurrentTime < track.Duration then
                                 track.Sample(duration, true, true, muted, false, clock.Began, canWrite)
                             if canWrite() then track.ResetTimer()
+                        | TimelineEntry.OwnedTimer(_, child) ->
+                            if not child.Cancelled && not child.Completed && not child.Backwards && child.Sample.AbsoluteTime < child.IterationDuration then
+                                child.SampleChild(duration, PlaybackTickMode.Force, muted, infinity, false, clock.Began, canWrite)
+                            if canWrite() then child.ResetChildFlags()
                         | TimelineEntry.Callback(_, callback, state) ->
                             if not state.Completed && not state.Backwards && state.Time < 1e-11 then
                                 state.Time <- duration
@@ -108,14 +126,16 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
                                     state.Completed <- true
                                     callback()
                             if canWrite() then state.Completed <- false
-                        | _ -> ()
                     else
                         match entry with
+                        | TimelineEntry.OwnedTimer(offset, child) when not muted &&
+                            child.Duration <= 1e-11 && (offset + child.Delay = 0. || offset + child.Delay + child.Duration = duration) ->
+                            child.NotifyBoundaryCompletion()
                         | TimelineEntry.Callback(offset, callback, _) when not muted && (offset = 0. || offset + 1e-11 = duration) ->
                             callback()
                         | _ -> ()
     do clock.ConfigureChildren(prepareLoop, fun sample mode muted ->
-        renderMode (fun () -> true) muted (mode = PlaybackTickMode.Force) internalRendering
+        renderMode (fun () -> true) muted mode internalRendering
             (if internalRendering then 0. else sample.IterationTime))
     let resize () =
         internalRendering <- true
@@ -134,8 +154,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         stopFrame()
         let expected = generation
         match entry with
-        | TimelineEntry.Numeric(_, child) -> child.Pause()
-        | TimelineEntry.Nested(_, _, child) -> child.Pause()
+        | TimelineEntry.Borrowed(_, _, pause) -> pause()
         | _ -> ()
         if expected = generation && not cancelled then
             children.Add entry
@@ -150,7 +169,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
 
     member private this.Contains(candidate: Timeline) =
         Object.ReferenceEquals(this, candidate) ||
-        children.Exists(function TimelineEntry.Nested(_, _, child) -> child.Contains candidate | _ -> false)
+        children.Exists(function TimelineEntry.Borrowed(_, Some child, _) -> child.Contains candidate | _ -> false)
 
     /// <summary>Resolves a position against the current duration, labels and previous child.</summary>
     member _.ResolvePosition(?position: TimelinePosition) =
@@ -168,23 +187,77 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         labels[name] <- this.ResolvePosition(?position = position)
         this
 
-    /// <summary>Pauses and borrows a child at a position, defaulting to the current timeline end.</summary>
+    /// <summary>Adds an owned timer track and returns its observable controller; scheduling belongs to this timeline.</summary>
+    /// <remarks>Parent cancellation disposes this child. Parent muting suppresses its callbacks. Positions precede child delay.</remarks>
+    member this.AddTimer(milliseconds: float, ?position: TimelinePosition, ?options: PlaybackOptions,
+                         ?onBegin: Timer -> unit, ?onBeforeUpdate: Timer -> unit, ?onUpdate: Timer -> unit,
+                         ?onLoop: Timer -> unit, ?onPause: Timer -> unit, ?onComplete: Timer -> unit) =
+        ensureLive()
+        if Double.IsNaN milliseconds || milliseconds < 0. then invalidArg "milliseconds" "Expected nonnegative milliseconds."
+        let offset = this.ResolvePosition(?position=position) - (if milliseconds <= 1e-11 then 1e-11 else 0.)
+        let child = new Timer(scheduler, milliseconds, ?options=options, ?onBegin=onBegin, ?onBeforeUpdate=onBeforeUpdate,
+                              ?onUpdate=onUpdate, ?onLoop=onLoop, ?onPause=onPause, ?onComplete=onComplete)
+        try
+            child.AttachToTimeline()
+            addChild(TimelineEntry.OwnedTimer(offset,child))
+            if cancelled then child.Cancel()
+            child
+        with _ ->
+            child.Cancel()
+            reraise()
+    /// <summary>Adds an owned timer using unsigned whole milliseconds.</summary>
+    member this.AddTimer(milliseconds: uint, ?position: TimelinePosition, ?options: PlaybackOptions,
+                         ?onBegin: Timer -> unit, ?onBeforeUpdate: Timer -> unit, ?onUpdate: Timer -> unit,
+                         ?onLoop: Timer -> unit, ?onPause: Timer -> unit, ?onComplete: Timer -> unit) =
+        this.AddTimer(float milliseconds, ?position=position, ?options=options, ?onBegin=onBegin,
+                      ?onBeforeUpdate=onBeforeUpdate, ?onUpdate=onUpdate, ?onLoop=onLoop, ?onPause=onPause, ?onComplete=onComplete)
+
+    member private this.Borrow(identity: obj, childDuration: float, pause: unit -> unit,
+                               write: float -> (unit -> bool) -> unit, nested: Timeline option, position: TimelinePosition option) =
+        ensureLive()
+        finite "duration" childDuration
+        let offset = this.ResolvePosition(?position=position) - (if childDuration <= 1e-11 then 1e-11 else 0.)
+        stopFrame()
+        let expected = generation
+        let canWrite () = expected = generation && not cancelled
+        pause()
+        if canWrite() then
+            let property =
+                match borrowedProperties.TryGetValue identity with
+                | true, property -> property
+                | _ ->
+                    let property = NumericProperty((fun () -> 0.), (fun value -> write value borrowedGuard))
+                    borrowedProperties.Add(identity,property)
+                    property
+            let siblings =
+                match propertySiblings.TryGetValue property with
+                | true, siblings -> siblings
+                | _ ->
+                    let siblings = System.Collections.Generic.List<NumericPropertyTrack>()
+                    propertySiblings.Add(property,siblings)
+                    siblings
+            let normalized = if childDuration = 0. then 1e-11 else childDuration
+            match NumericPropertyTrack.Create(property,siblings,Some 0.,childDuration,offset,normalized,normalized,id,id,canWrite) with
+            | Some track when canWrite() -> addChild(TimelineEntry.Borrowed(track,nested,ignore))
+            | _ -> ()
+        this
+    /// <summary>Pauses and borrows a numeric animation; parent muting preserves the child's callbacks.</summary>
     member this.Sync(child: NumericAnimation, ?position: TimelinePosition) =
         ensureLive()
         if isNull (box child) then nullArg "child"
-        let offset = this.ResolvePosition(?position = position)
-        addChild (TimelineEntry.Numeric(offset, child))
-        this
-
-    /// <summary>Pauses and borrows a nested controller at a position; synchronization cycles are rejected.</summary>
-    /// <remarks>Captures the child's duration. Parent callback muting does not suppress the borrowed controller's callbacks.</remarks>
+        this.Borrow(child,child.Duration,child.Pause,(fun value guard -> child.SeekGuarded(value,guard)),None,position)
+    /// <summary>Pauses and borrows a timer through its source current-time setter semantics.</summary>
+    /// <remarks>Parent cancellation releases this timer without disposing it. Parent muting preserves its callbacks.</remarks>
+    member this.Sync(child: Timer, ?position: TimelinePosition) =
+        ensureLive()
+        if isNull (box child) then nullArg "child"
+        this.Borrow(child,child.Duration,child.Pause,(fun value guard -> if guard() then child.CurrentTime <- value),None,position)
+    /// <summary>Pauses and borrows a nested timeline, capturing its total duration and rejecting cycles.</summary>
     member this.Sync(child: Timeline, ?position: TimelinePosition) =
         ensureLive()
         if isNull (box child) then nullArg "child"
         if child.Contains this then invalidArg "child" "Timeline synchronization cannot contain a cycle."
-        let offset = this.ResolvePosition(?position = position)
-        addChild (TimelineEntry.Nested(offset, child.Duration, child))
-        this
+        this.Borrow(child,child.Duration,child.Pause,(fun value guard -> child.SeekGuarded(value,guard)),Some child,position)
 
     /// <summary>Adds a numeric replace track sharing the supplied property's identity with sibling tracks.</summary>
     /// <remarks>
@@ -210,7 +283,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         let expected = generation
         let canWrite () = expected = generation && not cancelled
         try
-            renderMode canWrite true false true offset |> ignore
+            renderMode canWrite true PlaybackTickMode.Auto true offset |> ignore
             if canWrite() then
                 let siblings =
                     match propertySiblings.TryGetValue property with
@@ -226,7 +299,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
                     hasEntries <- true
                     duration <- Math.Max(duration, offset + normalizedDuration)
                     track.Sample(0., true, true, true, false, false, canWrite)
-                    if canWrite() then renderMode canWrite true true true 0. |> ignore
+                    if canWrite() then renderMode canWrite true PlaybackTickMode.Force true 0. |> ignore
                     if canWrite() then
                         for entry in children do
                             match entry with
@@ -342,20 +415,24 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
 
 and private TimelineEntry =
     | Property of track: NumericPropertyTrack
-    | Numeric of offset: float * child: NumericAnimation
-    | Nested of offset: float * duration: float * child: Timeline
+    | OwnedTimer of offset: float * child: Timer
+    | Borrowed of track: NumericPropertyTrack * nested: Timeline option * pause: (unit -> unit)
     | Callback of offset: float * callback: (unit -> unit) * completed: TimelineCallState
 
     member this.Offset =
         match this with
-        | Property track -> track.Offset
-        | Numeric(offset, _) | Nested(offset, _, _) | Callback(offset, _, _) -> offset
+        | Property track | Borrowed(track, _, _) -> track.Offset
+        | OwnedTimer(offset, _) | Callback(offset, _, _) -> offset
+
+    member this.Speed =
+        match this with
+        | OwnedTimer(_, child) -> child.Speed
+        | _ -> 1.
 
     member this.Duration =
         match this with
-        | Property track -> track.Duration
-        | Numeric(_, child) -> child.Duration
-        | Nested(_, duration, _) -> duration
+        | Property track | Borrowed(track, _, _) -> track.Duration
+        | OwnedTimer(_, child) -> child.Delay + child.Duration
         | Callback _ -> 1e-11
 
 and private TimelineCallState() =

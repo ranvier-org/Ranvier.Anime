@@ -118,6 +118,8 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     member _.Backwards = clock.Backwards
     /// <summary>Whether the base playback direction is reversed.</summary>
     member _.Reversed = clock.Reversed
+    /// <summary>Whether positive time has been sampled since reset.</summary>
+    member _.Began = clock.Began
     /// <summary>Whether the most recent sample completed the finite repeat sequence.</summary>
     member _.Completed = clock.Completed
     /// <summary>Whether a frame loop is active.</summary>

@@ -73,6 +73,7 @@ let main args =
             options = { PlaybackOptions.Default with Repeat = PlaybackRepeat.Count 1u; Alternate = true },
             onLoop = (fun _ -> timelineLoops <- timelineLoops + 1))
         repeatedTimeline.Animate(timelineProperty, 100., 25u) |> ignore
+        let timelineTimer = repeatedTimeline.AddTimer(25u, TimelinePosition.At 0.)
         repeatedTimeline.Reset()
         repeatedTimeline.Resume()
         pumpUntil host (fun () -> repeatedTimeline.Completed)
@@ -80,6 +81,19 @@ let main args =
             (timelineValue = 0. && timelineLoops = 1 && repeatedTimeline.CurrentIteration = 1 && not repeatedTimeline.Playing &&
              style.getPropertyValue "--anime-timeline-gap" = "0px" && style.getPropertyPriority "--anime-timeline-gap" = "important")
         require "native layout consumes timeline output" (abs(element.getBoundingClientRect().height) < 0.01)
+        require "native timeline samples an owned timer track"
+            (timelineTimer.CurrentTime = 0. && timelineTimer.Duration = 25. && not timelineTimer.Cancelled)
+        use borrowedTimer = new Timer(scheduler, 25u,
+            options = { PlaybackOptions.Default with Repeat = PlaybackRepeat.Count 1u })
+        use borrowedTimeline = new Timeline(scheduler,
+            options = { PlaybackOptions.Default with Repeat = PlaybackRepeat.Count 1u; Alternate = true })
+        borrowedTimeline.Sync(borrowedTimer, TimelinePosition.At 0.) |> ignore
+        borrowedTimeline.Reset()
+        borrowedTimeline.Resume()
+        pumpUntil host (fun () -> borrowedTimeline.Completed)
+        borrowedTimeline.Cancel()
+        require "native timeline borrows repeated timer playback without disposing it"
+            (borrowedTimer.CurrentTime = 0. && not borrowedTimer.Cancelled)
         use graph = new Graph()
         use activation = graph.Activate()
         let mutable writes = 0
@@ -130,13 +144,14 @@ let main args =
         let mutable timelineBeforeUpdates = 0
         let mutable timelineUpdates = 0
         let mutable timelineWrites = 0
-        let timelineOwner, ownedTimeline = Api.createRoot(fun owner ->
+        let timelineOwner, ownedTimeline, ownedTimelineTimer = Api.createRoot(fun owner ->
             let timeline = new Timeline(scheduler,
                 onBeforeUpdate = (fun _ -> timelineBeforeUpdates <- timelineBeforeUpdates + 1; owner.Dispose()),
                 onUpdate = (fun _ -> timelineUpdates <- timelineUpdates + 1))
             timeline.Animate(NumericProperty((fun () -> 0.), (fun _ -> timelineWrites <- timelineWrites + 1)), 100., 1000u) |> ignore
+            let child = timeline.AddTimer(1000u, TimelinePosition.At 0.)
             Timeline.own timeline |> ignore
-            owner, timeline)
+            owner, timeline, child)
         use timeline = ownedTimeline
         timeline.Reset()
         timeline.Resume()
@@ -146,7 +161,8 @@ let main args =
         host.Cycle(milliseconds = 10)
         host.Frame()
         require "native timeline owner disposal interrupts active property writes"
-            (timeline.Cancelled && not timeline.Completed && timelineBeforeUpdates = 1 && timelineUpdates = 0 && timelineWrites = 1)
+            (timeline.Cancelled && ownedTimelineTimer.Cancelled && not timeline.Completed &&
+             timelineBeforeUpdates = 1 && timelineUpdates = 0 && timelineWrites = 1)
         timelineOwner.Dispose()
         require "native host has no listener errors" (host.Errors.Count = 0)
         Console.WriteLine "NATIVE_ANIME_SMOKE_PASS"

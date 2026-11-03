@@ -70,6 +70,8 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let mutable pending : IDisposable option = None
     do state.Speed <- options.Speed
     let mutable renderingEnabled = true
+    let mutable parented = false
+    let mutable onFault = fun () -> ()
 
     let live () =
         if state.Cancelled then raise(ObjectDisposedException(nameof Timer))
@@ -98,9 +100,10 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let abandon () =
         stopFrame() |> ignore
         try state.Cancel() with _ -> ()
+        try onFault() with _ -> ()
 
     let rec queue () =
-        if not state.Paused && not state.Cancelled && pending.IsNone then
+        if not parented && not state.Paused && not state.Cancelled && pending.IsNone then
             let expected = generation
             pending <- Some(scheduler.Frame(fun now ->
                 if expected = generation && not state.Paused && not state.Cancelled then
@@ -239,6 +242,27 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member internal _.ConfigureRenderer(renderer, ?totalDuration: float) =
         state.Renderer <- fun sample mode muted -> if renderingEnabled then renderer sample mode muted
         totalDuration |> Option.iter state.OverrideDuration
+    /// <summary>Installs cleanup invoked after callback/render faults cancel this driver.</summary>
+    member internal _.OnFault with set value = onFault <- value
+    /// <summary>Initial delay of an owned timeline child.</summary>
+    member internal _.Delay = options.Delay
+    /// <summary>Assigns scheduling to the timeline and initializes the child silently.</summary>
+    member internal _.AttachToTimeline() =
+        parented <- true
+        stopFrame() |> ignore
+        state.TickChild(0., PlaybackTickMode.Force, true, false, false, fun () -> true)
+        state.ResetChildFlags()
+    /// <summary>Samples a timeline child without requesting an independent frame.</summary>
+    member internal _.SampleChild(time, mode, muted, parentFps, backwards, parentBegan, canWrite) =
+        if not state.Cancelled && canWrite() then
+            let mode = if fps < parentFps then requestTick(scheduler.Now()) else mode
+            state.TickChild(time, mode, muted, backwards, parentBegan, canWrite)
+    /// <summary>Emits the source reverse-loop boundary completion without changing child flags.</summary>
+    member internal _.NotifyBoundaryCompletion() =
+        if not state.Cancelled then callback PlaybackEvent.Complete
+    /// <summary>Resets owned child flags after a timeline reset or forward loop.</summary>
+    member internal _.ResetChildFlags() =
+        if not state.Cancelled then state.ResetChildFlags()
     /// <summary>Configures the timeline child phases before rendering begins.</summary>
     member internal _.ConfigureChildren(beforeLoop, renderChildren) =
         state.ConfigureChildren(beforeLoop, renderChildren)

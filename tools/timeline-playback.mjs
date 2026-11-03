@@ -62,7 +62,30 @@ const cases = [
   {name:'callbackOnly', kind:'calls', parameters:{loop:2,alternate:true}},
   {name:'zeroCallback', kind:'zeroCalls', parameters:{},steps:[{op:'resume'},frame(1),seek(0),{op:'reset'},seek(1)]},
   {name:'zeroCallbackLoop', kind:'zeroCalls', parameters:{loop:2},steps:[0,1,0,1].map(seek)},
+  {name:'timerDelay',kind:'timer',parameters:{loop:1},childParameters:{delay:40}},
+  {name:'timerNegativeDelay',kind:'timer',parameters:{loop:1},childParameters:{delay:-20}},
+  {name:'timerReverse',kind:'timer',parameters:{},childParameters:{reversed:true}},
+  {name:'timerReverseAlternateRoot',kind:'timer',parameters:{loop:2,reversed:true,alternate:true},childParameters:{loop:1,delay:25,alternate:true}},
+  {name:'timerFractional',kind:'timer',parameters:{loop:1,alternate:true},childParameters:{duration:25.125,delay:0.25,loop:2,loopDelay:10.5}},
+  {name:'timerFastChild',kind:'timer',parameters:{loop:1},childParameters:{playbackRate:2.5}},
+  {name:'timerZero',kind:'timer',parameters:{loop:2},childParameters:{duration:0}},
+  {name:'timerForeverChild',kind:'timer',parameters:{},childParameters:{loop:true,alternate:true}},
+  {name:'timerNegativePeriod',kind:'timer',parameters:{loop:1},childParameters:{duration:25,loop:2,loopDelay:-50}},
+  {name:'timerMaximumUint',kind:'timer',parameters:{loop:1,alternate:true},childParameters:{duration:4294967295},steps:[0,25,2147483672.5,4294967320,8589934640,0].map(seek)},
+  {name:'timerLowFpsChild',kind:'timer',parameters:{},childParameters:{frameRate:20},steps:[{op:'resume'},frame(1),frame(20),frame(25),frame(1),frame(25),frame(25),frame(100)]},
+  {name:'rootLowFpsProperty',kind:'property',parameters:{frameRate:20},steps:[{op:'resume'},frame(1),frame(80),frame(10)]},
 ];
+
+for (let index=0;index<12;index++) {
+  const duration=[0.125,25,100][index%3];
+  const loop=index%3;
+  const loopDelay=[-5,0,12.5][index%3];
+  const delay=[-10,0,20][index%3];
+  const end=Math.max(0,25+delay+(duration+loopDelay)*(loop+1)-loopDelay);
+  cases.push({name:'generatedTimerTrack'+index,kind:'timer',parameters:{loop:1,alternate:index%2===0,reversed:index%4===0},
+    childParameters:{duration,loop,loopDelay,delay,alternate:index%3===1,reversed:index%4===1,playbackRate:[0.5,1,2][index%3]},
+    steps:[-25,0,25,25+delay,25+delay+duration/2,end,end+duration/2,end*2,end,end/2,0].map(seek)});
+}
 
 const fixtures = cases.map(({name,kind,parameters,childParameters={},steps=times.map(seek)}) => {
   now = 0;

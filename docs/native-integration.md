@@ -84,4 +84,6 @@ Public Timeline now uses the shared timer clock. Full normal/Traced suites pass5
 
 Coordinator update: View release PR70 merged as6b1119c8dbcefc683194dec510859f1137d1e96a; public publishers await main/analyzer checks. Accepted public View payload/signature audit is pending. Public NativeP7 package audits are available, but this consumer still uses its recorded private ABI62 payload. The upcoming ABI63/347 cohort contains further native fixes and has not been consumed or accepted here.
 
+Owned/borrowed timer integration now passes623/623 normal/Traced tests. A new successful Traced native build/run adds explicit owned timer-track sampling and borrowed repeated-timer playback assertions; parent cancellation retains the borrowed timer and disposes its owned timers. Native timeline style/layout, active owner cancellation and host.Errors=0 still pass. The same owned JIT log records the new sentinels. No new strict PE/public-View/public-native/acceleration acceptance is claimed.
+
 This closes the current timer/numeric NativeAOT replay requirement, with public Core/CSS and private View/runtime. It does not establish matched public View/native acceptance, host-destruction safety, full Anime.js parity, Linux execution or GPU presentation. Timeline clock integration and the remaining capability families stay open. Existing historical snapshots remain intact.
