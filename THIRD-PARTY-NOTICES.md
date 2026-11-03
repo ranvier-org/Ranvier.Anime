@@ -10,6 +10,8 @@ Timeline iteration/child traversal in `src/Ranvier.Anime/Timeline.fs` and scalar
 
 Endpoint decomposition, homogenization and scalar/color/compound interpolation in `src/Ranvier.Anime/ValueInterpolation.fs` derive from the pinned core values, colors, helpers, render and animation code.
 
+Keyframe array/row/offset normalization, endpoint chaining and construction geometry in `src/Ranvier.Anime/KeyframeCompilation.fs` follow the pinned animation keyframe generation and tween construction logic.
+
 Cached getters and retarget endpoint updates in `src/Ranvier.Anime/AnimatableValue.fs` follow the pinned animatable code, with guarded atomic updates and snapshot component getters.
 
 Retarget playback and cache-only reset integration in `src/Ranvier.Anime/AnimatableTrack.fs` also follow the pinned animatable, animation and timer/render behavior.

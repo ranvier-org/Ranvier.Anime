@@ -42,6 +42,50 @@ let main args =
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
         do
+            let rows=[|
+                {FrameRow.Values=[|"width",ValueInterpolation.Text "10px"|]
+                 Frame={FrameInput.Default with Duration=Some 100.;Delay=Some 40.}}
+                {FrameRow.Values=[|"width",ValueInterpolation.Text "30px";"color",ValueInterpolation.Text "#ff0000"|]
+                 Frame={FrameInput.Default with Duration=Some 100.}} |]
+            let properties=KeyframeCompilation.rows rows |> Array.map(fun (name,frames) ->
+                {FrameProperty.Target=0;Name=name;Original=ValueInterpolation.Text(if name="width" then "7px" else "#0000ff")
+                 Frames=frames;ConvertUnit=None})
+            let defaults={FrameDefaults.Default with Duration=200.;Offset=173.27;Ease=id}
+            let before=style.getPropertyValue "width"
+            let program=KeyframeCompilation.compile(defaults,properties,(fun () -> true)) |> Option.get
+            require "keyframe compiler preserves sparse holds, raw endpoints and trimmed timing without dispatch"
+                (program.Delay=40. && program.IterationDuration=200. && program.Tweens.Length=4 &&
+                 program.Tweens[1].First.Number=10. && program.Tweens[1].Last.Number=30. &&
+                 program.Tweens[2].CachedEnd.Text="rgba(0,0,255,1)" && style.getPropertyValue "width"=before)
+            let offsetRows=[|
+                {FrameOffset.Offset=0.;Values=[|"width",ValueInterpolation.Text "10px"|];Ease=Some(Ease.named "inQuad")}
+                {FrameOffset.Offset=0.5;Values=[|"width",ValueInterpolation.Text "20px"|];Ease=Some(Ease.named "outQuad")}
+                {FrameOffset.Offset=1.;Values=[|"width",ValueInterpolation.Text "30px"|];Ease=None} |]
+            let offsetProperties=KeyframeCompilation.offsets(200.,offsetRows) |> Array.map(fun (name,frames) ->
+                {FrameProperty.Target=0;Name=name;Original=ValueInterpolation.Text "7px";Frames=frames;ConvertUnit=None})
+            let offsets=KeyframeCompilation.compile(defaults,offsetProperties,(fun () -> true)) |> Option.get
+            let tween=offsets.Tweens[0]
+            let output=ValueInterpolation.sample(true,tween.First,tween.Last,tween.Ease 0.5,4,tween.Modifier,(fun () -> true))
+                       |> Option.get |> fun struct(_,output) -> output
+            StyleDeclaration.apply style (Declaration.create "width" output.Text)
+            require "compiled offset keyframes feed existing native interpolation and layout"
+                (offsets.Tweens.Length=2 && offsets.Tweens[1].Ease(0.5)=0.75 && output.Text="12.5px" &&
+                 abs(element.getBoundingClientRect().width-12.5)<0.01)
+            if String.IsNullOrEmpty before then style.removeProperty "width" |> ignore else style.setProperty("width",before)
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let mutable calls=0
+            let modify value=calls<-calls+1;owner.Dispose();value
+            let defaults={FrameDefaults.Default with Modifier=modify}
+            let properties=[|{FrameProperty.Target=0;Name="transform";Original=ValueInterpolation.Text "translate(0px,0px)"
+                              Frames=[|{FrameInput.Default with To=Some(ValueInterpolation.Text "translate(100px,200px)")}|];ConvertUnit=None}|]
+            let result=KeyframeCompilation.compile(defaults,properties,(fun () -> not owner.IsDisposed))
+            require "keyframe compilation owner disposal discards the program and later component effects"
+                (result.IsNone && owner.IsDisposed && calls=1)
+            owner.Dispose()
+        do
             style.setProperty("width","7px",priority="important")
             use group=new Animatable(scheduler)
             let settings={AnimatablePropertyOptions.Default with Ease=id}

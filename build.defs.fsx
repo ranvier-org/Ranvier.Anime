@@ -425,6 +425,12 @@ let root = Command.root {
             run "rtk node tools/animatable.mjs"
         }
     }
+    command "keyframe-reference" {
+        stage "upstream keyframe reference" {
+            workingDir __SOURCE_DIRECTORY__
+            run "rtk node tools/keyframes.mjs"
+        }
+    }
     command "unit-reference" {
         stage "upstream unit conversion reference" {
             workingDir __SOURCE_DIRECTORY__
@@ -457,6 +463,7 @@ let root = Command.root {
             run "rtk node tools/value-interpolation.mjs"
             run "rtk node tools/unit-conversion.mjs"
             run "rtk node tools/animatable.mjs"
+            run "rtk node tools/keyframes.mjs"
         }
     }
 }

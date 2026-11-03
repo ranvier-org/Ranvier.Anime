@@ -150,11 +150,11 @@ module internal ValueInterpolation =
                         let components=digitsPattern.Matches text |> Seq.cast<Match> |> Seq.map(fun item -> parse item.Value) |> Seq.toArray
                         {scalar 0. with Kind=ValueKind.Complex;Components=components;Strings=digitsPattern.Split text}
     let private relative first last op = match op with '-' -> first-last | '+' -> first+last | _ -> first*last
-    /// <summary>Normalizes relative endpoints, unit metadata and component templates during capture.</summary>
-    let normalize (convertUnit:(float -> string -> string -> float) option) original first last =
-        let mutable first=decompose first
-        let mutable last=decompose last
-        match first.Operator with Some op -> first<-{first with Number=relative (decompose original).Number first.Number op} | None -> ()
+    /// <summary>Normalizes decomposed relative endpoints, units and component templates using a captured original value.</summary>
+    let normalizeData (convertUnit:(float -> string -> string -> float) option, original:Data, first:Data, last:Data) =
+        let mutable first=first
+        let mutable last=last
+        match first.Operator with Some op -> first<-{first with Number=relative original.Number first.Number op} | None -> ()
         match last.Operator with Some op -> last<-{last with Number=relative first.Number last.Number op} | None -> ()
         if first.Kind<>last.Kind then
             if first.Kind=ValueKind.Complex || last.Kind=ValueKind.Complex then
@@ -184,6 +184,13 @@ module internal ValueInterpolation =
             let fill (value:Data)={value with Components=Array.init longest.Components.Length (fun i -> if i<value.Components.Length then value.Components[i] else 0.);Strings=Array.copy longest.Strings}
             if first.Components.Length>last.Components.Length then last<-fill last else first<-fill first
         first,last
+
+    /// <summary>Normalizes relative endpoints, unit metadata and component templates during capture.</summary>
+    let normalize (convertUnit:(float -> string -> string -> float) option) original first last =
+        let first=decompose first
+        let last=decompose last
+        let original=if first.Operator.IsSome then decompose original else first
+        normalizeData(convertUnit,original,first,last)
 
     /// <summary>Composes modified cached values using captured unit and component metadata.</summary>
     /// <remarks>The output retains the supplied component array.</remarks>
