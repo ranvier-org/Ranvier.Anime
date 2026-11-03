@@ -12,6 +12,8 @@ Endpoint decomposition, homogenization and scalar/color/compound interpolation i
 
 Keyframe array/row/offset normalization, endpoint chaining and construction geometry in `src/Ranvier.Anime/KeyframeCompilation.fs` follow the pinned animation keyframe generation and tween construction logic.
 
+Per-keyframe history, same-parent replace eligibility, ordered dispatch and stretch behavior in `src/Ranvier.Anime/KeyframePlayback.fs` follow the pinned core renderer and animation composition logic.
+
 Cached getters and retarget endpoint updates in `src/Ranvier.Anime/AnimatableValue.fs` follow the pinned animatable code, with guarded atomic updates and snapshot component getters.
 
 Retarget playback and cache-only reset integration in `src/Ranvier.Anime/AnimatableTrack.fs` also follow the pinned animatable, animation and timer/render behavior.

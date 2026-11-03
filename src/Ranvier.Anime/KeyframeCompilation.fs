@@ -96,6 +96,30 @@ type internal FrameProgram(delay:float,iterationDuration:float,offset:float,twee
 
 /// <summary>Source keyframe syntax normalization and guarded construction above the shared interpolation representation.</summary>
 module internal KeyframeCompilation =
+    type private LocalSibling(tween:FrameTween) =
+        member _.Tween=tween
+        member val Overridden=false with get,set
+    let private selectSibling (siblings:ResizeArray<LocalSibling>) start fallback =
+        let mutable candidate=fallback
+        let mutable index=0
+        while index<siblings.Count && siblings[index].Tween.AbsoluteStart<=start do
+            if not siblings[index].Overridden then candidate<-Some siblings[index].Tween.Last
+            index<-index+1
+            if index<siblings.Count && siblings[index].Tween.AbsoluteStart>=start then
+                while index<siblings.Count do
+                    siblings[index].Overridden<-true
+                    index<-index+1
+        candidate
+    let private addSibling (siblings:ResizeArray<LocalSibling>) (tween:FrameTween) =
+        let mutable previous=siblings.Count-1
+        while previous>=0 && (siblings[previous].Overridden || siblings[previous].Tween.AbsoluteStart>tween.AbsoluteStart) do previous<-previous-1
+        if previous>=0 then
+            let prior=siblings[previous]
+            if prior.Tween.AbsoluteEnd>tween.AbsoluteUpdateStart then
+                let offset=prior.Tween.AbsoluteEnd-(prior.Tween.Start+prior.Tween.UpdateDuration)
+                let changed=PropertyNumbers.round 1e12 (tween.AbsoluteUpdateStart-offset-prior.Tween.Start)
+                if changed<1e-11 then prior.Overridden<-true
+        siblings.Insert(previous+1,LocalSibling(tween))
     let private finite name value=if not(Double.IsFinite value) then invalidArg name "Expected finite input."
     let private copy (value:Data)={value with Operator=None;Components=Array.copy value.Components;Strings=Array.copy value.Strings}
     let private callback name value=if isNull(box value) then invalidArg name "A callback is required."
@@ -162,7 +186,7 @@ module internal KeyframeCompilation =
             name,(if frames.Length>0 && frames[0].Duration=Some 0. then frames[1..] else frames)) |> Seq.toArray
     /// <summary>Compiles complete captured sequences atomically; an interrupted modifier or converter returns None.</summary>
     /// <remarks>Default durations divide by frame count despite frame overrides. Raw endpoints chain before modifiers.</remarks>
-    let compile (defaults:FrameDefaults,properties:FrameProperty array,canWrite:unit -> bool) =
+    let private compileCore replace (defaults:FrameDefaults,properties:FrameProperty array,canWrite:unit -> bool) =
         if isNull(box defaults) then nullArg "defaults"
         timing "duration" defaults.Duration |> ignore
         finite "delay" defaults.Delay
@@ -194,25 +218,29 @@ module internal KeyframeCompilation =
         let mutable endTime=nan
         for property in properties do
             let original=lazy(decompose property.Original)
+            let siblings=ResizeArray<LocalSibling>()
             let mutable previous:Data option=None
             let mutable previousEnd=0.
             let mutable firstStart=nan
             for index in 0..property.Frames.Length-1 do
                 if alive then
                     let frame=property.Frames[index]
+                    let duration=timing "duration" (defaultArg frame.Duration (defaults.Duration/float property.Frames.Length))
+                    let delay=defaultArg frame.Delay (if index=0 then defaults.Delay else 0.)
+                    let start=previousEnd+delay
+                    let nextEnd=PropertyNumbers.round 1e12 (start+duration)
+                    let absoluteStart=PropertyNumbers.round 1e12 (defaults.Offset+start)
+                    let selected=if replace then selectSibling siblings absoluteStart previous else previous
                     let preceding=previous |> Option.map copy |> Option.defaultWith(fun () ->
                         if frame.From.IsNone || frame.To.IsNone || (frame.From |> Option.exists(fun value -> let data=decompose value in data.Kind=ValueKind.Number || data.Operator.IsSome)) then copy original.Value
                         else decompose(Number 0.))
                     let mutable first=frame.From |> Option.map decompose |> Option.defaultWith(fun () -> copy preceding)
                     let last=frame.To |> Option.map decompose |> Option.defaultWith(fun () -> copy preceding)
-                    if frame.From.IsSome && frame.To.IsSome && first.Kind=ValueKind.Number && preceding.Kind=ValueKind.Unit then
-                        first<-{first with Kind=ValueKind.Unit;Unit=preceding.Unit}
-                    let first,last=normalizeData(property.ConvertUnit,preceding,first,last)
+                    let inherited=selected |> Option.map copy |> Option.defaultWith(fun () -> preceding)
+                    if frame.From.IsSome && frame.To.IsSome && first.Kind=ValueKind.Number && inherited.Kind=ValueKind.Unit then
+                        first<-{first with Kind=ValueKind.Unit;Unit=inherited.Unit}
+                    let first,last=normalizeData(property.ConvertUnit,inherited,first,last)
                     alive<-canWrite()
-                    let duration=timing "duration" (defaultArg frame.Duration (defaults.Duration/float property.Frames.Length))
-                    let delay=defaultArg frame.Delay (if index=0 then defaults.Delay else 0.)
-                    let start=previousEnd+delay
-                    let nextEnd=PropertyNumbers.round 1e12 (start+duration)
                     let ease=defaultArg frame.Ease defaults.Ease
                     let modifier=defaultArg frame.Modifier defaults.Modifier
                     let cached=
@@ -221,9 +249,11 @@ module internal KeyframeCompilation =
                         else sample(false,last,last,1.,-1,modifier,canWrite) |> Option.map(fun struct(_,output) -> output)
                     match cached with
                     | Some cached when canWrite() ->
-                        tweens.Add(FrameTween(property.Target,property.Name,first,last,start,delay,duration,
-                            PropertyNumbers.round 1e12 (defaults.Offset+start),PropertyNumbers.round 1e12 (defaults.Offset+previousEnd),
-                            PropertyNumbers.round 1e12 (defaults.Offset+nextEnd),frame.From.IsSome,ease,modifier,cached))
+                        let tween=FrameTween(property.Target,property.Name,first,last,start,delay,duration,
+                            absoluteStart,PropertyNumbers.round 1e12 (defaults.Offset+previousEnd),
+                            PropertyNumbers.round 1e12 (defaults.Offset+nextEnd),frame.From.IsSome,ease,modifier,cached)
+                        tweens.Add tween
+                        if replace then addSibling siblings tween
                         if Double.IsNaN firstStart then firstStart<-start
                         previous<-Some last
                         previousEnd<-nextEnd
@@ -236,3 +266,8 @@ module internal KeyframeCompilation =
             let duration=endTime-delay
             let duration=if Double.IsNaN duration || duration=0. then 1e-11 else duration
             Some(FrameProgram(delay,duration,defaults.Offset,tweens |> Seq.map(fun tween -> tween.Trim delay) |> Seq.toArray))
+
+    /// <summary>Compiles independent frame endpoints with guarded construction and source composition-none inheritance.</summary>
+    let compile (defaults,properties,canWrite)=compileCore false (defaults,properties,canWrite)
+    /// <summary>Compiles endpoints using source replace predecessors within each target property sequence.</summary>
+    let compileReplacing (defaults,properties,canWrite)=compileCore true (defaults,properties,canWrite)

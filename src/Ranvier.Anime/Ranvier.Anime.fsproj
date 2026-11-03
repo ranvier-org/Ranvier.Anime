@@ -16,6 +16,7 @@
     <Compile Include="PlaybackTiming.fs" />
     <Compile Include="PlaybackState.fs" />
     <Compile Include="Timer.fs" />
+    <Compile Include="KeyframePlayback.fs" />
     <Compile Include="AnimatableTrack.fs" />
     <Compile Include="NumericAnimation.fs" />
     <Compile Include="AnimatableFrames.fs" />

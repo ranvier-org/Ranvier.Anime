@@ -86,6 +86,62 @@ let main args =
                 (result.IsNone && owner.IsDisposed && calls=1)
             owner.Dispose()
         do
+            let beforeWidth=style.getPropertyValue "width"
+            let beforeHeight=style.getPropertyValue "height"
+            let properties=[|
+                {FrameProperty.Target=0;Name="width";Original=ValueInterpolation.Text "10px";ConvertUnit=None
+                 Frames=[|{FrameInput.Default with To=Some(ValueInterpolation.Text "110px");Duration=Some 100.}
+                          {FrameInput.Default with To=Some(ValueInterpolation.Text "210px");Duration=Some 50.;Delay=Some 100.}|]}
+                {FrameProperty.Target=0;Name="height";Original=ValueInterpolation.Text "0px";ConvertUnit=None
+                 Frames=[|{FrameInput.Default with To=Some(ValueInterpolation.Text "400px");Duration=Some 400.}|]} |]
+            let program=KeyframeCompilation.compileReplacing({FrameDefaults.Default with Duration=400.;Ease=id},properties,(fun () -> true)) |> Option.get
+            use driver=new KeyframePlayback(scheduler,program,(fun _ name output -> StyleDeclaration.apply style (Declaration.create name output.Text)),
+                                           true,true,4,PlaybackOptions.Default)
+            driver.Initialize()
+            driver.Clock.Seek 300.
+            let tail=element.getBoundingClientRect().width
+            driver.Clock.Seek 150.
+            let gap=element.getBoundingClientRect().width
+            driver.Clock.Seek 225.
+            let middle=element.getBoundingClientRect().width
+            driver.Clock.Seek 0.
+            require "shared native keyframe playback restores short tails and backward gaps"
+                (abs(tail-210.)<0.01 && abs(gap-110.)<0.01 && abs(middle-160.)<0.01 && abs(element.getBoundingClientRect().width-10.)<0.01)
+            driver.Clock.Stretch 800u
+            driver.Clock.Seek 450.
+            require "native keyframe stretching scales per-frame geometry through the shared timer"
+                (abs(element.getBoundingClientRect().width-160.)<0.01 && driver.Clock.Duration=800.)
+            driver.Clock.Reset()
+            driver.Clock.Resume()
+            pumpUntil host (fun () -> driver.Clock.CurrentTime>=50.)
+            require "compiled keyframes consume native scheduled frames"
+                (element.getBoundingClientRect().width>10. && element.getBoundingClientRect().width<110.)
+            driver.Clock.Cancel()
+            for name,value in ["width",beforeWidth;"height",beforeHeight] do
+                if String.IsNullOrEmpty value then style.removeProperty name |> ignore else style.setProperty(name,value)
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let mutable armed=false
+            let mutable calls=0
+            let modifier value=if armed then calls<-calls+1;owner.Dispose();value else value
+            let properties=[|{FrameProperty.Target=0;Name="transform";Original=ValueInterpolation.Text "translate(0px,0px)";ConvertUnit=None
+                              Frames=[|{FrameInput.Default with To=Some(ValueInterpolation.Text "translate(100px,200px)");Modifier=Some modifier}|]}|]
+            let program=KeyframeCompilation.compileReplacing({FrameDefaults.Default with Duration=100.;Ease=id},properties,(fun () -> true)) |> Option.get
+            use driver=new KeyframePlayback(scheduler,program,(fun _ name output -> StyleDeclaration.apply style (Declaration.create name output.Text)),
+                                           true,true,4,PlaybackOptions.Default)
+            owner.Attach driver.Clock
+            driver.Initialize()
+            let before=style.getPropertyValue "transform"
+            armed<-true
+            driver.Clock.Resume()
+            pumpUntil host (fun () -> driver.Clock.Cancelled)
+            require "native keyframe owner disposal suppresses partial components and later dispatch"
+                (calls=1 && style.getPropertyValue "transform"=before)
+            owner.Dispose()
+            style.removeProperty "transform" |> ignore
+        do
             style.setProperty("width","7px",priority="important")
             use group=new Animatable(scheduler)
             let settings={AnimatablePropertyOptions.Default with Ease=id}

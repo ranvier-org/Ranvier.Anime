@@ -31,7 +31,8 @@ let private fixtures () =
     use document=JsonDocument.Parse(File.ReadAllText(Path.Combine(root,"keyframes.json")))
     Expect.equal (document.RootElement.GetProperty("upstreamCommit").GetString()) "2c9cf8ea00329f6768c7d7902252ed977d75ce42" "pinned source"
     document.RootElement.GetProperty("fixtures").EnumerateArray() |> Seq.map _.Clone() |> Seq.toList
-let private replay (fixture:JsonElement) =
+/// <summary>Captures authored source-fixture endpoints and timing for construction and connected playback tests.</summary>
+let internal capture (fixture:JsonElement) =
     let input=fixture.GetProperty("input")
     let defaults:FrameDefaults=
         {Duration=input.GetProperty("duration").GetDouble();Delay=optional "delay" input |> Option.map _.GetDouble() |> Option.defaultValue 0.
@@ -58,8 +59,12 @@ let private replay (fixture:JsonElement) =
     let captured:FrameProperty array=
         targets |> Array.mapi(fun target values ->
             properties |> Array.map(fun (name,frames) -> {Target=target;Name=name;Original=(optional name values |> Option.map literal |> Option.defaultValue(Number 0.));Frames=frames;
-                ConvertUnit=(if fixture.GetProperty("name").GetString()="angleUnits" then Some(CssUnits.convertMeasured(fun _ _ -> failtest "unexpected angle measurement")) else None)}))
+                ConvertUnit=(if fixture.GetProperty("name").GetString().EndsWith("angleUnits",StringComparison.Ordinal) then Some(CssUnits.convertMeasured(fun _ _ -> failtest "unexpected angle measurement")) else None)}))
         |> Array.concat
+    defaults,captured
+
+let private replay (fixture:JsonElement) =
+    let defaults,captured=capture fixture
     let program=KeyframeCompilation.compile(defaults,captured,yes) |> Option.get
     let expected=fixture.GetProperty("construction")
     Expect.equal program.Delay (expected.GetProperty("delay").GetDouble()) "source initial delay"

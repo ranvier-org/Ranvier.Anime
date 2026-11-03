@@ -56,10 +56,12 @@ Construction fixtures explicitly use source composition none to isolate this tas
 
 **Interfaces:** Consume FrameProgram and existing Timer/ValueInterpolation.sample. Produce a guarded driver with source write eligibility, per-tween history and mutable stretch geometry, usable by numeric and CSS bindings.
 
-- [ ] Write RED comparisons for forward/backward/skipped/forced seeks, delayed gaps, short trailing frames, repeated/reversed/alternate playback and constructor-independent callbacks.
-- [ ] Implement same-parent handoff/hold gates, last-frame restoration, shared timer geometry and generation/ancestor guards.
-- [ ] Verify native sampling, modifier/ease interruption, owner disposal and staged stretch with full source traces and persisted code.
-- [ ] Run full normal/Traced gates and one scoped review before committing the connected driver.
+- [x] Write RED comparisons for forward/backward/skipped/forced seeks, delayed gaps, short trailing frames, repeated/reversed/alternate playback and constructor-independent callbacks.
+- [x] Implement same-parent handoff/hold gates, last-frame restoration, shared timer geometry and generation/ancestor guards.
+- [x] Verify native sampling, modifier/ease interruption, owner disposal and staged stretch with full source traces and persisted code.
+- [x] Run full normal/Traced gates and one scoped review before committing the connected driver.
+
+Task2 checkpoint:106 isolated source schedules verify exact ordered writes, per-frame history, clock state and callback target snapshots; ten interruption tests pass. Fixture SHA256 `aca33e6acac820922900f9fb3c84dbc7264684d65b60d5e21d30424317a6b818`. Negative-delay reordering required replace predecessor selection during endpoint compilation for relative values and numeric unit inheritance. Review's pre-initialization cancellation callback gap was reproduced and fixed for direct cancellation and actual owner disposal. Full suites1656/1656 normal/Traced, XML0. Both public JIT and strict NativeAOT PEs pass connected native gap/tail/layout/stretch/scheduling/owner probes; evidence is `docs/evidence/native-public45-p7-keyframe-playback-final.json`. Public authoring, function values and scoped revert remain Task3.
 
 ## Task 3: Typed authoring, function values and native integration
 
