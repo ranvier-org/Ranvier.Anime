@@ -3,6 +3,24 @@ namespace Ranvier.Anime
 open System
 open Ranvier.Anime.ValueInterpolation
 
+/// <summary>Arithmetic applied to the preceding raw endpoint during keyframe construction.</summary>
+/// <remarks>Relative arithmetic precedes scalar unit conversion.</remarks>
+type RelativeOperation =
+    /// <summary>Adds the operand, matching += authoring.</summary>
+    | Add = 0
+    /// <summary>Subtracts the operand, matching -= authoring.</summary>
+    | Subtract = 1
+    /// <summary>Multiplies by the operand, matching *= authoring.</summary>
+    | Multiply = 2
+
+module private RelativeEndpoint =
+    let symbol operation =
+        match operation with
+        | RelativeOperation.Add -> '+'
+        | RelativeOperation.Subtract -> '-'
+        | RelativeOperation.Multiply -> '*'
+        | _ -> invalidArg "operation" "Expected Add, Subtract or Multiply."
+
 /// <summary>Typed target, unsigned index/count and the preceding frame's cached endpoint during construction.</summary>
 [<Sealed>]
 type KeyframeContext<'Target,'Value> internal(target:'Target,index:uint,count:uint,previous:'Value option) =
@@ -15,9 +33,16 @@ type KeyframeContext<'Target,'Value> internal(target:'Target,index:uint,count:ui
     /// <summary>The preceding authored frame's modified end cache, when a preceding frame exists.</summary>
     member _.PreviousValue=previous
 
-type private FrameValue<'Context,'Value>(constant:'Value option,compute:('Context -> 'Value) option) =
+type private FrameValue<'Context,'Value>(constant:'Value option,compute:('Context -> 'Value) option,?operation:char) =
     member _.Constant=constant
     member _.Read(context)=match compute with Some read -> read context | None -> constant.Value
+    member _.Convert(convert:'Value -> Literal,value:'Value) =
+        let literal=convert value
+        match operation with
+        | None -> literal
+        | Some operation ->
+            let operand=match literal with Number value -> number value | Text value -> value
+            Text(string operation+"="+operand)
 
 /// <summary>An immutable typed frame with optional endpoints, timing overrides, easing and component modification.</summary>
 /// <remarks>Callbacks run during construction in destination, source, duration, delay order; disposal suppresses later callbacks.</remarks>
@@ -61,6 +86,15 @@ type Keyframe<'Target,'Value> private
         Keyframe<'Target,'Value>(Some(FrameValue(None,Some read)),last,duration,delay,ease,modifier,computed,pair)
     /// <summary>Sets an explicit source endpoint.</summary>
     member _.WithFrom(value:'Value)=Keyframe<'Target,'Value>(Some(FrameValue(Some value,None)),last,duration,delay,ease,modifier,computed,pair)
+    /// <summary>Sets a source operand relative to the preceding raw destination; CSS units come from the typed declaration.</summary>
+    member _.WithFromRelative(operation:RelativeOperation,value:'Value) =
+        let operation=RelativeEndpoint.symbol operation
+        Keyframe<'Target,'Value>(Some(FrameValue(Some value,None,operation=operation)),last,duration,delay,ease,modifier,computed,pair)
+    /// <summary>Computes a relative source operand in the ordinary source callback phase.</summary>
+    member _.WithFromRelativeBy(operation:RelativeOperation,read:KeyframeContext<'Target,'Value> -> 'Value) =
+        let operation=RelativeEndpoint.symbol operation
+        checkCallback "read" read
+        Keyframe<'Target,'Value>(Some(FrameValue(None,Some read,operation=operation)),last,duration,delay,ease,modifier,computed,pair)
     member private _.DurationInput=duration
     member private _.DelayInput=delay
     member private _.EaseInput=ease
@@ -75,11 +109,12 @@ type Keyframe<'Target,'Value> private
         Keyframe<'Target,'Value>(value.DestinationInput,last,duration,delay,ease,modifier,computed,pair)
     /// <summary>Captures constant inputs for validation before target reads or callback effects.</summary>
     member internal _.Template(convert:'Value -> Literal) : FrameInput =
+        let constant provider = provider |> Option.bind(fun (value:FrameValue<_,_>) -> value.Constant |> Option.map(fun input -> value.Convert(convert,input)))
         if computed.IsSome then
             {From=None;To=None;Duration=Some 0.;Delay=Some 0.;Ease=None;Modifier=None}
         else
-            {From=(if pair.IsSome then None else first |> Option.bind _.Constant |> Option.map convert)
-             To=last |> Option.bind _.Constant |> Option.map convert
+            {From=(if pair.IsSome then None else constant first)
+             To=constant last
              Duration=duration |> Option.map(fun value -> defaultArg value.Constant 0.);Delay=delay |> Option.map(fun value -> defaultArg value.Constant 0.);Ease=ease;Modifier=modifier}
     /// <summary>Evaluates callbacks under a construction guard and returns no frame after interruption.</summary>
     member internal _.Resolve(context:KeyframeContext<'Target,'Value>,convert:'Value -> Literal,current:unit -> bool) : FrameInput option =
@@ -89,6 +124,8 @@ type Keyframe<'Target,'Value> private
                 let value=provider.Read context
                 if current() then Some value else None
             | _ -> None
+        let endpoint (provider:FrameValue<KeyframeContext<'Target,'Value>,'Value> option) value =
+            match provider with Some provider -> provider.Convert(convert,value) | None -> convert value
         match computed with
         | Some compute when current() ->
             let frame=compute context
@@ -111,7 +148,8 @@ type Keyframe<'Target,'Value> private
             let wait=read delay
             if current() then
                 let source=match endpoints with Some(first,_) -> Some first | None -> source
-                Some {From=source |> Option.map convert;To=destination |> Option.map convert
+                Some {From=source |> Option.map(if endpoints.IsSome then convert else endpoint first)
+                      To=destination |> Option.map(if pair.IsSome then convert else endpoint last)
                       Duration=milliseconds;Delay=wait;Ease=ease;Modifier=modifier}
             else None
     member private _.IsComputedResult=computed.IsNone && pair.IsNone && (last |> Option.exists(fun value -> value.Constant.IsSome))
@@ -128,6 +166,15 @@ type Keyframe<'Target,'Value> private
         Keyframe<'Target,'Value>(None,None,None,None,None,None,None,Some read)
     /// <summary>Creates a constant destination frame; missing source inherits the preceding raw endpoint.</summary>
     static member To(value:'Value) : Keyframe<'Target,'Value> =Keyframe<'Target,'Value>(None,Some(FrameValue(Some value,None)),None,None,None,None,None,None)
+    /// <summary>Creates a destination operand relative to the preceding raw endpoint during construction.</summary>
+    static member ToRelative(operation:RelativeOperation,value:'Value) : Keyframe<'Target,'Value> =
+        let operation=RelativeEndpoint.symbol operation
+        Keyframe<'Target,'Value>(None,Some(FrameValue(Some value,None,operation=operation)),None,None,None,None,None,None)
+    /// <summary>Computes a relative destination operand in the ordinary destination callback phase.</summary>
+    static member ToRelativeBy(operation:RelativeOperation,read:KeyframeContext<'Target,'Value> -> 'Value) : Keyframe<'Target,'Value> =
+        let operation=RelativeEndpoint.symbol operation
+        if isNull(box read) then nullArg "read"
+        Keyframe<'Target,'Value>(None,Some(FrameValue(None,Some read,operation=operation)),None,None,None,None,None,None)
     /// <summary>Creates a target-aware destination frame evaluated once during construction.</summary>
     static member ToBy(read:KeyframeContext<'Target,'Value> -> 'Value)=
         if isNull(box read) then nullArg "read"
@@ -142,6 +189,10 @@ type Keyframe<'Target,'Value> private
 module Keyframe =
     /// <summary>Creates a constant destination frame.</summary>
     let toValue value=Keyframe<'Target,'Value>.To value
+    /// <summary>Creates a typed relative destination; numeric operands use floats and CSS operands use existing declarations.</summary>
+    let toRelative operation value=Keyframe<'Target,'Value>.ToRelative(operation,value)
+    /// <summary>Computes a typed relative destination during construction.</summary>
+    let toRelativeBy operation read=Keyframe<'Target,'Value>.ToRelativeBy(operation,read)
     /// <summary>Creates a frame with explicit constant endpoints.</summary>
     let between first last=(Keyframe<'Target,'Value>.To last).WithFrom first
     /// <summary>Creates a destination callback with a statically typed target context.</summary>

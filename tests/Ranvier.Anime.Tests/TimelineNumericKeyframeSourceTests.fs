@@ -84,6 +84,10 @@ let verify (fixture:JsonElement) =
                 | "previous" -> defaultArg context.PreviousValue (values.[int context.Index].[0])+basis
                 | _ -> basis
             else value.GetDouble()
+        let relative (value:JsonElement) =
+            let text=value.GetString()
+            let operation=match text[0] with '+' -> RelativeOperation.Add | '-' -> RelativeOperation.Subtract | '*' -> RelativeOperation.Multiply | _ -> failwith("Unexpected relative operation "+text)
+            operation,Double.Parse(text.Substring(2),Globalization.CultureInfo.InvariantCulture)
         let raw=if sequenceInput.IsSome then [||] else p.GetProperty(propertyName).EnumerateArray() |> Seq.toArray
         let frames=
             if raw |> Array.forall(fun value -> value.ValueKind=JsonValueKind.Number) then
@@ -92,9 +96,14 @@ let verify (fixture:JsonElement) =
                 let mutable result=
                     match optional "to" frame with
                     | Some value when value.ValueKind=JsonValueKind.Object -> Keyframe<NumericProperty,float>.ToBy(read "to" value)
+                    | Some value when value.ValueKind=JsonValueKind.String -> let operation,value=relative value in Keyframe.ToRelative(operation,value)
                     | Some value -> Keyframe.To(value.GetDouble())
                     | None -> Keyframe.Hold()
-                optional "from" frame |> Option.iter(fun value -> result<-if value.ValueKind=JsonValueKind.Object then result.WithFromBy(read "from" value) else result.WithFrom(value.GetDouble()))
+                optional "from" frame |> Option.iter(fun value ->
+                    result<-
+                        if value.ValueKind=JsonValueKind.Object then result.WithFromBy(read "from" value)
+                        elif value.ValueKind=JsonValueKind.String then let operation,value=relative value in result.WithFromRelative(operation,value)
+                        else result.WithFrom(value.GetDouble()))
                 optional "duration" frame |> Option.iter(fun value -> result<-if value.ValueKind=JsonValueKind.Object then result.WithDurationPreciseBy(read "duration" value) else result.WithDurationPrecise(value.GetDouble()))
                 optional "delay" frame |> Option.iter(fun value -> result<-result.WithDelay(value.GetDouble()))
                 result)
@@ -159,11 +168,8 @@ let private fixtures() =
     use source=JsonDocument.Parse(System.IO.File.ReadAllText(System.IO.Path.Combine(root,"timeline-keyframes.json")))
     Expect.equal (source.RootElement.GetProperty("upstreamCommit").GetString()) "2c9cf8ea00329f6768c7d7902252ed977d75ce42" "pinned owned source"
     let supported=source.RootElement.GetProperty("fixtures").EnumerateArray()
-                  |> Seq.filter(fun fixture ->
-                      let name=fixture.GetProperty("name").GetString()
-                      not(["modifiedPredecessors";"relativeSiblingSource"] |> List.exists name.EndsWith))
                   |> Seq.map _.Clone() |> Seq.toArray
-    Expect.equal supported.Length 38 "complete current numeric authoring coverage"
+    Expect.equal supported.Length 42 "complete captured numeric owned schedules"
     supported
 
 let sourceTests=testList "public owned numeric source traces" [

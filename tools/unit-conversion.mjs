@@ -71,6 +71,7 @@ const animationInputs = [
   { name: 'em-to-px', base: '20px', first: '1em', last: '100px' },
   { name: 'relative-from-before-conversion', base: '20px', first: '+=1em', last: '100px' },
   { name: 'relative-target-before-conversion', base: '20px', first: '1em', last: '+=10px' },
+  { name: 'relative-em-operand-before-conversion', base: '16px', first: '16px', last: '+=2em' },
   { name: 'px-to-percent', base: '0px', first: '40px', last: '50%' },
   { name: 'turn-to-deg', base: '0deg', first: '0.5turn', last: '270deg' },
   { name: 'unit-to-compound', base: '20px', first: '10px', last: 'calc(50% + 20px)' },

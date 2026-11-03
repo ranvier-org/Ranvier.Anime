@@ -12,6 +12,7 @@
     <Compile Include="KeyframePlaybackTests.fs" />
     <Compile Include="OwnedKeyframeChildTests.fs" />
     <Compile Include="KeyframeNumericTests.fs" />
+    <Compile Include="RelativeKeyframeTests.fs" />
     <Compile Include="KeyframeComputedTests.fs" />
     <Compile Include="KeyframeCssTests.fs" />
     <Compile Include="KeyframeSequenceTests.fs" />

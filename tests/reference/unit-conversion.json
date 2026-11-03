@@ -441,6 +441,38 @@
       ]
     },
     {
+      "name": "relative-em-operand-before-conversion",
+      "base": "16px",
+      "first": "16px",
+      "last": "+=2em",
+      "samples": [
+        {
+          "time": 0,
+          "value": "1em"
+        },
+        {
+          "time": 25,
+          "value": "5.25em"
+        },
+        {
+          "time": 50,
+          "value": "9.5em"
+        },
+        {
+          "time": 75,
+          "value": "13.75em"
+        },
+        {
+          "time": 100,
+          "value": "18em"
+        },
+        {
+          "time": 25,
+          "value": "5.25em"
+        }
+      ]
+    },
+    {
       "name": "px-to-percent",
       "base": "0px",
       "first": "40px",

@@ -88,6 +88,21 @@ let verify (fixture:JsonElement) =
         let p=child.GetProperty "parameters"
         let sequenceInput=optional "keyframes" p
         let propertyName=if optional "width" p |> Option.isSome then "width" else "height"
+        let scalar (text:string)=Double.Parse(text.Substring(0,text.Length-2),Globalization.CultureInfo.InvariantCulture)
+        let relative (value:JsonElement) =
+            let text=value.GetString()
+            let operation=match text[0] with '+' -> RelativeOperation.Add | '-' -> RelativeOperation.Subtract | '*' -> RelativeOperation.Multiply | _ -> failwith("Unexpected relative operation "+text)
+            operation,Declaration.create propertyName (text.Substring(2))
+        let read field (value:JsonElement) (context:KeyframeContext<CSSStyleDeclaration,Declaration>) =
+            let previous=context.PreviousValue |> Option.map Declaration.value
+            let targetValue=values.[int context.Index].[0]
+            record "effect" (dict ["id",box childId;"field",box field;"index",box(int context.Index);"count",box(int context.Count);
+                                  "previous",(previous |> Option.map box |> Option.defaultValue null);"targetValue",box targetValue])
+            let basis=number "base" 0. value+number "step" 0. value*float context.Index
+            match value.GetProperty("fn").GetString() with
+            | "target" -> scalar targetValue+basis
+            | "previous" -> scalar(defaultArg previous targetValue)+basis
+            | _ -> basis
         let raw=if sequenceInput.IsSome then [||] else p.GetProperty(propertyName).EnumerateArray() |> Seq.toArray
         let frames=
             if raw |> Array.forall(fun value -> value.ValueKind=JsonValueKind.Number) then
@@ -95,10 +110,16 @@ let verify (fixture:JsonElement) =
             else raw |> Array.map(fun frame ->
                 let mutable result=
                     match optional "to" frame with
+                    | Some value when value.ValueKind=JsonValueKind.Object -> Keyframe<CSSStyleDeclaration,Declaration>.ToBy(fun context -> Declaration.create propertyName (px(read "to" value context)))
+                    | Some value when value.ValueKind=JsonValueKind.String -> let operation,value=relative value in Keyframe.ToRelative(operation,value)
                     | Some value -> Keyframe.To(Declaration.create propertyName (px(value.GetDouble())))
                     | None -> Keyframe.Hold()
-                optional "from" frame |> Option.iter(fun value -> result<-result.WithFrom(Declaration.create propertyName (px(value.GetDouble()))))
-                optional "duration" frame |> Option.iter(fun value -> result<-result.WithDurationPrecise(value.GetDouble()))
+                optional "from" frame |> Option.iter(fun value ->
+                    result<-
+                        if value.ValueKind=JsonValueKind.Object then result.WithFromBy(fun context -> Declaration.create propertyName (px(read "from" value context)))
+                        elif value.ValueKind=JsonValueKind.String then let operation,value=relative value in result.WithFromRelative(operation,value)
+                        else result.WithFrom(Declaration.create propertyName (px(value.GetDouble()))))
+                optional "duration" frame |> Option.iter(fun value -> result<-if value.ValueKind=JsonValueKind.Object then result.WithDurationPreciseBy(read "duration" value) else result.WithDurationPrecise(value.GetDouble()))
                 optional "delay" frame |> Option.iter(fun value -> result<-result.WithDelay(value.GetDouble()))
                 result)
         let cb phase clock=event childId phase (clockState clock)
@@ -164,7 +185,7 @@ let private fixtures() =
     Expect.equal (source.RootElement.GetProperty("upstreamCommit").GetString()) "2c9cf8ea00329f6768c7d7902252ed977d75ce42" "pinned owned source"
     let supported=source.RootElement.GetProperty("fixtures").EnumerateArray()
                   |> Seq.map _.Clone() |> Seq.toArray
-    Expect.equal supported.Length 32 "complete captured CSS owned schedules"
+    Expect.equal supported.Length 42 "complete captured CSS owned schedules"
     supported
 
 let sourceTests=testList "public owned CSS source traces" [

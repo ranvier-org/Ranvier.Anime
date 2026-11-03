@@ -42,6 +42,78 @@ let main args =
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
         do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","100px")
+            let property=NumericProperty((fun () -> target.getBoundingClientRect().width),
+                (fun value -> StyleDeclaration.apply inlineStyle (Css.width(Css.px value))))
+            use timeline=new Timeline(scheduler)
+            use child=timeline.AddKeyframes(property,[|Keyframe.toRelative RelativeOperation.Add 50.;Keyframe.toRelative RelativeOperation.Multiply 2.|],
+                duration=200u,options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id;Precision=None})
+            require "typed relative numeric construction retains original native geometry" (target.getBoundingClientRect().width=100.)
+            timeline.Seek 150.
+            require "typed relative numeric keyframes chain raw destinations in native layout" (target.getBoundingClientRect().width=225.)
+            child.Revert()
+            require "typed relative numeric revert restores the preconstruction native value" (target.getBoundingClientRect().width=100.)
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            let property=NumericProperty((fun () -> target.getBoundingClientRect().width),
+                (fun value -> StyleDeclaration.apply inlineStyle (Css.width(Css.px value))))
+            use timeline=new Timeline(scheduler)
+            let options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id;Precision=None}
+            use first=timeline.AddKeyframes(property,Keyframe.values [|0.;100.;200.|],duration=200u,position=TimelinePosition.At 0.,options=options)
+            let frame=(Keyframe<NumericProperty,float>.To 300.).WithFromRelative(RelativeOperation.Add,5.)
+            use second=timeline.AddKeyframes(property,[|frame|],duration=100u,position=TimelinePosition.At 75.,options=options)
+            timeline.Seek 125.
+            require "typed relative owned source uses raw predecessor100 plus5 rather than sampled75"
+                (target.getBoundingClientRect().width=202.5)
+            timeline.Cancel()
+            require "relative sibling controllers share native root cancellation" (first.Cancelled && second.Cancelled)
+            host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("font-size","16px")
+            inlineStyle.setProperty("width","16px",priority="important")
+            use timeline=new Timeline(scheduler)
+            let frame=Keyframe<HTMLElement,Declaration>.ToRelative(RelativeOperation.Add,Css.width(Css.em 2.))
+            use child=timeline.CaptureCssKeyframes(ComputedStyles.forHost host,target,"width",[|frame|],duration=100u,
+                options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id})
+            require "typed relative CSS construction retains its original native declaration" (inlineStyle.getPropertyValue "width"="16px")
+            timeline.Seek 50.
+            require "typed relative CSS operands retain source arithmetic before native unit conversion"
+                (target.getBoundingClientRect().width=152. && inlineStyle.getPropertyValue "width"="9.5em" &&
+                 inlineStyle.getPropertyPriority "width"="important")
+            child.Revert()
+            require "typed relative CSS revert restores original units and priority"
+                (inlineStyle.getPropertyValue "width"="16px" && inlineStyle.getPropertyPriority "width"="important")
+            host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            use timeline=new Timeline(scheduler)
+            owner.Attach timeline
+            let frame=Keyframe<HTMLElement,Declaration>.ToRelativeBy(RelativeOperation.Add,fun _ ->
+                owner.Dispose()
+                Css.height(Css.px 100.))
+            let mutable interrupted=false
+            try timeline.CaptureCssKeyframes(ComputedStyles.forHost host,target,"width",[|frame|],duration=100u) |> ignore
+            with :? InvalidOperationException -> interrupted<-true
+            require "actual native owner interruption suppresses relative operand conversion and invalid returned property"
+                (interrupted && timeline.Cancelled && inlineStyle.getPropertyValue "width"="10px" && inlineStyle.getPropertyValue "height"="")
+            host.Document.body.removeChild target |> ignore
+        do
             use graph=new Graph()
             use activation=graph.Activate()
             let owner=Api.createRoot id

@@ -7,9 +7,8 @@ import {createHash} from 'node:crypto';
 
 const script=fileURLToPath(import.meta.url),root=resolve(dirname(script),'..'),upstream=resolve(root,'upstream/anime');
 import {timelineKeyframeCases as base} from './timeline-keyframe-cases.mjs';
-const excluded=new Set(['modifiedPredecessors','relativeSiblingSource','targetAwareTimeline','previousAcrossChildren','overlapInputTail']);
 const rename=value=>Array.isArray(value)?value.map(rename):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([name,value])=>[name==='x'?'width':name==='y'?'height':name,rename(value)])):value;
-const cases=base.filter(input=>!excluded.has(input.name)).map(rename).flatMap(input=>['none','replace'].map(composition=>({...input,name:composition+'-'+input.name,composition})));
+const cases=base.map(rename).flatMap(input=>['none','replace'].map(composition=>({...input,name:composition+'-'+input.name,composition})));
 if(process.argv[2]==='--case'){
  let now=0;Date.now=()=>now;
  const load=path=>import(pathToFileURL(resolve(upstream,path)));
@@ -19,7 +18,6 @@ if(process.argv[2]==='--case'){
  const {tick}=await load('src/core/render.js');
  engine.useDefaultMainLoop=false;
  const input=cases[Number(process.argv[3])];assert.ok(input);
- assert.ok(!JSON.stringify(input).includes('"fn"'),'this CSS fixture subset uses constant typed endpoints');
  const states=structuredClone(input.targets??[{width:10,height:20}]),writes=[],effects=[],events=[],trace=[],children=new Map();
  const record=(kind,value)=>{
   (kind==='write'?writes:kind==='effect'?effects:events).push(value);
@@ -43,9 +41,11 @@ if(process.argv[2]==='--case'){
  const convert=(value,id,key)=>{
   if(value&&typeof value==='object'&&value.fn)return(target,index,all,previous)=>{
    const previousValue=previous?previous._value:null;
-   record('effect',{id,field:key,index,count:all.length,previous:previousValue,targetValue:target.x});
+   const targetValue=target.style.width;
+   record('effect',{id,field:key,index,count:all.length,previous:previousValue,targetValue});
    const base=(value.base??0)+(value.step??0)*index;
-   return value.fn==='target'?target.x+base:value.fn==='previous'?(previousValue??target.x)+base:base;
+   const result=value.fn==='target'?parseFloat(targetValue)+base:value.fn==='previous'?parseFloat(previousValue??targetValue)+base:base;
+   return ['width','height','from','to'].includes(key)?String(result)+'px':result;
   };
   if(Array.isArray(value))return value.map(value=>convert(value,id,key));
   if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,value])=>[key,convert(value,id,key)]));
@@ -106,7 +106,7 @@ if(process.argv[2]==='--case'){
  assert.equal(overlap.a[0].changeDuration,75,'earlier tween is truncated at new child insertion');
  assert.equal(overlap.a[1].changeDuration,1e-11,'future earlier-child tween is overridden');
  assert.equal(overlap.b[0].from,75,'new child inherits the internally sampled predecessor');
- assert.equal(fixtures.length,32);
+ assert.equal(fixtures.length,42);
  assert.deepEqual(byName.get('replace-sparseRows').construction[0].snapshot.targets,[{width:'10px',height:'20px'},{width:'30px',height:'40px'}],'owned CSS construction leaves targets unchanged');
  assert.equal(git('status','--porcelain'),'');
  const text=JSON.stringify({upstreamCommit:revision,version:JSON.parse(readFileSync(resolve(upstream,'package.json'),'utf8')).version,

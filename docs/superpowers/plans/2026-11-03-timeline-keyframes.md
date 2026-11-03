@@ -41,6 +41,8 @@ Task1 evidence:36 isolated source schedules include cross-child providers and mo
 
 ## Task2: Owned child phase and construction
 
+Relative-input checkpoint: typed add/subtract/multiply operands now span numeric and existing Declaration frames, constant/provider sources and destinations, computed results, pairs and copied offset endpoints. All42 numeric and42 actual CSS owned source schedules pass. Eight authoring contracts plus a mixed-unit source regression bring full normal/Traced suites to2047/2047 with XML0. A reviewed native expectation error was reproduced and corrected to source arithmetic-before-conversion order; both actual public JIT and strict NativeAOT modes pass. typed-relative-keyframes evidence verifies2 receipts/18 archives/72 library source hashes/2 consumers and360 authored/190 compiler inputs. This closes the captured relative authoring gap; mixed scalar/keyframe arbitration and the wider goal remain required.
+
 Sparse CSS continuation: existing typed Declaration rows/offsets now bind through owned explicit-style, explicit-element, inline and computed overloads. Fourteen contracts and32 actual source CSS Timeline.add traces are registered; full2024/2024 normal/Traced suites and XML0 pass. Existing42 numeric fixture bytes and the new32 CSS fixture regenerate byte-stably. Scoped review found no Critical/Important issues. Actual public JIT and strict NativeAOT pass in both modes; owned-css-sparse evidence verifies2 receipts/18 archives/72 library source hashes/2 consumers and360 authored/190 compiler inputs. Both solution project sets remain valid. Relative keyframe authoring and mixed scalar/keyframe arbitration remain separate required work.
 
 Owned CSS/sparse numeric checkpoint: per-property typed CSS explicit/inline/computed factories and numeric sparse rows/offsets now reuse the existing pending-child transaction and shared installation. Numeric aliases share handle identity; CSS paths share captured inline-style identity, verified against actual matched native wrappers.38 of42 exact source schedules pass; four relative-value schedules remain open. Twelve CSS and eight sparse numeric contracts pass alongside all prior tests. Owned typed CSS sparse sequences and mixed scalar/keyframe arbitration remain required.
@@ -75,7 +77,7 @@ The scoped registry review found skipped explicit-pair getter effects. Raw gette
 - [x] GREEN: implement inherited mute/direction/FPS/loop and cache-only construction through one Timer child phase; pass source offsets into compilation.
 - [x] Preserve all existing owned timer and borrowed tests; prove owner cancellation, reentry, getter faults, child cancellation, constructor interruption and no independent frame lease.
 - [x] Implement same-parent overlap predecessor/cache/arbitration against the captured cases; retain independent-animation/global registry work explicitly if separate.
-- [ ] Add numeric raw/explicit/row/offset and typed CSS inline/computed/declaration overloads, with uint/precise durations and existing scoped restoration.
+- [x] Add numeric raw/explicit/row/offset and typed CSS inline/computed/declaration overloads, with uint/precise durations and existing scoped restoration.
 
 ## Task3: Qualify and record
 
