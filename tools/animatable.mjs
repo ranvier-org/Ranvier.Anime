@@ -45,6 +45,9 @@ const cases = [
   {name:'noTargets', targets:[], parameters:{x:100}, steps:[{op:'get',property:'x'},retarget('x',100),frame(25),{op:'revert'}]},
   {name:'emptyProperties', targets:[{x:10}], parameters:{ease:'linear'}, steps:[frame(25),{op:'revert'}]},
   {name:'seekRetarget', targets:[{x:10}], parameters:{x:100,ease:'linear'}, steps:[retarget('x',110),seek('x',50),retarget('x',210),seek('x',50),seek('x',100)]},
+  {name:'numericRevert', targets:[{x:10,y:20}], parameters:{x:100,y:200,ease:'linear'}, steps:[retarget('x',110),retarget('y',220),frame(25),{op:'revert'},retarget('x',500),frame(100),{op:'revert'}]},
+  {name:'delayedNumericRevert', targets:[{x:10,y:20}], parameters:{x:{duration:100,delay:40},y:200,ease:'linear'}, steps:[retarget('x',110),retarget('y',220),frame(25),{op:'revert'},frame(100)]},
+  {name:'completedNumericRevert', targets:[{x:10}], parameters:{x:100,ease:'linear'}, steps:[retarget('x',110),frame(200),{op:'revert'},frame(100)]},
 ];
 
 if (process.argv[2] === '--case') {

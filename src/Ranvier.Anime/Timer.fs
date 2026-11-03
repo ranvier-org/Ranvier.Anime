@@ -305,6 +305,12 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member internal _.ReviveReset() =
         state.ReviveForReset()
         this.Reset()
+    /// <summary>Samples raw zero with muted render callbacks, then cancels if the rewind remains current.</summary>
+    member internal _.RewindForRevert() =
+        state.ReviveForReset()
+        operate (fun current ->
+            state.Tick(0.,PlaybackTickMode.Auto,true)
+            if current() then cancel()) ignore
     /// <summary>Whether the current renderer invocation refreshes caches without target dispatch.</summary>
     member internal _.InternalRender = state.InternalRender
     /// <summary>Prepares endpoints, optional stretch, cache-only reset and resume under one interruption guard.</summary>

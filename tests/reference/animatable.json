@@ -21507,6 +21507,1792 @@
           ]
         }
       ]
+    },
+    {
+      "name": "numericRevert",
+      "targets": [
+        {
+          "x": 10,
+          "y": 20
+        }
+      ],
+      "parameters": {
+        "x": 100,
+        "y": 200,
+        "ease": "linear"
+      },
+      "steps": [
+        {
+          "op": "retarget",
+          "property": "x",
+          "value": 110
+        },
+        {
+          "op": "retarget",
+          "property": "y",
+          "value": 220
+        },
+        {
+          "op": "frame",
+          "after": 25
+        },
+        {
+          "op": "revert"
+        },
+        {
+          "op": "retarget",
+          "property": "x",
+          "value": 500
+        },
+        {
+          "op": "frame",
+          "after": 100
+        },
+        {
+          "op": "revert"
+        }
+      ],
+      "initial": {
+        "state": {
+          "targets": [
+            {
+              "x": 10,
+              "y": 20
+            }
+          ],
+          "targetCount": 1,
+          "properties": {
+            "x": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 100,
+              "iterationDuration": 100,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false,
+              "hasTween": true,
+              "value": 10,
+              "tweens": [
+                {
+                  "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
+                  "from": 10,
+                  "to": 10,
+                  "components": [],
+                  "fromComponents": [],
+                  "toComponents": []
+                }
+              ]
+            },
+            "y": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 200,
+              "iterationDuration": 200,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false,
+              "hasTween": true,
+              "value": 20,
+              "tweens": [
+                {
+                  "number": 20,
+                  "time": 0,
+                  "updateDuration": 200,
+                  "easedProgress": 0,
+                  "from": 20,
+                  "to": 20,
+                  "components": [],
+                  "fromComponents": [],
+                  "toComponents": []
+                }
+              ]
+            }
+          },
+          "callbacks": {
+            "time": 0,
+            "rawTime": 0,
+            "duration": 1000,
+            "iterationDuration": 1000,
+            "delay": 0,
+            "loopDelay": 0,
+            "paused": true,
+            "completed": false,
+            "began": false,
+            "reversed": false
+          }
+        },
+        "writes": [
+          {
+            "target": 0,
+            "property": "x",
+            "value": 10
+          },
+          {
+            "target": 0,
+            "property": "y",
+            "value": 20
+          }
+        ],
+        "events": []
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "retarget",
+            "property": "x",
+            "value": 110
+          },
+          "clock": 0,
+          "returnedGroup": true,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 20
+              }
+            ],
+            "targetCount": 1,
+            "properties": {
+              "x": {
+                "time": 0,
+                "rawTime": 0,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": false,
+                "reversed": false,
+                "hasTween": true,
+                "value": 10,
+                "tweens": [
+                  {
+                    "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
+                    "from": 10,
+                    "to": 110,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              },
+              "y": {
+                "time": 0,
+                "rawTime": 0,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": false,
+                "reversed": false,
+                "hasTween": true,
+                "value": 20,
+                "tweens": [
+                  {
+                    "number": 20,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
+                    "from": 20,
+                    "to": 20,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              }
+            },
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [],
+          "events": []
+        },
+        {
+          "step": {
+            "op": "retarget",
+            "property": "y",
+            "value": 220
+          },
+          "clock": 0,
+          "returnedGroup": true,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 20
+              }
+            ],
+            "targetCount": 1,
+            "properties": {
+              "x": {
+                "time": 0,
+                "rawTime": 0,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": false,
+                "reversed": false,
+                "hasTween": true,
+                "value": 10,
+                "tweens": [
+                  {
+                    "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
+                    "from": 10,
+                    "to": 110,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              },
+              "y": {
+                "time": 0,
+                "rawTime": 0,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": false,
+                "reversed": false,
+                "hasTween": true,
+                "value": 20,
+                "tweens": [
+                  {
+                    "number": 20,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
+                    "from": 20,
+                    "to": 220,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              }
+            },
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [],
+          "events": []
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "clock": 25,
+          "returnedGroup": null,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 47,
+                "y": 57
+              }
+            ],
+            "targetCount": 1,
+            "properties": {
+              "x": {
+                "time": 37,
+                "rawTime": 37,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": true,
+                "reversed": false,
+                "hasTween": true,
+                "value": 47,
+                "tweens": [
+                  {
+                    "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
+                    "from": 10,
+                    "to": 110,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              },
+              "y": {
+                "time": 37,
+                "rawTime": 37,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": true,
+                "reversed": false,
+                "hasTween": true,
+                "value": 57,
+                "tweens": [
+                  {
+                    "number": 57,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
+                    "from": 20,
+                    "to": 220,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              }
+            },
+            "callbacks": {
+              "time": 12,
+              "rawTime": 12,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": false,
+              "completed": false,
+              "began": true,
+              "reversed": false
+            }
+          },
+          "writes": [
+            {
+              "target": 0,
+              "property": "x",
+              "value": 47
+            },
+            {
+              "target": 0,
+              "property": "y",
+              "value": 57
+            }
+          ],
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 12,
+                "rawTime": 12,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 47,
+                  "y": 57
+                }
+              ]
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 12,
+                "rawTime": 12,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 47,
+                  "y": 57
+                }
+              ]
+            },
+            {
+              "event": "Render",
+              "state": {
+                "time": 12,
+                "rawTime": 12,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 47,
+                  "y": 57
+                }
+              ]
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 12,
+                "rawTime": 12,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 47,
+                  "y": 57
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "revert"
+          },
+          "clock": 25,
+          "returnedGroup": true,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 20
+              }
+            ],
+            "targetCount": 0,
+            "properties": {},
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [
+            {
+              "target": 0,
+              "property": "x",
+              "value": 10
+            },
+            {
+              "target": 0,
+              "property": "x",
+              "value": 10
+            },
+            {
+              "target": 0,
+              "property": "y",
+              "value": 20
+            },
+            {
+              "target": 0,
+              "property": "y",
+              "value": 20
+            }
+          ],
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "event": "Render",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": true,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "event": "Pause",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": true,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "retarget",
+            "property": "x",
+            "value": 500
+          },
+          "clock": 25,
+          "returnedGroup": false,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 20
+              }
+            ],
+            "targetCount": 0,
+            "properties": {},
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [],
+          "events": []
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 100
+          },
+          "clock": 125,
+          "returnedGroup": null,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 20
+              }
+            ],
+            "targetCount": 0,
+            "properties": {},
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [],
+          "events": []
+        },
+        {
+          "step": {
+            "op": "revert"
+          },
+          "clock": 125,
+          "returnedGroup": true,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 20
+              }
+            ],
+            "targetCount": 0,
+            "properties": {},
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [],
+          "events": []
+        }
+      ]
+    },
+    {
+      "name": "delayedNumericRevert",
+      "targets": [
+        {
+          "x": 10,
+          "y": 20
+        }
+      ],
+      "parameters": {
+        "x": {
+          "duration": 100,
+          "delay": 40
+        },
+        "y": 200,
+        "ease": "linear"
+      },
+      "steps": [
+        {
+          "op": "retarget",
+          "property": "x",
+          "value": 110
+        },
+        {
+          "op": "retarget",
+          "property": "y",
+          "value": 220
+        },
+        {
+          "op": "frame",
+          "after": 25
+        },
+        {
+          "op": "revert"
+        },
+        {
+          "op": "frame",
+          "after": 100
+        }
+      ],
+      "initial": {
+        "state": {
+          "targets": [
+            {
+              "x": 10,
+              "y": 20
+            }
+          ],
+          "targetCount": 1,
+          "properties": {
+            "x": {
+              "time": -40,
+              "rawTime": -40,
+              "duration": 100,
+              "iterationDuration": 100,
+              "delay": 40,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false,
+              "hasTween": true,
+              "value": 10,
+              "tweens": [
+                {
+                  "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
+                  "from": 10,
+                  "to": 10,
+                  "components": [],
+                  "fromComponents": [],
+                  "toComponents": []
+                }
+              ]
+            },
+            "y": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 200,
+              "iterationDuration": 200,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false,
+              "hasTween": true,
+              "value": 20,
+              "tweens": [
+                {
+                  "number": 20,
+                  "time": 0,
+                  "updateDuration": 200,
+                  "easedProgress": 0,
+                  "from": 20,
+                  "to": 20,
+                  "components": [],
+                  "fromComponents": [],
+                  "toComponents": []
+                }
+              ]
+            }
+          },
+          "callbacks": {
+            "time": 0,
+            "rawTime": 0,
+            "duration": 1000,
+            "iterationDuration": 1000,
+            "delay": 0,
+            "loopDelay": 0,
+            "paused": true,
+            "completed": false,
+            "began": false,
+            "reversed": false
+          }
+        },
+        "writes": [
+          {
+            "target": 0,
+            "property": "x",
+            "value": 10
+          },
+          {
+            "target": 0,
+            "property": "y",
+            "value": 20
+          }
+        ],
+        "events": []
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "retarget",
+            "property": "x",
+            "value": 110
+          },
+          "clock": 0,
+          "returnedGroup": true,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 20
+              }
+            ],
+            "targetCount": 1,
+            "properties": {
+              "x": {
+                "time": -40,
+                "rawTime": -40,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": false,
+                "reversed": false,
+                "hasTween": true,
+                "value": 10,
+                "tweens": [
+                  {
+                    "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
+                    "from": 10,
+                    "to": 110,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              },
+              "y": {
+                "time": 0,
+                "rawTime": 0,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": false,
+                "reversed": false,
+                "hasTween": true,
+                "value": 20,
+                "tweens": [
+                  {
+                    "number": 20,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
+                    "from": 20,
+                    "to": 20,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              }
+            },
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [],
+          "events": []
+        },
+        {
+          "step": {
+            "op": "retarget",
+            "property": "y",
+            "value": 220
+          },
+          "clock": 0,
+          "returnedGroup": true,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 20
+              }
+            ],
+            "targetCount": 1,
+            "properties": {
+              "x": {
+                "time": -40,
+                "rawTime": -40,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": false,
+                "reversed": false,
+                "hasTween": true,
+                "value": 10,
+                "tweens": [
+                  {
+                    "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
+                    "from": 10,
+                    "to": 110,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              },
+              "y": {
+                "time": 0,
+                "rawTime": 0,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": false,
+                "reversed": false,
+                "hasTween": true,
+                "value": 20,
+                "tweens": [
+                  {
+                    "number": 20,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
+                    "from": 20,
+                    "to": 220,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              }
+            },
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [],
+          "events": []
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "clock": 25,
+          "returnedGroup": null,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 57
+              }
+            ],
+            "targetCount": 1,
+            "properties": {
+              "x": {
+                "time": -3,
+                "rawTime": -3,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": false,
+                "reversed": false,
+                "hasTween": true,
+                "value": 10,
+                "tweens": [
+                  {
+                    "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
+                    "from": 10,
+                    "to": 110,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              },
+              "y": {
+                "time": 37,
+                "rawTime": 37,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": true,
+                "reversed": false,
+                "hasTween": true,
+                "value": 57,
+                "tweens": [
+                  {
+                    "number": 57,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
+                    "from": 20,
+                    "to": 220,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              }
+            },
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": false,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [
+            {
+              "target": 0,
+              "property": "y",
+              "value": 57
+            }
+          ],
+          "events": []
+        },
+        {
+          "step": {
+            "op": "revert"
+          },
+          "clock": 25,
+          "returnedGroup": true,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 20
+              }
+            ],
+            "targetCount": 0,
+            "properties": {},
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [
+            {
+              "target": 0,
+              "property": "x",
+              "value": 10
+            },
+            {
+              "target": 0,
+              "property": "y",
+              "value": 20
+            },
+            {
+              "target": 0,
+              "property": "y",
+              "value": 20
+            }
+          ],
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "event": "Render",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": true,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            },
+            {
+              "event": "Pause",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": true,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 10,
+                  "y": 20
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 100
+          },
+          "clock": 125,
+          "returnedGroup": null,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10,
+                "y": 20
+              }
+            ],
+            "targetCount": 0,
+            "properties": {},
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [],
+          "events": []
+        }
+      ]
+    },
+    {
+      "name": "completedNumericRevert",
+      "targets": [
+        {
+          "x": 10
+        }
+      ],
+      "parameters": {
+        "x": 100,
+        "ease": "linear"
+      },
+      "steps": [
+        {
+          "op": "retarget",
+          "property": "x",
+          "value": 110
+        },
+        {
+          "op": "frame",
+          "after": 200
+        },
+        {
+          "op": "revert"
+        },
+        {
+          "op": "frame",
+          "after": 100
+        }
+      ],
+      "initial": {
+        "state": {
+          "targets": [
+            {
+              "x": 10
+            }
+          ],
+          "targetCount": 1,
+          "properties": {
+            "x": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 100,
+              "iterationDuration": 100,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false,
+              "hasTween": true,
+              "value": 10,
+              "tweens": [
+                {
+                  "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
+                  "from": 10,
+                  "to": 10,
+                  "components": [],
+                  "fromComponents": [],
+                  "toComponents": []
+                }
+              ]
+            }
+          },
+          "callbacks": {
+            "time": 0,
+            "rawTime": 0,
+            "duration": 1000,
+            "iterationDuration": 1000,
+            "delay": 0,
+            "loopDelay": 0,
+            "paused": true,
+            "completed": false,
+            "began": false,
+            "reversed": false
+          }
+        },
+        "writes": [
+          {
+            "target": 0,
+            "property": "x",
+            "value": 10
+          }
+        ],
+        "events": []
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "retarget",
+            "property": "x",
+            "value": 110
+          },
+          "clock": 0,
+          "returnedGroup": true,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10
+              }
+            ],
+            "targetCount": 1,
+            "properties": {
+              "x": {
+                "time": 0,
+                "rawTime": 0,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": false,
+                "completed": false,
+                "began": false,
+                "reversed": false,
+                "hasTween": true,
+                "value": 10,
+                "tweens": [
+                  {
+                    "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
+                    "from": 10,
+                    "to": 110,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              }
+            },
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [],
+          "events": []
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 200
+          },
+          "clock": 200,
+          "returnedGroup": null,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 110
+              }
+            ],
+            "targetCount": 1,
+            "properties": {
+              "x": {
+                "time": 100,
+                "rawTime": 212,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": true,
+                "began": true,
+                "reversed": false,
+                "hasTween": true,
+                "value": 110,
+                "tweens": [
+                  {
+                    "number": 110,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
+                    "from": 10,
+                    "to": 110,
+                    "components": [],
+                    "fromComponents": [],
+                    "toComponents": []
+                  }
+                ]
+              }
+            },
+            "callbacks": {
+              "time": 1000,
+              "rawTime": 1000,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": true,
+              "began": true,
+              "reversed": false
+            }
+          },
+          "writes": [
+            {
+              "target": 0,
+              "property": "x",
+              "value": 110
+            }
+          ],
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 110
+                }
+              ]
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 110
+                }
+              ]
+            },
+            {
+              "event": "Render",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 110
+                }
+              ]
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": false,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 110
+                }
+              ]
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": true,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 110
+                }
+              ]
+            },
+            {
+              "event": "Pause",
+              "state": {
+                "time": 1000,
+                "rawTime": 1000,
+                "duration": 1000,
+                "iterationDuration": 1000,
+                "delay": 0,
+                "loopDelay": 0,
+                "paused": true,
+                "completed": true,
+                "began": true,
+                "reversed": false
+              },
+              "targets": [
+                {
+                  "x": 110
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "revert"
+          },
+          "clock": 200,
+          "returnedGroup": true,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10
+              }
+            ],
+            "targetCount": 0,
+            "properties": {},
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [
+            {
+              "target": 0,
+              "property": "x",
+              "value": 10
+            },
+            {
+              "target": 0,
+              "property": "x",
+              "value": 10
+            }
+          ],
+          "events": []
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 100
+          },
+          "clock": 300,
+          "returnedGroup": null,
+          "getterAliasesCache": null,
+          "state": {
+            "targets": [
+              {
+                "x": 10
+              }
+            ],
+            "targetCount": 0,
+            "properties": {},
+            "callbacks": {
+              "time": 0,
+              "rawTime": 0,
+              "duration": 1000,
+              "iterationDuration": 1000,
+              "delay": 0,
+              "loopDelay": 0,
+              "paused": true,
+              "completed": false,
+              "began": false,
+              "reversed": false
+            }
+          },
+          "writes": [],
+          "events": []
+        }
+      ]
     }
   ]
 }

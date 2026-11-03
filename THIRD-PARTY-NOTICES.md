@@ -16,6 +16,8 @@ Retarget playback and cache-only reset integration in `src/Ranvier.Anime/Animata
 
 The independent callback animation in `src/Ranvier.Anime/AnimatableGroup.fs` and ordered root traversal in `src/Ranvier.Anime/AnimatableFrames.fs` follow the pinned animatable, engine, clock and linked-list helpers.
 
+The public numeric property handles and ordered rewind/restoration in `src/Ranvier.Anime/Animatable.fs` follow the pinned animatable lifecycle, with explicit Ranvier ownership and terminal native handles.
+
 Contextual conversion in `src/Ranvier.Anime/CssUnits.fs` follows the pinned core units code's angle ratios and clone measurement procedure, with scoped cleanup and per-element construction measurements.
 
 The easing formulas retain Anime.js's credit to Robert Penner, Copyright (c) 2001 Robert Penner, from https://robertpenner.com/easing/.

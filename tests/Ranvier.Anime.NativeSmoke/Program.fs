@@ -41,6 +41,43 @@ let main args =
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
+        do
+            let mutable current=42.
+            let property=NumericProperty((fun () -> current),(fun next ->
+                current<-next
+                StyleDeclaration.apply style (Declaration.create "width" (next.ToString("R",CultureInfo.InvariantCulture)+"px") |> Declaration.important)))
+            use animatable=new Animatable(scheduler)
+            let handle=animatable.Numeric(property,duration=100u,options={AnimatablePropertyOptions.Default with Ease=id})
+            handle.To(100.,duration=200u)
+            handle.Playback.Seek 100.
+            require "public numeric animatable drives typed native width and cached getter"
+                (handle.Value=71. && style.getPropertyValue "width"="71px" && abs(element.getBoundingClientRect().width-71.)<0.01)
+            style.setProperty("height","17px")
+            animatable.Revert()
+            require "public numeric animatable revert restores its captured property and preserves unrelated style"
+                (style.getPropertyValue "width"="42px" && style.getPropertyPriority "width"="important" &&
+                 style.getPropertyValue "height"="17px" && animatable.Cancelled && handle.Playback.Cancelled && animatable.Count=0 &&
+                 animatable.Callbacks.CurrentTime=0. && not animatable.Callbacks.Completed)
+            style.removeProperty "width" |> ignore
+            style.removeProperty "height" |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let mutable writes=0
+            let owner,animatable,first,second=Api.createRoot(fun owner ->
+                let animatable=new Animatable(scheduler,onBegin=(fun _ -> owner.Dispose())) |> Animatable.own
+                let add ()=animatable.Numeric(NumericProperty((fun () -> 0.),(fun _ -> writes<-writes+1)),duration=100u)
+                owner,animatable,add(),add())
+            use animatable=animatable
+            first.To 100.
+            second.To 100.
+            pumpUntil host (fun () -> animatable.Cancelled)
+            let stopped=writes
+            host.Frame()
+            host.Frame()
+            require "public numeric animatable owner disposal stops every shared driver"
+                (owner.IsDisposed && first.Playback.Cancelled && second.Playback.Cancelled && writes=stopped)
+            owner.Dispose()
         let cache = AnimatableValue(ValueInterpolation.Number 10., None, false, None)
         let live () = true
         let double value = value*2.

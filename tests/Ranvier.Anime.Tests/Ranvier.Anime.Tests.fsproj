@@ -9,6 +9,7 @@
     <Compile Include="ValueInterpolationTests.fs" />
     <Compile Include="AnimatableValueTests.fs" />
     <Compile Include="AnimatableTrackTests.fs" />
+    <Compile Include="AnimatableNumberTests.fs" />
     <Compile Include="DeclarationTests.fs" />
     <Compile Include="UnitConversionTests.fs" />
     <Compile Include="SpringTests.fs" />
