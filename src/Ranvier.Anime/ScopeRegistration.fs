@@ -10,6 +10,7 @@ module internal ScopeRegistration =
         { Register: (unit -> unit) -> unit
           ResourceOwner: (unit -> Owner) option
           CanWrite: unit -> bool }
+        override _.ToString() = "ScopeRegistration.Context"
 
     let private current = new ThreadLocal<Context option>(fun () -> None)
 

@@ -12,9 +12,9 @@ type AnimatablePropertyOptions =
       Modifier: float -> float
       /// <summary>Intermediate decimal places up to 308; None preserves unrounded values.</summary>
       Precision: uint option }
-    /// <summary>One forward iteration, out-quad easing, identity modifier and four decimal places.</summary>
+    /// <summary>Active scope clock, easing and modifier defaults with four decimal places.</summary>
     static member Default =
-        { Playback=PlaybackOptions.Default; Ease=Ease.named "outQuad"; Modifier=id; Precision=Some 4u }
+        { Playback=PlaybackDefaults.current(); Ease=(AnimationDefaults.current()).Ease; Modifier=AnimationDefaults.modifier id; Precision=Some 4u }
     /// <summary>An invariant clock/precision diagnostic with callback functions omitted.</summary>
     override this.ToString() =
         let precision=this.Precision |> Option.map(fun value -> value.ToString(Globalization.CultureInfo.InvariantCulture)) |> Option.defaultValue "unrounded"
@@ -128,10 +128,10 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
     /// <summary>Captures one borrowed numeric target with precise milliseconds and optional property settings.</summary>
     member _.NumericPrecise(property:NumericProperty,duration:float,?options:AnimatablePropertyOptions) =
         this.NumericPrecise([|property|],duration,?options=options)
-    /// <summary>Captures nonempty borrowed numeric targets with optional unsigned milliseconds; duration defaults to 1000.</summary>
+    /// <summary>Captures nonempty borrowed numeric targets with optional unsigned milliseconds; omitted duration inherits scope defaults.</summary>
     member _.Numeric(properties:NumericProperty array,?duration:uint,?options:AnimatablePropertyOptions) =
-        this.NumericPrecise(properties,float(defaultArg duration 1000u),?options=options)
-    /// <summary>Captures one borrowed numeric target with optional unsigned milliseconds; duration defaults to 1000.</summary>
+        this.NumericPrecise(properties,AnimationDefaults.duration(duration |> Option.map float),?options=options)
+    /// <summary>Captures one borrowed numeric target with optional unsigned milliseconds; omitted duration inherits scope defaults.</summary>
     member _.Numeric(property:NumericProperty,?duration:uint,?options:AnimatablePropertyOptions) =
         this.Numeric([|property|],?duration=duration,?options=options)
     /// <summary>Ends every owned driver and releases captures; repeated cancellation is harmless.</summary>

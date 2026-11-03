@@ -24,15 +24,135 @@ type DeclarationAnimationOptions =
       OnLoop: Timer -> unit
       OnPause: Timer -> unit
       OnComplete: Timer -> unit }
-    /// <summary>One forward iteration, linear easing, identity modifier, four decimal places and silent callbacks.</summary>
+    /// <summary>Active scope clock, easing and modifier defaults with four decimal places and silent callbacks.</summary>
     static member Default =
-        { Playback=PlaybackOptions.Default; Ease=id; Modifier=id; Precision=Some 4u
+        { Playback=PlaybackDefaults.current(); Ease=AnimationDefaults.ease id; Modifier=AnimationDefaults.modifier id; Precision=Some 4u
           OnBegin=ignore; OnBeforeUpdate=ignore; OnRender=ignore; OnUpdate=ignore
           OnLoop=ignore; OnPause=ignore; OnComplete=ignore }
     /// <summary>An invariant clock/precision diagnostic; callback functions are omitted.</summary>
     override this.ToString() =
         let precision=this.Precision |> Option.map(fun value -> value.ToString(CultureInfo.InvariantCulture)) |> Option.defaultValue "unrounded"
         "DeclarationAnimationOptions(Playback="+this.Playback.ToString()+"; Precision="+precision+")"
+
+/// <summary>Captured inline leaves and lifecycle guards for a legacy CSS playback facade.</summary>
+type private CssPlaybackRestoration(style: CSSStyleDeclaration, name: string) as this =
+    let ownerAllowsWrite = ScopeRegistration.captureWriteGuard()
+    let scope = Scope.Current
+    let scopeGeneration () = scope |> Option.map _.RestorationGeneration
+    let constructionGeneration = scopeGeneration()
+    let mutable active = true
+    let mutable generation = 0
+    let mutable reverting = false
+    let mutable restoringSnapshot = false
+    let mutable initializing = true
+    let mutable initializationAborted = false
+    let mutable explicitlyCancelled = false
+    let mutable driver : Timer option = None
+    let mutable cancel : unit -> unit = ignore
+    let mutable captureController : unit -> (unit -> bool) = fun () -> fun () -> true
+    let mutable initialController : unit -> bool = fun () -> true
+    let constructionCurrent () =
+        ownerAllowsWrite() && scopeGeneration() = constructionGeneration && ScopeRegistration.canConstruct()
+    let ensure () =
+        if not active || not(constructionCurrent()) then raise(ObjectDisposedException "CssAnimation")
+    let snapshot = CssPropertySnapshot.Capture(style,name,ensure)
+    let close () =
+        if active then
+            active <- false
+            generation <- generation + 1
+
+    /// <summary>The authored property's original uniform importance.</summary>
+    member _.Important = snapshot.Important
+    /// <summary>Reads a construction value while its scope and owner remain current.</summary>
+    member _.Read(action: unit -> 'T) =
+        ensure()
+        let value = action()
+        ensure()
+        value
+    /// <summary>Captures resource and scope generations around one render or callback.</summary>
+    member _.CaptureGuard() =
+        let expected = generation
+        let expectedScope = scopeGeneration()
+        fun () -> active && not restoringSnapshot && generation = expected && ownerAllowsWrite() &&
+                  scopeGeneration() = expectedScope && (not initializing || constructionCurrent())
+    /// <summary>Associates the existing driver and its restoration-admission guard before initialization.</summary>
+    member _.Bind(clock: Timer, stop: unit -> unit, capture: unit -> (unit -> bool)) =
+        driver <- Some clock
+        cancel <- stop
+        captureController <- capture
+        initialController <- capture()
+    /// <summary>Closes restoration after an explicit public cancellation.</summary>
+    member _.Cancelled() =
+        explicitlyCancelled <- true
+        close()
+    /// <summary>Closes restoration after a rendering or callback fault.</summary>
+    member _.Faulted() = close()
+    /// <summary>Restores partial construction while preserving the first construction failure.</summary>
+    member _.AbortInitialization() =
+        if initializing && not initializationAborted then
+            initializationAborted <- true
+            let expected = generation
+            let clockGuard =
+                match driver with
+                | Some clock -> let expectedClock=clock.Generation in fun () -> clock.Generation=expectedClock
+                | None -> fun () -> true
+            let current () =
+                not explicitlyCancelled && generation=expected && constructionCurrent() && initialController() && clockGuard()
+            if current() then
+                restoringSnapshot <- true
+                try snapshot.Restore(style,current)
+                finally restoringSnapshot <- false
+    /// <summary>Runs initialization or rendering work with first-fault cleanup before driver fault cancellation.</summary>
+    member _.Invoke(action: unit -> unit) =
+        if active && ownerAllowsWrite() && (not initializing || constructionCurrent()) then
+            try action()
+            with _ ->
+                try this.AbortInitialization() with _ -> ()
+                close()
+                reraise()
+    /// <summary>Retains the real owner guard after constructor callbacks finish.</summary>
+    member _.Commit() = initializing <- false
+    /// <summary>Restores inline CSS after the numeric facade's controlled rewind, then releases this CSS restoration lifetime.</summary>
+    member _.RestoreFromNumeric(numericCurrent: unit -> bool) =
+        reverting <- true
+        let expected = generation
+        let expectedScope = scopeGeneration()
+        let current () = active && generation=expected && ownerAllowsWrite() &&
+                         scopeGeneration()=expectedScope && numericCurrent()
+        try
+            if current() then
+                restoringSnapshot <- true
+                snapshot.Restore(style,current)
+        finally
+            restoringSnapshot <- false
+            close()
+            reverting <- false
+    /// <summary>Rewinds the hidden clock once, restores captured leaves, then cancels without changing the public facade.</summary>
+    member _.Revert() =
+        if active && not reverting then
+            reverting <- true
+            let expected = generation
+            let expectedScope = scopeGeneration()
+            let admitted = captureController()
+            let mutable failure : exn option = None
+            let attempt action =
+                try action() with error -> if failure.IsNone then failure <- Some error
+            match driver with
+            | Some clock when admitted() && ownerAllowsWrite() ->
+                attempt clock.RewindForRevert
+                let expectedClock = clock.Generation
+                let current () =
+                    active && generation=expected && ownerAllowsWrite() && scopeGeneration()=expectedScope &&
+                    admitted() && clock.Generation=expectedClock && clock.Cancelled
+                if current() then
+                    restoringSnapshot <- true
+                    try attempt(fun () -> snapshot.Restore(style,current))
+                    finally restoringSnapshot <- false
+            | _ -> ()
+            close()
+            attempt cancel
+            reverting <- false
+            failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
 
 /// <summary>Animations authored with existing Ranvier.Css values and custom-property handles.</summary>
 [<RequireQualifiedAccess>]
@@ -41,6 +161,7 @@ module CssAnimation =
     /// <remarks>Renders the initial directional value immediately. The caller owns cancellation; disposal retains the last value.</remarks>
     let customPropertyWithOptions (options: PlaybackOptions) (scheduler: FrameScheduler) (style: CSSStyleDeclaration) (variable: CustomProperty<'syntax>)
                        (first: Value<'syntax>) (last: Value<'syntax>) (duration: float) : NumericAnimation =
+        let autoplay = AnimationDefaults.autoplay true
         let startValue, finishValue, unitName =
             match RuntimeApi.tryNumericValue first, RuntimeApi.tryNumericValue last with
             | Some (startValue, startUnit), Some (finishValue, finishUnit) when startUnit = finishUnit ->
@@ -48,22 +169,40 @@ module CssAnimation =
             | Some _, Some _ -> invalidArg "last" "Endpoint units must match."
             | _ -> invalidArg "first" "Endpoints must be finite numeric CSS literals."
         let name = RuntimeApi.customPropertyName variable
-        let priority = style.getPropertyPriority name
+        let lifetime = new CssPlaybackRestoration(style,name)
         let mutable rendered = startValue
         let apply (value: float) =
-            let text = value.ToString("G17", CultureInfo.InvariantCulture) + unitName
-            let declaration = Declaration.create name text
-            let declaration = if priority = "important" then Declaration.important declaration else declaration
-            StyleDeclaration.apply style declaration
-            rendered <- value
-        Animation.animateWithOptions options id scheduler (fun () -> rendered) apply finishValue duration
+            let current = lifetime.CaptureGuard()
+            if current() then
+                lifetime.Invoke(fun () ->
+                    let text = value.ToString("G17", CultureInfo.InvariantCulture) + unitName
+                    let declaration = Declaration.create name text
+                    let declaration = if lifetime.Important then Declaration.important declaration else declaration
+                    StyleDeclaration.apply style declaration)
+                if current() then rendered <- value
+        let animation = ScopeRegistration.run ignore (fun () ->
+            new NumericAnimation(scheduler,(fun () -> rendered),apply,finishValue,duration,ease=id,options=options))
+        lifetime.Bind(animation.PlaybackClock,animation.Cancel,animation.CaptureRestorationGuard)
+        animation.SetRestoration lifetime.RestoreFromNumeric
+        try
+            ScopeRegistration.register lifetime.Revert
+            animation.Reset()
+            if autoplay then animation.Resume()
+            lifetime.Commit()
+            animation
+        with _ ->
+            try lifetime.AbortInitialization() with _ -> ()
+            lifetime.Faulted()
+            try animation.Cancel() with _ -> ()
+            reraise()
 
     /// <summary>Animates matching numeric CSS endpoints with default playback options and retained inline priority.</summary>
     let customProperty scheduler style variable first last duration =
-        customPropertyWithOptions PlaybackOptions.Default scheduler style variable first last duration
+        customPropertyWithOptions (PlaybackDefaults.current()) scheduler style variable first last duration
 
     let private declarationUsing convertUnit (options:DeclarationAnimationOptions) (scheduler:FrameScheduler) (style:CSSStyleDeclaration)
                                (first:Declaration) (last:Declaration) (duration:float) =
+        let autoplay = AnimationDefaults.autoplay true
         if isNull(box options) then nullArg "options"
         if isNull(box options.Playback) then invalidArg "options" "Playback settings are required."
         if isNull(box style) then nullArg "style"
@@ -85,23 +224,34 @@ module CssAnimation =
         if String.IsNullOrWhiteSpace name || name<>Declaration.name last then invalidArg "last" "Endpoints must name one nonempty property."
         let iterationDuration=PropertyNumbers.round 1e12 (if duration=0. then 1e-11 else duration)
         if iterationDuration=0. then invalidArg "duration" "Positive duration rounds to zero at source timing precision."
-        let original=style.getPropertyValue name
+        let lifetime = new CssPlaybackRestoration(style,name)
+        let original=lifetime.Read(fun () -> style.getPropertyValue name)
         let interpolate : float -> int -> (float -> float) -> (unit -> bool) -> ValueInterpolation.Output option =
             match convertUnit with
             | None ->
                 ValueInterpolation.prepareCss (ValueInterpolation.Text original)
                     (ValueInterpolation.Text(Declaration.value first)) (ValueInterpolation.Text(Declaration.value last))
             | Some convert ->
-                ValueInterpolation.prepareCssWith convert (ValueInterpolation.Text original)
+                let guarded value source target = lifetime.Read(fun () -> convert value source target)
+                ValueInterpolation.prepareCssWith guarded (ValueInterpolation.Text original)
                     (ValueInterpolation.Text(Declaration.value first)) (ValueInterpolation.Text(Declaration.value last))
-        let important=Declaration.isImportant first || Declaration.isImportant last || style.getPropertyPriority name="important"
+        let important=Declaration.isImportant first || Declaration.isImportant last || lifetime.Important
         let mutable tweenTime=0.
-        let clock=new Timer(scheduler,iterationDuration,options=options.Playback,
-                            onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onUpdate=options.OnUpdate,
-                            onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete)
+        let notify callback clock = lifetime.Invoke(fun () -> callback clock)
+        let clock=ScopeRegistration.run ignore (fun () ->
+            new Timer(scheduler,iterationDuration,options=options.Playback,
+                onBegin=notify options.OnBegin,onBeforeUpdate=notify options.OnBeforeUpdate,onUpdate=notify options.OnUpdate,
+                onLoop=notify options.OnLoop,onPause=notify options.OnPause,onComplete=notify options.OnComplete))
+        lifetime.Bind(clock,clock.Cancel,(fun () ->
+            let admitted = not clock.Cancelled || clock.Completed
+            fun () -> admitted))
+        clock.OnCancel <- lifetime.Cancelled
+        clock.OnFault <- lifetime.Faulted
         let render (sample:PlaybackSample) mode muted =
             let iterationDuration=clock.IterationDuration
-            let canWrite=clock.CaptureWriteGuard()
+            let clockCurrent=clock.CaptureWriteGuard()
+            let resourceCurrent=lifetime.CaptureGuard()
+            let canWrite () = clockCurrent() && resourceCurrent()
             let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
             let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=200.
             let absolute=PropertyNumbers.round 1e12 (clock.Delay+sample.IterationTime)
@@ -110,22 +260,27 @@ module CssAnimation =
                                   (tweenTime<>0. || absolute>=start))
             if eligible && canWrite() then
                 tweenTime<-Math.Clamp(sample.IterationTime,0.,iterationDuration)
-                let progress=options.Ease(tweenTime/iterationDuration)
-                if canWrite() then
-                    match interpolate progress precision options.Modifier canWrite with
-                    | Some output when canWrite() ->
-                        let declaration=Declaration.create name output.Text
-                        StyleDeclaration.apply style (if important then Declaration.important declaration else declaration)
-                        if canWrite() && sample.AboveZero && not muted then options.OnRender clock
-                    | _ -> ()
+                lifetime.Invoke(fun () ->
+                    let progress=options.Ease(tweenTime/iterationDuration)
+                    if canWrite() then
+                        match interpolate progress precision options.Modifier canWrite with
+                        | Some output when canWrite() ->
+                            let declaration=Declaration.create name output.Text
+                            StyleDeclaration.apply style (if important then Declaration.important declaration else declaration)
+                            if canWrite() && sample.AboveZero && not muted then options.OnRender clock
+                        | _ -> ())
         try
             clock.ConfigureRenderer(render,?totalDuration=(if iterationDuration=1e-11 then Some 1e-11 else None),
                                     onStretch=(fun scale -> tweenTime<-tweenTime*scale))
+            ScopeRegistration.register lifetime.Revert
             clock.Reset()
-            clock.Resume()
+            if autoplay then clock.Resume()
+            lifetime.Commit()
             clock
         with _ ->
-            (clock:>IDisposable).Dispose()
+            try lifetime.AbortInitialization() with _ -> ()
+            lifetime.Faulted()
+            try (clock:>IDisposable).Dispose() with _ -> ()
             reraise()
 
     /// <summary>Starts source-compatible declaration playback with precise milliseconds and explicit interpolation/callback options.</summary>

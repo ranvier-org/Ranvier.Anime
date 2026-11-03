@@ -1,0 +1,44 @@
+{
+  "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "cases": {
+    "inherited": {
+      "iterationCount": 5,
+      "delay": 20,
+      "loopDelay": 30,
+      "reversed": true,
+      "alternate": true,
+      "speed": 3,
+      "fps": 60
+    },
+    "identity": {
+      "inherited": true,
+      "emptyCopy": true
+    },
+    "partialRaw": {
+      "loop": 4,
+      "delay": 0,
+      "loopDelay": 30,
+      "reversed": false,
+      "alternate": true,
+      "playbackRate": 0,
+      "frameRate": 0
+    },
+    "partialTimer": {
+      "iterationCount": 5,
+      "delay": 0,
+      "loopDelay": 30,
+      "reversed": false,
+      "alternate": true,
+      "speed": 0,
+      "fps": 0
+    },
+    "laterMutation": {
+      "shared": 4,
+      "copied": 3
+    },
+    "globalMutation": {
+      "shared": 5,
+      "copied": 1
+    }
+  }
+}

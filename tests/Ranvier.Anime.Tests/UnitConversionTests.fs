@@ -37,11 +37,18 @@ let private probe fromUnit (widths:int array) parentMode =
     let originalValues=Collections.Generic.Dictionary<string,string*string>()
     let originalWrites=ResizeArray<string>()
     let originalStyle=proxy<CSSStyleProperties>(fun methodInfo args ->
-        let name=unbox<string> args[0]
         match methodInfo.Name with
-        | "getPropertyValue" -> box(match originalValues.TryGetValue name with true,(value,_) -> value | _ -> "")
-        | "getPropertyPriority" -> box(match originalValues.TryGetValue name with true,(_,priority) -> priority | _ -> "")
+        | "get_length" -> box(uint originalValues.Count)
+        | "item" -> box(originalValues.Keys |> Seq.item(int(unbox<uint> args[0])))
+        | "getPropertyValue" -> box(match originalValues.TryGetValue(unbox<string> args[0]) with true,(value,_) -> value | _ -> "")
+        | "getPropertyPriority" -> box(match originalValues.TryGetValue(unbox<string> args[0]) with true,(_,priority) -> priority | _ -> "")
+        | "removeProperty" ->
+            let name=unbox<string> args[0]
+            let old=match originalValues.TryGetValue name with true,(value,_) -> value | _ -> ""
+            originalValues.Remove name |> ignore
+            box old
         | "setProperty" ->
+            let name=unbox<string> args[0]
             let value=unbox<string> args[1]
             let priority=unbox<string option> args[2] |> Option.defaultValue ""
             originalValues[name]<-value,priority

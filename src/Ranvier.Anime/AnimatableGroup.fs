@@ -15,7 +15,7 @@ type internal AnimatableGroup(scheduler:FrameScheduler,?onBegin:NumericAnimation
     do roots.Add callbackRoot
     let mutable value=0.
     let callbacks=ScopeRegistration.run ignore (fun () ->
-        new NumericAnimation(callbackRoot,(fun () -> value),(fun next -> value<-next),1.,1000u,ease=Ease.named "outQuad",
+        new NumericAnimation(callbackRoot,(fun () -> value),(fun next -> value<-next),1.,AnimationDefaults.duration None,ease=(AnimationDefaults.current()).Ease,
                                        ?onBegin=onBegin,?onBeforeUpdate=onBeforeUpdate,?onRender=onRender,?onUpdate=onUpdate,
                                        ?onLoop=onLoop,?onPause=onPause,?onComplete=onComplete))
     let live () = if disposed then raise(ObjectDisposedException(nameof AnimatableGroup))

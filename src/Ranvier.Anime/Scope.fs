@@ -11,9 +11,20 @@ open Ranvier.Dom
 
 /// <summary>A refreshable group of animation resources attached to a Ranvier owner.</summary>
 /// <remarks>All operations require its graph thread. Revert ends the lifetime; repeated calls are harmless.</remarks>
-type Scope(?root: ParentNode, ?defaults: PlaybackOptions, ?media: MediaQueryProvider, ?mediaQueries: seq<string * string>) as this =
+type Scope(?root: ParentNode, ?defaults: PlaybackOptions, ?clockDefaults: PlaybackDefaults, ?animationDefaults: AnimationDefaults, ?media: MediaQueryProvider, ?mediaQueries: seq<string * string>) as this =
     static let current = new Threading.ThreadLocal<Scope option>(fun () -> None)
+    let parentScope = current.Value
+    let inheritedDefaults = ScopePlaybackContext.current()
+    let clockDefaults =
+        match defaults,clockDefaults,animationDefaults with
+        | None,None,None -> inheritedDefaults
+        | supplied,overrides,animationOverrides ->
+            let fallback = defaultArg supplied inheritedDefaults.Options
+            let playback = overrides |> Option.map(fun value -> value.Apply fallback) |> Option.defaultValue fallback
+            let animation = animationOverrides |> Option.map(fun value -> value.Apply inheritedDefaults.Animation) |> Option.defaultValue inheritedDefaults.Animation
+            ScopeClockDefaults(playback,animation=animation)
     let graph = Graph.Current
+    do if not(ScopeRegistration.canConstruct()) then raise(ObjectDisposedException "Scope")
     let parent = ScopeRegistration.resourceOwner()
     let lifetime = Api.runWithOwner parent (fun () -> Api.createRoot id)
     let persistent = Api.runWithOwner lifetime (fun () -> Api.createRoot id)
@@ -70,22 +81,45 @@ type Scope(?root: ParentNode, ?defaults: PlaybackOptions, ?media: MediaQueryProv
         if parent.IsDisposed then
             lifetime.Dispose()
             raise(ObjectDisposedException "Owner")
-        current.Value |> Option.iter(fun active -> active.Register this.Revert)
+        ScopeRegistration.register this.Revert
         lifetime.OnCleanup(Action(fun () -> this.Revert()))
         try
             for name, query in defaultArg mediaQueries Seq.empty do
                 if queries |> Seq.exists(fun (key,_) -> key = name) then invalidArg "mediaQueries" "Media names must be unique."
                 let provider = media |> Option.defaultWith(fun () -> invalidArg "media" "Media queries require the host media provider.")
                 let matched = provider.MatchMedia query
-                queries.Add(name,matched)
-                matched.Target.addEventListener("change", listener)
+                let mutable adopted = false
+                let mutable target : EventTarget option = None
+                let ensureConstruction () =
+                    if disposed || parent.IsDisposed || lifetime.IsDisposed || not(ScopeRegistration.canConstruct()) then
+                        raise(ObjectDisposedException "Scope")
+                try
+                    ensureConstruction()
+                    let acquired = matched.Target
+                    target <- Some acquired
+                    ensureConstruction()
+                    queries.Add(name,matched)
+                    adopted <- true
+                    acquired.addEventListener("change", listener)
+                    ensureConstruction()
+                with _ ->
+                    if not adopted then
+                        try matched.Dispose() with error -> faults.Add error
+                    elif disposed || parent.IsDisposed || lifetime.IsDisposed then
+                        target |> Option.iter(fun target ->
+                            try target.removeEventListener("change", listener) with error -> faults.Add error)
+                    reraise()
         with _ ->
-            this.Revert()
+            try this.Revert() with error -> faults.Add error
             reraise()
     /// <summary>The optional native selector root inherited by scope-aware target factories.</summary>
     member _.Root = root
-    /// <summary>The optional playback defaults inherited by scope-aware animation factories.</summary>
-    member _.Defaults = defaults
+    /// <summary>Resolved clock values retained by this scope; ClockDefaults updates their shared mutable cell.</summary>
+    member _.Defaults = Some clockDefaults.Options
+    /// <summary>The retained mutable clock-default cell; scopes without overrides share their parent's cell.</summary>
+    member _.ClockDefaults = clockDefaults
+    /// <summary>The executing scope captured when this scope was constructed.</summary>
+    member internal _.ParentScope = parentScope
     /// <summary>Media matches sampled before the most recent scoped execution.</summary>
     member _.Matches : IReadOnlyDictionary<string,bool> = matches
     /// <summary>User data retained through refresh and cleared by revert.</summary>
@@ -94,6 +128,8 @@ type Scope(?root: ParentNode, ?defaults: PlaybackOptions, ?media: MediaQueryProv
     member _.Errors : IReadOnlyList<exn> = faults.ToArray()
     /// <summary>Whether revert or parent disposal ended this scope.</summary>
     member _.IsDisposed = disposed || lifetime.IsDisposed
+    /// <summary>Changes when refresh or revert supersedes a controlled restoration operation.</summary>
+    member internal _.RestorationGeneration = generation
     /// <summary>Runs with this scope's active Ranvier owner and restores the previous scope after exceptions.</summary>
     member _.Execute(callback: Scope -> 'T) : 'T =
         live()
@@ -103,11 +139,11 @@ type Scope(?root: ParentNode, ?defaults: PlaybackOptions, ?media: MediaQueryProv
             else this.Register revert
         let previous = current.Value
         current.Value <- Some this
-        try
+        try ScopePlaybackContext.run clockDefaults (fun () ->
             matches <- (queries |> Seq.map(fun (name,query) -> KeyValuePair(name,query.Matches))).ToFrozenDictionary(StringComparer.Ordinal)
             ScopeRegistration.runOwned register (fun () -> if once then persistent else epoch)
                 (fun () -> not disposed && generation = expected && not parent.IsDisposed) (fun () ->
-                Api.runWithOwner (if once then persistent else epoch) (fun () -> Api.untrack(fun () -> callback this)))
+                Api.runWithOwner (if once then persistent else epoch) (fun () -> Api.untrack(fun () -> callback this))))
         finally current.Value <- previous
     /// <summary>Registers restoration in the regular or once group selected by the latest Add or AddOnce.</summary>
     member _.Register(revert: unit -> unit) =
@@ -224,6 +260,8 @@ type Scope(?root: ParentNode, ?defaults: PlaybackOptions, ?media: MediaQueryProv
         | None -> document :> ParentNode
     /// <summary>The scope currently executing on this thread.</summary>
     static member Current = current.Value
+    /// <summary>The shared clock-default cell used outside scoped execution and by top-level scopes without overrides.</summary>
+    static member GlobalClockDefaults = ScopePlaybackContext.globalDefaults
     /// <summary>Registers a factory's restoration when constructed inside a scoped callback.</summary>
     static member RegisterCurrent(revert: unit -> unit) =
         ScopeRegistration.register revert

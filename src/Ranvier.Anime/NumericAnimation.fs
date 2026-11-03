@@ -16,8 +16,8 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
                       ?onRender: NumericAnimation -> unit, ?onUpdate: NumericAnimation -> unit,
                       ?onLoop: NumericAnimation -> unit, ?onPause: NumericAnimation -> unit,
                       ?onComplete: NumericAnimation -> unit) as this =
-    let ease = defaultArg ease id
-    let options = defaultArg options PlaybackOptions.Default
+    let ease = defaultArg ease (AnimationDefaults.ease id)
+    let options = ScopePlaybackContext.resolve options
     let ownerAllowsWrite = ScopeRegistration.captureWriteGuard()
     let mutable constructionAccepted = true
     let finite name value =
@@ -39,10 +39,13 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     let mutable restorationGeneration = 0
     let mutable reverting = false
     let mutable completionAllowsRestoration = false
+    let mutable restoration : ((unit -> bool) -> unit) option =
+        Some(fun current -> if current() then write original)
     let closeRestoration () =
         if restorationActive then
             restorationActive <- false
             restorationGeneration <- restorationGeneration + 1
+            restoration <- None
     let mutable last = target
     let mutable tweenTime = 0.
     let mutable ancestorLive = fun () -> true
@@ -129,6 +132,17 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     member _.Stretch(milliseconds:uint) = clock.Stretch milliseconds
     /// <summary>Retained controller state for the internal animatable callback clock.</summary>
     member internal _.PlaybackClock=clock
+    /// <summary>Replaces the immutable numeric-original restoration with a typed adapter's post-rewind snapshot restoration.</summary>
+    member internal _.SetRestoration(action: (unit -> bool) -> unit) =
+        if isNull(box action) then nullArg "action"
+        if not restorationActive || clock.Cancelled || not constructionAccepted || not(ownerAllowsWrite()) then
+            raise(ObjectDisposedException(nameof NumericAnimation))
+        restoration <- Some action
+    /// <summary>Captures restoration admission before a controlled rewind while retaining cancellation and owner guards afterward.</summary>
+    member internal _.CaptureRestorationGuard() =
+        let expected = restorationGeneration
+        let admitted = restorationActive && (not clock.Cancelled || completionAllowsRestoration)
+        fun () -> admitted && restorationActive && restorationGeneration = expected && constructionAccepted && ownerAllowsWrite()
     /// <summary>Captures the shared timer's rounded iteration progress, direction policy and scheduling anchor.</summary>
     member internal _.CaptureScopeTime() = clock.CaptureScopeTime()
     /// <summary>Restores iteration setters and the original scheduling anchor through the shared timer.</summary>
@@ -163,7 +177,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
             let attempt action =
                 try action() with error -> if failure.IsNone then failure <- Some error
             attempt clock.RewindForRevert
-            if current() then attempt(fun () -> write original)
+            if current() then attempt(fun () -> restoration |> Option.iter(fun restore -> restore current))
             closeRestoration()
             attempt clock.Cancel
             reverting <- false
@@ -203,17 +217,18 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
 module Animation =
     /// <summary>Creates and starts a tween with custom easing and shared playback options.</summary>
     let animateWithOptions options ease scheduler read write target (duration: float) =
+        let autoplay = AnimationDefaults.autoplay true
         let animation = new NumericAnimation(scheduler, read, write, target, duration, ease=ease, options=options)
         try
             animation.Reset()
-            animation.Resume()
+            if autoplay then animation.Resume()
             animation
         with _ ->
             (animation :> IDisposable).Dispose()
             reraise()
     /// <summary>Creates and starts a tween with custom easing and default playback options.</summary>
     let animateWith ease scheduler read write target duration =
-        animateWithOptions PlaybackOptions.Default ease scheduler read write target duration
+        animateWithOptions (PlaybackDefaults.current()) ease scheduler read write target duration
     /// <summary>Creates and starts a linear tween. The caller owns its disposable lifetime.</summary>
     let animate scheduler read write target duration = animateWith id scheduler read write target duration
     /// <summary>Creates a tween using a spring easing and its calculated settling duration.</summary>

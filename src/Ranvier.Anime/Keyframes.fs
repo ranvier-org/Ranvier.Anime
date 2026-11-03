@@ -185,7 +185,7 @@ type Keyframes private () =
     /// <summary>Animates nonempty numeric property handles; unsigned total default duration is 1000 ms.</summary>
     static member Numeric(scheduler:FrameScheduler,targets:NumericProperty array,frames:Keyframe<NumericProperty,float> array,
                           ?duration:uint,?options:KeyframeAnimationOptions,?owner:Owner) =
-        Keyframes.NumericPrecise(scheduler,targets,frames,float(defaultArg duration 1000u),?options=options,?owner=owner)
+        Keyframes.NumericPrecise(scheduler,targets,frames,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
     /// <summary>Animates one numeric property; unsigned total default duration is 1000 ms.</summary>
     static member Numeric(scheduler:FrameScheduler,target:NumericProperty,frames:Keyframe<NumericProperty,float> array,
                           ?duration:uint,?options:KeyframeAnimationOptions,?owner:Owner) =
@@ -204,12 +204,12 @@ type Keyframes private () =
                                      frames:Keyframe<CSSStyleDeclaration,Declaration> array,duration:float,
                                      ?options:KeyframeAnimationOptions,?owner:Owner) =
         Keyframes.DeclarationPrecise(scheduler,[|style|],initial,frames,duration,?options=options,?owner=owner)
-    /// <summary>Animates one typed property on nonempty style targets; unsigned default duration is 1000 ms.</summary>
+    /// <summary>Animates one typed property on nonempty style targets; omitted duration inherits scope defaults.</summary>
     static member Declaration(scheduler:FrameScheduler,styles:CSSStyleDeclaration array,initial:Declaration,
                               frames:Keyframe<CSSStyleDeclaration,Declaration> array,?duration:uint,
                               ?options:KeyframeAnimationOptions,?owner:Owner) =
-        Keyframes.DeclarationPrecise(scheduler,styles,initial,frames,float(defaultArg duration 1000u),?options=options,?owner=owner)
-    /// <summary>Animates one style target with an explicit initial value; unsigned default duration is 1000 ms.</summary>
+        Keyframes.DeclarationPrecise(scheduler,styles,initial,frames,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
+    /// <summary>Animates one style target with an explicit initial value; omitted duration inherits scope defaults.</summary>
     static member Declaration(scheduler:FrameScheduler,style:CSSStyleDeclaration,initial:Declaration,
                               frames:Keyframe<CSSStyleDeclaration,Declaration> array,?duration:uint,
                               ?options:KeyframeAnimationOptions,?owner:Owner) =
@@ -226,12 +226,12 @@ type Keyframes private () =
                                        frames:Keyframe<HTMLElement,Declaration> array,duration:float,
                                        ?options:KeyframeAnimationOptions,?owner:Owner) =
         Keyframes.DeclarationOnPrecise(scheduler,[|element|],initial,frames,duration,?options=options,?owner=owner)
-    /// <summary>Animates one typed property on nonempty elements with contextual units; unsigned default duration is 1000 ms.</summary>
+    /// <summary>Animates one typed property on nonempty elements with contextual units; omitted duration inherits scope defaults.</summary>
     static member DeclarationOn(scheduler:FrameScheduler,elements:HTMLElement array,initial:Declaration,
                                 frames:Keyframe<HTMLElement,Declaration> array,?duration:uint,
                                 ?options:KeyframeAnimationOptions,?owner:Owner) =
-        Keyframes.DeclarationOnPrecise(scheduler,elements,initial,frames,float(defaultArg duration 1000u),?options=options,?owner=owner)
-    /// <summary>Animates one element with contextual units; unsigned default duration is 1000 ms.</summary>
+        Keyframes.DeclarationOnPrecise(scheduler,elements,initial,frames,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
+    /// <summary>Animates one element with contextual units; omitted duration inherits scope defaults.</summary>
     static member DeclarationOn(scheduler:FrameScheduler,element:HTMLElement,initial:Declaration,
                                 frames:Keyframe<HTMLElement,Declaration> array,?duration:uint,
                                 ?options:KeyframeAnimationOptions,?owner:Owner) =
@@ -248,12 +248,12 @@ type Keyframes private () =
                                        frames:Keyframe<CSSStyleDeclaration,Declaration> array,duration:float,
                                        ?options:KeyframeAnimationOptions,?owner:Owner) =
         Keyframes.CaptureInlinePrecise(scheduler,[|style|],name,frames,duration,?options=options,?owner=owner)
-    /// <summary>Captures one inline property on nonempty style targets; unsigned default duration is 1000 ms.</summary>
+    /// <summary>Captures one inline property on nonempty style targets; omitted duration inherits scope defaults.</summary>
     static member CaptureInline(scheduler:FrameScheduler,styles:CSSStyleDeclaration array,name:string,
                                 frames:Keyframe<CSSStyleDeclaration,Declaration> array,?duration:uint,
                                 ?options:KeyframeAnimationOptions,?owner:Owner) =
-        Keyframes.CaptureInlinePrecise(scheduler,styles,name,frames,float(defaultArg duration 1000u),?options=options,?owner=owner)
-    /// <summary>Captures one inline property; unsigned default duration is 1000 ms.</summary>
+        Keyframes.CaptureInlinePrecise(scheduler,styles,name,frames,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
+    /// <summary>Captures one inline property; omitted duration inherits scope defaults.</summary>
     static member CaptureInline(scheduler:FrameScheduler,style:CSSStyleDeclaration,name:string,
                                 frames:Keyframe<CSSStyleDeclaration,Declaration> array,?duration:uint,
                                 ?options:KeyframeAnimationOptions,?owner:Owner) =
@@ -275,12 +275,12 @@ type Keyframes private () =
                                     frames:Keyframe<HTMLElement,Declaration> array,duration:float,
                                     ?options:KeyframeAnimationOptions,?owner:Owner) =
         Keyframes.CaptureCssPrecise(scheduler,computed,[|element|],name,frames,duration,?options=options,?owner=owner)
-    /// <summary>Captures computed values on nonempty elements with contextual units; unsigned default duration is 1000 ms.</summary>
+    /// <summary>Captures computed values on nonempty elements with contextual units; omitted duration inherits scope defaults.</summary>
     static member CaptureCss(scheduler:FrameScheduler,computed:ComputedStyleService,elements:HTMLElement array,name:string,
                              frames:Keyframe<HTMLElement,Declaration> array,?duration:uint,
                              ?options:KeyframeAnimationOptions,?owner:Owner) =
-        Keyframes.CaptureCssPrecise(scheduler,computed,elements,name,frames,float(defaultArg duration 1000u),?options=options,?owner=owner)
-    /// <summary>Captures one computed element property with contextual units; unsigned default duration is 1000 ms.</summary>
+        Keyframes.CaptureCssPrecise(scheduler,computed,elements,name,frames,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
+    /// <summary>Captures one computed element property with contextual units; omitted duration inherits scope defaults.</summary>
     static member CaptureCss(scheduler:FrameScheduler,computed:ComputedStyleService,element:HTMLElement,name:string,
                              frames:Keyframe<HTMLElement,Declaration> array,?duration:uint,
                              ?options:KeyframeAnimationOptions,?owner:Owner) =

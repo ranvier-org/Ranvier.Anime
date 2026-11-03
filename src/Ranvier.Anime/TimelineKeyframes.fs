@@ -67,11 +67,11 @@ module TimelineKeyframeExtensions =
         member this.AddKeyframesPrecise(target:NumericProperty,frames:Keyframe<NumericProperty,float> array,duration:float,
                                         ?position:TimelinePosition,?options:KeyframeAnimationOptions) =
             this.AddKeyframesPrecise([|target|],frames,duration,?position=position,?options=options)
-        /// <summary>Adds nonempty numeric targets using unsigned nominal milliseconds, defaulting to1000; root playback owns autoplay.</summary>
+        /// <summary>Adds numeric targets with inherited or unsigned duration; root playback owns autoplay.</summary>
         member this.AddKeyframes(targets:NumericProperty array,frames:Keyframe<NumericProperty,float> array,
                                  ?duration:uint,?position:TimelinePosition,?options:KeyframeAnimationOptions) =
-            this.AddKeyframesPrecise(targets,frames,float(defaultArg duration 1000u),?position=position,?options=options)
-        /// <summary>Adds one numeric target using unsigned nominal milliseconds, defaulting to1000; root playback owns autoplay.</summary>
+            this.AddKeyframesPrecise(targets,frames,AnimationDefaults.duration(duration |> Option.map float),?position=position,?options=options)
+        /// <summary>Adds one numeric target with inherited or unsigned duration; root playback owns autoplay.</summary>
         member this.AddKeyframes(target:NumericProperty,frames:Keyframe<NumericProperty,float> array,
                                  ?duration:uint,?position:TimelinePosition,?options:KeyframeAnimationOptions) =
-            this.AddKeyframesPrecise(target,frames,float(defaultArg duration 1000u),?position=position,?options=options)
+            this.AddKeyframesPrecise(target,frames,AnimationDefaults.duration(duration |> Option.map float),?position=position,?options=options)

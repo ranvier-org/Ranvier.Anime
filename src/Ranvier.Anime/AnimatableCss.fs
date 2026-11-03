@@ -150,10 +150,10 @@ module AnimatableCssExtensions =
         /// <summary>Captures one style target with an explicit typed initial declaration and precise milliseconds.</summary>
         member group.DeclarationPrecise(style:CSSStyleDeclaration,initial:Declaration,duration:float,?options:AnimatablePropertyOptions) =
             group.DeclarationPrecise([|style|],initial,duration,?options=options)
-        /// <summary>Captures nonempty style targets with an explicit typed initial declaration; unsigned duration defaults to 1000 ms.</summary>
+        /// <summary>Captures nonempty style targets with an explicit typed initial declaration; omitted duration inherits scope defaults.</summary>
         member group.Declaration(styles:CSSStyleDeclaration array,initial:Declaration,?duration:uint,?options:AnimatablePropertyOptions) =
-            group.DeclarationPrecise(styles,initial,float(defaultArg duration 1000u),?options=options)
-        /// <summary>Captures one style target with an explicit typed initial declaration; unsigned duration defaults to 1000 ms.</summary>
+            group.DeclarationPrecise(styles,initial,AnimationDefaults.duration(duration |> Option.map float),?options=options)
+        /// <summary>Captures one style target with an explicit typed initial declaration; omitted duration inherits scope defaults.</summary>
         member group.Declaration(style:CSSStyleDeclaration,initial:Declaration,?duration:uint,?options:AnimatablePropertyOptions) =
             group.Declaration([|style|],initial,?duration=duration,?options=options)
         /// <summary>Captures existing inline property values from nonempty style targets with precise milliseconds.</summary>
@@ -164,10 +164,10 @@ module AnimatableCssExtensions =
         /// <summary>Captures one existing inline property with precise milliseconds.</summary>
         member group.CaptureInlinePrecise(style:CSSStyleDeclaration,name:string,duration:float,?options:AnimatablePropertyOptions) =
             group.CaptureInlinePrecise([|style|],name,duration,?options=options)
-        /// <summary>Captures existing inline values from nonempty style targets; unsigned duration defaults to 1000 ms.</summary>
+        /// <summary>Captures existing inline values from nonempty style targets; omitted duration inherits scope defaults.</summary>
         member group.CaptureInline(styles:CSSStyleDeclaration array,name:string,?duration:uint,?options:AnimatablePropertyOptions) =
-            group.CaptureInlinePrecise(styles,name,float(defaultArg duration 1000u),?options=options)
-        /// <summary>Captures one existing inline property; unsigned duration defaults to 1000 ms.</summary>
+            group.CaptureInlinePrecise(styles,name,AnimationDefaults.duration(duration |> Option.map float),?options=options)
+        /// <summary>Captures one existing inline property; omitted duration inherits scope defaults.</summary>
         member group.CaptureInline(style:CSSStyleDeclaration,name:string,?duration:uint,?options:AnimatablePropertyOptions) =
             group.CaptureInline([|style|],name,?duration=duration,?options=options)
         /// <summary>Authors an explicit initial declaration on nonempty elements with native scalar-unit conversion at retarget time.</summary>
@@ -179,10 +179,10 @@ module AnimatableCssExtensions =
         /// <summary>Authors an initial declaration on one element with native scalar-unit conversion and precise milliseconds.</summary>
         member group.DeclarationOnPrecise(element:HTMLElement,initial:Declaration,duration:float,?options:AnimatablePropertyOptions) =
             group.DeclarationOnPrecise([|element|],initial,duration,?options=options)
-        /// <summary>Authors an initial declaration on nonempty elements with unit contexts; unsigned duration defaults to 1000 ms.</summary>
+        /// <summary>Authors an initial declaration on nonempty elements with unit contexts; omitted duration inherits scope defaults.</summary>
         member group.DeclarationOn(elements:HTMLElement array,initial:Declaration,?duration:uint,?options:AnimatablePropertyOptions) =
-            group.DeclarationOnPrecise(elements,initial,float(defaultArg duration 1000u),?options=options)
-        /// <summary>Authors an initial declaration on one element with its unit context; unsigned duration defaults to 1000 ms.</summary>
+            group.DeclarationOnPrecise(elements,initial,AnimationDefaults.duration(duration |> Option.map float),?options=options)
+        /// <summary>Authors an initial declaration on one element with its unit context; omitted duration inherits scope defaults.</summary>
         member group.DeclarationOn(element:HTMLElement,initial:Declaration,?duration:uint,?options:AnimatablePropertyOptions) =
             group.DeclarationOn([|element|],initial,?duration=duration,?options=options)
         /// <summary>Captures computed values through Ranvier's service and each element's unit context using precise milliseconds.</summary>
@@ -202,11 +202,11 @@ module AnimatableCssExtensions =
         member group.CaptureCssPrecise(computed:ComputedStyleService,element:HTMLElement,name:string,duration:float,
                                        ?options:AnimatablePropertyOptions) =
             group.CaptureCssPrecise(computed,[|element|],name,duration,?options=options)
-        /// <summary>Captures computed properties and unit contexts from nonempty elements; unsigned duration defaults to 1000 ms.</summary>
+        /// <summary>Captures computed properties and unit contexts from nonempty elements; omitted duration inherits scope defaults.</summary>
         member group.CaptureCss(computed:ComputedStyleService,elements:HTMLElement array,name:string,?duration:uint,
                                 ?options:AnimatablePropertyOptions) =
-            group.CaptureCssPrecise(computed,elements,name,float(defaultArg duration 1000u),?options=options)
-        /// <summary>Captures one computed property and unit context; unsigned duration defaults to 1000 ms.</summary>
+            group.CaptureCssPrecise(computed,elements,name,AnimationDefaults.duration(duration |> Option.map float),?options=options)
+        /// <summary>Captures one computed property and unit context; omitted duration inherits scope defaults.</summary>
         member group.CaptureCss(computed:ComputedStyleService,element:HTMLElement,name:string,?duration:uint,
                                 ?options:AnimatablePropertyOptions) =
             group.CaptureCss(computed,[|element|],name,?duration=duration,?options=options)

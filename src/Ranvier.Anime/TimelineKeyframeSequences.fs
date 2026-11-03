@@ -90,8 +90,8 @@ module TimelineKeyframeSequenceExtensions =
         /// <summary>Adds named numeric target arrays; unsigned nominal milliseconds default to1000 and the timeline owns autoplay.</summary>
         member this.AddKeyframes(properties:(string*NumericProperty array) array,sequence:KeyframeSequence<NumericProperty,float>,
                                  ?duration:uint,?position:TimelinePosition,?options:KeyframeAnimationOptions) =
-            this.AddKeyframesPrecise(properties,sequence,float(defaultArg duration 1000u),?position=position,?options=options)
+            this.AddKeyframesPrecise(properties,sequence,AnimationDefaults.duration(duration |> Option.map float),?position=position,?options=options)
         /// <summary>Adds named single-target numeric handles; unsigned nominal milliseconds default to1000.</summary>
         member this.AddKeyframes(properties:(string*NumericProperty) array,sequence:KeyframeSequence<NumericProperty,float>,
                                  ?duration:uint,?position:TimelinePosition,?options:KeyframeAnimationOptions) =
-            this.AddKeyframesPrecise(properties,sequence,float(defaultArg duration 1000u),?position=position,?options=options)
+            this.AddKeyframesPrecise(properties,sequence,AnimationDefaults.duration(duration |> Option.map float),?position=position,?options=options)

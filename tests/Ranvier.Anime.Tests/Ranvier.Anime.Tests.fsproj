@@ -53,6 +53,12 @@
     <Compile Include="ScopeFacadeClockTests.fs" />
     <Compile Include="NumericCompleteFaultTests.fs" />
     <Compile Include="ScopeAutomaticTests.fs" />
+    <Compile Include="CssScopeRestorationTests.fs" />
+    <Compile Include="CssDirectRevertTests.fs" />
+    <Compile Include="ScopeClockDefaultsTests.fs" />
+    <Compile Include="ScopeClockReferenceTests.fs" />
+    <Compile Include="ScopeConstructorAdmissionTests.fs" />
+    <Compile Include="ScopeAnimationDefaultsTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -80,5 +86,7 @@
     <None Include="../reference/timeline-mixed-keyframes.json" Link="reference/timeline-mixed-keyframes.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timeline-revert.json" Link="reference/timeline-revert.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/scope-reference.json" Link="reference/scope-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/scope-clock-defaults-reference.json" Link="reference/scope-clock-defaults-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/scope-animation-defaults-reference.json" Link="reference/scope-animation-defaults-reference.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -130,12 +130,12 @@ module TimelineCssKeyframeSequenceExtensions =
         /// <summary>Animates one target using explicit typed initial declarations and precise milliseconds.</summary>
         member this.AddKeyframesPrecise(style:CSSStyleDeclaration,initials:Declaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
             this.AddKeyframesPrecise([|style|],initials,sequence,duration,?options=options,?position=position)
-        /// <summary>Animates nonempty targets using explicit typed initial declarations; unsigned nominal duration defaults to 1000 ms.</summary>
+        /// <summary>Animates nonempty targets from typed initial declarations; omitted duration inherits scope defaults.</summary>
         member this.AddKeyframes(styles:CSSStyleDeclaration array,initials:Declaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
-            this.AddKeyframesPrecise(styles,initials,sequence,float(defaultArg duration 1000u),?options=options,?position=position)
-        /// <summary>Animates one target using explicit typed initial declarations; unsigned nominal duration defaults to 1000 ms.</summary>
+            this.AddKeyframesPrecise(styles,initials,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?position=position)
+        /// <summary>Animates one target from typed initial declarations; omitted duration inherits scope defaults.</summary>
         member this.AddKeyframes(style:CSSStyleDeclaration,initials:Declaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
-            this.AddKeyframesPrecise(style,initials,sequence,float(defaultArg duration 1000u),?options=options,?position=position)
+            this.AddKeyframesPrecise(style,initials,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?position=position)
         /// <summary>Animates a sparse sequence on nonempty targets using explicit typed declarations and per-element unit contexts and
         /// precise milliseconds.</summary>
         member this.AddKeyframesPrecise(elements:HTMLElement array,initials:Declaration array,sequence:KeyframeSequence<HTMLElement,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
@@ -144,14 +144,14 @@ module TimelineCssKeyframeSequenceExtensions =
         /// <summary>Animates one target using explicit typed declarations and per-element unit contexts and precise milliseconds.</summary>
         member this.AddKeyframesPrecise(element:HTMLElement,initials:Declaration array,sequence:KeyframeSequence<HTMLElement,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
             this.AddKeyframesPrecise([|element|],initials,sequence,duration,?options=options,?position=position)
-        /// <summary>Animates nonempty targets using explicit typed declarations and per-element unit contexts; unsigned nominal duration
-        /// defaults to 1000 ms.</summary>
+        /// <summary>Animates nonempty targets using explicit typed declarations and per-element unit contexts; optional unsigned milliseconds;
+        /// omitted duration inherits scope defaults.</summary>
         member this.AddKeyframes(elements:HTMLElement array,initials:Declaration array,sequence:KeyframeSequence<HTMLElement,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
-            this.AddKeyframesPrecise(elements,initials,sequence,float(defaultArg duration 1000u),?options=options,?position=position)
-        /// <summary>Animates one target using explicit typed declarations and per-element unit contexts; unsigned nominal duration
-        /// defaults to 1000 ms.</summary>
+            this.AddKeyframesPrecise(elements,initials,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?position=position)
+        /// <summary>Animates one target using explicit typed declarations and per-element unit contexts; optional unsigned milliseconds;
+        /// omitted duration inherits scope defaults.</summary>
         member this.AddKeyframes(element:HTMLElement,initials:Declaration array,sequence:KeyframeSequence<HTMLElement,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
-            this.AddKeyframesPrecise(element,initials,sequence,float(defaultArg duration 1000u),?options=options,?position=position)
+            this.AddKeyframesPrecise(element,initials,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?position=position)
         /// <summary>Animates a sparse sequence on nonempty targets using captured inline property values and precise milliseconds.</summary>
         member this.CaptureInlineKeyframesPrecise(styles:CSSStyleDeclaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
             TimelineCssKeyframeSequenceBinding.css(this,styles,sequence,id,(fun _ -> None),
@@ -159,12 +159,12 @@ module TimelineCssKeyframeSequenceExtensions =
         /// <summary>Animates one target using captured inline property values and precise milliseconds.</summary>
         member this.CaptureInlineKeyframesPrecise(style:CSSStyleDeclaration,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
             this.CaptureInlineKeyframesPrecise([|style|],sequence,duration,?options=options,?position=position)
-        /// <summary>Animates nonempty targets using captured inline property values; unsigned nominal duration defaults to 1000 ms.</summary>
+        /// <summary>Animates nonempty targets from inline values; omitted duration inherits scope defaults.</summary>
         member this.CaptureInlineKeyframes(styles:CSSStyleDeclaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
-            this.CaptureInlineKeyframesPrecise(styles,sequence,float(defaultArg duration 1000u),?options=options,?position=position)
-        /// <summary>Animates one target using captured inline property values; unsigned nominal duration defaults to 1000 ms.</summary>
+            this.CaptureInlineKeyframesPrecise(styles,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?position=position)
+        /// <summary>Animates one target from inline values; omitted duration inherits scope defaults.</summary>
         member this.CaptureInlineKeyframes(style:CSSStyleDeclaration,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
-            this.CaptureInlineKeyframesPrecise(style,sequence,float(defaultArg duration 1000u),?options=options,?position=position)
+            this.CaptureInlineKeyframesPrecise(style,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?position=position)
         /// <summary>Animates a sparse sequence on nonempty targets using actual computed styles and per-element unit contexts and precise
         /// milliseconds.</summary>
         member this.CaptureCssKeyframesPrecise(computed:ComputedStyleService,elements:HTMLElement array,sequence:KeyframeSequence<HTMLElement,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
@@ -178,11 +178,11 @@ module TimelineCssKeyframeSequenceExtensions =
         /// <summary>Animates one target using actual computed styles and per-element unit contexts and precise milliseconds.</summary>
         member this.CaptureCssKeyframesPrecise(computed:ComputedStyleService,element:HTMLElement,sequence:KeyframeSequence<HTMLElement,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
             this.CaptureCssKeyframesPrecise(computed,[|element|],sequence,duration,?options=options,?position=position)
-        /// <summary>Animates nonempty targets using actual computed styles and per-element unit contexts; unsigned nominal duration
-        /// defaults to 1000 ms.</summary>
+        /// <summary>Animates nonempty targets using actual computed styles and per-element unit contexts; optional unsigned milliseconds;
+        /// omitted duration inherits scope defaults.</summary>
         member this.CaptureCssKeyframes(computed:ComputedStyleService,elements:HTMLElement array,sequence:KeyframeSequence<HTMLElement,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
-            this.CaptureCssKeyframesPrecise(computed,elements,sequence,float(defaultArg duration 1000u),?options=options,?position=position)
+            this.CaptureCssKeyframesPrecise(computed,elements,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?position=position)
         /// <summary>Animates one target using actual computed styles and per-element unit contexts; unsigned nominal duration defaults to
         /// 1000 ms.</summary>
         member this.CaptureCssKeyframes(computed:ComputedStyleService,element:HTMLElement,sequence:KeyframeSequence<HTMLElement,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?position:TimelinePosition) =
-            this.CaptureCssKeyframesPrecise(computed,element,sequence,float(defaultArg duration 1000u),?options=options,?position=position)
+            this.CaptureCssKeyframesPrecise(computed,element,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?position=position)

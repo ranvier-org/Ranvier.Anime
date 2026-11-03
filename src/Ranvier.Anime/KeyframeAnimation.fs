@@ -2,14 +2,6 @@ namespace Ranvier.Anime
 
 open System
 
-/// <summary>Sequence-local endpoint arbitration; independent-animation composition remains separate.</summary>
-[<RequireQualifiedAccess; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
-type KeyframeComposition =
-    | None
-    | Replace
-    /// <summary>The invariant composition mode name.</summary>
-    override this.ToString()=match this with KeyframeComposition.None -> "None" | KeyframeComposition.Replace -> "Replace"
-
 /// <summary>Shared keyframe playback, interpolation, precision, startup and lifecycle callbacks.</summary>
 [<NoEquality;NoComparison;Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type KeyframeAnimationOptions =
@@ -26,10 +18,10 @@ type KeyframeAnimationOptions =
       OnLoop:Timer -> unit
       OnPause:Timer -> unit
       OnComplete:Timer -> unit }
-    /// <summary>Autoplay, source out-quad easing, replace composition, four decimals and silent callbacks.</summary>
+    /// <summary>Active scope clock and animation defaults, four decimal places and silent callbacks.</summary>
     static member Default=
-        {Playback=PlaybackOptions.Default;Ease=Ease.named "outQuad";Modifier=id;Precision=Some 4u
-         Autoplay=true;Composition=KeyframeComposition.Replace;OnBegin=ignore;OnBeforeUpdate=ignore
+        {Playback=PlaybackDefaults.current();Ease=(AnimationDefaults.current()).Ease;Modifier=AnimationDefaults.modifier id;Precision=Some 4u
+         Autoplay=AnimationDefaults.autoplay true;Composition=AnimationDefaults.composition KeyframeComposition.Replace;OnBegin=ignore;OnBeforeUpdate=ignore
          OnRender=ignore;OnUpdate=ignore;OnLoop=ignore;OnPause=ignore;OnComplete=ignore}
     /// <summary>A diagnostic identifying startup and composition settings without formatting callback functions.</summary>
     override this.ToString()="KeyframeAnimationOptions(Autoplay="+this.Autoplay.ToString()+"; Composition="+this.Composition.ToString()+")"

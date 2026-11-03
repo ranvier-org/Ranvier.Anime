@@ -212,12 +212,12 @@ module KeyframeSequenceExtensions =
         static member NumericPrecise(scheduler:FrameScheduler,properties:(string*NumericProperty) array,sequence:KeyframeSequence<NumericProperty,float>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
             let properties=if isNull properties then null else properties |> Array.map(fun (name,value) -> name,[|value|])
             Keyframes.NumericPrecise(scheduler,properties,sequence,duration,?options=options,?owner=owner)
-        /// <summary>Animates named numeric target arrays; unsigned nominal duration defaults to 1000 ms.</summary>
+        /// <summary>Animates named numeric target arrays; optional unsigned milliseconds; omitted duration inherits scope defaults.</summary>
         static member Numeric(scheduler:FrameScheduler,properties:(string*NumericProperty array) array,sequence:KeyframeSequence<NumericProperty,float>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
-            Keyframes.NumericPrecise(scheduler,properties,sequence,float(defaultArg duration 1000u),?options=options,?owner=owner)
-        /// <summary>Animates named single-target numeric properties; unsigned nominal duration defaults to 1000 ms.</summary>
+            Keyframes.NumericPrecise(scheduler,properties,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
+        /// <summary>Animates named numeric properties; omitted duration inherits scope defaults.</summary>
         static member Numeric(scheduler:FrameScheduler,properties:(string*NumericProperty) array,sequence:KeyframeSequence<NumericProperty,float>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
-            Keyframes.NumericPrecise(scheduler,properties,sequence,float(defaultArg duration 1000u),?options=options,?owner=owner)
+            Keyframes.NumericPrecise(scheduler,properties,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
         /// <summary>Animates a sparse sequence on nonempty targets using explicit typed initial declarations and precise milliseconds.</summary>
         static member DeclarationPrecise(scheduler:FrameScheduler,styles:CSSStyleDeclaration array,initials:Declaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
             KeyframeSequenceBinding.css(scheduler,styles,sequence,id,(fun _ -> None),
@@ -225,12 +225,12 @@ module KeyframeSequenceExtensions =
         /// <summary>Animates one target using explicit typed initial declarations and precise milliseconds.</summary>
         static member DeclarationPrecise(scheduler:FrameScheduler,style:CSSStyleDeclaration,initials:Declaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
             Keyframes.DeclarationPrecise(scheduler,[|style|],initials,sequence,duration,?options=options,?owner=owner)
-        /// <summary>Animates nonempty targets using explicit typed initial declarations; unsigned nominal duration defaults to 1000 ms.</summary>
+        /// <summary>Animates nonempty targets from typed initial declarations; omitted duration inherits scope defaults.</summary>
         static member Declaration(scheduler:FrameScheduler,styles:CSSStyleDeclaration array,initials:Declaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
-            Keyframes.DeclarationPrecise(scheduler,styles,initials,sequence,float(defaultArg duration 1000u),?options=options,?owner=owner)
-        /// <summary>Animates one target using explicit typed initial declarations; unsigned nominal duration defaults to 1000 ms.</summary>
+            Keyframes.DeclarationPrecise(scheduler,styles,initials,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
+        /// <summary>Animates one target from typed initial declarations; omitted duration inherits scope defaults.</summary>
         static member Declaration(scheduler:FrameScheduler,style:CSSStyleDeclaration,initials:Declaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
-            Keyframes.DeclarationPrecise(scheduler,style,initials,sequence,float(defaultArg duration 1000u),?options=options,?owner=owner)
+            Keyframes.DeclarationPrecise(scheduler,style,initials,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
         /// <summary>Animates a sparse sequence on nonempty targets using explicit typed declarations and per-element unit contexts and
         /// precise milliseconds.</summary>
         static member DeclarationOnPrecise(scheduler:FrameScheduler,elements:HTMLElement array,initials:Declaration array,sequence:KeyframeSequence<HTMLElement,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
@@ -239,14 +239,14 @@ module KeyframeSequenceExtensions =
         /// <summary>Animates one target using explicit typed declarations and per-element unit contexts and precise milliseconds.</summary>
         static member DeclarationOnPrecise(scheduler:FrameScheduler,element:HTMLElement,initials:Declaration array,sequence:KeyframeSequence<HTMLElement,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
             Keyframes.DeclarationOnPrecise(scheduler,[|element|],initials,sequence,duration,?options=options,?owner=owner)
-        /// <summary>Animates nonempty targets using explicit typed declarations and per-element unit contexts; unsigned nominal duration
-        /// defaults to 1000 ms.</summary>
+        /// <summary>Animates nonempty targets using explicit typed declarations and per-element unit contexts; optional unsigned milliseconds;
+        /// omitted duration inherits scope defaults.</summary>
         static member DeclarationOn(scheduler:FrameScheduler,elements:HTMLElement array,initials:Declaration array,sequence:KeyframeSequence<HTMLElement,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
-            Keyframes.DeclarationOnPrecise(scheduler,elements,initials,sequence,float(defaultArg duration 1000u),?options=options,?owner=owner)
-        /// <summary>Animates one target using explicit typed declarations and per-element unit contexts; unsigned nominal duration
-        /// defaults to 1000 ms.</summary>
+            Keyframes.DeclarationOnPrecise(scheduler,elements,initials,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
+        /// <summary>Animates one target using explicit typed declarations and per-element unit contexts; optional unsigned milliseconds;
+        /// omitted duration inherits scope defaults.</summary>
         static member DeclarationOn(scheduler:FrameScheduler,element:HTMLElement,initials:Declaration array,sequence:KeyframeSequence<HTMLElement,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
-            Keyframes.DeclarationOnPrecise(scheduler,element,initials,sequence,float(defaultArg duration 1000u),?options=options,?owner=owner)
+            Keyframes.DeclarationOnPrecise(scheduler,element,initials,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
         /// <summary>Animates a sparse sequence on nonempty targets using captured inline property values and precise milliseconds.</summary>
         static member CaptureInlinePrecise(scheduler:FrameScheduler,styles:CSSStyleDeclaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
             KeyframeSequenceBinding.css(scheduler,styles,sequence,id,(fun _ -> None),
@@ -254,12 +254,12 @@ module KeyframeSequenceExtensions =
         /// <summary>Animates one target using captured inline property values and precise milliseconds.</summary>
         static member CaptureInlinePrecise(scheduler:FrameScheduler,style:CSSStyleDeclaration,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
             Keyframes.CaptureInlinePrecise(scheduler,[|style|],sequence,duration,?options=options,?owner=owner)
-        /// <summary>Animates nonempty targets using captured inline property values; unsigned nominal duration defaults to 1000 ms.</summary>
+        /// <summary>Animates nonempty targets from inline values; omitted duration inherits scope defaults.</summary>
         static member CaptureInline(scheduler:FrameScheduler,styles:CSSStyleDeclaration array,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
-            Keyframes.CaptureInlinePrecise(scheduler,styles,sequence,float(defaultArg duration 1000u),?options=options,?owner=owner)
-        /// <summary>Animates one target using captured inline property values; unsigned nominal duration defaults to 1000 ms.</summary>
+            Keyframes.CaptureInlinePrecise(scheduler,styles,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
+        /// <summary>Animates one target from inline values; omitted duration inherits scope defaults.</summary>
         static member CaptureInline(scheduler:FrameScheduler,style:CSSStyleDeclaration,sequence:KeyframeSequence<CSSStyleDeclaration,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
-            Keyframes.CaptureInlinePrecise(scheduler,style,sequence,float(defaultArg duration 1000u),?options=options,?owner=owner)
+            Keyframes.CaptureInlinePrecise(scheduler,style,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
         /// <summary>Animates a sparse sequence on nonempty targets using actual computed styles and per-element unit contexts and precise
         /// milliseconds.</summary>
         static member CaptureCssPrecise(scheduler:FrameScheduler,computed:ComputedStyleService,elements:HTMLElement array,sequence:KeyframeSequence<HTMLElement,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
@@ -273,11 +273,11 @@ module KeyframeSequenceExtensions =
         /// <summary>Animates one target using actual computed styles and per-element unit contexts and precise milliseconds.</summary>
         static member CaptureCssPrecise(scheduler:FrameScheduler,computed:ComputedStyleService,element:HTMLElement,sequence:KeyframeSequence<HTMLElement,Declaration>,duration:float,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
             Keyframes.CaptureCssPrecise(scheduler,computed,[|element|],sequence,duration,?options=options,?owner=owner)
-        /// <summary>Animates nonempty targets using actual computed styles and per-element unit contexts; unsigned nominal duration
-        /// defaults to 1000 ms.</summary>
+        /// <summary>Animates nonempty targets using actual computed styles and per-element unit contexts; optional unsigned milliseconds;
+        /// omitted duration inherits scope defaults.</summary>
         static member CaptureCss(scheduler:FrameScheduler,computed:ComputedStyleService,elements:HTMLElement array,sequence:KeyframeSequence<HTMLElement,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
-            Keyframes.CaptureCssPrecise(scheduler,computed,elements,sequence,float(defaultArg duration 1000u),?options=options,?owner=owner)
+            Keyframes.CaptureCssPrecise(scheduler,computed,elements,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)
         /// <summary>Animates one target using actual computed styles and per-element unit contexts; unsigned nominal duration defaults to
         /// 1000 ms.</summary>
         static member CaptureCss(scheduler:FrameScheduler,computed:ComputedStyleService,element:HTMLElement,sequence:KeyframeSequence<HTMLElement,Declaration>,?duration:uint,?options:Ranvier.Anime.KeyframeAnimationOptions,?owner:Owner) =
-            Keyframes.CaptureCssPrecise(scheduler,computed,element,sequence,float(defaultArg duration 1000u),?options=options,?owner=owner)
+            Keyframes.CaptureCssPrecise(scheduler,computed,element,sequence,AnimationDefaults.duration(duration |> Option.map float),?options=options,?owner=owner)

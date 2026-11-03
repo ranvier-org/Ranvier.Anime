@@ -494,6 +494,8 @@ let root = Command.root {
         stage "upstream scope and restoration reference" {
             workingDir __SOURCE_DIRECTORY__
             run "rtk node tools/scope-reference.mjs"
+            run "rtk node tools/scope-clock-defaults-reference.mjs"
+            run "rtk node tools/scope-animation-defaults-reference.mjs"
             run "rtk node tools/timeline-revert.mjs"
         }
     }
@@ -540,6 +542,8 @@ let root = Command.root {
             run "rtk node tools/timeline-mixed-keyframes.mjs"
             run "rtk node tools/timeline-revert.mjs"
             run "rtk node tools/scope-reference.mjs"
+            run "rtk node tools/scope-clock-defaults-reference.mjs"
+            run "rtk node tools/scope-animation-defaults-reference.mjs"
         }
     }
 }

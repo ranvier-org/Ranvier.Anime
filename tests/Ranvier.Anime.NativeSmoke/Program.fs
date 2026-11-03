@@ -45,6 +45,11 @@ let main args =
             use graph=new Graph()
             use activation=graph.Activate()
             ScopeNativeProbe.run host.Document (MediaQueries.provider host)
+            ScopeDefaultsNativeProbe.run host.Document
+            ScopeAnimationDefaultsNativeProbe.run host.Document
+            CssScopeNativeProbe.run host.Document
+            CssDirectRevertNativeProbe.run host.Document
+            require "native scoped legacy CSS snapshots and priorities" true
             require "native scope selectors media refresh and actual ownership" true
         do
             use graph=new Graph()

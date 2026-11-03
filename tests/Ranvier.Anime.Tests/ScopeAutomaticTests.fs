@@ -77,7 +77,7 @@ let automaticTests=testList "automatic scope restoration" [
             let starts=ResizeArray<float>()
             scope.Add(fun _ ->
                 starts.Add value
-                let animation=new NumericAnimation(scheduler,(fun () -> value),(fun next -> value<-next),110.,100u)
+                let animation=new NumericAnimation(scheduler,(fun () -> value),(fun next -> value<-next),110.,100u,ease=id)
                 animation.Seek 50.
                 None) |> ignore
             scope.Refresh() |> ignore
@@ -93,7 +93,7 @@ let automaticTests=testList "automatic scope restoration" [
             let mutable animation:NumericAnimation option=None
             scope.Add(fun current ->
                 current.AddOnce(fun _ ->
-                    animation<-Some(new NumericAnimation(scheduler,(fun () -> value),(fun next -> value<-next),110.,100u) |> Animation.own)
+                    animation<-Some(new NumericAnimation(scheduler,(fun () -> value),(fun next -> value<-next),110.,100u,ease=id) |> Animation.own)
                     None) |> ignore
                 None) |> ignore
             scope.Refresh() |> ignore

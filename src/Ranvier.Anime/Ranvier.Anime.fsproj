@@ -21,6 +21,7 @@
     <Compile Include="ScopeRegistration.fs" />
     <Compile Include="Timer.fs" />
     <Compile Include="Scope.fs" />
+    <Compile Include="ScopeRoots.fs" />
     <Compile Include="ScopeTimer.fs" />
     <Compile Include="KeyframePlayback.fs" />
     <Compile Include="KeyframeAnimation.fs" />

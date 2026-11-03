@@ -37,6 +37,141 @@ type PlaybackOptions =
                          "; Alternate="; this.Alternate.ToString(); "; Speed="; this.Speed.ToString("R", culture)
                          "; FrameRate="; this.FrameRate.ToString("R", culture); ")" |]
 
+/// <summary>Optional scope clock overrides; None inherits, while false and zero remain explicit values.</summary>
+type PlaybackDefaults =
+    { Repeat: PlaybackRepeat option
+      Delay: float option
+      LoopDelay: float option
+      Reversed: bool option
+      Alternate: bool option
+      Speed: float option
+      FrameRate: float option }
+    /// <summary>Inherits every clock setting.</summary>
+    static member Empty =
+        { Repeat=None; Delay=None; LoopDelay=None; Reversed=None; Alternate=None; Speed=None; FrameRate=None }
+    /// <summary>Applies present fields without normalization; the playback controller validates and normalizes its settings.</summary>
+    member this.Apply(fallback: PlaybackOptions) : PlaybackOptions =
+        { Repeat=defaultArg this.Repeat fallback.Repeat
+          Delay=defaultArg this.Delay fallback.Delay
+          LoopDelay=defaultArg this.LoopDelay fallback.LoopDelay
+          Reversed=defaultArg this.Reversed fallback.Reversed
+          Alternate=defaultArg this.Alternate fallback.Alternate
+          Speed=defaultArg this.Speed fallback.Speed
+          FrameRate=defaultArg this.FrameRate fallback.FrameRate }
+    /// <summary>An invariant diagnostic preserving explicit values and identifying inherited fields.</summary>
+    override this.ToString() =
+        let optional render value = value |> Option.map render |> Option.defaultValue "inherit"
+        let number (value:float) = value.ToString("R",Globalization.CultureInfo.InvariantCulture)
+        String.Concat [| "PlaybackDefaults(Repeat="; optional (fun (value:PlaybackRepeat) -> value.ToString()) this.Repeat
+                         "; Delay="; optional number this.Delay; "; LoopDelay="; optional number this.LoopDelay
+                         "; Reversed="; optional (fun (value:bool) -> value.ToString()) this.Reversed
+                         "; Alternate="; optional (fun (value:bool) -> value.ToString()) this.Alternate
+                         "; Speed="; optional number this.Speed; "; FrameRate="; optional number this.FrameRate; ")" |]
+
+/// <summary>Sequence-local endpoint arbitration; independent-animation composition remains separate.</summary>
+[<RequireQualifiedAccess; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+type KeyframeComposition =
+    | None
+    | Replace
+    /// <summary>The invariant composition mode name.</summary>
+    override this.ToString()=match this with KeyframeComposition.None -> "None" | KeyframeComposition.Replace -> "Replace"
+
+/// <summary>Resolved constant animation defaults; target-dependent authoring remains on the typed keyframe APIs.</summary>
+[<NoEquality;NoComparison;System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+type AnimationDefaultOptions =
+    { /// <summary>Nominal nonnegative precise milliseconds, validated and normalized by the selected factory.</summary>
+      Duration: float
+      Ease: float -> float
+      Modifier: float -> float
+      Composition: KeyframeComposition
+      Autoplay: bool }
+    /// <summary>1000 milliseconds, out-quad easing, identity modifier, replace composition and autoplay.</summary>
+    static member Default =
+        { Duration=1000.;Ease=Ease.named "outQuad";Modifier=id;Composition=KeyframeComposition.Replace;Autoplay=true }
+    /// <summary>An invariant duration, composition and startup diagnostic with callback functions omitted.</summary>
+    override this.ToString()=
+        "AnimationDefaultOptions(Duration="+this.Duration.ToString("R",System.Globalization.CultureInfo.InvariantCulture)+
+        "; Composition="+this.Composition.ToString()+"; Autoplay="+this.Autoplay.ToString()+")"
+
+/// <summary>Optional constant animation overrides; None inherits, while duration0 and autoplayfalse remain explicit.</summary>
+[<NoEquality;NoComparison>]
+type AnimationDefaults =
+    { /// <summary>Optional nonnegative precise milliseconds; Some0 overrides an inherited duration.</summary>
+      Duration: float option
+      Ease: (float -> float) option
+      Modifier: (float -> float) option
+      Composition: KeyframeComposition option
+      Autoplay: bool option }
+    /// <summary>Inherits every constant animation setting.</summary>
+    static member Empty = {Duration=None;Ease=None;Modifier=None;Composition=None;Autoplay=None}
+    /// <summary>Applies present constant fields without invoking user callbacks or normalizing duration.</summary>
+    member this.Apply(fallback: AnimationDefaultOptions) : AnimationDefaultOptions =
+        { Duration=defaultArg this.Duration fallback.Duration
+          Ease=defaultArg this.Ease fallback.Ease
+          Modifier=defaultArg this.Modifier fallback.Modifier
+          Composition=defaultArg this.Composition fallback.Composition
+          Autoplay=defaultArg this.Autoplay fallback.Autoplay }
+    /// <summary>An invariant diagnostic of constant overrides; easing and modifier callbacks are omitted.</summary>
+    override this.ToString() =
+        let optional render value = value |> Option.map render |> Option.defaultValue "inherit"
+        String.Concat [| "AnimationDefaults(Duration="
+                         optional (fun (value:float) -> value.ToString("R",Globalization.CultureInfo.InvariantCulture)) this.Duration
+                         "; Composition="; optional (fun (value:KeyframeComposition) -> value.ToString()) this.Composition
+                         "; Autoplay="; optional (fun (value:bool) -> value.ToString()) this.Autoplay; ")" |]
+
+/// <summary>Mutable clock defaults shared by scopes without overrides; overridden scopes retain a separate cell.</summary>
+[<Sealed>]
+type ScopeClockDefaults(options: PlaybackOptions, ?animation: AnimationDefaultOptions) =
+    let mutable options = options
+    let mutable animation = defaultArg animation AnimationDefaultOptions.Default
+    do if isNull(box options) then nullArg "options"
+    /// <summary>The authored clock values, read when a factory constructs a controller.</summary>
+    member _.Options
+        with get() = options
+        and set value =
+            if isNull(box value) then nullArg "value"
+            options <- value
+    /// <summary>Constant animation values retained in the same shared-or-copied defaults cell.</summary>
+    member _.Animation
+        with get() = animation
+        and set value =
+            if isNull(box value) then nullArg "value"
+            animation <- value
+
+/// <summary>The active clock-default cell, restored when scoped execution ends.</summary>
+module internal ScopePlaybackContext =
+    let globalDefaults = ScopeClockDefaults(PlaybackOptions.Default)
+    let private active = new System.Threading.ThreadLocal<ScopeClockDefaults option>(fun () -> None)
+    let current () = defaultArg active.Value globalDefaults
+    let isScoped () = active.Value.IsSome
+    let resolve options = defaultArg options (current().Options)
+    let run defaults callback =
+        let previous = active.Value
+        active.Value <- Some defaults
+        try callback() finally active.Value <- previous
+
+/// <summary>Clock defaults for explicitly authored factory options.</summary>
+[<RequireQualifiedAccess>]
+module PlaybackDefaults =
+    /// <summary>Reads the active scope's clock values, or the shared global clock defaults outside scoped execution.</summary>
+    let current () = ScopePlaybackContext.current().Options
+    /// <summary>Applies present factory fields to the active clock values, preserving explicit false and zero.</summary>
+    let resolve (overrides: PlaybackDefaults) = overrides.Apply(current())
+
+/// <summary>Typed constant animation defaults applied by animation and keyframe factories.</summary>
+[<RequireQualifiedAccess>]
+module AnimationDefaults =
+    /// <summary>Reads the retained constant settings without invoking easing or modifier callbacks.</summary>
+    let current () = ScopePlaybackContext.current().Animation
+    /// <summary>Applies present constant fields to the active retained settings.</summary>
+    let resolve (overrides: AnimationDefaults) = overrides.Apply(current())
+    /// <summary>Resolves an optional precise duration, preserving an explicit zero.</summary>
+    let duration value = defaultArg value (current().Duration)
+    let internal ease fallback = if ScopePlaybackContext.isScoped() then (current()).Ease else fallback
+    let internal modifier (_fallback:float -> float) = (current()).Modifier
+    let internal composition (_fallback:KeyframeComposition) = (current()).Composition
+    let internal autoplay (_fallback:bool) = (current()).Autoplay
+
 /// <summary>Iteration and scheduling state transferred when a scope reconstructs a playback controller.</summary>
 [<Struct>]
 type internal ScopeClockSnapshot =
@@ -56,7 +191,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
            ?onBegin: Timer -> unit, ?onBeforeUpdate: Timer -> unit, ?onUpdate: Timer -> unit,
            ?onLoop: Timer -> unit, ?onPause: Timer -> unit, ?onComplete: Timer -> unit) as this =
     let mutable duration = duration
-    let options = defaultArg options PlaybackOptions.Default
+    let options = ScopePlaybackContext.resolve options
     let iterations = match options.Repeat with PlaybackRepeat.Count count -> float count + 1. | PlaybackRepeat.Forever -> infinity
     let callback event =
         let action =
