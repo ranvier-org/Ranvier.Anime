@@ -8,6 +8,8 @@ The playback timing geometry in `src/Ranvier.Anime/PlaybackTiming.fs`, callback/
 
 Timeline iteration/child traversal in `src/Ranvier.Anime/Timeline.fs` and scalar sibling eligibility/composition in `src/Ranvier.Anime/PropertyTrack.fs` also follow the pinned timeline and core render logic.
 
+Endpoint decomposition, homogenization and scalar/color/compound interpolation in `src/Ranvier.Anime/ValueInterpolation.fs` derive from the pinned core values, colors, helpers, render and animation code.
+
 The easing formulas retain Anime.js's credit to Robert Penner, Copyright (c) 2001 Robert Penner, from https://robertpenner.com/easing/.
 The cubic Bezier solver retains Anime.js's credit to https://github.com/gre/bezier-easing, Copyright (c) 2014 Gaëtan Renaudeau.
 These credits are preserved in the ported source as well as this notice.

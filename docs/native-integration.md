@@ -4,6 +4,8 @@ Development home: `C:/wk/ranvier-anime`. Open `Ranvier.Anime.Native.slnx` for th
 
 ## Current public cohort
 
+The new internal value-interpolation kernel passes1095/1095 portable tests in both modes, including source color/compound composition. It is not yet connected to the typed declaration/native adapter. The qualified PE archives below retain their earlier exact source; they do not qualify this addition. P7's inspected manifest has no structured color-channel accessor. Contextual computed colors must not be assumed to serialize as sRGB rgba; modern color and unit normalization remain adapter work.
+
 The latest source replay is [public45-p7-curves](evidence/native-public45-p7-curves.json). Both normal/Traced JIT and strict NativeAOT PE runs add piecewise overshoot through native layout, completion at the final stop and an irregular curve whose random draws remain fixed after construction. Full portable suites now pass799/799 in each mode. Immutable `native-public45-p7-curves-{Release,Debug}` snapshots bind these library/consumer sources; the unlabelled public cohort below retains the earlier checkpoint. To preserve a new replay, use `--label <unique-label>` for both evidence commands and summary.
 
 Normal Release and Traced Debug now pass fresh JIT builds/runs and strict NativeAOT publications/PE executions using public NuGet packages only: Core0.1.1-preview.1, DOM0.1.0-alpha.56, CSS0.1.1-alpha.2, Bindings0.1.1-alpha.1, CSS-DOM0.1.0-alpha.1, View/View.Dom0.1.45, View.WebCore0.1.0-alpha.45 and WebCore/Native0.1.1-preview.7. The headless consumer builds only the port and consumer projects; View/Core are package dependencies. Normal and Traced modes use matching managed packages.

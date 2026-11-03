@@ -6,6 +6,7 @@
     <Compile Include="CssTests.fs" />
     <Compile Include="EaseTests.fs" />
     <Compile Include="CurveTests.fs" />
+    <Compile Include="ValueInterpolationTests.fs" />
     <Compile Include="SpringTests.fs" />
     <Compile Include="StaggerTests.fs" />
     <Compile Include="TimelineTests.fs" />
@@ -25,6 +26,7 @@
   <ItemGroup>
     <None Include="../reference/pure.json" Link="reference/pure.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/easing-curves.json" Link="reference/easing-curves.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/value-interpolation.json" Link="reference/value-interpolation.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timer-controls.json" Link="reference/timer-controls.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/animation-playback.json" Link="reference/animation-playback.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timeline-playback.json" Link="reference/timeline-playback.json" CopyToOutputDirectory="PreserveNewest" />

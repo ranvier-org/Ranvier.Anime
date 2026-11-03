@@ -419,10 +419,17 @@ let root = Command.root {
             }
         }
     }
+    command "value-reference" {
+        stage "upstream value interpolation reference" {
+            workingDir __SOURCE_DIRECTORY__
+            run "rtk node tools/value-interpolation.mjs"
+        }
+    }
     command "easing-reference" {
         stage "upstream easing curves reference" {
             workingDir __SOURCE_DIRECTORY__
             run "rtk node tools/easing-curves.mjs"
+            run "rtk node tools/value-interpolation.mjs"
         }
     }
     command "reference" {

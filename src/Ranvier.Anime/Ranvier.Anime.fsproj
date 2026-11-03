@@ -10,6 +10,7 @@
     <Compile Include="CssStagger.fs" />
     <Compile Include="NumericProperty.fs" />
     <Compile Include="PropertyTrack.fs" />
+    <Compile Include="ValueInterpolation.fs" />
     <Compile Include="PlaybackTiming.fs" />
     <Compile Include="PlaybackState.fs" />
     <Compile Include="Timer.fs" />
