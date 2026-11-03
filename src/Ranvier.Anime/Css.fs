@@ -100,11 +100,12 @@ module CssAnimation =
                             onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onUpdate=options.OnUpdate,
                             onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete)
         let render (sample:PlaybackSample) mode muted =
+            let iterationDuration=clock.IterationDuration
             let canWrite=clock.CaptureWriteGuard()
             let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
             let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=200.
-            let absolute=PropertyNumbers.round 1e12 (options.Playback.Delay+sample.IterationTime)
-            let start=PropertyNumbers.round 1e12 options.Playback.Delay
+            let absolute=PropertyNumbers.round 1e12 (clock.Delay+sample.IterationTime)
+            let start=PropertyNumbers.round 1e12 clock.Delay
             let eligible=force || ((tweenTime<>iterationDuration || absolute<=start+iterationDuration) &&
                                   (tweenTime<>0. || absolute>=start))
             if eligible && canWrite() then
@@ -118,7 +119,8 @@ module CssAnimation =
                         if canWrite() && sample.AboveZero && not muted then options.OnRender clock
                     | _ -> ()
         try
-            clock.ConfigureRenderer(render,?totalDuration=(if iterationDuration=1e-11 then Some 1e-11 else None))
+            clock.ConfigureRenderer(render,?totalDuration=(if iterationDuration=1e-11 then Some 1e-11 else None),
+                                    onStretch=(fun scale -> tweenTime<-tweenTime*scale))
             clock.Reset()
             clock.Resume()
             clock

@@ -85,6 +85,11 @@ let main args =
         tween.Play()
         pumpUntil host (fun () -> style.getPropertyValue "--anime-gap" = "100px")
         require "native layout consumes animated custom property" (abs(element.getBoundingClientRect().width - 100.) < 0.01)
+        tween.Stretch 200u
+        require "native numeric stretch retains its last property value" (style.getPropertyValue "--anime-gap"="100px")
+        tween.Seek 100.
+        require "native numeric stretch samples the new iteration duration" (style.getPropertyValue "--anime-gap"="50px")
+        tween.Seek 200.
         style.setProperty("--anime-repeat-gap", "7px", priority = "important")
         use repeatedCss =
             CssAnimation.customPropertyWithOptions
@@ -153,6 +158,16 @@ let main args =
         declarationWidth.Seek 50.
         require "native typed declaration drives layout"
             (abs(element.getBoundingClientRect().width - 60.) < 0.01)
+        declarationWidth.Stretch 200u
+        require "native declaration stretch retains style without immediate sampling"
+            (style.getPropertyValue "width"="60px" && declarationWidth.CurrentTime=50. && declarationWidth.Progress=0.25)
+        declarationWidth.Seek 100.
+        require "native declaration stretch uses mutable geometry"
+            (abs(element.getBoundingClientRect().width-60.)<0.01)
+        declarationWidth.Stretch 0.125
+        declarationWidth.Seek 0.0625
+        require "native declaration stretch preserves precise fractional milliseconds"
+            (abs(element.getBoundingClientRect().width-60.)<0.01)
         declarationWidth.Cancel()
         use declarationColor = CssAnimation.declaration scheduler style
                                     (Declaration.create "background-color" "#000")
@@ -267,6 +282,14 @@ let main args =
         host.Frame()
         require "Ranvier owner disposal stops native writes" (writes = priorWrites)
         let mutable timerLoops = 0
+        use stretchedTimer=new Timer(scheduler,100u,options={PlaybackOptions.Default with Delay=40.})
+        stretchedTimer.Seek 75.
+        stretchedTimer.Stretch 200u
+        require "native timer stretch retains playhead and scales delay"
+            (stretchedTimer.CurrentTime=75. && stretchedTimer.Progress=0.375 && stretchedTimer.Delay=80.)
+        stretchedTimer.Resume()
+        pumpUntil host (fun () -> stretchedTimer.Completed)
+        require "native stretched timer completes through shared scheduling" (stretchedTimer.CurrentTime=200.)
         let mutable timerCompletions = 0
         use repeatedTimer = new Timer(scheduler, 25u,
             options = { PlaybackOptions.Default with Repeat = PlaybackRepeat.Count 1u; Alternate = true },

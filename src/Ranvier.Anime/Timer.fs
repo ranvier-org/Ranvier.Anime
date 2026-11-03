@@ -69,6 +69,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let mutable generation = 0
     let mutable pending : IDisposable option = None
     do state.Speed <- options.Speed
+    let mutable stretchRenderer : float -> unit = ignore
     let mutable renderingEnabled = true
     let mutable parented = false
     let mutable onFault = fun () -> ()
@@ -84,7 +85,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         generation
 
     let reanchor lead =
-        anchor <- scheduler.Now() - (state.Sample.AbsoluteTime + options.Delay) / state.Speed - lead
+        anchor <- scheduler.Now() - (state.Sample.AbsoluteTime + state.Delay) / state.Speed - lead
 
     let requestTick now =
         if fps >= 240. then PlaybackTickMode.Auto
@@ -179,6 +180,21 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Completes then cancels unless a callback supersedes the operation.</summary>
     member _.Complete(?muteCallbacks: bool) =
         operate (fun _ -> state.Complete(defaultArg muteCallbacks false)) ignore
+    /// <summary>Stretches total duration and delay geometry without sampling or moving the raw playhead.</summary>
+    /// <remarks>Finite nonnegative milliseconds are required. Scaled delay overflow rejects before changing active playback.</remarks>
+    member _.Stretch(milliseconds:float) =
+        live()
+        match state.PrepareStretch milliseconds with
+        | None -> ()
+        | Some next ->
+            let scale=milliseconds/state.Duration
+            operate (fun current ->
+                stretchRenderer scale
+                if current() then
+                    state.ApplyStretch next
+                    duration<-next.IterationDuration) ignore
+    /// <summary>Stretches total duration using unsigned whole milliseconds.</summary>
+    member _.Stretch(milliseconds:uint) = this.Stretch(float milliseconds)
     /// <summary>Ends the disposable lifetime; repeated cancellation is harmless.</summary>
     member _.Cancel() = cancel()
     /// <summary>Last sampled time in milliseconds; setting it emits pause when active and then restores playback.</summary>
@@ -247,15 +263,18 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Raw time immediately before the current sample.</summary>
     member internal _.PreviousAbsoluteTime = state.PreviousAbsoluteTime
     /// <summary>Installs an animation renderer and an optional source setter-duration override before sampling.</summary>
-    member internal _.ConfigureRenderer(renderer, ?totalDuration: float) =
+    member internal _.ConfigureRenderer(renderer, ?totalDuration: float, ?onStretch: (float -> unit)) =
         state.Renderer <- fun sample mode muted -> if renderingEnabled then renderer sample mode muted
+        onStretch |> Option.iter(fun hook -> stretchRenderer <- hook)
         totalDuration |> Option.iter state.OverrideDuration
     /// <summary>Assigns current time with pause/seek/resume semantics while every ancestor remains live.</summary>
     member internal _.SetTimeGuarded(time, canWrite) = setTimeGuarded canWrite time
     /// <summary>Installs cleanup invoked after callback/render faults cancel this driver.</summary>
     member internal _.OnFault with set value = onFault <- value
     /// <summary>Initial delay of an owned timeline child.</summary>
-    member internal _.Delay = options.Delay
+    member internal _.Delay = state.Delay
+    /// <summary>Current gap between repeated iterations.</summary>
+    member internal _.LoopDelay = state.LoopDelay
     /// <summary>Assigns scheduling to the timeline and initializes the child silently.</summary>
     member internal _.AttachToTimeline() =
         parented <- true

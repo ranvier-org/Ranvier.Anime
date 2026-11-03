@@ -22,6 +22,8 @@ type internal PlaybackEvent =
 /// <summary>Playback callback and control state; clock input includes the initial delay.</summary>
 type internal PlaybackState(duration: float, iterations: float, delay: float, loopDelay: float,
                             initialReversed: bool, alternate: bool, callback: PlaybackEvent -> unit) =
+    let mutable delay = delay
+    let mutable loopDelay = loopDelay
     let mutable duration = duration
     let mutable timing = PlaybackTiming(duration, iterations, delay, loopDelay)
     let mutable sample = timing.Sample(0., 0., initialReversed, alternate, false, PlaybackTickMode.Force)
@@ -198,6 +200,23 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         childRenderer <- Some renderChildren
     /// <summary>Raw time preceding the current sample, used for forced property-render eligibility.</summary>
     member _.PreviousAbsoluteTime = previousAbsoluteTime
+    /// <summary>Initial delay after any source stretch operation.</summary>
+    member _.Delay = delay
+    /// <summary>Loop gap after any source stretch operation.</summary>
+    member _.LoopDelay = loopDelay
+    /// <summary>Prepares validated geometry before an active scheduler subscription is interrupted.</summary>
+    member _.PrepareStretch(value:float) =
+        let next=timing.Stretch value
+        if obj.ReferenceEquals(next,timing) then None else Some next
+    /// <summary>Commits prepared geometry, retaining raw playhead, callback flags and clock history.</summary>
+    member _.ApplyStretch(next:PlaybackTiming) =
+        live()
+        change() |> ignore
+        duration<-next.IterationDuration
+        delay<-next.Delay
+        loopDelay<-next.LoopDelay
+        timing<-next
+        sample<-timing.Rebound sample
     /// <summary>Updates iteration geometry while retaining the most recent sample until the next render.</summary>
     member _.Resize(value: float) =
         let next = PlaybackTiming(value, iterations, delay, loopDelay)

@@ -26160,6 +26160,6150 @@
   ],
   "scheduled": [
     {
+      "name": "stretchPaused",
+      "parameters": {
+        "duration": 100
+      },
+      "initial": {
+        "time": 0,
+        "raw": 0,
+        "iterationTime": 0,
+        "rawIterationTime": 0,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": false,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 100,
+        "iterationDuration": 100,
+        "delay": 0,
+        "loopDelay": 0
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 75,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 75,
+                "raw": 75,
+                "iterationTime": 75,
+                "rawIterationTime": 75,
+                "iteration": 0,
+                "progress": 0.75,
+                "iterationProgress": 0.75,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 75,
+                "raw": 75,
+                "iterationTime": 75,
+                "rawIterationTime": 75,
+                "iteration": 0,
+                "progress": 0.75,
+                "iterationProgress": 0.75,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 75,
+                "raw": 75,
+                "iterationTime": 75,
+                "rawIterationTime": 75,
+                "iteration": 0,
+                "progress": 0.75,
+                "iterationProgress": 0.75,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 75,
+            "raw": 75,
+            "iterationTime": 75,
+            "rawIterationTime": 75,
+            "iteration": 0,
+            "progress": 0.75,
+            "iterationProgress": 0.75,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 200
+          },
+          "events": [],
+          "state": {
+            "time": 75,
+            "raw": 75,
+            "iterationTime": 75,
+            "rawIterationTime": 75,
+            "iteration": 0,
+            "progress": 0.375,
+            "iterationProgress": 0.375,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "seek",
+            "time": 100,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 100,
+                "raw": 100,
+                "iterationTime": 100,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 0.5,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 75,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 100,
+                "raw": 100,
+                "iterationTime": 100,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 0.5,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 75,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 100,
+            "raw": 100,
+            "iterationTime": 100,
+            "rawIterationTime": 100,
+            "iteration": 0,
+            "progress": 0.5,
+            "iterationProgress": 0.5,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 75,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 50
+          },
+          "events": [],
+          "state": {
+            "time": 50,
+            "raw": 100,
+            "iterationTime": 50,
+            "rawIterationTime": 100,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 75,
+            "speed": 1,
+            "fps": 240,
+            "duration": 50,
+            "iterationDuration": 50,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "seek",
+            "time": 50,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 50,
+                "iterationDuration": 50,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 50,
+                "iterationDuration": 50,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": true,
+                "paused": true,
+                "deltaTime": -25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 50,
+                "iterationDuration": 50,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 50,
+            "raw": 50,
+            "iterationTime": 50,
+            "rawIterationTime": 50,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": true,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": -25,
+            "speed": 1,
+            "fps": 240,
+            "duration": 50,
+            "iterationDuration": 50,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchRunning",
+      "parameters": {
+        "duration": 100
+      },
+      "initial": {
+        "time": 0,
+        "raw": 0,
+        "iterationTime": 0,
+        "rawIterationTime": 0,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": false,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 100,
+        "iterationDuration": 100,
+        "delay": 0,
+        "loopDelay": 0
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 0,
+            "raw": 0,
+            "iterationTime": 0,
+            "rawIterationTime": 0,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 37,
+                "raw": 37,
+                "iterationTime": 37,
+                "rawIterationTime": 37,
+                "iteration": 0,
+                "progress": 0.37,
+                "iterationProgress": 0.37,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 37,
+                "raw": 37,
+                "iterationTime": 37,
+                "rawIterationTime": 37,
+                "iteration": 0,
+                "progress": 0.37,
+                "iterationProgress": 0.37,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 37,
+                "raw": 37,
+                "iterationTime": 37,
+                "rawIterationTime": 37,
+                "iteration": 0,
+                "progress": 0.37,
+                "iterationProgress": 0.37,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 37,
+            "raw": 37,
+            "iterationTime": 37,
+            "rawIterationTime": 37,
+            "iteration": 0,
+            "progress": 0.37,
+            "iterationProgress": 0.37,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 200
+          },
+          "events": [],
+          "state": {
+            "time": 37,
+            "raw": 37,
+            "iterationTime": 37,
+            "rawIterationTime": 37,
+            "iteration": 0,
+            "progress": 0.185,
+            "iterationProgress": 0.185,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 62,
+                "raw": 62,
+                "iterationTime": 62,
+                "rawIterationTime": 62,
+                "iteration": 0,
+                "progress": 0.31,
+                "iterationProgress": 0.31,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 62,
+                "raw": 62,
+                "iterationTime": 62,
+                "rawIterationTime": 62,
+                "iteration": 0,
+                "progress": 0.31,
+                "iterationProgress": 0.31,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 62,
+            "raw": 62,
+            "iterationTime": 62,
+            "rawIterationTime": 62,
+            "iteration": 0,
+            "progress": 0.31,
+            "iterationProgress": 0.31,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 37,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 150
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 200,
+                "raw": 212,
+                "iterationTime": 200,
+                "rawIterationTime": 200,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 200,
+                "raw": 212,
+                "iterationTime": 200,
+                "rawIterationTime": 200,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "time": 200,
+                "raw": 212,
+                "iterationTime": 200,
+                "rawIterationTime": 200,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": true,
+                "paused": true,
+                "deltaTime": 25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 200,
+            "raw": 212,
+            "iterationTime": 200,
+            "rawIterationTime": 200,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": 25,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchDelayed",
+      "parameters": {
+        "duration": 100,
+        "delay": 40
+      },
+      "initial": {
+        "time": -40,
+        "raw": -40,
+        "iterationTime": 0,
+        "rawIterationTime": -40,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": true,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 100,
+        "iterationDuration": 100,
+        "delay": 40,
+        "loopDelay": 0
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": -40,
+            "raw": -40,
+            "iterationTime": 0,
+            "rawIterationTime": -40,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": true,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 10
+          },
+          "events": [],
+          "state": {
+            "time": -18,
+            "raw": -18,
+            "iterationTime": 0,
+            "rawIterationTime": -18,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 200
+          },
+          "events": [],
+          "state": {
+            "time": -18,
+            "raw": -18,
+            "iterationTime": 0,
+            "rawIterationTime": -18,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 80,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [],
+          "state": {
+            "time": -33,
+            "raw": -33,
+            "iterationTime": 0,
+            "rawIterationTime": -33,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": true,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 80,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 100
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 67,
+                "raw": 67,
+                "iterationTime": 67,
+                "rawIterationTime": 67,
+                "iteration": 0,
+                "progress": 0.335,
+                "iterationProgress": 0.335,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 80,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 67,
+                "raw": 67,
+                "iterationTime": 67,
+                "rawIterationTime": 67,
+                "iteration": 0,
+                "progress": 0.335,
+                "iterationProgress": 0.335,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": -33,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 80,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 67,
+                "raw": 67,
+                "iterationTime": 67,
+                "rawIterationTime": 67,
+                "iteration": 0,
+                "progress": 0.335,
+                "iterationProgress": 0.335,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": -33,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 80,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 67,
+            "raw": 67,
+            "iterationTime": 67,
+            "rawIterationTime": 67,
+            "iteration": 0,
+            "progress": 0.335,
+            "iterationProgress": 0.335,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": -33,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 80,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "reset"
+          },
+          "events": [],
+          "state": {
+            "time": -80,
+            "raw": -80,
+            "iterationTime": 0,
+            "rawIterationTime": -80,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": true,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": true,
+            "deltaTime": -33,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 80,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": -80,
+            "raw": -80,
+            "iterationTime": 0,
+            "rawIterationTime": -80,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": true,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": -33,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 80,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [],
+          "state": {
+            "time": -43,
+            "raw": -43,
+            "iterationTime": 0,
+            "rawIterationTime": -43,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": -33,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 80,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchNegativeDelay",
+      "parameters": {
+        "duration": 100,
+        "delay": -20
+      },
+      "initial": {
+        "time": 20,
+        "raw": 20,
+        "iterationTime": 20,
+        "rawIterationTime": 20,
+        "iteration": 0,
+        "progress": 0.2,
+        "iterationProgress": 0.2,
+        "backwards": false,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 20,
+        "speed": 1,
+        "fps": 240,
+        "duration": 100,
+        "iterationDuration": 100,
+        "delay": -20,
+        "loopDelay": 0
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 25,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.25,
+                "iterationProgress": 0.25,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 20,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": -20,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.25,
+                "iterationProgress": 0.25,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": -20,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.25,
+                "iterationProgress": 0.25,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": -20,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 25,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0.25,
+            "iterationProgress": 0.25,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": -20,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 250
+          },
+          "events": [],
+          "state": {
+            "time": 50,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0.1,
+            "iterationProgress": 0.1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 250,
+            "iterationDuration": 250,
+            "delay": -50,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 50,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0.1,
+            "iterationProgress": 0.1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 250,
+            "iterationDuration": 250,
+            "delay": -50,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 62,
+                "raw": 62,
+                "iterationTime": 62,
+                "rawIterationTime": 62,
+                "iteration": 0,
+                "progress": 0.248,
+                "iterationProgress": 0.248,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 30,
+                "speed": 1,
+                "fps": 240,
+                "duration": 250,
+                "iterationDuration": 250,
+                "delay": -50,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 62,
+                "raw": 62,
+                "iterationTime": 62,
+                "rawIterationTime": 62,
+                "iteration": 0,
+                "progress": 0.248,
+                "iterationProgress": 0.248,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 30,
+                "speed": 1,
+                "fps": 240,
+                "duration": 250,
+                "iterationDuration": 250,
+                "delay": -50,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 62,
+            "raw": 62,
+            "iterationTime": 62,
+            "rawIterationTime": 62,
+            "iteration": 0,
+            "progress": 0.248,
+            "iterationProgress": 0.248,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 30,
+            "speed": 1,
+            "fps": 240,
+            "duration": 250,
+            "iterationDuration": 250,
+            "delay": -50,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 100
+          },
+          "events": [],
+          "state": {
+            "time": 62,
+            "raw": 62,
+            "iterationTime": 62,
+            "rawIterationTime": 62,
+            "iteration": 0,
+            "progress": 0.62,
+            "iterationProgress": 0.62,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 30,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": -20,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 57,
+                "raw": 57,
+                "iterationTime": 57,
+                "rawIterationTime": 57,
+                "iteration": 0,
+                "progress": 0.57,
+                "iterationProgress": 0.57,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 12,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": -20,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 57,
+                "raw": 57,
+                "iterationTime": 57,
+                "rawIterationTime": 57,
+                "iteration": 0,
+                "progress": 0.57,
+                "iterationProgress": 0.57,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 12,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": -20,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 57,
+            "raw": 57,
+            "iterationTime": 57,
+            "rawIterationTime": 57,
+            "iteration": 0,
+            "progress": 0.57,
+            "iterationProgress": 0.57,
+            "backwards": true,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 12,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": -20,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchLoops",
+      "parameters": {
+        "duration": 100,
+        "loop": 2,
+        "loopDelay": 25,
+        "alternate": true
+      },
+      "initial": {
+        "time": 0,
+        "raw": 0,
+        "iterationTime": 0,
+        "rawIterationTime": 0,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": false,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 350,
+        "iterationDuration": 100,
+        "delay": 0,
+        "loopDelay": 25
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 175,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 175,
+                "raw": 175,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 1,
+                "progress": 0.5,
+                "iterationProgress": 0.5,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "Loop",
+              "state": {
+                "time": 175,
+                "raw": 175,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 1,
+                "progress": 0.5,
+                "iterationProgress": 0.5,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 175,
+                "raw": 175,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 1,
+                "progress": 0.5,
+                "iterationProgress": 0.5,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 175,
+                "raw": 175,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 1,
+                "progress": 0.5,
+                "iterationProgress": 0.5,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            }
+          ],
+          "state": {
+            "time": 175,
+            "raw": 175,
+            "iterationTime": 50,
+            "rawIterationTime": 50,
+            "iteration": 1,
+            "progress": 0.5,
+            "iterationProgress": 0.5,
+            "backwards": true,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 350,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 700
+          },
+          "events": [],
+          "state": {
+            "time": 175,
+            "raw": 175,
+            "iterationTime": 50,
+            "rawIterationTime": 50,
+            "iteration": 1,
+            "progress": 0.25,
+            "iterationProgress": 0.25,
+            "backwards": true,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 700,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 50
+          }
+        },
+        {
+          "step": {
+            "op": "seek",
+            "time": 300,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 300,
+                "raw": 300,
+                "iterationTime": 150,
+                "rawIterationTime": 150,
+                "iteration": 1,
+                "progress": 0.4285714286,
+                "iterationProgress": 0.75,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 175,
+                "speed": 1,
+                "fps": 240,
+                "duration": 700,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 50
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 300,
+                "raw": 300,
+                "iterationTime": 150,
+                "rawIterationTime": 150,
+                "iteration": 1,
+                "progress": 0.4285714286,
+                "iterationProgress": 0.75,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 175,
+                "speed": 1,
+                "fps": 240,
+                "duration": 700,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 50
+              }
+            }
+          ],
+          "state": {
+            "time": 300,
+            "raw": 300,
+            "iterationTime": 150,
+            "rawIterationTime": 150,
+            "iteration": 1,
+            "progress": 0.4285714286,
+            "iterationProgress": 0.75,
+            "backwards": true,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 175,
+            "speed": 1,
+            "fps": 240,
+            "duration": 700,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 50
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 300,
+            "raw": 300,
+            "iterationTime": 150,
+            "rawIterationTime": 150,
+            "iteration": 1,
+            "progress": 0.4285714286,
+            "iterationProgress": 0.75,
+            "backwards": true,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 175,
+            "speed": 1,
+            "fps": 240,
+            "duration": 700,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 50
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 337,
+                "raw": 337,
+                "iterationTime": 113,
+                "rawIterationTime": 113,
+                "iteration": 1,
+                "progress": 0.4814285714,
+                "iterationProgress": 0.565,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 125,
+                "speed": 1,
+                "fps": 240,
+                "duration": 700,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 50
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 337,
+                "raw": 337,
+                "iterationTime": 113,
+                "rawIterationTime": 113,
+                "iteration": 1,
+                "progress": 0.4814285714,
+                "iterationProgress": 0.565,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 125,
+                "speed": 1,
+                "fps": 240,
+                "duration": 700,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 50
+              }
+            }
+          ],
+          "state": {
+            "time": 337,
+            "raw": 337,
+            "iterationTime": 113,
+            "rawIterationTime": 113,
+            "iteration": 1,
+            "progress": 0.4814285714,
+            "iterationProgress": 0.565,
+            "backwards": true,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 125,
+            "speed": 1,
+            "fps": 240,
+            "duration": 700,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 50
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 350
+          },
+          "events": [],
+          "state": {
+            "time": 337,
+            "raw": 337,
+            "iterationTime": 100,
+            "rawIterationTime": 113,
+            "iteration": 1,
+            "progress": 0.9628571429,
+            "iterationProgress": 1,
+            "backwards": true,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 125,
+            "speed": 1,
+            "fps": 240,
+            "duration": 350,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Loop",
+              "state": {
+                "time": 350,
+                "raw": 362,
+                "iterationTime": 100,
+                "rawIterationTime": 350,
+                "iteration": 2,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 125,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 350,
+                "raw": 362,
+                "iterationTime": 100,
+                "rawIterationTime": 350,
+                "iteration": 2,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 350,
+                "raw": 362,
+                "iterationTime": 100,
+                "rawIterationTime": 350,
+                "iteration": 2,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "time": 350,
+                "raw": 362,
+                "iterationTime": 100,
+                "rawIterationTime": 350,
+                "iteration": 2,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": true,
+                "paused": true,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            }
+          ],
+          "state": {
+            "time": 350,
+            "raw": 362,
+            "iterationTime": 100,
+            "rawIterationTime": 350,
+            "iteration": 2,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": 37,
+            "speed": 1,
+            "fps": 240,
+            "duration": 350,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "reverse"
+          },
+          "events": [],
+          "state": {
+            "time": 0,
+            "raw": -62,
+            "iterationTime": 100,
+            "rawIterationTime": 100,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": true,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 37,
+            "speed": 1,
+            "fps": 240,
+            "duration": 350,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 100
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.1428571429,
+                "iterationProgress": 0.5,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.1428571429,
+                "iterationProgress": 0.5,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": -337,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.1428571429,
+                "iterationProgress": 0.5,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": -337,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            }
+          ],
+          "state": {
+            "time": 50,
+            "raw": 50,
+            "iterationTime": 50,
+            "rawIterationTime": 50,
+            "iteration": 0,
+            "progress": 0.1428571429,
+            "iterationProgress": 0.5,
+            "backwards": true,
+            "reversed": true,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": -337,
+            "speed": 1,
+            "fps": 240,
+            "duration": 350,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 25
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchZeroThenRestore",
+      "parameters": {
+        "duration": 100,
+        "delay": 40,
+        "loop": 2,
+        "loopDelay": 25
+      },
+      "initial": {
+        "time": -40,
+        "raw": -40,
+        "iterationTime": 0,
+        "rawIterationTime": -40,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": true,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 350,
+        "iterationDuration": 100,
+        "delay": 40,
+        "loopDelay": 25
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 50,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.1428571429,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.1428571429,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -40,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.1428571429,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -40,
+                "speed": 1,
+                "fps": 240,
+                "duration": 350,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 25
+              }
+            }
+          ],
+          "state": {
+            "time": 50,
+            "raw": 50,
+            "iterationTime": 50,
+            "rawIterationTime": 50,
+            "iteration": 0,
+            "progress": 0.1428571429,
+            "iterationProgress": 0.5,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": -40,
+            "speed": 1,
+            "fps": 240,
+            "duration": 350,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 0
+          },
+          "events": [],
+          "state": {
+            "time": 1e-11,
+            "raw": 50,
+            "iterationTime": 1e-11,
+            "rawIterationTime": 50,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": -40,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1e-11,
+            "iterationDuration": 1e-11,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 0,
+                "raw": 1e-11,
+                "iterationTime": 0,
+                "rawIterationTime": 1e-11,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 40.00000000001,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1e-11,
+                "iterationDuration": 1e-11,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 0,
+                "raw": 1e-11,
+                "iterationTime": 0,
+                "rawIterationTime": 1e-11,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": true,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 40.00000000001,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1e-11,
+                "iterationDuration": 1e-11,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 0,
+            "raw": 1e-11,
+            "iterationTime": 0,
+            "rawIterationTime": 1e-11,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": true,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 40.00000000001,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1e-11,
+            "iterationDuration": 1e-11,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 100
+          },
+          "events": [],
+          "state": {
+            "time": 0,
+            "raw": 1e-11,
+            "iterationTime": 0,
+            "rawIterationTime": 1e-11,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": true,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 40.00000000001,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "reset"
+          },
+          "events": [],
+          "state": {
+            "time": 0,
+            "raw": 0,
+            "iterationTime": 0,
+            "rawIterationTime": 0,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": true,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 40.00000000001,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 0,
+            "raw": 0,
+            "iterationTime": 0,
+            "rawIterationTime": 0,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": true,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 40.00000000001,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 37,
+                "raw": 37,
+                "iterationTime": 37,
+                "rawIterationTime": 37,
+                "iteration": 0,
+                "progress": 0.37,
+                "iterationProgress": 0.37,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 40.00000000001,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 37,
+                "raw": 37,
+                "iterationTime": 37,
+                "rawIterationTime": 37,
+                "iteration": 0,
+                "progress": 0.37,
+                "iterationProgress": 0.37,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": -1e-11,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 37,
+                "raw": 37,
+                "iterationTime": 37,
+                "rawIterationTime": 37,
+                "iteration": 0,
+                "progress": 0.37,
+                "iterationProgress": 0.37,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": -1e-11,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 37,
+            "raw": 37,
+            "iterationTime": 37,
+            "rawIterationTime": 37,
+            "iteration": 0,
+            "progress": 0.37,
+            "iterationProgress": 0.37,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": -1e-11,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchTiny",
+      "parameters": {
+        "duration": 100
+      },
+      "initial": {
+        "time": 0,
+        "raw": 0,
+        "iterationTime": 0,
+        "rawIterationTime": 0,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": false,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 100,
+        "iterationDuration": 100,
+        "delay": 0,
+        "loopDelay": 0
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 50,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.5,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.5,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.5,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 50,
+            "raw": 50,
+            "iterationTime": 50,
+            "rawIterationTime": 50,
+            "iteration": 0,
+            "progress": 0.5,
+            "iterationProgress": 0.5,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 1.4e-11
+          },
+          "events": [],
+          "state": {
+            "time": 1e-11,
+            "raw": 50,
+            "iterationTime": 1e-11,
+            "rawIterationTime": 50,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1e-11,
+            "iterationDuration": 1e-11,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 1.6e-11
+          },
+          "events": [],
+          "state": {
+            "time": 2e-11,
+            "raw": 50,
+            "iterationTime": 2e-11,
+            "rawIterationTime": 50,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 2e-11,
+            "iterationDuration": 2e-11,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 2e-11,
+            "raw": 50,
+            "iterationTime": 2e-11,
+            "rawIterationTime": 50,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 2e-11,
+            "iterationDuration": 2e-11,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 5
+          },
+          "events": [
+            {
+              "event": "Complete",
+              "state": {
+                "time": 2e-11,
+                "raw": 67,
+                "iterationTime": 0,
+                "rawIterationTime": 2e-11,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": true,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 2e-11,
+                "iterationDuration": 2e-11,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 2e-11,
+            "raw": 67,
+            "iterationTime": 0,
+            "rawIterationTime": 2e-11,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 2e-11,
+            "iterationDuration": 2e-11,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchFractional",
+      "parameters": {
+        "duration": 0.125,
+        "loop": 3,
+        "loopDelay": 0.25,
+        "delay": 0.125
+      },
+      "initial": {
+        "time": -0.125,
+        "raw": -0.125,
+        "iterationTime": 0,
+        "rawIterationTime": -0.125,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": true,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 1.25,
+        "iterationDuration": 0.125,
+        "delay": 0.125,
+        "loopDelay": 0.25
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 0.0625,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 0.0625,
+                "raw": 0.0625,
+                "iterationTime": 0.0625,
+                "rawIterationTime": 0.0625,
+                "iteration": 0,
+                "progress": 0.05,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1.25,
+                "iterationDuration": 0.125,
+                "delay": 0.125,
+                "loopDelay": 0.25
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 0.0625,
+                "raw": 0.0625,
+                "iterationTime": 0.0625,
+                "rawIterationTime": 0.0625,
+                "iteration": 0,
+                "progress": 0.05,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -0.125,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1.25,
+                "iterationDuration": 0.125,
+                "delay": 0.125,
+                "loopDelay": 0.25
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 0.0625,
+                "raw": 0.0625,
+                "iterationTime": 0.0625,
+                "rawIterationTime": 0.0625,
+                "iteration": 0,
+                "progress": 0.05,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -0.125,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1.25,
+                "iterationDuration": 0.125,
+                "delay": 0.125,
+                "loopDelay": 0.25
+              }
+            }
+          ],
+          "state": {
+            "time": 0.0625,
+            "raw": 0.0625,
+            "iterationTime": 0.0625,
+            "rawIterationTime": 0.0625,
+            "iteration": 0,
+            "progress": 0.05,
+            "iterationProgress": 0.5,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": -0.125,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1.25,
+            "iterationDuration": 0.125,
+            "delay": 0.125,
+            "loopDelay": 0.25
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 0.875
+          },
+          "events": [],
+          "state": {
+            "time": 0.0625,
+            "raw": 0.0625,
+            "iterationTime": 0.0625,
+            "rawIterationTime": 0.0625,
+            "iteration": 0,
+            "progress": 0.0714285714,
+            "iterationProgress": 0.7142857143,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": -0.125,
+            "speed": 1,
+            "fps": 240,
+            "duration": 0.875,
+            "iterationDuration": 0.0875,
+            "delay": 0.0875,
+            "loopDelay": 0.175
+          }
+        },
+        {
+          "step": {
+            "op": "seek",
+            "time": 0.1,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 0.1,
+                "raw": 0.1,
+                "iterationTime": 0.0875,
+                "rawIterationTime": 0.1,
+                "iteration": 0,
+                "progress": 0.1142857143,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0.1875,
+                "speed": 1,
+                "fps": 240,
+                "duration": 0.875,
+                "iterationDuration": 0.0875,
+                "delay": 0.0875,
+                "loopDelay": 0.175
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 0.1,
+                "raw": 0.1,
+                "iterationTime": 0.0875,
+                "rawIterationTime": 0.1,
+                "iteration": 0,
+                "progress": 0.1142857143,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0.1875,
+                "speed": 1,
+                "fps": 240,
+                "duration": 0.875,
+                "iterationDuration": 0.0875,
+                "delay": 0.0875,
+                "loopDelay": 0.175
+              }
+            }
+          ],
+          "state": {
+            "time": 0.1,
+            "raw": 0.1,
+            "iterationTime": 0.0875,
+            "rawIterationTime": 0.1,
+            "iteration": 0,
+            "progress": 0.1142857143,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0.1875,
+            "speed": 1,
+            "fps": 240,
+            "duration": 0.875,
+            "iterationDuration": 0.0875,
+            "delay": 0.0875,
+            "loopDelay": 0.175
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 1.125
+          },
+          "events": [],
+          "state": {
+            "time": 0.1,
+            "raw": 0.1,
+            "iterationTime": 0.1,
+            "rawIterationTime": 0.1,
+            "iteration": 0,
+            "progress": 0.0888888889,
+            "iterationProgress": 0.8888888889,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0.1875,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1.125,
+            "iterationDuration": 0.1125,
+            "delay": 0.1125,
+            "loopDelay": 0.225
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 0.1,
+            "raw": 0.1,
+            "iterationTime": 0.1,
+            "rawIterationTime": 0.1,
+            "iteration": 0,
+            "progress": 0.0888888889,
+            "iterationProgress": 0.8888888889,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0.1875,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1.125,
+            "iterationDuration": 0.1125,
+            "delay": 0.1125,
+            "loopDelay": 0.225
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 5
+          },
+          "events": [
+            {
+              "event": "Loop",
+              "state": {
+                "time": 1.125,
+                "raw": 17.099999999999998,
+                "iterationTime": 0.1125,
+                "rawIterationTime": 1.125,
+                "iteration": 3,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0.1875,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1.125,
+                "iterationDuration": 0.1125,
+                "delay": 0.1125,
+                "loopDelay": 0.225
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 1.125,
+                "raw": 17.099999999999998,
+                "iterationTime": 0.1125,
+                "rawIterationTime": 1.125,
+                "iteration": 3,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0.037500000000000006,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1.125,
+                "iterationDuration": 0.1125,
+                "delay": 0.1125,
+                "loopDelay": 0.225
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 1.125,
+                "raw": 17.099999999999998,
+                "iterationTime": 0.1125,
+                "rawIterationTime": 1.125,
+                "iteration": 3,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0.037500000000000006,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1.125,
+                "iterationDuration": 0.1125,
+                "delay": 0.1125,
+                "loopDelay": 0.225
+              }
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "time": 1.125,
+                "raw": 17.099999999999998,
+                "iterationTime": 0.1125,
+                "rawIterationTime": 1.125,
+                "iteration": 3,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": true,
+                "paused": true,
+                "deltaTime": 0.037500000000000006,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1.125,
+                "iterationDuration": 0.1125,
+                "delay": 0.1125,
+                "loopDelay": 0.225
+              }
+            }
+          ],
+          "state": {
+            "time": 1.125,
+            "raw": 17.099999999999998,
+            "iterationTime": 0.1125,
+            "rawIterationTime": 1.125,
+            "iteration": 3,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": 0.037500000000000006,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1.125,
+            "iterationDuration": 0.1125,
+            "delay": 0.1125,
+            "loopDelay": 0.225
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchCompleted",
+      "parameters": {
+        "duration": 100
+      },
+      "initial": {
+        "time": 0,
+        "raw": 0,
+        "iterationTime": 0,
+        "rawIterationTime": 0,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": false,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 100,
+        "iterationDuration": 100,
+        "delay": 0,
+        "loopDelay": 0
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 100,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 100,
+                "raw": 100,
+                "iterationTime": 100,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 100,
+                "raw": 100,
+                "iterationTime": 100,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 100,
+                "raw": 100,
+                "iterationTime": 100,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "time": 100,
+                "raw": 100,
+                "iterationTime": 100,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": true,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 100,
+            "raw": 100,
+            "iterationTime": 100,
+            "rawIterationTime": 100,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 200
+          },
+          "events": [],
+          "state": {
+            "time": 100,
+            "raw": 100,
+            "iterationTime": 100,
+            "rawIterationTime": 100,
+            "iteration": 0,
+            "progress": 0.5,
+            "iterationProgress": 0.5,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [],
+          "state": {
+            "time": 100,
+            "raw": 100,
+            "iterationTime": 100,
+            "rawIterationTime": 100,
+            "iteration": 0,
+            "progress": 0.5,
+            "iterationProgress": 0.5,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 100,
+            "raw": 100,
+            "iterationTime": 100,
+            "rawIterationTime": 100,
+            "iteration": 0,
+            "progress": 0.5,
+            "iterationProgress": 0.5,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 137,
+                "raw": 137,
+                "iterationTime": 137,
+                "rawIterationTime": 137,
+                "iteration": 0,
+                "progress": 0.685,
+                "iterationProgress": 0.685,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": true,
+                "paused": false,
+                "deltaTime": 100,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 137,
+                "raw": 137,
+                "iterationTime": 137,
+                "rawIterationTime": 137,
+                "iteration": 0,
+                "progress": 0.685,
+                "iterationProgress": 0.685,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": true,
+                "paused": false,
+                "deltaTime": 100,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 137,
+            "raw": 137,
+            "iterationTime": 137,
+            "rawIterationTime": 137,
+            "iteration": 0,
+            "progress": 0.685,
+            "iterationProgress": 0.685,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 100,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 200
+          },
+          "events": [],
+          "state": {
+            "time": 137,
+            "raw": 137,
+            "iterationTime": 137,
+            "rawIterationTime": 137,
+            "iteration": 0,
+            "progress": 0.685,
+            "iterationProgress": 0.685,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 100,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 100
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 200,
+                "raw": 237,
+                "iterationTime": 200,
+                "rawIterationTime": 200,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 200,
+                "raw": 237,
+                "iterationTime": 200,
+                "rawIterationTime": 200,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "time": 200,
+                "raw": 237,
+                "iterationTime": 200,
+                "rawIterationTime": 200,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": true,
+                "paused": true,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 200,
+            "raw": 237,
+            "iterationTime": 200,
+            "rawIterationTime": 200,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": 37,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchReversed",
+      "parameters": {
+        "duration": 100,
+        "reversed": true,
+        "loop": 1,
+        "alternate": true
+      },
+      "initial": {
+        "time": 0,
+        "raw": 0,
+        "iterationTime": 100,
+        "rawIterationTime": 100,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 1,
+        "backwards": true,
+        "reversed": true,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 200,
+        "iterationDuration": 100,
+        "delay": 0,
+        "loopDelay": 0
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 75,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 75,
+                "raw": 75,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.375,
+                "iterationProgress": 0.25,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 75,
+                "raw": 75,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.375,
+                "iterationProgress": 0.25,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 75,
+                "raw": 75,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.375,
+                "iterationProgress": 0.25,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 75,
+            "raw": 75,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0.375,
+            "iterationProgress": 0.25,
+            "backwards": true,
+            "reversed": true,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 400
+          },
+          "events": [],
+          "state": {
+            "time": 75,
+            "raw": 75,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0.1875,
+            "iterationProgress": 0.125,
+            "backwards": true,
+            "reversed": true,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 400,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 75,
+            "raw": 75,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0.1875,
+            "iterationProgress": 0.125,
+            "backwards": true,
+            "reversed": true,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 400,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 112,
+                "raw": 112,
+                "iterationTime": 88,
+                "rawIterationTime": 88,
+                "iteration": 0,
+                "progress": 0.28,
+                "iterationProgress": 0.44,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 75,
+                "speed": 1,
+                "fps": 240,
+                "duration": 400,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 112,
+                "raw": 112,
+                "iterationTime": 88,
+                "rawIterationTime": 88,
+                "iteration": 0,
+                "progress": 0.28,
+                "iterationProgress": 0.44,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 75,
+                "speed": 1,
+                "fps": 240,
+                "duration": 400,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 112,
+            "raw": 112,
+            "iterationTime": 88,
+            "rawIterationTime": 88,
+            "iteration": 0,
+            "progress": 0.28,
+            "iterationProgress": 0.44,
+            "backwards": true,
+            "reversed": true,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 75,
+            "speed": 1,
+            "fps": 240,
+            "duration": 400,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "reset"
+          },
+          "events": [],
+          "state": {
+            "time": 0,
+            "raw": 0,
+            "iterationTime": 200,
+            "rawIterationTime": 200,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": true,
+            "began": false,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 75,
+            "speed": 1,
+            "fps": 240,
+            "duration": 400,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "play"
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 400,
+                "raw": 400,
+                "iterationTime": 200,
+                "rawIterationTime": 400,
+                "iteration": 1,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 75,
+                "speed": 1,
+                "fps": 240,
+                "duration": 400,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Loop",
+              "state": {
+                "time": 400,
+                "raw": 400,
+                "iterationTime": 200,
+                "rawIterationTime": 400,
+                "iteration": 1,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 75,
+                "speed": 1,
+                "fps": 240,
+                "duration": 400,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 400,
+                "raw": 400,
+                "iterationTime": 200,
+                "rawIterationTime": 400,
+                "iteration": 1,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -75,
+                "speed": 1,
+                "fps": 240,
+                "duration": 400,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 400,
+                "raw": 400,
+                "iterationTime": 200,
+                "rawIterationTime": 400,
+                "iteration": 1,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -75,
+                "speed": 1,
+                "fps": 240,
+                "duration": 400,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "time": 400,
+                "raw": 400,
+                "iterationTime": 200,
+                "rawIterationTime": 400,
+                "iteration": 1,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": true,
+                "began": true,
+                "completed": true,
+                "paused": true,
+                "deltaTime": -75,
+                "speed": 1,
+                "fps": 240,
+                "duration": 400,
+                "iterationDuration": 200,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 400,
+            "raw": 400,
+            "iterationTime": 200,
+            "rawIterationTime": 400,
+            "iteration": 1,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": true,
+            "began": true,
+            "completed": true,
+            "paused": false,
+            "deltaTime": -75,
+            "speed": 1,
+            "fps": 240,
+            "duration": 400,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [],
+          "state": {
+            "time": 400,
+            "raw": 437,
+            "iterationTime": 200,
+            "rawIterationTime": 400,
+            "iteration": 1,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": true,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": -75,
+            "speed": 1,
+            "fps": 240,
+            "duration": 400,
+            "iterationDuration": 200,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchUint",
+      "parameters": {
+        "duration": 100
+      },
+      "initial": {
+        "time": 0,
+        "raw": 0,
+        "iterationTime": 0,
+        "rawIterationTime": 0,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": false,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 100,
+        "iterationDuration": 100,
+        "delay": 0,
+        "loopDelay": 0
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 25,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.25,
+                "iterationProgress": 0.25,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.25,
+                "iterationProgress": 0.25,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.25,
+                "iterationProgress": 0.25,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 25,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0.25,
+            "iterationProgress": 0.25,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 4294967295
+          },
+          "events": [],
+          "state": {
+            "time": 25,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 5.8e-9,
+            "iterationProgress": 5.8e-9,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 4294967295,
+            "iterationDuration": 4294967295.0000005,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 25,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 5.8e-9,
+            "iterationProgress": 5.8e-9,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 4294967295,
+            "iterationDuration": 4294967295.0000005,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 2147483647
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 2147483684,
+                "raw": 2147483684,
+                "iterationTime": 2147483684,
+                "rawIterationTime": 2147483684,
+                "iteration": 0,
+                "progress": 0.5000000085,
+                "iterationProgress": 0.5000000085,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 4294967295,
+                "iterationDuration": 4294967295.0000005,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 2147483684,
+                "raw": 2147483684,
+                "iterationTime": 2147483684,
+                "rawIterationTime": 2147483684,
+                "iteration": 0,
+                "progress": 0.5000000085,
+                "iterationProgress": 0.5000000085,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 4294967295,
+                "iterationDuration": 4294967295.0000005,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 2147483684,
+            "raw": 2147483684,
+            "iterationTime": 2147483684,
+            "rawIterationTime": 2147483684,
+            "iteration": 0,
+            "progress": 0.5000000085,
+            "iterationProgress": 0.5000000085,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 25,
+            "speed": 1,
+            "fps": 240,
+            "duration": 4294967295,
+            "iterationDuration": 4294967295.0000005,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 100
+          },
+          "events": [],
+          "state": {
+            "time": 100,
+            "raw": 2147483684,
+            "iterationTime": 100,
+            "rawIterationTime": 2147483684,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 25,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Complete",
+              "state": {
+                "time": 100,
+                "raw": 2147483709,
+                "iterationTime": 100,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 1,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": true,
+                "paused": true,
+                "deltaTime": 25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 100,
+            "raw": 2147483709,
+            "iterationTime": 100,
+            "rawIterationTime": 100,
+            "iteration": 0,
+            "progress": 1,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": true,
+            "paused": true,
+            "deltaTime": 25,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchInfiniteIterations",
+      "parameters": {
+        "duration": 100,
+        "loop": true,
+        "loopDelay": 25
+      },
+      "initial": {
+        "time": 0,
+        "raw": 0,
+        "iterationTime": 0,
+        "rawIterationTime": 0,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": false,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 1000000000000,
+        "iterationDuration": 100,
+        "delay": 0,
+        "loopDelay": 25
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 175,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 175,
+                "raw": 175,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 1,
+                "progress": 2e-10,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000000000000,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "Loop",
+              "state": {
+                "time": 175,
+                "raw": 175,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 1,
+                "progress": 2e-10,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000000000000,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 175,
+                "raw": 175,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 1,
+                "progress": 2e-10,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000000000000,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 175,
+                "raw": 175,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 1,
+                "progress": 2e-10,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000000000000,
+                "iterationDuration": 100,
+                "delay": 0,
+                "loopDelay": 25
+              }
+            }
+          ],
+          "state": {
+            "time": 175,
+            "raw": 175,
+            "iterationTime": 50,
+            "rawIterationTime": 50,
+            "iteration": 1,
+            "progress": 2e-10,
+            "iterationProgress": 0.5,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1000000000000,
+            "iterationDuration": 100,
+            "delay": 0,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 1000
+          },
+          "events": [],
+          "state": {
+            "time": 175,
+            "raw": 175,
+            "iterationTime": 1e-7,
+            "rawIterationTime": 50,
+            "iteration": 1,
+            "progress": 0.175,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1000,
+            "iterationDuration": 1e-7,
+            "delay": 0,
+            "loopDelay": 2.5000000000000002e-8
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 175,
+            "raw": 175,
+            "iterationTime": 1e-7,
+            "rawIterationTime": 50,
+            "iteration": 1,
+            "progress": 0.175,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1000,
+            "iterationDuration": 1e-7,
+            "delay": 0,
+            "loopDelay": 2.5000000000000002e-8
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Loop",
+              "state": {
+                "time": 212,
+                "raw": 212,
+                "iterationTime": 0,
+                "rawIterationTime": 0,
+                "iteration": 1696000000,
+                "progress": 0.212,
+                "iterationProgress": 0,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000,
+                "iterationDuration": 1e-7,
+                "delay": 0,
+                "loopDelay": 2.5000000000000002e-8
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 212,
+                "raw": 212,
+                "iterationTime": 0,
+                "rawIterationTime": 0,
+                "iteration": 1696000000,
+                "progress": 0.212,
+                "iterationProgress": 0,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 175,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000,
+                "iterationDuration": 1e-7,
+                "delay": 0,
+                "loopDelay": 2.5000000000000002e-8
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 212,
+                "raw": 212,
+                "iterationTime": 0,
+                "rawIterationTime": 0,
+                "iteration": 1696000000,
+                "progress": 0.212,
+                "iterationProgress": 0,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 175,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000,
+                "iterationDuration": 1e-7,
+                "delay": 0,
+                "loopDelay": 2.5000000000000002e-8
+              }
+            }
+          ],
+          "state": {
+            "time": 212,
+            "raw": 212,
+            "iterationTime": 0,
+            "rawIterationTime": 0,
+            "iteration": 1696000000,
+            "progress": 0.212,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 175,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1000,
+            "iterationDuration": 1e-7,
+            "delay": 0,
+            "loopDelay": 2.5000000000000002e-8
+          }
+        },
+        {
+          "step": {
+            "op": "alternate"
+          },
+          "events": [
+            {
+              "event": "Pause",
+              "state": {
+                "time": 212,
+                "raw": 212,
+                "iterationTime": 0,
+                "rawIterationTime": 0,
+                "iteration": 1696000000,
+                "progress": 0.212,
+                "iterationProgress": 0,
+                "backwards": false,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 175,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000,
+                "iterationDuration": 1e-7,
+                "delay": 0,
+                "loopDelay": 2.5000000000000002e-8
+              }
+            },
+            {
+              "event": "Loop",
+              "state": {
+                "time": 169.6,
+                "raw": 169.6000001,
+                "iterationTime": 0,
+                "rawIterationTime": 5.9368176107677775e-15,
+                "iteration": 1356800000,
+                "progress": 0.1696000001,
+                "iterationProgress": 5.94e-8,
+                "backwards": false,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 175,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000,
+                "iterationDuration": 1e-7,
+                "delay": 0,
+                "loopDelay": 2.5000000000000002e-8
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 169.6,
+                "raw": 169.6000001,
+                "iterationTime": 0,
+                "rawIterationTime": 5.9368176107677775e-15,
+                "iteration": 1356800000,
+                "progress": 0.1696000001,
+                "iterationProgress": 5.94e-8,
+                "backwards": false,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000,
+                "iterationDuration": 1e-7,
+                "delay": 0,
+                "loopDelay": 2.5000000000000002e-8
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 169.6,
+                "raw": 169.6000001,
+                "iterationTime": 0,
+                "rawIterationTime": 5.9368176107677775e-15,
+                "iteration": 1356800000,
+                "progress": 0.1696000001,
+                "iterationProgress": 5.94e-8,
+                "backwards": false,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000,
+                "iterationDuration": 1e-7,
+                "delay": 0,
+                "loopDelay": 2.5000000000000002e-8
+              }
+            }
+          ],
+          "state": {
+            "time": 169.6,
+            "raw": 169.6000001,
+            "iterationTime": 0,
+            "rawIterationTime": 5.9368176107677775e-15,
+            "iteration": 1356800000,
+            "progress": 0.1696000001,
+            "iterationProgress": 5.94e-8,
+            "backwards": false,
+            "reversed": true,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 37,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1000,
+            "iterationDuration": 1e-7,
+            "delay": 0,
+            "loopDelay": 2.5000000000000002e-8
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Loop",
+              "state": {
+                "time": 194.6,
+                "raw": 194.6000001,
+                "iterationTime": 0,
+                "rawIterationTime": 5.9368176107677775e-15,
+                "iteration": 1556800000,
+                "progress": 0.1946000001,
+                "iterationProgress": 5.94e-8,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 37,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000,
+                "iterationDuration": 1e-7,
+                "delay": 0,
+                "loopDelay": 2.5000000000000002e-8
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 194.6,
+                "raw": 194.6000001,
+                "iterationTime": 0,
+                "rawIterationTime": 5.9368176107677775e-15,
+                "iteration": 1556800000,
+                "progress": 0.1946000001,
+                "iterationProgress": 5.94e-8,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": -42.39999990000001,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000,
+                "iterationDuration": 1e-7,
+                "delay": 0,
+                "loopDelay": 2.5000000000000002e-8
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 194.6,
+                "raw": 194.6000001,
+                "iterationTime": 0,
+                "rawIterationTime": 5.9368176107677775e-15,
+                "iteration": 1556800000,
+                "progress": 0.1946000001,
+                "iterationProgress": 5.94e-8,
+                "backwards": true,
+                "reversed": true,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": -42.39999990000001,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000,
+                "iterationDuration": 1e-7,
+                "delay": 0,
+                "loopDelay": 2.5000000000000002e-8
+              }
+            }
+          ],
+          "state": {
+            "time": 194.6,
+            "raw": 194.6000001,
+            "iterationTime": 0,
+            "rawIterationTime": 5.9368176107677775e-15,
+            "iteration": 1556800000,
+            "progress": 0.1946000001,
+            "iterationProgress": 5.94e-8,
+            "backwards": true,
+            "reversed": true,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": -42.39999990000001,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1000,
+            "iterationDuration": 1e-7,
+            "delay": 0,
+            "loopDelay": 2.5000000000000002e-8
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchNegativeTotal",
+      "parameters": {
+        "duration": 100,
+        "loop": 3,
+        "loopDelay": -150,
+        "delay": 20
+      },
+      "initial": {
+        "time": -50,
+        "raw": -20,
+        "iterationTime": 0,
+        "rawIterationTime": -50,
+        "iteration": -1,
+        "progress": 0.4,
+        "iterationProgress": 0,
+        "backwards": true,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": -50,
+        "iterationDuration": 100,
+        "delay": 20,
+        "loopDelay": -150
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 25,
+            "mute": false
+          },
+          "events": [],
+          "state": {
+            "time": -50,
+            "raw": 25,
+            "iterationTime": 0,
+            "rawIterationTime": -50,
+            "iteration": -1,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": -50,
+            "iterationDuration": 100,
+            "delay": 20,
+            "loopDelay": -150
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 200
+          },
+          "events": [],
+          "state": {
+            "time": 80,
+            "raw": 25,
+            "iterationTime": 0,
+            "rawIterationTime": -50,
+            "iteration": -1,
+            "progress": 0.125,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 1e-11,
+            "delay": -80,
+            "loopDelay": 600
+          }
+        },
+        {
+          "step": {
+            "op": "seek",
+            "time": 100,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 100,
+                "raw": 100,
+                "iterationTime": 1e-11,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 0.5,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 1e-11,
+                "delay": -80,
+                "loopDelay": 600
+              }
+            },
+            {
+              "event": "Loop",
+              "state": {
+                "time": 100,
+                "raw": 100,
+                "iterationTime": 1e-11,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 0.5,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 1e-11,
+                "delay": -80,
+                "loopDelay": 600
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 100,
+                "raw": 100,
+                "iterationTime": 1e-11,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 0.5,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 80,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 1e-11,
+                "delay": -80,
+                "loopDelay": 600
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 100,
+                "raw": 100,
+                "iterationTime": 1e-11,
+                "rawIterationTime": 100,
+                "iteration": 0,
+                "progress": 0.5,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 80,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 1e-11,
+                "delay": -80,
+                "loopDelay": 600
+              }
+            }
+          ],
+          "state": {
+            "time": 100,
+            "raw": 100,
+            "iterationTime": 1e-11,
+            "rawIterationTime": 100,
+            "iteration": 0,
+            "progress": 0.5,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 80,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 1e-11,
+            "delay": -80,
+            "loopDelay": 600
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 100,
+            "raw": 100,
+            "iterationTime": 1e-11,
+            "rawIterationTime": 100,
+            "iteration": 0,
+            "progress": 0.5,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 80,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 1e-11,
+            "delay": -80,
+            "loopDelay": 600
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 137,
+                "raw": 137,
+                "iterationTime": 1e-11,
+                "rawIterationTime": 137,
+                "iteration": 0,
+                "progress": 0.685,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 20,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 1e-11,
+                "delay": -80,
+                "loopDelay": 600
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 137,
+                "raw": 137,
+                "iterationTime": 1e-11,
+                "rawIterationTime": 137,
+                "iteration": 0,
+                "progress": 0.685,
+                "iterationProgress": 1,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 20,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 1e-11,
+                "delay": -80,
+                "loopDelay": 600
+              }
+            }
+          ],
+          "state": {
+            "time": 137,
+            "raw": 137,
+            "iterationTime": 1e-11,
+            "rawIterationTime": 137,
+            "iteration": 0,
+            "progress": 0.685,
+            "iterationProgress": 1,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 20,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 1e-11,
+            "delay": -80,
+            "loopDelay": 600
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchIdempotent",
+      "parameters": {
+        "duration": 100,
+        "delay": 40,
+        "loop": 1,
+        "loopDelay": 25
+      },
+      "initial": {
+        "time": -40,
+        "raw": -40,
+        "iterationTime": 0,
+        "rawIterationTime": -40,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": true,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 225,
+        "iterationDuration": 100,
+        "delay": 40,
+        "loopDelay": 25
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": -40,
+            "raw": -40,
+            "iterationTime": 0,
+            "rawIterationTime": -40,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": true,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 225,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [],
+          "state": {
+            "time": -3,
+            "raw": -3,
+            "iterationTime": 0,
+            "rawIterationTime": -3,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 225,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 225
+          },
+          "events": [],
+          "state": {
+            "time": -3,
+            "raw": -3,
+            "iterationTime": 0,
+            "rawIterationTime": -3,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 225,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 22,
+                "raw": 22,
+                "iterationTime": 22,
+                "rawIterationTime": 22,
+                "iteration": 0,
+                "progress": 0.0977777778,
+                "iterationProgress": 0.22,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 225,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 22,
+                "raw": 22,
+                "iterationTime": 22,
+                "rawIterationTime": 22,
+                "iteration": 0,
+                "progress": 0.0977777778,
+                "iterationProgress": 0.22,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": -3,
+                "speed": 1,
+                "fps": 240,
+                "duration": 225,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 22,
+                "raw": 22,
+                "iterationTime": 22,
+                "rawIterationTime": 22,
+                "iteration": 0,
+                "progress": 0.0977777778,
+                "iterationProgress": 0.22,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": -3,
+                "speed": 1,
+                "fps": 240,
+                "duration": 225,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 25
+              }
+            }
+          ],
+          "state": {
+            "time": 22,
+            "raw": 22,
+            "iterationTime": 22,
+            "rawIterationTime": 22,
+            "iteration": 0,
+            "progress": 0.0977777778,
+            "iterationProgress": 0.22,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": -3,
+            "speed": 1,
+            "fps": 240,
+            "duration": 225,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "pause"
+          },
+          "events": [
+            {
+              "event": "Pause",
+              "state": {
+                "time": 22,
+                "raw": 22,
+                "iterationTime": 22,
+                "rawIterationTime": 22,
+                "iteration": 0,
+                "progress": 0.0977777778,
+                "iterationProgress": 0.22,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -3,
+                "speed": 1,
+                "fps": 240,
+                "duration": 225,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 25
+              }
+            }
+          ],
+          "state": {
+            "time": 22,
+            "raw": 22,
+            "iterationTime": 22,
+            "rawIterationTime": 22,
+            "iteration": 0,
+            "progress": 0.0977777778,
+            "iterationProgress": 0.22,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": -3,
+            "speed": 1,
+            "fps": 240,
+            "duration": 225,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 225
+          },
+          "events": [],
+          "state": {
+            "time": 22,
+            "raw": 22,
+            "iterationTime": 22,
+            "rawIterationTime": 22,
+            "iteration": 0,
+            "progress": 0.0977777778,
+            "iterationProgress": 0.22,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": -3,
+            "speed": 1,
+            "fps": 240,
+            "duration": 225,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 25
+          }
+        },
+        {
+          "step": {
+            "op": "seek",
+            "time": 50,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.2222222222,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 225,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 25
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 50,
+                "raw": 50,
+                "iterationTime": 50,
+                "rawIterationTime": 50,
+                "iteration": 0,
+                "progress": 0.2222222222,
+                "iterationProgress": 0.5,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 225,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 25
+              }
+            }
+          ],
+          "state": {
+            "time": 50,
+            "raw": 50,
+            "iterationTime": 50,
+            "rawIterationTime": 50,
+            "iteration": 0,
+            "progress": 0.2222222222,
+            "iterationProgress": 0.5,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 25,
+            "speed": 1,
+            "fps": 240,
+            "duration": 225,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 25
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchLargeFinite",
+      "parameters": {
+        "duration": 100,
+        "delay": 40
+      },
+      "initial": {
+        "time": -40,
+        "raw": -40,
+        "iterationTime": 0,
+        "rawIterationTime": -40,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": true,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 100,
+        "iterationDuration": 100,
+        "delay": 40,
+        "loopDelay": 0
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 25,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.25,
+                "iterationProgress": 0.25,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.25,
+                "iterationProgress": 0.25,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -40,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0.25,
+                "iterationProgress": 0.25,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": -40,
+                "speed": 1,
+                "fps": 240,
+                "duration": 100,
+                "iterationDuration": 100,
+                "delay": 40,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 25,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0.25,
+            "iterationProgress": 0.25,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": -40,
+            "speed": 1,
+            "fps": 240,
+            "duration": 100,
+            "iterationDuration": 100,
+            "delay": 40,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 1.7976931348623157e+308
+          },
+          "events": [],
+          "state": {
+            "time": 25,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": -40,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1000000000000,
+            "iterationDuration": 1000000000000,
+            "delay": 7.190772539449262e+307,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 25,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": -40,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1000000000000,
+            "iterationDuration": 1000000000000,
+            "delay": 7.190772539449262e+307,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [],
+          "state": {
+            "time": 0,
+            "raw": 0,
+            "iterationTime": 0,
+            "rawIterationTime": 0,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": true,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": -40,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1000000000000,
+            "iterationDuration": 1000000000000,
+            "delay": 7.190772539449262e+307,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchUnboundedIteration",
+      "parameters": {},
+      "initial": {
+        "time": 0,
+        "raw": 0,
+        "iterationTime": 0,
+        "rawIterationTime": 0,
+        "iteration": 0,
+        "progress": 0,
+        "iterationProgress": 0,
+        "backwards": false,
+        "reversed": false,
+        "began": false,
+        "completed": false,
+        "paused": true,
+        "deltaTime": 0,
+        "speed": 1,
+        "fps": 240,
+        "duration": 1000000000000,
+        "iterationDuration": "Infinity",
+        "delay": 0,
+        "loopDelay": 0
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 25,
+            "mute": false
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0,
+                "iterationProgress": 0,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000000000000,
+                "iterationDuration": "Infinity",
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0,
+                "iterationProgress": 0,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000000000000,
+                "iterationDuration": "Infinity",
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 25,
+                "rawIterationTime": 25,
+                "iteration": 0,
+                "progress": 0,
+                "iterationProgress": 0,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": true,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240,
+                "duration": 1000000000000,
+                "iterationDuration": "Infinity",
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 25,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 1000000000000,
+            "iterationDuration": "Infinity",
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 200
+          },
+          "events": [],
+          "state": {
+            "time": 25,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0.125,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": true,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 1000000000000,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "time": 25,
+            "raw": 25,
+            "iterationTime": 25,
+            "rawIterationTime": 25,
+            "iteration": 0,
+            "progress": 0.125,
+            "iterationProgress": 0,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 0,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 1000000000000,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "time": 62,
+                "raw": 62,
+                "iterationTime": 62,
+                "rawIterationTime": 62,
+                "iteration": 0,
+                "progress": 0.31,
+                "iterationProgress": 1e-10,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 1000000000000,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "time": 62,
+                "raw": 62,
+                "iterationTime": 62,
+                "rawIterationTime": 62,
+                "iteration": 0,
+                "progress": 0.31,
+                "iterationProgress": 1e-10,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 25,
+                "speed": 1,
+                "fps": 240,
+                "duration": 200,
+                "iterationDuration": 1000000000000,
+                "delay": 0,
+                "loopDelay": 0
+              }
+            }
+          ],
+          "state": {
+            "time": 62,
+            "raw": 62,
+            "iterationTime": 62,
+            "rawIterationTime": 62,
+            "iteration": 0,
+            "progress": 0.31,
+            "iterationProgress": 1e-10,
+            "backwards": false,
+            "reversed": false,
+            "began": true,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 25,
+            "speed": 1,
+            "fps": 240,
+            "duration": 200,
+            "iterationDuration": 1000000000000,
+            "delay": 0,
+            "loopDelay": 0
+          }
+        }
+      ]
+    },
+    {
       "name": "scheduledBasic",
       "parameters": {
         "duration": 100

@@ -20,6 +20,12 @@ const seek = time => ({op:'seek', time});
 const frame = after => ({op:'frame', after});
 const times = [-25,0,25,75,100,110,125,150,200,225,250,300,350,225,100,25,0];
 const cases = [
+  {name:'stretchRunning', parameters:{duration:100}, steps:[{op:'resume'},frame(25),{op:'stretch',value:200},frame(25),frame(150)]},
+  {name:'stretchDelayed', parameters:{duration:100,delay:40}, steps:[{op:'resume'},frame(25),{op:'stretch',value:200},frame(25),frame(100),{op:'reset'},{op:'resume'},frame(100)]},
+  {name:'stretchLoops', parameters:{duration:100,loop:2,loopDelay:25,alternate:true}, steps:[seek(175),{op:'stretch',value:700},seek(300),{op:'resume'},frame(25),{op:'stretch',value:350},frame(25)]},
+  {name:'stretchZeroRestore', parameters:{duration:100,delay:40,loop:2,loopDelay:25}, steps:[seek(50),{op:'stretch',value:0},{op:'resume'},{op:'stretch',value:100},{op:'reset'},{op:'resume'},frame(25)]},
+  {name:'stretchReversed', parameters:{duration:100,reversed:true}, steps:[seek(50),{op:'stretch',value:200},{op:'resume'},frame(25),{op:'stretch',value:50},frame(25)]},
+  {name:'stretchFractional', parameters:{duration:0.125,loop:3,loopDelay:0.25}, steps:[seek(0.0625),{op:'stretch',value:0.875},seek(0.1),{op:'stretch',value:1.125},{op:'resume'},frame(5)]},
   {name:'linearSeek', parameters:{duration:100}},
   {name:'loopSeek', parameters:{duration:100, loop:2, loopDelay:25}},
   {name:'alternateSeek', parameters:{duration:100, loop:2, loopDelay:25, alternate:true}},
@@ -57,7 +63,8 @@ const fixtures = cases.map(({name, parameters, steps = times.map(seek), easing})
   now = 0;
   const target = {value:0};
   const snapshot = timer => ({value:target.value,time:number(timer.currentTime),iterationTime:number(timer.iterationCurrentTime),
-    iteration:timer.currentIteration,backwards:timer.backwards,paused:timer.paused,completed:timer.completed});
+    iteration:timer.currentIteration,backwards:timer.backwards,paused:timer.paused,completed:timer.completed,
+    ...(name.startsWith('stretch') ? {duration:number(timer.duration),iterationDuration:number(timer.iterationDuration)} : {})});
   const events = [];
   const callbacks = Object.fromEntries(['Begin','BeforeUpdate','Render','Update','Loop','Pause','Complete'].map(event =>
     ['on' + event, timer => events.push({event,state:snapshot(timer)})]));
@@ -78,11 +85,12 @@ const fixtures = cases.map(({name, parameters, steps = times.map(seek), easing})
       if (!animation.paused) tick(animation,(now-animation._startTime)*animation._speed,0,0,animation._fps < engine._fps ? animation.requestTick(now) : 1);
     } else if (step.op === 'speed') animation.speed = step.value;
     else if (step.op === 'complete') animation.complete(step.mute);
+    else if (step.op === 'stretch') animation.stretch(step.value);
     else animation[step.op]();
     return {step,events:[...events],state:snapshot(animation)};
   });
   animation.cancel();
-  return {name,parameters,easing,iterationDuration:animation.iterationDuration,duration:animation.duration,initial,samples};
+  return {name,parameters,easing,iterationDuration:initial.iterationDuration ?? animation.iterationDuration,duration:initial.duration ?? animation.duration,initial,samples};
 });
 const text = JSON.stringify({upstreamCommit:revision,version:JSON.parse(readFileSync(resolve(upstream,'package.json'),'utf8')).version,
   initialization:'Both implementations are explicitly reset before the initial snapshot; the native constructor captures accessors without writing.',fixtures},null,2)+'\n';

@@ -37,7 +37,7 @@ type internal PlaybackSample(absoluteTime: float, previousTime: float, time: flo
 
 /// <summary>Standalone timer geometry shared by playback controllers; input time includes the initial delay.</summary>
 [<Sealed>]
-type internal PlaybackTiming(iterationDuration: float, iterationCount: float, delay: float, loopDelay: float, ?totalDuration: float) =
+type internal PlaybackTiming(iterationDuration: float, iterationCount: float, delay: float, loopDelay: float, ?totalDuration: float) as this =
     do
         if System.Double.IsNaN iterationDuration || iterationDuration < 0. then
             invalidArg "iterationDuration" "Expected nonnegative milliseconds or positive infinity."
@@ -61,6 +61,40 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
                  else residue)
     /// <summary>Total duration after repeat gaps and the source's infinity/zero normalization.</summary>
     member _.Duration = duration
+    /// <summary>Iteration duration retained independently of total duration after stretching.</summary>
+    member _.IterationDuration = iterationDuration
+    /// <summary>Initial delay in milliseconds.</summary>
+    member _.Delay = delay
+    /// <summary>Gap between repeated iterations in milliseconds.</summary>
+    member _.LoopDelay = loopDelay
+    /// <summary>Prepares source stretch geometry; finite nonnegative input and finite scaled delays are required.</summary>
+    member _.Stretch(value:float) =
+        if not(System.Double.IsFinite value) || value<0. then invalidArg "value" "Expected finite nonnegative milliseconds."
+        let normalize value =
+            if value<=1e-11 then 1e-11
+            else
+                let rounded=PropertyNumbers.round 1e11 value
+                if System.Double.IsPositiveInfinity rounded then 1e12
+                elif System.Double.IsNegativeInfinity rounded then -1e12
+                else rounded
+        let total=normalize value
+        if total=duration then this
+        else
+            let scale=value/duration
+            let iteration=if value<=1e-11 then 1e-11 else normalize(iterationDuration*scale)
+            PlaybackTiming(iteration,iterationCount,delay*scale,loopDelay*scale,totalDuration=total)
+    /// <summary>Refreshes bounded getters after a geometry change while retaining raw playhead and lifecycle samples.</summary>
+    member _.Rebound(sample:PlaybackSample) =
+        let lower = -delay
+        let rounded=PropertyNumbers.round 1e4 sample.AbsoluteTime
+        let current=
+            if lower>duration then (if rounded<lower then lower else duration)
+            else System.Math.Clamp(rounded,lower,duration)
+        let iteration=System.Math.Clamp(PropertyNumbers.round 1e4 sample.IterationTime,0.,iterationDuration)
+        let progress=System.Math.Clamp(PropertyNumbers.round 1e10 (sample.AbsoluteTime/duration),0.,1.)
+        let iterationProgress=System.Math.Clamp(PropertyNumbers.round 1e10 (sample.IterationTime/iterationDuration),0.,1.)
+        PlaybackSample(sample.AbsoluteTime,sample.PreviousTime,sample.Time,current,sample.Iteration,sample.IterationTime,
+                       iteration,progress,iterationProgress,sample.Backwards,sample.AboveZero,sample.AtEnd,sample.ShouldRender)
     /// <summary>Samples raw time without mutating callback, scheduler or ownership state.</summary>
     member _.Sample(previousAbsoluteTime: float, time: float, reversed: bool, alternate: bool, completed: bool,
                     mode: PlaybackTickMode, ?parentBackwards: bool, ?child: bool) : PlaybackSample =

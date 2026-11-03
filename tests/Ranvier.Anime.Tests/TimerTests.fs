@@ -20,6 +20,10 @@ let private optionalBool (name: string) (parameters: JsonElement) =
     match parameters.TryGetProperty name with true, value -> value.GetBoolean() | _ -> false
 
 let private verifyState (timer: Timer) (expected: JsonElement) =
+    for key,actual in ["duration",timer.Duration;"iterationDuration",timer.IterationDuration;"delay",timer.Delay;"loopDelay",timer.LoopDelay] do
+        match expected.TryGetProperty key with
+        | true,value -> Expect.equal actual (number value) key
+        | _ -> ()
     for key, actual in ["time", timer.CurrentTime; "raw", timer.Sample.AbsoluteTime; "iterationTime", timer.IterationCurrentTime
                         "rawIterationTime", timer.Sample.IterationTime; "progress", timer.Progress; "iterationProgress", timer.IterationProgress
                         "deltaTime", timer.DeltaTime; "speed", timer.Speed; "fps", timer.Fps] do
@@ -83,6 +87,7 @@ let private verify (fixture: JsonElement) =
         | "reverse" -> timer.Reverse()
         | "alternate" -> timer.Alternate()
         | "complete" -> timer.Complete(muteCallbacks=optionalBool "mute" step)
+        | "stretch" -> timer.Stretch(number(step.GetProperty "value"))
         | op -> failtestf "Unsupported timer operation %s" op
         Expect.equal eventIndex expectedEvents.Length "callback count"
         verifyState timer (sample.GetProperty "state")
@@ -123,6 +128,45 @@ type private LateFrameScheduler() =
             frames.Clear()
 
 let private lifetimeTests = testList "timer lifetime and inputs" [
+    testCase "invalid stretch preserves geometry and active scheduling" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use timer=new Timer(scheduler,100u,options={PlaybackOptions.Default with Delay=400.})
+        timer.Resume()
+        for value in [-1.;nan;infinity;-infinity;Double.MaxValue] do
+            Expect.throwsT<ArgumentException> (fun () -> timer.Stretch value) "invalid stretch"
+            Expect.equal timer.Duration 100. "original duration"
+            Expect.equal timer.Delay 400. "original delay"
+            Expect.isFalse timer.Paused "active scheduling retained"
+            Expect.isFalse timer.Cancelled "lifetime retained"
+        scheduler.Advance 450.
+        scheduler.RunFrame()
+        Expect.equal timer.CurrentTime 62. "original anchor and delay"
+    testCase "stretch during before-update interrupts stale callbacks and retains one frame" <| fun _ ->
+        use scheduler=new LateFrameScheduler()
+        let mutable once=true
+        let values=ResizeArray<float>()
+        use timer=new Timer(scheduler,100u,onBeforeUpdate=(fun timer -> if once then once<-false; timer.Stretch 200u),
+                            onUpdate=(fun timer -> values.Add timer.CurrentTime))
+        timer.Resume()
+        scheduler.Deliver 25.
+        Expect.isEmpty values "outer update suppressed"
+        Expect.equal scheduler.LiveCount 1 "replacement frame retained"
+        scheduler.Deliver 50.
+        Expect.sequenceEqual values [62.] "unchanged scheduler anchor"
+        Expect.equal scheduler.LiveCount 1 "single continuation"
+    testCase "idempotent stretch during before-update retains the current frame" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let mutable updates=0
+        use timer=new Timer(scheduler,100u,onBeforeUpdate=(fun timer -> timer.Stretch 100u),onUpdate=(fun _ -> updates<-updates+1))
+        timer.Resume()
+        scheduler.Advance 25.
+        scheduler.RunFrame()
+        Expect.equal updates 1 "equal duration is a no-op"
+    testCase "cancellation remains terminal for stretching" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use timer=new Timer(scheduler,100u)
+        timer.Cancel()
+        Expect.throwsT<ObjectDisposedException> (fun () -> timer.Stretch 200u) "terminal lifetime"
     testCase "unsigned duration retains half-millisecond precision at uint maximum" <| fun _ ->
         use clock = new ManualFrameScheduler()
         use timer = new Timer(clock, UInt32.MaxValue)

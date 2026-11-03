@@ -42,12 +42,13 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
                           onPause=(fun _ -> onPause |> Option.iter(fun callback -> callback this)),
                           onComplete=(fun _ -> onComplete |> Option.iter(fun callback -> callback this)))
     let render (sample: PlaybackSample) mode muted =
+        let iterationDuration = clock.IterationDuration
         let expected = clock.Generation
         let canWrite () = expected = clock.Generation && not clock.Cancelled && ancestorLive()
         let delta = sample.AbsoluteTime - clock.PreviousAbsoluteTime
         let force = mode = PlaybackTickMode.Force || (if sample.Backwards then -delta else delta) >= 200.
-        let absoluteTime = PropertyNumbers.round 1e12 (options.Delay + sample.IterationTime)
-        let start = PropertyNumbers.round 1e12 options.Delay
+        let absoluteTime = PropertyNumbers.round 1e12 (clock.Delay + sample.IterationTime)
+        let start = PropertyNumbers.round 1e12 clock.Delay
         let eligible = force || ((tweenTime <> iterationDuration || absoluteTime <= start + iterationDuration) &&
                                  (tweenTime <> 0. || absoluteTime >= start))
         if eligible && canWrite() then
@@ -58,7 +59,8 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
                 write (PropertyNumbers.interpolate first last progress)
                 if canWrite() && sample.AboveZero && not muted then
                     onRender |> Option.iter(fun callback -> callback this)
-    do clock.ConfigureRenderer(render, ?totalDuration=(if iterationDuration = 1e-11 then Some 1e-11 else None))
+    do clock.ConfigureRenderer(render, ?totalDuration=(if iterationDuration = 1e-11 then Some 1e-11 else None),
+                               onStretch=(fun scale -> tweenTime <- tweenTime*scale))
 
     /// <summary>Accepts an unsigned whole-millisecond duration through the precise float clock.</summary>
     new(scheduler: FrameScheduler, read: unit -> float, write: float -> unit, target: float, duration: uint,
@@ -98,7 +100,11 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     member _.Restart() = clock.Restart()
     /// <summary>Samples the end and cancels unless a callback supersedes the operation.</summary>
     member _.Complete(?muteCallbacks: bool) = clock.Complete(?muteCallbacks=muteCallbacks)
-    /// <summary>Starts from the currently rendered value using the original iteration duration and repeat options.</summary>
+    /// <summary>Stretches total duration and delay geometry while retaining the current property value and playhead.</summary>
+    member _.Stretch(milliseconds:float) = clock.Stretch milliseconds
+    /// <summary>Stretches total duration using unsigned whole milliseconds.</summary>
+    member _.Stretch(milliseconds:uint) = clock.Stretch milliseconds
+    /// <summary>Starts from the currently rendered value using the current iteration duration and repeat options.</summary>
     member _.Retarget(target: float) =
         if clock.Cancelled then raise(ObjectDisposedException(nameof NumericAnimation))
         finite "target" target
@@ -116,7 +122,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     /// <summary>Total duration of the repeat sequence, excluding initial delay.</summary>
     member _.Duration = clock.Duration
     /// <summary>Normalized duration of one iteration in milliseconds.</summary>
-    member _.IterationDuration = iterationDuration
+    member _.IterationDuration = clock.IterationDuration
     /// <summary>Bounded overall progress at the source's ten-decimal precision.</summary>
     member _.Progress = clock.Progress
     /// <summary>Whether directional sampling is running backwards.</summary>

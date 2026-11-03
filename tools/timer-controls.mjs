@@ -86,6 +86,22 @@ const fixtures = cases.map(({name, parameters, steps}) => {
 });
 const frame = after => ({op:'frame', after});
 const scheduledCases = [
+  {name:'stretchPaused', parameters:{duration:100}, steps:[seek(75),{op:'stretch',value:200},seek(100),{op:'stretch',value:50},seek(50)]},
+  {name:'stretchRunning', parameters:{duration:100}, steps:[{op:'resume'},frame(25),{op:'stretch',value:200},frame(25),frame(150)]},
+  {name:'stretchDelayed', parameters:{duration:100,delay:40}, steps:[{op:'resume'},frame(10),{op:'stretch',value:200},frame(25),frame(100),{op:'reset'},{op:'resume'},frame(25)]},
+  {name:'stretchNegativeDelay', parameters:{duration:100,delay:-20}, steps:[seek(25),{op:'stretch',value:250},{op:'resume'},frame(25),{op:'stretch',value:100},frame(25)]},
+  {name:'stretchLoops', parameters:{duration:100,loop:2,loopDelay:25,alternate:true}, steps:[seek(175),{op:'stretch',value:700},seek(300),{op:'resume'},frame(25),{op:'stretch',value:350},frame(25),{op:'reverse'},frame(100)]},
+  {name:'stretchZeroThenRestore', parameters:{duration:100,delay:40,loop:2,loopDelay:25}, steps:[seek(50),{op:'stretch',value:0},{op:'resume'},{op:'stretch',value:100},{op:'reset'},{op:'resume'},frame(25)]},
+  {name:'stretchTiny', parameters:{duration:100}, steps:[seek(50),{op:'stretch',value:1.4e-11},{op:'stretch',value:1.6e-11},{op:'resume'},frame(5)]},
+  {name:'stretchFractional', parameters:{duration:0.125,loop:3,loopDelay:0.25,delay:0.125}, steps:[seek(0.0625),{op:'stretch',value:0.875},seek(0.1),{op:'stretch',value:1.125},{op:'resume'},frame(5)]},
+  {name:'stretchCompleted', parameters:{duration:100}, steps:[seek(100),{op:'stretch',value:200},frame(25),{op:'resume'},frame(25),{op:'stretch',value:200},frame(100)]},
+  {name:'stretchReversed', parameters:{duration:100,reversed:true,loop:1,alternate:true}, steps:[seek(75),{op:'stretch',value:400},{op:'resume'},frame(25),{op:'reset'},{op:'play'},frame(25)]},
+  {name:'stretchUint', parameters:{duration:100}, steps:[seek(25),{op:'stretch',value:4294967295},{op:'resume'},frame(2147483647),{op:'stretch',value:100},frame(25)]},
+  {name:'stretchInfiniteIterations', parameters:{duration:100,loop:true,loopDelay:25}, steps:[seek(175),{op:'stretch',value:1000},{op:'resume'},frame(25),{op:'alternate'},frame(25)]},
+  {name:'stretchNegativeTotal', parameters:{duration:100,loop:3,loopDelay:-150,delay:20}, steps:[seek(25),{op:'stretch',value:200},seek(100),{op:'resume'},frame(25)]},
+  {name:'stretchIdempotent', parameters:{duration:100,delay:40,loop:1,loopDelay:25}, steps:[{op:'resume'},frame(25),{op:'stretch',value:225},frame(25),{op:'pause'},{op:'stretch',value:225},seek(50)]},
+  {name:'stretchLargeFinite', parameters:{duration:100,delay:40}, steps:[seek(25),{op:'stretch',value:Number.MAX_VALUE},{op:'resume'},frame(25)]},
+  {name:'stretchUnboundedIteration', parameters:{}, steps:[seek(25),{op:'stretch',value:200},{op:'resume'},frame(25)]},
   {name:'scheduledBasic', parameters:{duration:100}, steps:[{op:'resume'}, frame(0), frame(25), frame(75), frame(25)]},
   {name:'scheduledPause', parameters:{duration:100}, steps:[{op:'resume'}, frame(25), {op:'advance', after:10}, {op:'pause'}, frame(200), {op:'resume'}, frame(25)]},
   {name:'scheduledSpeed', parameters:{duration:200}, steps:[{op:'resume'}, frame(25), {op:'advance', after:10}, {op:'speed', value:2}, frame(25), {op:'speed', value:0.5}, frame(20), seek(100), frame(20)]},
@@ -108,7 +124,8 @@ const scheduledCases = [
 const scheduled = scheduledCases.map(({name, parameters, steps}) => {
   clockNow = 0;
   const events = [];
-  const capture = timer => ({...snapshot(timer), fps:timer.fps});
+  const capture = timer => ({...snapshot(timer), fps:timer.fps,
+    ...(name.startsWith('stretch') ? {duration:number(timer.duration),iterationDuration:number(timer.iterationDuration),delay:number(timer._delay),loopDelay:number(timer._loopDelay)} : {})});
   const callbacks = Object.fromEntries(['Begin','BeforeUpdate','Update','Loop','Pause','Complete'].map(event =>
     ['on' + event, timer => events.push({event, state:capture(timer)})]));
   const timer = createTimer({...parameters, autoplay:false, ...callbacks});
@@ -123,6 +140,7 @@ const scheduled = scheduledCases.map(({name, parameters, steps}) => {
     } else if (step.op === 'seek') timer.seek(step.time, step.mute);
     else if (['speed','fps','currentTime','progress','iterationProgress','iterationCurrentTime','currentIteration','reversed'].includes(step.op)) timer[step.op] = step.value;
     else if (step.op === 'complete') timer.complete(step.mute);
+    else if (step.op === 'stretch') timer.stretch(step.value);
     else timer[step.op]();
     return {step, events:[...events], state:capture(timer)};
   });

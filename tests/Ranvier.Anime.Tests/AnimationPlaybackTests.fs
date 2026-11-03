@@ -14,6 +14,8 @@ let private optionalBool name (value: JsonElement) =
     match value.TryGetProperty(name: string) with true, field -> field.GetBoolean() | _ -> false
 
 let private verifyState value (animation: NumericAnimation) (expected: JsonElement) =
+    for key,actual in ["duration",animation.Duration;"iterationDuration",animation.IterationDuration] do
+        match expected.TryGetProperty key with true,value -> Expect.equal actual (value.GetDouble()) key | _ -> ()
     for key, actual in ["value", value; "time", animation.CurrentTime; "iterationTime", animation.IterationCurrentTime] do
         Expect.equal actual (expected.GetProperty(key).GetDouble()) key
     Expect.equal animation.CurrentIteration (expected.GetProperty("iteration").GetInt32()) "iteration"
@@ -79,6 +81,7 @@ let private verify (fixture: JsonElement) =
         | "restart" -> animation.Restart()
         | "reset" -> animation.Reset()
         | "complete" -> animation.Complete(muteCallbacks=optionalBool "mute" step)
+        | "stretch" -> animation.Stretch(step.GetProperty("value").GetDouble())
         | op -> failtestf "Unknown animation operation %s" op
         Expect.equal eventIndex expectedEvents.Length "callback count"
         verifyState value animation (sample.GetProperty "state")

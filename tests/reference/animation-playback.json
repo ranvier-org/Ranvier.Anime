@@ -4,6 +4,1762 @@
   "initialization": "Both implementations are explicitly reset before the initial snapshot; the native constructor captures accessors without writing.",
   "fixtures": [
     {
+      "name": "stretchRunning",
+      "parameters": {
+        "duration": 100
+      },
+      "iterationDuration": 100,
+      "duration": 100,
+      "initial": {
+        "value": 0,
+        "time": 0,
+        "iterationTime": 0,
+        "iteration": 0,
+        "backwards": false,
+        "paused": true,
+        "completed": false,
+        "duration": 100,
+        "iterationDuration": 100
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "value": 0,
+            "time": 0,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 100,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "value": 0,
+                "time": 37,
+                "iterationTime": 37,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 0,
+                "time": 37,
+                "iterationTime": 37,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 37,
+                "time": 37,
+                "iterationTime": 37,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 37,
+                "time": 37,
+                "iterationTime": 37,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            }
+          ],
+          "state": {
+            "value": 37,
+            "time": 37,
+            "iterationTime": 37,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 100,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 200
+          },
+          "events": [],
+          "state": {
+            "value": 37,
+            "time": 37,
+            "iterationTime": 37,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 37,
+                "time": 62,
+                "iterationTime": 62,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 31,
+                "time": 62,
+                "iterationTime": 62,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 31,
+                "time": 62,
+                "iterationTime": 62,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            }
+          ],
+          "state": {
+            "value": 31,
+            "time": 62,
+            "iterationTime": 62,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 150
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 31,
+                "time": 200,
+                "iterationTime": 200,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 100,
+                "time": 200,
+                "iterationTime": 200,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 100,
+                "time": 200,
+                "iterationTime": 200,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "value": 100,
+                "time": 200,
+                "iterationTime": 200,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": true,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            }
+          ],
+          "state": {
+            "value": 100,
+            "time": 200,
+            "iterationTime": 200,
+            "iteration": 0,
+            "backwards": false,
+            "paused": true,
+            "completed": true,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchDelayed",
+      "parameters": {
+        "duration": 100,
+        "delay": 40
+      },
+      "iterationDuration": 100,
+      "duration": 100,
+      "initial": {
+        "value": 0,
+        "time": -40,
+        "iterationTime": 0,
+        "iteration": 0,
+        "backwards": false,
+        "paused": true,
+        "completed": false,
+        "duration": 100,
+        "iterationDuration": 100
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "value": 0,
+            "time": -40,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 100,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [],
+          "state": {
+            "value": 0,
+            "time": -3,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 100,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 200
+          },
+          "events": [],
+          "state": {
+            "value": 0,
+            "time": -3,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [],
+          "state": {
+            "value": 0,
+            "time": -18,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 100
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "value": 0,
+                "time": 82,
+                "iterationTime": 82,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 0,
+                "time": 82,
+                "iterationTime": 82,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 41,
+                "time": 82,
+                "iterationTime": 82,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 41,
+                "time": 82,
+                "iterationTime": 82,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            }
+          ],
+          "state": {
+            "value": 41,
+            "time": 82,
+            "iterationTime": 82,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "reset"
+          },
+          "events": [],
+          "state": {
+            "value": 0,
+            "time": -80,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": true,
+            "paused": true,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "value": 0,
+            "time": -80,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 100
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "value": 0,
+                "time": 32,
+                "iterationTime": 32,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 0,
+                "time": 32,
+                "iterationTime": 32,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 16,
+                "time": 32,
+                "iterationTime": 32,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 16,
+                "time": 32,
+                "iterationTime": 32,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            }
+          ],
+          "state": {
+            "value": 16,
+            "time": 32,
+            "iterationTime": 32,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchLoops",
+      "parameters": {
+        "duration": 100,
+        "loop": 2,
+        "loopDelay": 25,
+        "alternate": true
+      },
+      "iterationDuration": 100,
+      "duration": 350,
+      "initial": {
+        "value": 0,
+        "time": 0,
+        "iterationTime": 0,
+        "iteration": 0,
+        "backwards": false,
+        "paused": true,
+        "completed": false,
+        "duration": 350,
+        "iterationDuration": 100
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 175
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "value": 0,
+                "time": 175,
+                "iterationTime": 50,
+                "iteration": 1,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Loop",
+              "state": {
+                "value": 0,
+                "time": 175,
+                "iterationTime": 50,
+                "iteration": 1,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 0,
+                "time": 175,
+                "iterationTime": 50,
+                "iteration": 1,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 50,
+                "time": 175,
+                "iterationTime": 50,
+                "iteration": 1,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 50,
+                "time": 175,
+                "iterationTime": 50,
+                "iteration": 1,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            }
+          ],
+          "state": {
+            "value": 50,
+            "time": 175,
+            "iterationTime": 50,
+            "iteration": 1,
+            "backwards": true,
+            "paused": true,
+            "completed": false,
+            "duration": 350,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 700
+          },
+          "events": [],
+          "state": {
+            "value": 50,
+            "time": 175,
+            "iterationTime": 50,
+            "iteration": 1,
+            "backwards": true,
+            "paused": true,
+            "completed": false,
+            "duration": 700,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "seek",
+            "time": 300
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 50,
+                "time": 300,
+                "iterationTime": 150,
+                "iteration": 1,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 700,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 75,
+                "time": 300,
+                "iterationTime": 150,
+                "iteration": 1,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 700,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 75,
+                "time": 300,
+                "iterationTime": 150,
+                "iteration": 1,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 700,
+                "iterationDuration": 200
+              }
+            }
+          ],
+          "state": {
+            "value": 75,
+            "time": 300,
+            "iterationTime": 150,
+            "iteration": 1,
+            "backwards": true,
+            "paused": true,
+            "completed": false,
+            "duration": 700,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "value": 75,
+            "time": 300,
+            "iterationTime": 150,
+            "iteration": 1,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 700,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 75,
+                "time": 337,
+                "iterationTime": 113,
+                "iteration": 1,
+                "backwards": true,
+                "paused": false,
+                "completed": false,
+                "duration": 700,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 56.49999999999999,
+                "time": 337,
+                "iterationTime": 113,
+                "iteration": 1,
+                "backwards": true,
+                "paused": false,
+                "completed": false,
+                "duration": 700,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 56.49999999999999,
+                "time": 337,
+                "iterationTime": 113,
+                "iteration": 1,
+                "backwards": true,
+                "paused": false,
+                "completed": false,
+                "duration": 700,
+                "iterationDuration": 200
+              }
+            }
+          ],
+          "state": {
+            "value": 56.49999999999999,
+            "time": 337,
+            "iterationTime": 113,
+            "iteration": 1,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 700,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 350
+          },
+          "events": [],
+          "state": {
+            "value": 56.49999999999999,
+            "time": 337,
+            "iterationTime": 100,
+            "iteration": 1,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 350,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Loop",
+              "state": {
+                "value": 56.49999999999999,
+                "time": 350,
+                "iterationTime": 100,
+                "iteration": 2,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 56.49999999999999,
+                "time": 350,
+                "iterationTime": 100,
+                "iteration": 2,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 100,
+                "time": 350,
+                "iterationTime": 100,
+                "iteration": 2,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 100,
+                "time": 350,
+                "iterationTime": 100,
+                "iteration": 2,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "value": 100,
+                "time": 350,
+                "iterationTime": 100,
+                "iteration": 2,
+                "backwards": false,
+                "paused": true,
+                "completed": true,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            }
+          ],
+          "state": {
+            "value": 100,
+            "time": 350,
+            "iterationTime": 100,
+            "iteration": 2,
+            "backwards": false,
+            "paused": true,
+            "completed": true,
+            "duration": 350,
+            "iterationDuration": 100
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchZeroRestore",
+      "parameters": {
+        "duration": 100,
+        "delay": 40,
+        "loop": 2,
+        "loopDelay": 25
+      },
+      "iterationDuration": 100,
+      "duration": 350,
+      "initial": {
+        "value": 0,
+        "time": -40,
+        "iterationTime": 0,
+        "iteration": 0,
+        "backwards": false,
+        "paused": true,
+        "completed": false,
+        "duration": 350,
+        "iterationDuration": 100
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 50
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "value": 0,
+                "time": 50,
+                "iterationTime": 50,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 0,
+                "time": 50,
+                "iterationTime": 50,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 50,
+                "time": 50,
+                "iterationTime": 50,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 50,
+                "time": 50,
+                "iterationTime": 50,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 350,
+                "iterationDuration": 100
+              }
+            }
+          ],
+          "state": {
+            "value": 50,
+            "time": 50,
+            "iterationTime": 50,
+            "iteration": 0,
+            "backwards": false,
+            "paused": true,
+            "completed": false,
+            "duration": 350,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 0
+          },
+          "events": [],
+          "state": {
+            "value": 50,
+            "time": 1e-11,
+            "iterationTime": 1e-11,
+            "iteration": 0,
+            "backwards": false,
+            "paused": true,
+            "completed": false,
+            "duration": 1e-11,
+            "iterationDuration": 1e-11
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 50,
+                "time": 0,
+                "iterationTime": 0,
+                "iteration": 0,
+                "backwards": true,
+                "paused": false,
+                "completed": false,
+                "duration": 1e-11,
+                "iterationDuration": 1e-11
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 100,
+                "time": 0,
+                "iterationTime": 0,
+                "iteration": 0,
+                "backwards": true,
+                "paused": false,
+                "completed": false,
+                "duration": 1e-11,
+                "iterationDuration": 1e-11
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 100,
+                "time": 0,
+                "iterationTime": 0,
+                "iteration": 0,
+                "backwards": true,
+                "paused": false,
+                "completed": false,
+                "duration": 1e-11,
+                "iterationDuration": 1e-11
+              }
+            }
+          ],
+          "state": {
+            "value": 100,
+            "time": 0,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 1e-11,
+            "iterationDuration": 1e-11
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 100
+          },
+          "events": [],
+          "state": {
+            "value": 100,
+            "time": 0,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 100,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "reset"
+          },
+          "events": [],
+          "state": {
+            "value": 0,
+            "time": 0,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": true,
+            "paused": true,
+            "completed": false,
+            "duration": 100,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "value": 0,
+            "time": 0,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 100,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "value": 0,
+                "time": 37,
+                "iterationTime": 37,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 0,
+                "time": 37,
+                "iterationTime": 37,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 37,
+                "time": 37,
+                "iterationTime": 37,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 37,
+                "time": 37,
+                "iterationTime": 37,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            }
+          ],
+          "state": {
+            "value": 37,
+            "time": 37,
+            "iterationTime": 37,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 100,
+            "iterationDuration": 100
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchReversed",
+      "parameters": {
+        "duration": 100,
+        "reversed": true
+      },
+      "iterationDuration": 100,
+      "duration": 100,
+      "initial": {
+        "value": 100,
+        "time": 0,
+        "iterationTime": 100,
+        "iteration": 0,
+        "backwards": true,
+        "paused": true,
+        "completed": false,
+        "duration": 100,
+        "iterationDuration": 100
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 50
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "value": 100,
+                "time": 50,
+                "iterationTime": 50,
+                "iteration": 0,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 100,
+                "time": 50,
+                "iterationTime": 50,
+                "iteration": 0,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 50,
+                "time": 50,
+                "iterationTime": 50,
+                "iteration": 0,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 50,
+                "time": 50,
+                "iterationTime": 50,
+                "iteration": 0,
+                "backwards": true,
+                "paused": true,
+                "completed": false,
+                "duration": 100,
+                "iterationDuration": 100
+              }
+            }
+          ],
+          "state": {
+            "value": 50,
+            "time": 50,
+            "iterationTime": 50,
+            "iteration": 0,
+            "backwards": true,
+            "paused": true,
+            "completed": false,
+            "duration": 100,
+            "iterationDuration": 100
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 200
+          },
+          "events": [],
+          "state": {
+            "value": 50,
+            "time": 50,
+            "iterationTime": 50,
+            "iteration": 0,
+            "backwards": true,
+            "paused": true,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "value": 50,
+            "time": 50,
+            "iterationTime": 50,
+            "iteration": 0,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 50,
+                "time": 87,
+                "iterationTime": 113,
+                "iteration": 0,
+                "backwards": true,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 56.49999999999999,
+                "time": 87,
+                "iterationTime": 113,
+                "iteration": 0,
+                "backwards": true,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 56.49999999999999,
+                "time": 87,
+                "iterationTime": 113,
+                "iteration": 0,
+                "backwards": true,
+                "paused": false,
+                "completed": false,
+                "duration": 200,
+                "iterationDuration": 200
+              }
+            }
+          ],
+          "state": {
+            "value": 56.49999999999999,
+            "time": 87,
+            "iterationTime": 113,
+            "iteration": 0,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 200,
+            "iterationDuration": 200
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 50
+          },
+          "events": [],
+          "state": {
+            "value": 56.49999999999999,
+            "time": 50,
+            "iterationTime": 50,
+            "iteration": 0,
+            "backwards": true,
+            "paused": false,
+            "completed": false,
+            "duration": 50,
+            "iterationDuration": 50
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
+          "events": [
+            {
+              "event": "Complete",
+              "state": {
+                "value": 56.49999999999999,
+                "time": 50,
+                "iterationTime": 0,
+                "iteration": 0,
+                "backwards": true,
+                "paused": true,
+                "completed": true,
+                "duration": 50,
+                "iterationDuration": 50
+              }
+            }
+          ],
+          "state": {
+            "value": 56.49999999999999,
+            "time": 50,
+            "iterationTime": 0,
+            "iteration": 0,
+            "backwards": true,
+            "paused": true,
+            "completed": true,
+            "duration": 50,
+            "iterationDuration": 50
+          }
+        }
+      ]
+    },
+    {
+      "name": "stretchFractional",
+      "parameters": {
+        "duration": 0.125,
+        "loop": 3,
+        "loopDelay": 0.25
+      },
+      "iterationDuration": 0.125,
+      "duration": 1.25,
+      "initial": {
+        "value": 0,
+        "time": 0,
+        "iterationTime": 0,
+        "iteration": 0,
+        "backwards": false,
+        "paused": true,
+        "completed": false,
+        "duration": 1.25,
+        "iterationDuration": 0.125
+      },
+      "samples": [
+        {
+          "step": {
+            "op": "seek",
+            "time": 0.0625
+          },
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "value": 0,
+                "time": 0.0625,
+                "iterationTime": 0.0625,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 1.25,
+                "iterationDuration": 0.125
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 0,
+                "time": 0.0625,
+                "iterationTime": 0.0625,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 1.25,
+                "iterationDuration": 0.125
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 50,
+                "time": 0.0625,
+                "iterationTime": 0.0625,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 1.25,
+                "iterationDuration": 0.125
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 50,
+                "time": 0.0625,
+                "iterationTime": 0.0625,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 1.25,
+                "iterationDuration": 0.125
+              }
+            }
+          ],
+          "state": {
+            "value": 50,
+            "time": 0.0625,
+            "iterationTime": 0.0625,
+            "iteration": 0,
+            "backwards": false,
+            "paused": true,
+            "completed": false,
+            "duration": 1.25,
+            "iterationDuration": 0.125
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 0.875
+          },
+          "events": [],
+          "state": {
+            "value": 50,
+            "time": 0.0625,
+            "iterationTime": 0.0625,
+            "iteration": 0,
+            "backwards": false,
+            "paused": true,
+            "completed": false,
+            "duration": 0.875,
+            "iterationDuration": 0.0875
+          }
+        },
+        {
+          "step": {
+            "op": "seek",
+            "time": 0.1
+          },
+          "events": [
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 50,
+                "time": 0.1,
+                "iterationTime": 0.0875,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 0.875,
+                "iterationDuration": 0.0875
+              }
+            },
+            {
+              "event": "Render",
+              "state": {
+                "value": 100,
+                "time": 0.1,
+                "iterationTime": 0.0875,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 0.875,
+                "iterationDuration": 0.0875
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 100,
+                "time": 0.1,
+                "iterationTime": 0.0875,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "completed": false,
+                "duration": 0.875,
+                "iterationDuration": 0.0875
+              }
+            }
+          ],
+          "state": {
+            "value": 100,
+            "time": 0.1,
+            "iterationTime": 0.0875,
+            "iteration": 0,
+            "backwards": false,
+            "paused": true,
+            "completed": false,
+            "duration": 0.875,
+            "iterationDuration": 0.0875
+          }
+        },
+        {
+          "step": {
+            "op": "stretch",
+            "value": 1.125
+          },
+          "events": [],
+          "state": {
+            "value": 100,
+            "time": 0.1,
+            "iterationTime": 0.1,
+            "iteration": 0,
+            "backwards": false,
+            "paused": true,
+            "completed": false,
+            "duration": 1.125,
+            "iterationDuration": 0.1125
+          }
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "events": [],
+          "state": {
+            "value": 100,
+            "time": 0.1,
+            "iterationTime": 0.1,
+            "iteration": 0,
+            "backwards": false,
+            "paused": false,
+            "completed": false,
+            "duration": 1.125,
+            "iterationDuration": 0.1125
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 5
+          },
+          "events": [
+            {
+              "event": "Loop",
+              "state": {
+                "value": 100,
+                "time": 1.125,
+                "iterationTime": 0.1125,
+                "iteration": 3,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 1.125,
+                "iterationDuration": 0.1125
+              }
+            },
+            {
+              "event": "BeforeUpdate",
+              "state": {
+                "value": 100,
+                "time": 1.125,
+                "iterationTime": 0.1125,
+                "iteration": 3,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 1.125,
+                "iterationDuration": 0.1125
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "value": 100,
+                "time": 1.125,
+                "iterationTime": 0.1125,
+                "iteration": 3,
+                "backwards": false,
+                "paused": false,
+                "completed": false,
+                "duration": 1.125,
+                "iterationDuration": 0.1125
+              }
+            },
+            {
+              "event": "Complete",
+              "state": {
+                "value": 100,
+                "time": 1.125,
+                "iterationTime": 0.1125,
+                "iteration": 3,
+                "backwards": false,
+                "paused": true,
+                "completed": true,
+                "duration": 1.125,
+                "iterationDuration": 0.1125
+              }
+            }
+          ],
+          "state": {
+            "value": 100,
+            "time": 1.125,
+            "iterationTime": 0.1125,
+            "iteration": 3,
+            "backwards": false,
+            "paused": true,
+            "completed": true,
+            "duration": 1.125,
+            "iterationDuration": 0.1125
+          }
+        }
+      ]
+    },
+    {
       "name": "linearSeek",
       "parameters": {
         "duration": 100

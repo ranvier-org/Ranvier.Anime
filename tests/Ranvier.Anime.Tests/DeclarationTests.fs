@@ -41,6 +41,51 @@ let private text (value:JsonElement) =
     if value.ValueKind=JsonValueKind.Number then ValueInterpolation.number(value.GetDouble()) else value.GetString()
 
 let tests = testList "typed declaration playback" [
+    testCase "stretch retains styles and scales typed declaration sampling" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let recorder=RecordingStyle()
+        let style=recorder:>CSSStyleDeclaration
+        style.setProperty("width","7px",priority="important")
+        let settings={DeclarationAnimationOptions.Default with Playback={PlaybackOptions.Default with Delay=40.}}
+        use clock=CssAnimation.declarationWith settings scheduler style (Css.width(Css.px 0.)) (Css.width(Css.px 100.)) 100u
+        clock.Seek 50.
+        let writes=recorder.Writes.Count
+        clock.Stretch 200u
+        Expect.equal recorder.Writes.Count writes "stretch has no immediate write"
+        Expect.equal clock.CurrentTime 50. "raw playhead retained"
+        Expect.equal clock.Progress 0.25 "getters use new duration"
+        clock.Seek 100.
+        Expect.equal (style.getPropertyValue "width") "50px" "new iteration geometry"
+        Expect.equal (style.getPropertyPriority "width") "important" "priority preserved"
+        clock.Reset()
+        clock.Resume()
+        scheduler.Advance 25.
+        scheduler.RunFrame()
+        Expect.equal (style.getPropertyValue "width") "0px" "scaled initial delay"
+    testCase "stretch from a component modifier discards the stale style commit" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let recorder=RecordingStyle()
+        let mutable active:Timer option=None
+        let mutable armed=false
+        let mutable calls=0
+        let modifier value =
+            calls<-calls+1
+            if armed then
+                armed<-false
+                active |> Option.iter(fun clock -> clock.Stretch 200u)
+            value
+        let settings={DeclarationAnimationOptions.Default with Modifier=modifier}
+        use clock=CssAnimation.declarationWith settings scheduler recorder
+                        (Declaration.create "transform" "translate(0px,0px)") (Declaration.create "transform" "translate(100px,200px)") 100u
+        active<-Some clock
+        let writes=recorder.Writes.Count
+        calls<-0
+        armed<-true
+        clock.Seek 50.
+        Expect.equal recorder.Writes.Count writes "interrupted sample cannot dispatch"
+        Expect.equal calls 1 "later components suppressed"
+        clock.Seek 100.
+        Expect.equal ((recorder:>CSSStyleDeclaration).getPropertyValue "transform") "translate(50px,100px)" "replacement geometry remains usable"
     for entry in cases() do
         testCase (entry.GetProperty("name").GetString()) <| fun _ ->
             let modifier=match entry.GetProperty("modifier").GetString() with "affine" -> (fun value -> value*0.5+2.) | "round2" -> PropertyNumbers.round 100. | _ -> id
