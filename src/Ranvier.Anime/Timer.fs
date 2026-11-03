@@ -135,14 +135,16 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             if wasPaused && not state.Paused then reanchor 12.
             elif changedDirection then reanchor 0.)
 
-    let setTime time =
+    let setTimeGuarded canWrite time =
         finite "time" time
         let wasPaused = state.Paused
         operate (fun current ->
             state.Pause()
-            if current() then state.Seek(time, false)
-            if current() && not wasPaused then state.Resume())
-            (fun () -> if not state.Paused then reanchor 12.)
+            if current() && canWrite() then state.Seek(time, false)
+            if current() && canWrite() && not wasPaused then state.Resume())
+            (fun () -> if canWrite() && not state.Paused then reanchor 12.)
+
+    let setTime time = setTimeGuarded (fun () -> true) time
 
     let cancel () =
         stopFrame() |> ignore
@@ -242,6 +244,8 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member internal _.ConfigureRenderer(renderer, ?totalDuration: float) =
         state.Renderer <- fun sample mode muted -> if renderingEnabled then renderer sample mode muted
         totalDuration |> Option.iter state.OverrideDuration
+    /// <summary>Assigns current time with pause/seek/resume semantics while every ancestor remains live.</summary>
+    member internal _.SetTimeGuarded(time, canWrite) = setTimeGuarded canWrite time
     /// <summary>Installs cleanup invoked after callback/render faults cancel this driver.</summary>
     member internal _.OnFault with set value = onFault <- value
     /// <summary>Initial delay of an owned timeline child.</summary>

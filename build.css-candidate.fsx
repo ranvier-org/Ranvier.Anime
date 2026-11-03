@@ -125,8 +125,14 @@ let packageProof (configuration: string) (stage: string) (cache: string) candida
                SourceCommit = if isNull commit then "" else commit.Value
                Feed = origin.RootElement.GetProperty("source").GetString() |})
 
-/// <summary>Archives an executed AOT replay whose successful publication and inputs remain unchanged.</summary>
-let capture (configuration: string) (stage: string) (cache: string) candidate publicCore =
+let private replayCohort candidate publicCore (label: string) =
+    let name = if publicCore then "native-core56-css2-hardened" elif candidate then "native-css-70ac-hardened" else "native-css-public-alpha2-hardened"
+    if label = "" then name
+    elif label.Length <= 48 && System.Text.RegularExpressions.Regex.IsMatch(label, @"\A[a-z0-9]+(?:-[a-z0-9]+)*\z") then name + "-" + label
+    else invalidArg "label" "Expected at most 48 lowercase letters/digits separated by single hyphens."
+
+/// <summary>Archives an executed AOT replay under a validated label while preserving prior immutable receipts.</summary>
+let captureNamed (configuration: string) (stage: string) (cache: string) candidate publicCore label =
     let publication = BuildProvenance.requirePublish __SOURCE_DIRECTORY__ stage configuration
     let packages = packageProof configuration stage cache candidate publicCore
     if JsonSerializer.SerializeToElement(packages).GetRawText() <> publication.Packages.GetRawText() then
@@ -139,7 +145,7 @@ let capture (configuration: string) (stage: string) (cache: string) candidate pu
        not(run.RootElement.GetProperty("RequiredAot").GetBoolean()) || run.RootElement.GetProperty("ExecutableSha256").GetString() <> hash executable ||
        run.RootElement.GetProperty("LogSha256").GetString() <> hash log then
         failwith "A successful matching NativeAOT execution receipt is required."
-    let cohort = if publicCore then "native-core56-css2-hardened" elif candidate then "native-css-70ac-hardened" else "native-css-public-alpha2-hardened"
+    let cohort = replayCohort candidate publicCore label
     let destination = Path.Combine(__SOURCE_DIRECTORY__, "artifacts", "qualification", cohort + "-" + configuration)
     if File.Exists(Path.Combine(destination, "receipt.json")) then failwith "This replay snapshot is already preserved."
     Directory.CreateDirectory destination |> ignore
@@ -173,9 +179,12 @@ let capture (configuration: string) (stage: string) (cache: string) candidate pu
     File.WriteAllText(Path.Combine(destination, "receipt.json"), JsonSerializer.Serialize receipt)
     printfn "Preserved %s %s replay and verified %d package/DLL identities" cohort configuration packages.Length
 
-/// <summary>Writes the tracked replay summary from both immutable archived mode receipts.</summary>
-let summarize candidate publicCore =
-    let cohort = if publicCore then "native-core56-css2-hardened" elif candidate then "native-css-70ac-hardened" else "native-css-public-alpha2-hardened"
+/// <summary>Archives an executed AOT replay under its original cohort name.</summary>
+let capture configuration stage cache candidate publicCore = captureNamed configuration stage cache candidate publicCore ""
+
+/// <summary>Writes the tracked replay summary from both immutable archived mode receipts with a validated label.</summary>
+let summarizeNamed candidate publicCore label =
+    let cohort = replayCohort candidate publicCore label
     let modes =
         ["Release"; "Debug"] |> List.map(fun configuration ->
             let path = Path.Combine(__SOURCE_DIRECTORY__, "artifacts", "qualification", cohort + "-" + configuration, "receipt.json")
@@ -186,3 +195,6 @@ let summarize candidate publicCore =
     let path = Path.Combine(__SOURCE_DIRECTORY__, "docs", "evidence", cohort + ".json")
     File.WriteAllText(path, JsonSerializer.Serialize(summary, JsonSerializerOptions(WriteIndented = true)))
     printfn "Wrote compact two-mode %s replay evidence" cohort
+
+/// <summary>Writes the tracked replay summary under its original cohort name.</summary>
+let summarize candidate publicCore = summarizeNamed candidate publicCore ""

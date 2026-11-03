@@ -41,6 +41,9 @@ const cases = [
   {name:'borrowedTimer', kind:'syncTimer', parameters:{loop:1}},
   {name:'borrowedRepeatedTimer', kind:'syncTimer', parameters:{loop:1,alternate:true},childParameters:{loop:1,loopDelay:25,alternate:true}},
   {name:'borrowedAnimation', kind:'syncAnimation', parameters:{loop:1,alternate:true},childParameters:{loop:1,loopDelay:25}},
+  {name:'resumedBorrowedAnimation',kind:'syncAnimation',parameters:{},steps:[{op:'resumeBorrowed'},seek(50),seek(75),seek(0)]},
+  {name:'resumedBorrowedTimer',kind:'syncTimer',parameters:{},steps:[{op:'resumeBorrowed'},seek(50),seek(75),seek(0)]},
+  {name:'resumedBorrowedTimeline',kind:'syncTimeline',parameters:{},steps:[{op:'resumeBorrowed'},seek(50),seek(75),seek(0)]},
   {name:'borrowedNested', kind:'syncTimeline', parameters:{loop:1,alternate:true},childParameters:{loop:1,alternate:true}},
   {name:'rootDelay', kind:'overlap', parameters:{delay:40,loop:1}},
   {name:'rootNegativeDelay', kind:'overlap', parameters:{delay:-25,loop:1}},
@@ -152,6 +155,7 @@ const fixtures = cases.map(({name,kind,parameters,childParameters={},steps=times
   const samples = steps.map(step => {
     events.length = 0;
     if (step.op === 'seek') timeline.seek(step.time,step.mute);
+    else if (step.op === 'resumeBorrowed') controllers.get('borrowed').resume();
     else if (step.op === 'frame') {
       now += step.after;
       if (!timeline.paused) tick(timeline,(now-timeline._startTime)*timeline._speed,0,0,timeline._fps < engine._fps ? timeline.requestTick(now) : 1);

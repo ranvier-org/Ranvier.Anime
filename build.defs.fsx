@@ -292,14 +292,18 @@ let root = Command.root {
     command "core56-evidence" {
         input {
             let! config = configuration
+            and! label = Input.option<string> "--label" |> Input.def ""
             return stage "preserve public Core/CSS native replay" {
-                run (fun _ -> BuildCssCandidate.capture config (nativeRoot false true) (nativeCache false true) false true)
+                run (fun _ -> BuildCssCandidate.captureNamed config (nativeRoot false true) (nativeCache false true) false true label)
             }
         }
     }
     command "core56-summary" {
-        stage "summarize public Core/CSS native replay" {
-            run (fun _ -> BuildCssCandidate.summarize false true)
+        input {
+            let! label = Input.option<string> "--label" |> Input.def ""
+            return stage "summarize public Core/CSS native replay" {
+                run (fun _ -> BuildCssCandidate.summarizeNamed false true label)
+            }
         }
     }
     command "native-stage" {

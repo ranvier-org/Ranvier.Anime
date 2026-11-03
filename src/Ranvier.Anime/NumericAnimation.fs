@@ -87,6 +87,11 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
         let previous = ancestorLive
         ancestorLive <- fun () -> previous() && shouldWrite()
         try clock.Seek milliseconds finally ancestorLive <- previous
+    /// <summary>Assigns borrowed current time with source pause/seek/resume callbacks and ancestor guards.</summary>
+    member internal _.SetTimeGuarded(milliseconds: float, shouldWrite: unit -> bool) =
+        let previous = ancestorLive
+        ancestorLive <- shouldWrite
+        try clock.SetTimeGuarded(milliseconds, ancestorLive) finally ancestorLive <- previous
     /// <summary>Rewinds time, renders the initial value and clears completion with muted callbacks.</summary>
     member _.Reset() = clock.Reset()
     /// <summary>Resets and resumes playback.</summary>

@@ -245,19 +245,19 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
     member this.Sync(child: NumericAnimation, ?position: TimelinePosition) =
         ensureLive()
         if isNull (box child) then nullArg "child"
-        this.Borrow(child,child.Duration,child.Pause,(fun value guard -> child.SeekGuarded(value,guard)),None,position)
+        this.Borrow(child,child.Duration,child.Pause,(fun value guard -> child.SetTimeGuarded(value,guard)),None,position)
     /// <summary>Pauses and borrows a timer through its source current-time setter semantics.</summary>
     /// <remarks>Parent cancellation releases this timer without disposing it. Parent muting preserves its callbacks.</remarks>
     member this.Sync(child: Timer, ?position: TimelinePosition) =
         ensureLive()
         if isNull (box child) then nullArg "child"
-        this.Borrow(child,child.Duration,child.Pause,(fun value guard -> if guard() then child.CurrentTime <- value),None,position)
+        this.Borrow(child,child.Duration,child.Pause,(fun value guard -> child.SetTimeGuarded(value,guard)),None,position)
     /// <summary>Pauses and borrows a nested timeline, capturing its total duration and rejecting cycles.</summary>
     member this.Sync(child: Timeline, ?position: TimelinePosition) =
         ensureLive()
         if isNull (box child) then nullArg "child"
         if child.Contains this then invalidArg "child" "Timeline synchronization cannot contain a cycle."
-        this.Borrow(child,child.Duration,child.Pause,(fun value guard -> child.SeekGuarded(value,guard)),Some child,position)
+        this.Borrow(child,child.Duration,child.Pause,(fun value guard -> child.SetTimeGuarded(value,guard)),Some child,position)
 
     /// <summary>Adds a numeric replace track sharing the supplied property's identity with sibling tracks.</summary>
     /// <remarks>
@@ -278,12 +278,12 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         if updateDuration = 0. then invalidArg "milliseconds" "Positive duration rounds to zero at source timing precision."
         let normalizedDuration = if Double.IsPositiveInfinity updateDuration then 1e12 else updateDuration
         finite "position" (offset + normalizedDuration)
-        clock.Pause()
         stopFrame()
         let expected = generation
         let canWrite () = expected = generation && not cancelled
         try
-            renderMode canWrite true PlaybackTickMode.Auto true offset |> ignore
+            clock.Pause()
+            if canWrite() then renderMode canWrite true PlaybackTickMode.Auto true offset |> ignore
             if canWrite() then
                 let siblings =
                     match propertySiblings.TryGetValue property with
@@ -385,6 +385,14 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         seek (fun () -> true) (defaultArg muteCallbacks false) milliseconds
     /// <summary>Samples a borrowed controller with every ancestor's write guard.</summary>
     member internal _.SeekGuarded(milliseconds: float, canWrite: unit -> bool) = seek canWrite false milliseconds
+    /// <summary>Assigns borrowed current time with source setter callbacks and all ancestor write guards.</summary>
+    member internal _.SetTimeGuarded(milliseconds: float, canWrite: unit -> bool) =
+        ensureLive()
+        finite "milliseconds" milliseconds
+        stopFrame()
+        let previous = ancestorLive
+        ancestorLive <- canWrite
+        try clock.SetTimeGuarded(milliseconds, ancestorLive) finally ancestorLive <- previous
     /// <summary>Resumes the current direction with the source clock lead.</summary>
     member _.Resume() = ensureLive(); stopFrame(); clock.Resume()
     /// <summary>Resumes forward playback, mirroring time when reversed.</summary>
@@ -413,11 +421,18 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
     member _.Cancel() = cancel()
     interface IDisposable with member _.Dispose() = cancel()
 
-and private TimelineEntry =
+and [<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>] private TimelineEntry =
     | Property of track: NumericPropertyTrack
     | OwnedTimer of offset: float * child: Timer
     | Borrowed of track: NumericPropertyTrack * nested: Timeline option * pause: (unit -> unit)
     | Callback of offset: float * callback: (unit -> unit) * completed: TimelineCallState
+
+    override this.ToString() =
+        match this with
+        | Property _ -> "Property"
+        | OwnedTimer _ -> "OwnedTimer"
+        | Borrowed _ -> "Borrowed"
+        | Callback _ -> "Callback"
 
     member this.Offset =
         match this with

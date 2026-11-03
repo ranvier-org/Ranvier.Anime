@@ -49,6 +49,7 @@ let private verify (fixture:JsonElement) =
     let mutable timer:Timer option=None
     let mutable borrowedCheck:(JsonElement -> unit) option=None
     let borrowed=ResizeArray<IDisposable>()
+    let mutable resumeBorrowed = fun () -> failtest "No borrowed controller"
     let verifySnapshot timeline snapshot =
         verifyState value timeline snapshot
         timer |> Option.iter(fun timer -> verifyTimer timer (snapshot.GetProperty("children").GetProperty("timer")))
@@ -107,6 +108,7 @@ let private verify (fixture:JsonElement) =
             onPause=(fun child -> borrowedCallback "Pause" (verifyTimer child)),
             onComplete=(fun child -> borrowedCallback "Complete" (verifyTimer child)))
         borrowed.Add child
+        resumeBorrowed <- child.Resume
         borrowedCheck<-Some(verifyTimer child)
         timeline.Sync(child,TimelinePosition.At 25.) |> ignore
     | "syncAnimation" ->
@@ -120,6 +122,7 @@ let private verify (fixture:JsonElement) =
             onPause=(fun child -> borrowedCallback "Pause" (checkNumeric child)),
             onComplete=(fun child -> borrowedCallback "Complete" (checkNumeric child)))
         borrowed.Add child
+        resumeBorrowed <- child.Resume
         borrowedCheck<-Some(checkNumeric child)
         timeline.Sync(child,TimelinePosition.At 25.) |> ignore
     | "syncTimeline" ->
@@ -132,6 +135,7 @@ let private verify (fixture:JsonElement) =
             onPause=(fun child -> borrowedCallback "Pause" (checkNested child)),
             onComplete=(fun child -> borrowedCallback "Complete" (checkNested child)))
         borrowed.Add child
+        resumeBorrowed <- child.Resume
         borrowedCheck<-Some(checkNested child)
         child.Animate(property,100.,100u,TimelinePosition.At 0.,from=0.) |> ignore
         child.Call((fun () -> callback "nestedMid" "Call" active.Value),TimelinePosition.At 50.) |> ignore
@@ -172,6 +176,7 @@ let private verify (fixture:JsonElement) =
         | "seek" -> timeline.Seek(step.GetProperty("time").GetDouble(),muteCallbacks=optionalBool "mute" step)
         | "frame" -> scheduler.Advance(step.GetProperty("after").GetDouble());scheduler.RunFrame()
         | "speed" -> timeline.Speed<-step.GetProperty("value").GetDouble()
+        | "resumeBorrowed" -> resumeBorrowed()
         | "resume" -> timeline.Resume()
         | "play" -> timeline.Play()
         | "reverse" -> timeline.Reverse()
@@ -414,5 +419,69 @@ let private timerLifetimeTests = testList "timeline timer lifetime" [
         Expect.isTrue timeline.Completed "cancelled child releases completion gating"
 ]
 
-let tests = testList "timeline shared playback" [referenceTests;lifetimeTests;timerLifetimeTests]
+
+let private reviewTests = testList "playback review regressions" [
+    testCase "onPause seek supersedes outer property authoring" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let mutable armed=false
+        use timeline=new Timeline(scheduler,onPause=(fun timeline -> if armed then timeline.Seek(20.,muteCallbacks=true)))
+        timeline.Animate(NumericProperty((fun () -> 0.),ignore),100.,100u,TimelinePosition.At 0.) |> ignore
+        timeline.Resume()
+        armed<-true
+        timeline.Animate(NumericProperty((fun () -> 0.),ignore),200.,100u,TimelinePosition.At 100.) |> ignore
+        Expect.equal (timeline.CurrentTime,timeline.Duration) (20.,100.) "inner control prevents publishing/reset"
+
+    testCase "onPause cancellation prevents outer property authoring" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let mutable armed=false
+        use timeline=new Timeline(scheduler,onPause=(fun timeline -> if armed then timeline.Cancel()))
+        timeline.Animate(NumericProperty((fun () -> 0.),ignore),100.,100u,TimelinePosition.At 0.) |> ignore
+        timeline.Resume()
+        armed<-true
+        timeline.Animate(NumericProperty((fun () -> 0.),ignore),200.,100u,TimelinePosition.At 100.) |> ignore
+        Expect.isTrue timeline.Cancelled "terminal callback retained"
+        Expect.equal timeline.Duration 100. "no phantom child"
+
+    testCase "borrowed numeric setter pause cancellation prevents descendant writes" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use parent=new Timeline(scheduler)
+        let mutable value=0.
+        let mutable updates=0
+        use child=new NumericAnimation(scheduler,(fun () -> value),(fun next -> value<-next),100.,100u,
+            onPause=(fun _ -> parent.Cancel()),onUpdate=(fun _ -> updates<-updates+1))
+        parent.Sync child |> ignore
+        child.Resume()
+        parent.Seek 50.
+        Expect.equal (value,updates) (0.,0) "pause callback precedes guarded sampling"
+        Expect.isTrue parent.Cancelled "parent cancelled"
+        Expect.isFalse child.Cancelled "borrowed lifetime remains"
+
+    testCase "borrowed nested setter pause seek supersedes the outer sample" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use parent=new Timeline(scheduler)
+        let mutable once=true
+        use child=new Timeline(scheduler,onPause=(fun _ ->
+            if once then
+                once<-false
+                parent.Seek(20.,muteCallbacks=true)))
+        let mutable value=0.
+        child.Animate(NumericProperty((fun () -> value),(fun next -> value<-next)),100.,100u) |> ignore
+        parent.Sync child |> ignore
+        child.Resume()
+        parent.Seek 75.
+        Expect.equal (parent.CurrentTime,child.CurrentTime,value) (20.,20.,20.) "inner seek survives setter callbacks"
+
+    testCase "borrowed timer setter pause cancellation prevents later callbacks" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use parent=new Timeline(scheduler)
+        let mutable updates=0
+        use child=new Timer(scheduler,100u,onPause=(fun _ -> parent.Cancel()),onUpdate=(fun _ -> updates<-updates+1))
+        parent.Sync child |> ignore
+        child.Resume()
+        parent.Seek 50.
+        Expect.equal (child.CurrentTime,updates) (0.,0) "guard rechecked after pause"
+        Expect.isFalse child.Cancelled "borrowed timer remains reusable"
+]
+
+let tests = testList "timeline shared playback" [referenceTests;lifetimeTests;timerLifetimeTests;reviewTests]
 
