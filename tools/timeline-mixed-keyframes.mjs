@@ -92,7 +92,7 @@ if(process.argv[2]==='--case'){
  const initial=capture(),end=timeline.duration;
  const actions=input.actions??(input.times??[-25,0,10,25,50,75,100,125,150,200,225,250,end/2,end,end+25,125,0]).map(time=>['seek',time]);
  const samples=actions.map(([operation,value])=>{
-  if(operation==='frame'){now+=value;if(!timeline.paused)tick(timeline,(now-timeline._startTime)*timeline._speed,0,0,timeline._fps<engine._fps?timeline.requestTick(now):1);}
+  if(operation==='frame'){now+=value;engine.update();}
   else if(operation==='speed')timeline.speed=value;
   else if(operation==='seekMuted')timeline.seek(value,true);
   else if(operation==='completeMuted')timeline.complete(true);

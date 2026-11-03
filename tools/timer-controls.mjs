@@ -4,7 +4,10 @@ import {resolve, dirname} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const root = process.env.RANVIER_ANIME_ROOT ?? resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const scheduledCaseIndex = process.argv.indexOf('--scheduled-case');
+const scheduledCaseName = scheduledCaseIndex < 0 ? null : process.argv[scheduledCaseIndex + 1];
+if (scheduledCaseIndex >= 0 && !scheduledCaseName) throw new Error('Missing scheduled case name');
 const upstream = resolve(root, 'upstream/anime');
 const revision = execFileSync('git', ['-C', upstream, 'rev-parse', 'HEAD'], {encoding: 'utf8'}).trim();
 if (revision !== '2c9cf8ea00329f6768c7d7902252ed977d75ce42' ||
@@ -66,7 +69,7 @@ for (let index = 0; index < 24; index++) {
     steps:[seek(0), seek(total / 3), {op:'alternate'}, {op:'pause'}, {op:'reverse'}, tickAt(total / 2),
       {op:'speed', value:0.5}, {op:'play'}, seek(total, true), {op:'reset'}, {op:'restart'}, tickAt(total), {op:'pause'}]});
 }
-const fixtures = cases.map(({name, parameters, steps}) => {
+const fixtures = scheduledCaseName ? [] : cases.map(({name, parameters, steps}) => {
   const events = [];
   const callbacks = Object.fromEntries(['Begin','BeforeUpdate','Update','Loop','Pause','Complete'].map(event =>
     ['on' + event, timer => events.push({event, state:snapshot(timer)})]));
@@ -121,8 +124,7 @@ const scheduledCases = [
   {name:'scheduledIterationSetters', parameters:{duration:100, loop:2, loopDelay:25}, steps:[{op:'currentIteration',value:1}, {op:'resume'}, frame(25), {op:'iterationCurrentTime',value:50}, frame(25), {op:'currentIteration',value:20}, {op:'pause'}]},
   {name:'scheduledReversedSetter', parameters:{duration:100}, steps:[{op:'reversed',value:true}, frame(25), {op:'reversed',value:false}, frame(25), {op:'pause'}]},
 ];
-const scheduled = scheduledCases.map(({name, parameters, steps}) => {
-  clockNow = 0;
+const runScheduled = ({name, parameters, steps}) => {
   const events = [];
   const capture = timer => ({...snapshot(timer), fps:timer.fps,
     ...(name.startsWith('stretch') ? {duration:number(timer.duration),iterationDuration:number(timer.iterationDuration),delay:number(timer._delay),loopDelay:number(timer._loopDelay)} : {})});
@@ -134,9 +136,7 @@ const scheduled = scheduledCases.map(({name, parameters, steps}) => {
     events.length = 0;
     if (step.op === 'frame' || step.op === 'advance') {
       clockNow += step.after;
-      if (step.op === 'frame' && !timer.paused) {
-        tick(timer, (clockNow - timer._startTime) * timer._speed, 0, 0, timer._fps < engine._fps ? timer.requestTick(clockNow) : 1);
-      }
+      if (step.op === 'frame') engine.update();
     } else if (step.op === 'seek') timer.seek(step.time, step.mute);
     else if (['speed','fps','currentTime','progress','iterationProgress','iterationCurrentTime','currentIteration','reversed'].includes(step.op)) timer[step.op] = step.value;
     else if (step.op === 'complete') timer.complete(step.mute);
@@ -146,8 +146,16 @@ const scheduled = scheduledCases.map(({name, parameters, steps}) => {
   });
   timer.cancel();
   return {name, parameters, initial, samples};
-});
+};
+if (scheduledCaseName !== null) {
+  const selected = scheduledCases.find(({name}) => name === scheduledCaseName);
+  if (!selected) throw new Error(`Unknown scheduled case: ${scheduledCaseName}`);
+  process.stdout.write(JSON.stringify(runScheduled(selected)));
+  process.exit(0);
+}
+const scheduled = scheduledCases.map(({name}) => JSON.parse(execFileSync('rtk',
+  ['proxy', process.execPath, fileURLToPath(import.meta.url), '--scheduled-case', name], {encoding:'utf8'})));
 const fixture = {upstreamCommit:revision, version:JSON.parse(readFileSync(resolve(upstream,'package.json'),'utf8')).version, fixtures, scheduled};
 const text = JSON.stringify(fixture,null,2) + '\n';
-writeFileSync(resolve(root,'tests/reference/timer-controls.json'),text);
+writeFileSync(process.env.RANVIER_ANIME_TIMER_CONTROLS_OUTPUT ?? resolve(root,'tests/reference/timer-controls.json'),text);
 console.log(`Captured ${fixtures.length} timer control and ${scheduled.length} scheduled traces; SHA256 ${createHash('sha256').update(text).digest('hex')}`);

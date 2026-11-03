@@ -19,6 +19,7 @@
     <Compile Include="PlaybackTiming.fs" />
     <Compile Include="PlaybackState.fs" />
     <Compile Include="ScopeRegistration.fs" />
+    <Compile Include="EngineFrames.fs" />
     <Compile Include="Timer.fs" />
     <Compile Include="Scope.fs" />
     <Compile Include="ScopeRoots.fs" />

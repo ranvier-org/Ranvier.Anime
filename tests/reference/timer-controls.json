@@ -32354,79 +32354,18 @@
             "op": "frame",
             "after": 0
           },
-          "events": [
-            {
-              "event": "Begin",
-              "state": {
-                "time": 12,
-                "raw": 12,
-                "iterationTime": 12,
-                "rawIterationTime": 12,
-                "iteration": 0,
-                "progress": 0.12,
-                "iterationProgress": 0.12,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0,
-                "speed": 1,
-                "fps": 240
-              }
-            },
-            {
-              "event": "BeforeUpdate",
-              "state": {
-                "time": 12,
-                "raw": 12,
-                "iterationTime": 12,
-                "rawIterationTime": 12,
-                "iteration": 0,
-                "progress": 0.12,
-                "iterationProgress": 0.12,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0,
-                "speed": 1,
-                "fps": 240
-              }
-            },
-            {
-              "event": "Update",
-              "state": {
-                "time": 12,
-                "raw": 12,
-                "iterationTime": 12,
-                "rawIterationTime": 12,
-                "iteration": 0,
-                "progress": 0.12,
-                "iterationProgress": 0.12,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0,
-                "speed": 1,
-                "fps": 240
-              }
-            }
-          ],
+          "events": [],
           "state": {
-            "time": 12,
-            "raw": 12,
-            "iterationTime": 12,
-            "rawIterationTime": 12,
+            "time": 0,
+            "raw": 0,
+            "iterationTime": 0,
+            "rawIterationTime": 0,
             "iteration": 0,
-            "progress": 0.12,
-            "iterationProgress": 0.12,
+            "progress": 0,
+            "iterationProgress": 0,
             "backwards": false,
             "reversed": false,
-            "began": true,
+            "began": false,
             "completed": false,
             "paused": false,
             "deltaTime": 0,
@@ -32441,6 +32380,26 @@
           },
           "events": [
             {
+              "event": "Begin",
+              "state": {
+                "time": 37,
+                "raw": 37,
+                "iterationTime": 37,
+                "rawIterationTime": 37,
+                "iteration": 0,
+                "progress": 0.37,
+                "iterationProgress": 0.37,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240
+              }
+            },
+            {
               "event": "BeforeUpdate",
               "state": {
                 "time": 37,
@@ -32455,7 +32414,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 12,
+                "deltaTime": 0,
                 "speed": 1,
                 "fps": 240
               }
@@ -32475,7 +32434,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 12,
+                "deltaTime": 0,
                 "speed": 1,
                 "fps": 240
               }
@@ -32494,7 +32453,7 @@
             "began": true,
             "completed": false,
             "paused": false,
-            "deltaTime": 12,
+            "deltaTime": 0,
             "speed": 1,
             "fps": 240
           }
@@ -32520,7 +32479,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 25,
+                "deltaTime": 37,
                 "speed": 1,
                 "fps": 240
               }
@@ -32540,7 +32499,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 25,
+                "deltaTime": 37,
                 "speed": 1,
                 "fps": 240
               }
@@ -32560,7 +32519,7 @@
                 "began": true,
                 "completed": true,
                 "paused": true,
-                "deltaTime": 25,
+                "deltaTime": 37,
                 "speed": 1,
                 "fps": 240
               }
@@ -32579,7 +32538,7 @@
             "began": true,
             "completed": true,
             "paused": true,
-            "deltaTime": 25,
+            "deltaTime": 37,
             "speed": 1,
             "fps": 240
           }
@@ -32603,7 +32562,7 @@
             "began": true,
             "completed": true,
             "paused": true,
-            "deltaTime": 25,
+            "deltaTime": 37,
             "speed": 1,
             "fps": 240
           }
@@ -34474,17 +34433,41 @@
             "op": "frame",
             "after": 0
           },
+          "events": [],
+          "state": {
+            "time": 20,
+            "raw": 20,
+            "iterationTime": 20,
+            "rawIterationTime": 20,
+            "iteration": 0,
+            "progress": 0.2,
+            "iterationProgress": 0.2,
+            "backwards": false,
+            "reversed": false,
+            "began": false,
+            "completed": false,
+            "paused": false,
+            "deltaTime": 20,
+            "speed": 1,
+            "fps": 240
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 25
+          },
           "events": [
             {
               "event": "Begin",
               "state": {
-                "time": 32,
-                "raw": 32,
-                "iterationTime": 32,
-                "rawIterationTime": 32,
+                "time": 57,
+                "raw": 57,
+                "iterationTime": 57,
+                "rawIterationTime": 57,
                 "iteration": 0,
-                "progress": 0.32,
-                "iterationProgress": 0.32,
+                "progress": 0.57,
+                "iterationProgress": 0.57,
                 "backwards": false,
                 "reversed": false,
                 "began": true,
@@ -34498,71 +34481,6 @@
             {
               "event": "BeforeUpdate",
               "state": {
-                "time": 32,
-                "raw": 32,
-                "iterationTime": 32,
-                "rawIterationTime": 32,
-                "iteration": 0,
-                "progress": 0.32,
-                "iterationProgress": 0.32,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0,
-                "speed": 1,
-                "fps": 240
-              }
-            },
-            {
-              "event": "Update",
-              "state": {
-                "time": 32,
-                "raw": 32,
-                "iterationTime": 32,
-                "rawIterationTime": 32,
-                "iteration": 0,
-                "progress": 0.32,
-                "iterationProgress": 0.32,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0,
-                "speed": 1,
-                "fps": 240
-              }
-            }
-          ],
-          "state": {
-            "time": 32,
-            "raw": 32,
-            "iterationTime": 32,
-            "rawIterationTime": 32,
-            "iteration": 0,
-            "progress": 0.32,
-            "iterationProgress": 0.32,
-            "backwards": false,
-            "reversed": false,
-            "began": true,
-            "completed": false,
-            "paused": false,
-            "deltaTime": 0,
-            "speed": 1,
-            "fps": 240
-          }
-        },
-        {
-          "step": {
-            "op": "frame",
-            "after": 25
-          },
-          "events": [
-            {
-              "event": "BeforeUpdate",
-              "state": {
                 "time": 57,
                 "raw": 57,
                 "iterationTime": 57,
@@ -34575,7 +34493,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 12,
+                "deltaTime": 0,
                 "speed": 1,
                 "fps": 240
               }
@@ -34595,7 +34513,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 12,
+                "deltaTime": 0,
                 "speed": 1,
                 "fps": 240
               }
@@ -34614,7 +34532,7 @@
             "began": true,
             "completed": false,
             "paused": false,
-            "deltaTime": 12,
+            "deltaTime": 0,
             "speed": 1,
             "fps": 240
           }
@@ -34640,7 +34558,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 25,
+                "deltaTime": 37,
                 "speed": 1,
                 "fps": 240
               }
@@ -34660,7 +34578,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 25,
+                "deltaTime": 37,
                 "speed": 1,
                 "fps": 240
               }
@@ -34680,7 +34598,7 @@
                 "began": true,
                 "completed": true,
                 "paused": true,
-                "deltaTime": 25,
+                "deltaTime": 37,
                 "speed": 1,
                 "fps": 240
               }
@@ -34699,7 +34617,7 @@
             "began": true,
             "completed": true,
             "paused": true,
-            "deltaTime": 25,
+            "deltaTime": 37,
             "speed": 1,
             "fps": 240
           }
@@ -34866,39 +34784,18 @@
             "op": "frame",
             "after": 1
           },
-          "events": [
-            {
-              "event": "Begin",
-              "state": {
-                "time": 13,
-                "raw": 13,
-                "iterationTime": 13,
-                "rawIterationTime": 13,
-                "iteration": 0,
-                "progress": 0.13,
-                "iterationProgress": 0.13,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0,
-                "speed": 1,
-                "fps": 20
-              }
-            }
-          ],
+          "events": [],
           "state": {
-            "time": 13,
-            "raw": 13,
-            "iterationTime": 13,
-            "rawIterationTime": 13,
+            "time": 0,
+            "raw": 0,
+            "iterationTime": 0,
+            "rawIterationTime": 0,
             "iteration": 0,
-            "progress": 0.13,
-            "iterationProgress": 0.13,
+            "progress": 0,
+            "iterationProgress": 0,
             "backwards": false,
             "reversed": false,
-            "began": true,
+            "began": false,
             "completed": false,
             "paused": false,
             "deltaTime": 0,
@@ -34911,7 +34808,28 @@
             "op": "frame",
             "after": 20
           },
-          "events": [],
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 33,
+                "raw": 33,
+                "iterationTime": 33,
+                "rawIterationTime": 33,
+                "iteration": 0,
+                "progress": 0.33,
+                "iterationProgress": 0.33,
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 20
+              }
+            }
+          ],
           "state": {
             "time": 33,
             "raw": 33,
@@ -35002,13 +34920,13 @@
           },
           "events": [],
           "state": {
-            "time": 59,
-            "raw": 59,
-            "iterationTime": 59,
-            "rawIterationTime": 59,
+            "time": 58,
+            "raw": 58,
+            "iterationTime": 58,
+            "rawIterationTime": 58,
             "iteration": 0,
-            "progress": 0.59,
-            "iterationProgress": 0.59,
+            "progress": 0.58,
+            "iterationProgress": 0.58,
             "backwards": false,
             "reversed": false,
             "began": true,
@@ -35453,62 +35371,21 @@
             "op": "frame",
             "after": 1
           },
-          "events": [
-            {
-              "event": "BeforeUpdate",
-              "state": {
-                "time": 50,
-                "raw": 50,
-                "iterationTime": 50,
-                "rawIterationTime": 50,
-                "iteration": 0,
-                "progress": 0.1666666667,
-                "iterationProgress": 0.1666666667,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 16,
-                "speed": 1,
-                "fps": 240
-              }
-            },
-            {
-              "event": "Update",
-              "state": {
-                "time": 50,
-                "raw": 50,
-                "iterationTime": 50,
-                "rawIterationTime": 50,
-                "iteration": 0,
-                "progress": 0.1666666667,
-                "iterationProgress": 0.1666666667,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 16,
-                "speed": 1,
-                "fps": 240
-              }
-            }
-          ],
+          "events": [],
           "state": {
-            "time": 50,
-            "raw": 50,
-            "iterationTime": 50,
-            "rawIterationTime": 50,
+            "time": 49,
+            "raw": 49,
+            "iterationTime": 49,
+            "rawIterationTime": 49,
             "iteration": 0,
-            "progress": 0.1666666667,
-            "iterationProgress": 0.1666666667,
+            "progress": 0.1633333333,
+            "iterationProgress": 0.1633333333,
             "backwards": false,
             "reversed": false,
             "began": true,
             "completed": false,
             "paused": false,
-            "deltaTime": 16,
+            "deltaTime": 1,
             "speed": 1,
             "fps": 240
           }
@@ -35520,19 +35397,19 @@
           },
           "events": [],
           "state": {
-            "time": 50,
-            "raw": 50,
-            "iterationTime": 50,
-            "rawIterationTime": 50,
+            "time": 49,
+            "raw": 49,
+            "iterationTime": 49,
+            "rawIterationTime": 49,
             "iteration": 0,
-            "progress": 0.1666666667,
-            "iterationProgress": 0.1666666667,
+            "progress": 0.1633333333,
+            "iterationProgress": 0.1633333333,
             "backwards": false,
             "reversed": false,
             "began": true,
             "completed": false,
             "paused": false,
-            "deltaTime": 16,
+            "deltaTime": 1,
             "speed": 1,
             "fps": 1e-11
           }
@@ -35556,7 +35433,7 @@
             "began": true,
             "completed": false,
             "paused": false,
-            "deltaTime": 16,
+            "deltaTime": 1,
             "speed": 1,
             "fps": 1e-11
           }
@@ -35920,79 +35797,18 @@
             "op": "frame",
             "after": 1
           },
-          "events": [
-            {
-              "event": "Begin",
-              "state": {
-                "time": 13,
-                "raw": 13,
-                "iterationTime": 0,
-                "rawIterationTime": 13,
-                "iteration": 0,
-                "progress": 0.26,
-                "iterationProgress": 1,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0,
-                "speed": 1,
-                "fps": 240
-              }
-            },
-            {
-              "event": "BeforeUpdate",
-              "state": {
-                "time": 13,
-                "raw": 13,
-                "iterationTime": 0,
-                "rawIterationTime": 13,
-                "iteration": 0,
-                "progress": 0.26,
-                "iterationProgress": 1,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0,
-                "speed": 1,
-                "fps": 240
-              }
-            },
-            {
-              "event": "Update",
-              "state": {
-                "time": 13,
-                "raw": 13,
-                "iterationTime": 0,
-                "rawIterationTime": 13,
-                "iteration": 0,
-                "progress": 0.26,
-                "iterationProgress": 1,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0,
-                "speed": 1,
-                "fps": 240
-              }
-            }
-          ],
+          "events": [],
           "state": {
-            "time": 13,
-            "raw": 13,
+            "time": 0,
+            "raw": 0,
             "iterationTime": 0,
-            "rawIterationTime": 13,
+            "rawIterationTime": 0,
             "iteration": 0,
-            "progress": 0.26,
-            "iterationProgress": 1,
+            "progress": 0,
+            "iterationProgress": "NaN",
             "backwards": false,
             "reversed": false,
-            "began": true,
+            "began": false,
             "completed": false,
             "paused": false,
             "deltaTime": 0,
@@ -36006,6 +35822,26 @@
             "after": 12
           },
           "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "time": 25,
+                "raw": 25,
+                "iterationTime": 0,
+                "rawIterationTime": 0,
+                "iteration": 1,
+                "progress": 0.5,
+                "iterationProgress": "NaN",
+                "backwards": false,
+                "reversed": false,
+                "began": true,
+                "completed": false,
+                "paused": false,
+                "deltaTime": 0,
+                "speed": 1,
+                "fps": 240
+              }
+            },
             {
               "event": "Loop",
               "state": {
@@ -36041,7 +35877,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 13,
+                "deltaTime": 0,
                 "speed": 1,
                 "fps": 240
               }
@@ -36061,7 +35897,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 13,
+                "deltaTime": 0,
                 "speed": 1,
                 "fps": 240
               }
@@ -36080,7 +35916,7 @@
             "began": true,
             "completed": false,
             "paused": false,
-            "deltaTime": 13,
+            "deltaTime": 0,
             "speed": 1,
             "fps": 240
           }
@@ -36106,7 +35942,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 13,
+                "deltaTime": 0,
                 "speed": 1,
                 "fps": 240
               }
@@ -36126,7 +35962,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 12,
+                "deltaTime": 25,
                 "speed": 1,
                 "fps": 240
               }
@@ -36146,7 +35982,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 12,
+                "deltaTime": 25,
                 "speed": 1,
                 "fps": 240
               }
@@ -36165,7 +36001,7 @@
             "began": true,
             "completed": false,
             "paused": false,
-            "deltaTime": 12,
+            "deltaTime": 25,
             "speed": 1,
             "fps": 240
           }
@@ -36335,62 +36171,21 @@
             "op": "frame",
             "after": 1
           },
-          "events": [
-            {
-              "event": "BeforeUpdate",
-              "state": {
-                "time": 0.23,
-                "raw": 0.23,
-                "iterationTime": 0.125,
-                "rawIterationTime": 0.23,
-                "iteration": 0,
-                "progress": 0.184,
-                "iterationProgress": 1,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0.1,
-                "speed": 0.01,
-                "fps": 240
-              }
-            },
-            {
-              "event": "Update",
-              "state": {
-                "time": 0.23,
-                "raw": 0.23,
-                "iterationTime": 0.125,
-                "rawIterationTime": 0.23,
-                "iteration": 0,
-                "progress": 0.184,
-                "iterationProgress": 1,
-                "backwards": false,
-                "reversed": false,
-                "began": true,
-                "completed": false,
-                "paused": false,
-                "deltaTime": 0.1,
-                "speed": 0.01,
-                "fps": 240
-              }
-            }
-          ],
+          "events": [],
           "state": {
-            "time": 0.23,
-            "raw": 0.23,
-            "iterationTime": 0.125,
-            "rawIterationTime": 0.23,
+            "time": 0.1,
+            "raw": 0.1,
+            "iterationTime": 0.1,
+            "rawIterationTime": 0.1,
             "iteration": 0,
-            "progress": 0.184,
-            "iterationProgress": 1,
+            "progress": 0.08,
+            "iterationProgress": 0.8,
             "backwards": false,
             "reversed": false,
             "began": true,
             "completed": false,
             "paused": false,
-            "deltaTime": 0.1,
+            "deltaTime": 0,
             "speed": 0.01,
             "fps": 240
           }
@@ -36416,7 +36211,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 0.13,
+                "deltaTime": 0.1,
                 "speed": 0.01,
                 "fps": 240
               }
@@ -36436,7 +36231,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 0.13,
+                "deltaTime": 0.1,
                 "speed": 0.01,
                 "fps": 240
               }
@@ -36455,7 +36250,7 @@
             "began": true,
             "completed": false,
             "paused": false,
-            "deltaTime": 0.13,
+            "deltaTime": 0.1,
             "speed": 0.01,
             "fps": 240
           }
@@ -36481,7 +36276,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 0.13,
+                "deltaTime": 0.1,
                 "speed": 0.01,
                 "fps": 240
               }
@@ -36501,7 +36296,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 0.1,
+                "deltaTime": 0.23,
                 "speed": 0.01,
                 "fps": 240
               }
@@ -36521,7 +36316,7 @@
                 "began": true,
                 "completed": false,
                 "paused": false,
-                "deltaTime": 0.1,
+                "deltaTime": 0.23,
                 "speed": 0.01,
                 "fps": 240
               }
@@ -36541,7 +36336,7 @@
                 "began": true,
                 "completed": true,
                 "paused": true,
-                "deltaTime": 0.1,
+                "deltaTime": 0.23,
                 "speed": 0.01,
                 "fps": 240
               }
@@ -36560,7 +36355,7 @@
             "began": true,
             "completed": true,
             "paused": true,
-            "deltaTime": 0.1,
+            "deltaTime": 0.23,
             "speed": 0.01,
             "fps": 240
           }

@@ -59,7 +59,7 @@ for (let index=0; index<24; index++) {
   cases.push({name:'generatedAnimation'+index,parameters:{duration,loop,loopDelay,delay,reversed:index%2===0,alternate:index%5<3,ease:index%2?'inQuad':'linear'},
     steps:[0,duration/2,duration,duration+loopDelay/2,(duration+loopDelay)*1.5,total,total,(duration+loopDelay)/4,0].map(seek)});
 }
-const fixtures = cases.map(({name, parameters, steps = times.map(seek), easing}) => {
+const replay = ({name, parameters, steps = times.map(seek), easing}) => {
   now = 0;
   const target = {value:0};
   const snapshot = timer => ({value:target.value,time:number(timer.currentTime),iterationTime:number(timer.iterationCurrentTime),
@@ -82,7 +82,7 @@ const fixtures = cases.map(({name, parameters, steps = times.map(seek), easing})
     if (step.op === 'seek') animation.seek(step.time,step.mute);
     else if (step.op === 'frame') {
       now += step.after;
-      if (!animation.paused) tick(animation,(now-animation._startTime)*animation._speed,0,0,animation._fps < engine._fps ? animation.requestTick(now) : 1);
+      engine.update();
     } else if (step.op === 'speed') animation.speed = step.value;
     else if (step.op === 'complete') animation.complete(step.mute);
     else if (step.op === 'stretch') animation.stretch(step.value);
@@ -91,8 +91,18 @@ const fixtures = cases.map(({name, parameters, steps = times.map(seek), easing})
   });
   animation.cancel();
   return {name,parameters,easing,iterationDuration:initial.iterationDuration ?? animation.iterationDuration,duration:initial.duration ?? animation.duration,initial,samples};
-});
+};
+const workerIndex = process.argv.indexOf('--case');
+if (workerIndex >= 0) {
+  const index = Number(process.argv[workerIndex + 1]);
+  if (!Number.isInteger(index) || index < 0 || index >= cases.length) throw new Error('Invalid oracle case index');
+  process.stdout.write(JSON.stringify(replay(cases[index])));
+} else {
+const fixtures = cases.map((_, index) => JSON.parse(execFileSync('rtk',
+  ['proxy', process.execPath, fileURLToPath(import.meta.url), '--case', String(index)],
+  {encoding:'utf8', maxBuffer:8*1024*1024})));
 const text = JSON.stringify({upstreamCommit:revision,version:JSON.parse(readFileSync(resolve(upstream,'package.json'),'utf8')).version,
   initialization:'Both implementations are explicitly reset before the initial snapshot; the native constructor captures accessors without writing.',fixtures},null,2)+'\n';
 writeFileSync(resolve(root,'tests/reference/animation-playback.json'),text);
 console.log(`Captured ${fixtures.length} animation playback traces; SHA256 ${createHash('sha256').update(text).digest('hex')}`);
+}

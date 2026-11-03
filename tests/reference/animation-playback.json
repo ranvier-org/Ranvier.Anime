@@ -11547,24 +11547,11 @@
             "op": "frame",
             "after": 1
           },
-          "events": [
-            {
-              "event": "Begin",
-              "state": {
-                "value": 0,
-                "time": 13,
-                "iterationTime": 13,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "completed": false
-              }
-            }
-          ],
+          "events": [],
           "state": {
             "value": 0,
-            "time": 13,
-            "iterationTime": 13,
+            "time": 0,
+            "iterationTime": 0,
             "iteration": 0,
             "backwards": false,
             "paused": false,
@@ -11576,7 +11563,20 @@
             "op": "frame",
             "after": 20
           },
-          "events": [],
+          "events": [
+            {
+              "event": "Begin",
+              "state": {
+                "value": 0,
+                "time": 33,
+                "iterationTime": 33,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "completed": false
+              }
+            }
+          ],
           "state": {
             "value": 0,
             "time": 33,
@@ -11648,8 +11648,8 @@
           "events": [],
           "state": {
             "value": 57.99999999999999,
-            "time": 59,
-            "iterationTime": 59,
+            "time": 58,
+            "iterationTime": 58,
             "iteration": 0,
             "backwards": false,
             "paused": false,

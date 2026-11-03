@@ -496,6 +496,10 @@ let root = Command.root {
             run "rtk node tools/scope-reference.mjs"
             run "rtk node tools/scope-clock-defaults-reference.mjs"
             run "rtk node tools/scope-animation-defaults-reference.mjs"
+            run "rtk node tools/engine-reference.mjs"
+            run "rtk node tools/engine-roots-reference.mjs"
+            run "rtk node tools/engine-quiescence-reference.mjs"
+            run "rtk node tools/engine-idle-phase-reference.mjs"
             run "rtk node tools/timeline-revert.mjs"
         }
     }
@@ -544,6 +548,10 @@ let root = Command.root {
             run "rtk node tools/scope-reference.mjs"
             run "rtk node tools/scope-clock-defaults-reference.mjs"
             run "rtk node tools/scope-animation-defaults-reference.mjs"
+            run "rtk node tools/engine-reference.mjs"
+            run "rtk node tools/engine-roots-reference.mjs"
+            run "rtk node tools/engine-quiescence-reference.mjs"
+            run "rtk node tools/engine-idle-phase-reference.mjs"
         }
     }
 }

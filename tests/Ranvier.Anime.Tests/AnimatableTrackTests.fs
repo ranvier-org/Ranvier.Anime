@@ -315,8 +315,7 @@ let groupTests = testList "animatable group callbacks" [
                 member _.Timeout(delay,callback)=counted(host.Timeout(delay,callback))
                 member _.Microtask callback=counted(host.Microtask callback)
                 member _.Dispose()=()}
-        let queue=AnimatableFrameQueue(monitor)
-        let root=queue.CreateScheduler()
+        let root=AnimatableFrames.createRoot monitor
         let mutable calls=0
         root.Microtask(fun () -> calls<-calls+1) |> ignore
         scheduler.RunMicrotasks()
@@ -396,8 +395,7 @@ let groupTests = testList "animatable group callbacks" [
         Expect.throwsT<ObjectDisposedException> (fun () -> group.Add([|AnimatableValue(Number 0.,None,false,None)|],(fun _ _ -> ()),100.,PlaybackOptions.Default,id,id,4) |> ignore) "terminal group lifetime"
     testCase "root adapters preserve order and keep the host scheduler alive after disposal" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
-        let queue=AnimatableFrameQueue(scheduler)
-        let first,second,later=queue.CreateScheduler(),queue.CreateScheduler(),queue.CreateScheduler()
+        let first,second,later=AnimatableFrames.createRoot scheduler,AnimatableFrames.createRoot scheduler,AnimatableFrames.createRoot scheduler
         let events=ResizeArray<string>()
         let rec tickFirst _ =
             events.Add "first"
@@ -417,8 +415,7 @@ let groupTests = testList "animatable group callbacks" [
         Expect.equal events[events.Count-1] "host" "host remains usable"
     testCase "disposing an old frame lease cannot cancel its replacement" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
-        let queue=AnimatableFrameQueue(scheduler)
-        use root=queue.CreateScheduler()
+        use root=AnimatableFrames.createRoot scheduler
         let events=ResizeArray<string>()
         let old=root.Frame(fun _ -> events.Add "stale")
         root.Frame(fun _ -> events.Add "current") |> ignore

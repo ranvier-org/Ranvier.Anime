@@ -84100,75 +84100,23 @@
           "state": {
             "targets": [
               {
-                "x": 13,
-                "y": 26.933333333333334
+                "x": 0,
+                "y": 20
               }
             ],
-            "time": 13,
-            "iterationTime": 13,
+            "time": 0,
+            "iterationTime": 0,
             "paused": false,
             "completed": false,
             "backwards": false,
-            "events": [
-              {
-                "event": "Begin",
-                "time": 13,
-                "targets": [
-                  {
-                    "x": 0,
-                    "y": 20
-                  }
-                ]
-              },
-              {
-                "event": "BeforeUpdate",
-                "time": 13,
-                "targets": [
-                  {
-                    "x": 0,
-                    "y": 20
-                  }
-                ]
-              },
-              {
-                "event": "Render",
-                "time": 13,
-                "targets": [
-                  {
-                    "x": 13,
-                    "y": 26.933333333333334
-                  }
-                ]
-              },
-              {
-                "event": "Update",
-                "time": 13,
-                "targets": [
-                  {
-                    "x": 13,
-                    "y": 26.933333333333334
-                  }
-                ]
-              }
-            ],
+            "events": [],
             "duration": 1040,
             "iterationDuration": 300,
-            "writes": [
-              {
-                "target": 0,
-                "property": "x",
-                "value": 13
-              },
-              {
-                "target": 0,
-                "property": "y",
-                "value": 26.933333333333334
-              }
-            ],
+            "writes": [],
             "tweenTimes": [
-              13,
               0,
-              13,
+              0,
+              0,
               0
             ]
           }
@@ -84190,12 +84138,22 @@
             "backwards": false,
             "events": [
               {
+                "event": "Begin",
+                "time": 38,
+                "targets": [
+                  {
+                    "x": 0,
+                    "y": 20
+                  }
+                ]
+              },
+              {
                 "event": "BeforeUpdate",
                 "time": 38,
                 "targets": [
                   {
-                    "x": 13,
-                    "y": 26.933333333333334
+                    "x": 0,
+                    "y": 20
                   }
                 ]
               },
@@ -85788,23 +85746,12 @@
                 "y": 20
               }
             ],
-            "time": 13,
-            "iterationTime": 13,
+            "time": 0,
+            "iterationTime": 0,
             "paused": false,
             "completed": false,
             "backwards": false,
-            "events": [
-              {
-                "event": "Begin",
-                "time": 13,
-                "targets": [
-                  {
-                    "x": 0,
-                    "y": 20
-                  }
-                ]
-              }
-            ],
+            "events": [],
             "duration": 1040,
             "iterationDuration": 300,
             "writes": [],
@@ -85831,7 +85778,18 @@
             "paused": false,
             "completed": false,
             "backwards": false,
-            "events": [],
+            "events": [
+              {
+                "event": "Begin",
+                "time": 38,
+                "targets": [
+                  {
+                    "x": 0,
+                    "y": 20
+                  }
+                ]
+              }
+            ],
             "duration": 1040,
             "iterationDuration": 300,
             "writes": [],
@@ -87389,11 +87347,11 @@
                 "y": 20
               }
             ],
-            "time": -27,
+            "time": -40,
             "iterationTime": 0,
             "paused": false,
             "completed": false,
-            "backwards": false,
+            "backwards": true,
             "events": [],
             "duration": 1040,
             "iterationDuration": 300,
@@ -88989,11 +88947,11 @@
                 "y": 20
               }
             ],
-            "time": -27,
+            "time": -40,
             "iterationTime": 0,
             "paused": false,
             "completed": false,
-            "backwards": false,
+            "backwards": true,
             "events": [],
             "duration": 1040,
             "iterationDuration": 300,
@@ -90543,75 +90501,23 @@
           "state": {
             "targets": [
               {
-                "x": 33,
-                "y": 37.6
+                "x": 20,
+                "y": 30.666666666666664
               }
             ],
-            "time": 33,
-            "iterationTime": 33,
+            "time": 20,
+            "iterationTime": 20,
             "paused": false,
             "completed": false,
             "backwards": false,
-            "events": [
-              {
-                "event": "Begin",
-                "time": 33,
-                "targets": [
-                  {
-                    "x": 20,
-                    "y": 30.666666666666664
-                  }
-                ]
-              },
-              {
-                "event": "BeforeUpdate",
-                "time": 33,
-                "targets": [
-                  {
-                    "x": 20,
-                    "y": 30.666666666666664
-                  }
-                ]
-              },
-              {
-                "event": "Render",
-                "time": 33,
-                "targets": [
-                  {
-                    "x": 33,
-                    "y": 37.6
-                  }
-                ]
-              },
-              {
-                "event": "Update",
-                "time": 33,
-                "targets": [
-                  {
-                    "x": 33,
-                    "y": 37.6
-                  }
-                ]
-              }
-            ],
+            "events": [],
             "duration": 1040,
             "iterationDuration": 300,
-            "writes": [
-              {
-                "target": 0,
-                "property": "x",
-                "value": 33
-              },
-              {
-                "target": 0,
-                "property": "y",
-                "value": 37.6
-              }
-            ],
+            "writes": [],
             "tweenTimes": [
-              33,
+              20,
               0,
-              33,
+              20,
               0
             ]
           }
@@ -90633,12 +90539,22 @@
             "backwards": false,
             "events": [
               {
+                "event": "Begin",
+                "time": 58,
+                "targets": [
+                  {
+                    "x": 20,
+                    "y": 30.666666666666664
+                  }
+                ]
+              },
+              {
                 "event": "BeforeUpdate",
                 "time": 58,
                 "targets": [
                   {
-                    "x": 33,
-                    "y": 37.6
+                    "x": 20,
+                    "y": 30.666666666666664
                   }
                 ]
               },
@@ -92231,23 +92147,12 @@
                 "y": 30.666666666666664
               }
             ],
-            "time": 33,
-            "iterationTime": 33,
+            "time": 20,
+            "iterationTime": 20,
             "paused": false,
             "completed": false,
             "backwards": false,
-            "events": [
-              {
-                "event": "Begin",
-                "time": 33,
-                "targets": [
-                  {
-                    "x": 20,
-                    "y": 30.666666666666664
-                  }
-                ]
-              }
-            ],
+            "events": [],
             "duration": 1040,
             "iterationDuration": 300,
             "writes": [],
@@ -92274,7 +92179,18 @@
             "paused": false,
             "completed": false,
             "backwards": false,
-            "events": [],
+            "events": [
+              {
+                "event": "Begin",
+                "time": 58,
+                "targets": [
+                  {
+                    "x": 20,
+                    "y": 30.666666666666664
+                  }
+                ]
+              }
+            ],
             "duration": 1040,
             "iterationDuration": 300,
             "writes": [],

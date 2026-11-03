@@ -195,9 +195,12 @@ let private lifetimeTests = testList "timer lifetime and inputs" [
         timer.Resume()
         Expect.equal clock.LiveCount 1 "one frame"
         timer.Cancel()
-        Expect.equal clock.LiveCount 0 "subscription disposed"
+        Expect.equal clock.LiveCount 1 "shared source cleanup remains scheduled"
         clock.Deliver 50.
-        Expect.equal updates 0 "stale callback rejected"
+        Expect.equal updates 0 "cancelled client callback rejected"
+        Expect.equal clock.LiveCount 1 "source cleanup prequeues one drain frame"
+        clock.Deliver 75.
+        Expect.equal (clock.LiveCount,updates) (0,0) "bounded engine cleanup drains without client callbacks"
         Expect.throwsT<ObjectDisposedException> timer.Resume "terminal cancellation"
 
     testCase "a same-frame seek suppresses outer update and queues one replacement frame" <| fun _ ->
@@ -276,7 +279,11 @@ let private lifetimeTests = testList "timer lifetime and inputs" [
             with :? InvalidOperationException as error -> error.Message
         Expect.equal message "primary" "cleanup cannot replace original error"
         Expect.isTrue timer.Cancelled "failed timer terminal"
-        Expect.equal clock.LiveCount 0 "no queued frame"
+        Expect.equal clock.LiveCount 1 "shared source cleanup remains after the client fault"
+        clock.Deliver 50.
+        Expect.equal clock.LiveCount 1 "cleanup prequeues the final drain"
+        clock.Deliver 75.
+        Expect.equal clock.LiveCount 0 "bounded cleanup drains without repeating the fault"
 
     testCase "invalid clock input preserves an active frame subscription" <| fun _ ->
         use clock = new LateFrameScheduler()

@@ -141,6 +141,9 @@ type ScopeClockDefaults(options: PlaybackOptions, ?animation: AnimationDefaultOp
 /// <summary>The active clock-default cell, restored when scoped execution ends.</summary>
 module internal ScopePlaybackContext =
     let globalDefaults = ScopeClockDefaults(PlaybackOptions.Default)
+    do EngineDefaults.attach(fun frameRate ->
+        if frameRate>globalDefaults.Options.FrameRate then
+            globalDefaults.Options<-{globalDefaults.Options with FrameRate=frameRate})
     let private active = new System.Threading.ThreadLocal<ScopeClockDefaults option>(fun () -> None)
     let current () = defaultArg active.Value globalDefaults
     let isScoped () = active.Value.IsSome
@@ -190,6 +193,8 @@ type internal ScopeClockSnapshot =
 type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions,
            ?onBegin: Timer -> unit, ?onBeforeUpdate: Timer -> unit, ?onUpdate: Timer -> unit,
            ?onLoop: Timer -> unit, ?onPause: Timer -> unit, ?onComplete: Timer -> unit) as this =
+    let scheduler = EngineFrames.createRoot scheduler
+    let engine = EngineFrames.forScheduler scheduler
     let mutable duration = duration
     let options = ScopePlaybackContext.resolve options
     let iterations = match options.Repeat with PlaybackRepeat.Count count -> float count + 1. | PlaybackRepeat.Forever -> infinity
@@ -208,7 +213,8 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         if not(Double.IsFinite value) then invalidArg name "Expected a finite number."
     do finite "FrameRate" options.FrameRate
     let mutable fps = Math.Max(1e-11, options.FrameRate)
-    let mutable lastTick = scheduler.Now()
+    do EngineDefaults.raiseFrameRate fps
+    let mutable lastTick = EngineFrames.initialTick scheduler
     let mutable anchor = lastTick
     let mutable generation = 0
     let mutable pending : IDisposable option = None
@@ -230,22 +236,21 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         generation
 
     let reanchor lead =
-        anchor <- scheduler.Now() - (state.Sample.AbsoluteTime + state.Delay) / state.Speed - lead
+        anchor <- scheduler.Now() - (state.Sample.AbsoluteTime + state.Delay) / (state.Speed * engine.EffectiveSpeed) - lead
 
     let requestTick now =
-        if fps >= 240. then PlaybackTickMode.Auto
+        let frameDuration = 1000. / fps
+        let elapsed = now - lastTick
+        let tolerance = Math.Min(frameDuration * 0.25, 4.)
+        if elapsed + tolerance < frameDuration then PlaybackTickMode.Skip
         else
-            let frameDuration = 1000. / fps
-            let elapsed = now - lastTick
-            let tolerance = Math.Min(frameDuration * 0.25, 4.)
-            if elapsed + tolerance < frameDuration then PlaybackTickMode.Skip
-            else
-                lastTick <- if elapsed >= frameDuration then now - elapsed % frameDuration else now
-                PlaybackTickMode.Auto
+            lastTick <- if elapsed >= frameDuration then now - elapsed % frameDuration else now
+            PlaybackTickMode.Auto
 
     let abandon () =
         stopFrame() |> ignore
         try state.Cancel() with _ -> ()
+        try EngineFrames.terminate scheduler with _ -> ()
         try onFault() with _ -> ()
 
     let rec queue () =
@@ -255,7 +260,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
                 if expected = generation && not state.Paused && not state.Cancelled then
                     pending <- None
                     try
-                        state.Tick((now - anchor) * state.Speed, requestTick now, false)
+                        state.Tick((now - anchor) * state.Speed * engine.FrameSpeed, (if fps < engine.FrameFps then requestTick now else PlaybackTickMode.Auto), false)
                         if expected = generation && not state.Cancelled then
                             if Double.IsPositiveInfinity iterations && state.Sample.AboveZero && state.Sample.AtEnd then
                                 anchor <- anchor + state.Duration
@@ -295,7 +300,14 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
 
     let cancel notify =
         stopFrame() |> ignore
-        try state.Cancel() finally if notify then onCancel()
+        let mutable failure:exn option=None
+        let attempt action =
+            try action() with error -> if failure.IsNone then failure<-Some error
+        attempt state.Cancel
+        attempt(fun () -> EngineFrames.terminate scheduler)
+        if notify then attempt onCancel
+        failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
+    do EngineFrames.configure scheduler (fun () -> reanchor 0.) 1.
     do ScopeRegistration.register this.RewindForRevert
     /// <summary>Accepts an unsigned whole-millisecond iteration duration.</summary>
     new(scheduler: FrameScheduler, duration: uint, ?options: PlaybackOptions,
@@ -397,8 +409,11 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             finite "value" value
             live()
             fps <- Math.Max(1e-11, value)
+            EngineDefaults.raiseFrameRate fps
     /// <summary>Raw geometry for shared playback integration and behavioral verification.</summary>
     member internal _.Sample = state.Sample
+    /// <summary>Forced-render gap in the engine's current time unit.</summary>
+    member internal _.TickThreshold=engine.TickThreshold
     /// <summary>Both scheduler and state generations for guarding property writes across user code.</summary>
     member internal _.Generation = generation, state.Generation
     /// <summary>Captures clock/state generations and current inherited guards before an easing or modifier callback.</summary>
@@ -443,15 +458,16 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Assigns scheduling to the timeline before construction callbacks can resume this child.</summary>
     member internal _.AssignToTimeline() =
         parented <- true
+        lastTick <- 0.
         stopFrame() |> ignore
     /// <summary>Assigns scheduling to the timeline and initializes silently, optionally refreshing caches without target dispatch.</summary>
     member internal _.AttachToTimeline(?internalRender:bool,?canWrite:unit -> bool) =
         this.AssignToTimeline()
         state.TickChild(0., PlaybackTickMode.Force, true, false, false, defaultArg canWrite (fun () -> true), ?internalRender=internalRender, initialize=true)
     /// <summary>Samples a timeline child without an independent frame, optionally refreshing caches without target dispatch.</summary>
-    member internal _.SampleChild(time, mode, muted, parentFps, backwards, parentBegan, canWrite, ?internalRender:bool) =
+    member internal _.SampleChild(time, mode, muted, parentFps, backwards, parentBegan, canWrite, ?internalRender:bool, ?applyFrameRate:bool) =
         if not state.Cancelled && canWrite() then
-            let mode = if fps < parentFps then requestTick(scheduler.Now()) else mode
+            let mode = if defaultArg applyFrameRate true && fps < parentFps then requestTick(scheduler.Now()) else mode
             state.TickChild(time, mode, muted, backwards, parentBegan, canWrite, ?internalRender=internalRender)
     /// <summary>Emits the source reverse-loop boundary completion without changing child flags.</summary>
     member internal _.NotifyBoundaryCompletion() =

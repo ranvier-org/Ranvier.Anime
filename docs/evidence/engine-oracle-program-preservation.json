@@ -1,0 +1,127 @@
+{
+  "base": "d6e0149",
+  "programsAndSampleTimesUnchanged": true,
+  "explicitLowLevelTimerFixturesUnchanged": 51,
+  "reports": [
+    {
+      "path": "tests/reference/timer-controls.json",
+      "sha256": "c12c4bbd80631f06ce88f4ef258d8528a96b75d3440f916ea185827f1f823a2a",
+      "groups": [
+        {
+          "group": "fixtures",
+          "cases": 51,
+          "changedSamples": 0,
+          "changedCases": []
+        },
+        {
+          "group": "scheduled",
+          "cases": 34,
+          "changedSamples": 19,
+          "changedCases": [
+            "scheduledBasic",
+            "scheduledNegativeDelay",
+            "scheduledRate",
+            "scheduledRateChange",
+            "scheduledZeroGap",
+            "scheduledFractional"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/reference/animation-playback.json",
+      "sha256": "15ca03c5311fb575155fa4967a635df0f05d147107a23a3bcc06488f6fd24e4d",
+      "groups": [
+        {
+          "group": "fixtures",
+          "cases": 52,
+          "changedSamples": 3,
+          "changedCases": [
+            "frameRate"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/reference/keyframe-playback.json",
+      "sha256": "1e3342bdf31abc62d6c6c856ea50872f1cffa356f7956fec2230b9d86992e3a0",
+      "groups": [
+        {
+          "group": "fixtures",
+          "cases": 106,
+          "changedSamples": 10,
+          "changedCases": [
+            "replace-scheduled-0-240",
+            "replace-scheduled-0-20",
+            "replace-scheduled-40-240",
+            "replace-scheduled-40-20",
+            "replace-scheduled--20-240",
+            "replace-scheduled--20-20"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/reference/timeline-playback.json",
+      "sha256": "0c6cb9be8a089ca2e3de9803a74647822589879fce75e1139f3ef798f19cdfaa",
+      "groups": [
+        {
+          "group": "fixtures",
+          "cases": 60,
+          "changedSamples": 11,
+          "changedCases": [
+            "rootLowFps",
+            "zeroCallback",
+            "timerLowFpsChild",
+            "rootLowFpsProperty"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/reference/timeline-keyframes.json",
+      "sha256": "898cd17d4212c14eb786abb9459791dccbf7026ffefc85b33dc427ca99cd3070",
+      "groups": [
+        {
+          "group": "fixtures",
+          "cases": 42,
+          "changedSamples": 4,
+          "changedCases": [
+            "none-scheduledSpeedFps",
+            "replace-scheduledSpeedFps"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/reference/timeline-css-keyframes.json",
+      "sha256": "5ae20e1176a8944b58ccae12bd5b67ba690a1e77e388e10bbefa048ec60820ca",
+      "groups": [
+        {
+          "group": "fixtures",
+          "cases": 42,
+          "changedSamples": 4,
+          "changedCases": [
+            "none-scheduledSpeedFps",
+            "replace-scheduledSpeedFps"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/reference/timeline-mixed-keyframes.json",
+      "sha256": "a98d6f59baf1c2ccf142622781a65c1cd622acc1715e19b631e04b624791e71d",
+      "groups": [
+        {
+          "group": "fixtures",
+          "cases": 40,
+          "changedSamples": 4,
+          "changedCases": [
+            "none-scheduledFps",
+            "replace-scheduledFps"
+          ]
+        }
+      ]
+    }
+  ]
+}

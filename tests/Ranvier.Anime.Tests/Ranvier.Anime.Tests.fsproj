@@ -59,6 +59,10 @@
     <Compile Include="ScopeClockReferenceTests.fs" />
     <Compile Include="ScopeConstructorAdmissionTests.fs" />
     <Compile Include="ScopeAnimationDefaultsTests.fs" />
+    <Compile Include="EngineTests.fs" />
+    <Compile Include="EngineRootTests.fs" />
+    <Compile Include="EngineQuiescenceTests.fs" />
+    <Compile Include="SourceCleanupTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -88,5 +92,9 @@
     <None Include="../reference/scope-reference.json" Link="reference/scope-reference.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/scope-clock-defaults-reference.json" Link="reference/scope-clock-defaults-reference.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/scope-animation-defaults-reference.json" Link="reference/scope-animation-defaults-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/engine-reference.json" Link="reference/engine-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/engine-roots-reference.json" Link="reference/engine-roots-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/engine-quiescence-reference.json" Link="reference/engine-quiescence-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/engine-idle-phase-reference.json" Link="reference/engine-idle-phase-reference.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -90,7 +90,7 @@ for (let index=0;index<12;index++) {
     steps:[-25,0,25,25+delay,25+delay+duration/2,end,end+duration/2,end*2,end,end/2,0].map(seek)});
 }
 
-const fixtures = cases.map(({name,kind,parameters,childParameters={},steps=times.map(seek)}) => {
+const replay = ({name,kind,parameters,childParameters={},steps=times.map(seek)}) => {
   now = 0;
   const target = {value:0};
   const controllers = new Map();
@@ -158,7 +158,7 @@ const fixtures = cases.map(({name,kind,parameters,childParameters={},steps=times
     else if (step.op === 'resumeBorrowed') controllers.get('borrowed').resume();
     else if (step.op === 'frame') {
       now += step.after;
-      if (!timeline.paused) tick(timeline,(now-timeline._startTime)*timeline._speed,0,0,timeline._fps < engine._fps ? timeline.requestTick(now) : 1);
+      engine.update();
     } else if (step.op === 'speed') timeline.speed = step.value;
     else if (step.op === 'complete') timeline.complete(step.mute);
     else timeline[step.op]();
@@ -168,9 +168,19 @@ const fixtures = cases.map(({name,kind,parameters,childParameters={},steps=times
   timeline.cancel();
   for (const child of owned) child.cancel();
   return result;
-});
+};
+const workerIndex = process.argv.indexOf('--case');
+if (workerIndex >= 0) {
+  const index = Number(process.argv[workerIndex + 1]);
+  if (!Number.isInteger(index) || index < 0 || index >= cases.length) throw new Error('Invalid oracle case index');
+  process.stdout.write(JSON.stringify(replay(cases[index])));
+} else {
+const fixtures = cases.map((_, index) => JSON.parse(execFileSync('rtk',
+  ['proxy', process.execPath, fileURLToPath(import.meta.url), '--case', String(index)],
+  {encoding:'utf8', maxBuffer:8*1024*1024})));
 const text = JSON.stringify({upstreamCommit:revision,
   version:JSON.parse(readFileSync(resolve(upstream,'package.json'),'utf8')).version,
-  initialization:'Explicit reset before initial snapshot; child construction callbacks are excluded. Frames model admitted host frames, not global engine arbitration.',fixtures},null,2)+'\n';
+  initialization:'Explicit reset before initial snapshot; child construction callbacks are excluded. Frame actions use actual engine.update with a fresh source process per case.',fixtures},null,2)+'\n';
 writeFileSync(resolve(root,'tests/reference/timeline-playback.json'),text);
 console.log(`Captured ${fixtures.length} timeline playback traces; SHA256 ${createHash('sha256').update(text).digest('hex')}`);
+}

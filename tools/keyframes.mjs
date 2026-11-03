@@ -154,7 +154,7 @@ if(process.argv[2]==='--case'){
  const samples=input.actions?input.actions.map(([kind,value])=>{
   if(kind==='frame'){
    now+=value;
-   if(!animation.paused)tick(animation,(now-animation._startTime)*animation._speed,0,0,animation._fps<engine._fps?animation.requestTick(now):1);
+   engine.update();
   }else if(kind==='speed')animation.speed=value;
   else if(kind==='seekMuted')animation.seek(value,true);
   else animation[kind](value);

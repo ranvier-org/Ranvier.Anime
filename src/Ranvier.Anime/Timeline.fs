@@ -134,7 +134,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
                             if canWrite() then track.ResetTimer()
                         | TimelineEntry.OwnedTimer(_, child) | TimelineEntry.OwnedAnimation(_,child,_) ->
                             if not child.Cancelled && not child.Completed && not child.Backwards && child.Sample.AbsoluteTime < child.IterationDuration then
-                                child.SampleChild(duration, PlaybackTickMode.Force, muted, infinity, false, clock.Began, canWrite,internalRender=true)
+                                child.SampleChild(duration, PlaybackTickMode.Force, muted, infinity, false, clock.Began, canWrite,internalRender=true,applyFrameRate=false)
                             if canWrite() then child.ResetChildFlags()
                         | TimelineEntry.Callback(_, callback, state) ->
                             if not state.Completed && not state.Backwards && state.Time < 1e-11 then

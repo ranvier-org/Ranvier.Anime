@@ -205,6 +205,8 @@ let tests = testList "timeline synchronization" [
         timeline.Call(fun () -> calls <- calls + 1) |> ignore
         timeline.Play()
         clock.Advance 1.; clock.RunFrame()
+        Expect.equal calls 0 "subthreshold host frame does not dispatch the timeline"
+        clock.Advance 4.; clock.RunFrame()
         Expect.equal calls 1 "single callback track runs"
     testCase "callback can seek forward without recursively refiring itself" <| fun _ ->
         let clock = new ManualFrameScheduler()

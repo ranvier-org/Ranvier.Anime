@@ -31,7 +31,7 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
         let current()=timerCurrent() && ownerAllowsWrite()
         let iteration=clock.IterationDuration
         let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
-        let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=200.
+        let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=clock.TickThreshold
         let absolute=PropertyNumbers.round 1e12 (clock.Delay+sample.IterationTime)
         let start=PropertyNumbers.round 1e12 clock.Delay
         let eligible=force || ((tweenTime<>iteration || absolute<=start+iteration) && (tweenTime<>0. || absolute>=start))

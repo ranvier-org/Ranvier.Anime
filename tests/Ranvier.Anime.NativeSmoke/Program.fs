@@ -38,6 +38,8 @@ let main args =
             require (assembly.GetName().Name + " trace cohort") (traced = expectedTrace)
         use host = WebCoreHost.Create(320, 200)
         use scheduler = Frames.forHost host
+        EngineCoreNativeProbe.run host scheduler
+        CompositionNativeIdentityProbe.run host.Document
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style

@@ -52,7 +52,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
         let timerCurrent=clock.CaptureWriteGuard()
         let current()=timerCurrent() && ownerAllowsWrite()
         let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
-        let forced=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=200.
+        let forced=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=clock.TickThreshold
         let absolute=PropertyNumbers.round 1e12 (offset+clock.Delay+sample.IterationTime)
         let mutable rendered=false
         let mutable alive=current()

@@ -245442,11 +245442,11 @@
                 }
               ],
               "root": {
-                "time": 13,
-                "iterationTime": 13,
+                "time": 0,
+                "iterationTime": 0,
                 "iteration": 0,
                 "paused": false,
-                "began": true,
+                "began": false,
                 "completed": false,
                 "backwards": false
               },
@@ -245464,93 +245464,8 @@
             },
             "writes": [],
             "effects": [],
-            "events": [
-              {
-                "id": "root",
-                "event": "Begin",
-                "self": {
-                  "time": 13,
-                  "iterationTime": 13,
-                  "iteration": 0,
-                  "paused": false,
-                  "began": true,
-                  "completed": false,
-                  "backwards": false
-                },
-                "snapshot": {
-                  "targets": [
-                    {
-                      "width": "100px",
-                      "height": "20px"
-                    }
-                  ],
-                  "root": {
-                    "time": 13,
-                    "iterationTime": 13,
-                    "iteration": 0,
-                    "paused": false,
-                    "began": true,
-                    "completed": false,
-                    "backwards": false
-                  },
-                  "children": {
-                    "a": {
-                      "time": 0,
-                      "iterationTime": 0,
-                      "iteration": 0,
-                      "paused": true,
-                      "began": false,
-                      "completed": false,
-                      "backwards": false
-                    }
-                  }
-                }
-              }
-            ],
-            "trace": [
-              {
-                "kind": "event",
-                "id": "root",
-                "event": "Begin",
-                "self": {
-                  "time": 13,
-                  "iterationTime": 13,
-                  "iteration": 0,
-                  "paused": false,
-                  "began": true,
-                  "completed": false,
-                  "backwards": false
-                },
-                "snapshot": {
-                  "targets": [
-                    {
-                      "width": "100px",
-                      "height": "20px"
-                    }
-                  ],
-                  "root": {
-                    "time": 13,
-                    "iterationTime": 13,
-                    "iteration": 0,
-                    "paused": false,
-                    "began": true,
-                    "completed": false,
-                    "backwards": false
-                  },
-                  "children": {
-                    "a": {
-                      "time": 0,
-                      "iterationTime": 0,
-                      "iteration": 0,
-                      "paused": true,
-                      "began": false,
-                      "completed": false,
-                      "backwards": false
-                    }
-                  }
-                }
-              }
-            ]
+            "events": [],
+            "trace": []
           }
         },
         {
@@ -245588,6 +245503,47 @@
             "writes": [],
             "effects": [],
             "events": [
+              {
+                "id": "root",
+                "event": "Begin",
+                "self": {
+                  "time": 33,
+                  "iterationTime": 33,
+                  "iteration": 0,
+                  "paused": false,
+                  "began": true,
+                  "completed": false,
+                  "backwards": false
+                },
+                "snapshot": {
+                  "targets": [
+                    {
+                      "width": "100px",
+                      "height": "20px"
+                    }
+                  ],
+                  "root": {
+                    "time": 33,
+                    "iterationTime": 33,
+                    "iteration": 0,
+                    "paused": false,
+                    "began": true,
+                    "completed": false,
+                    "backwards": false
+                  },
+                  "children": {
+                    "a": {
+                      "time": 0,
+                      "iterationTime": 0,
+                      "iteration": 0,
+                      "paused": true,
+                      "began": false,
+                      "completed": false,
+                      "backwards": false
+                    }
+                  }
+                }
+              },
               {
                 "id": "a",
                 "event": "Begin",
@@ -245631,6 +245587,48 @@
               }
             ],
             "trace": [
+              {
+                "kind": "event",
+                "id": "root",
+                "event": "Begin",
+                "self": {
+                  "time": 33,
+                  "iterationTime": 33,
+                  "iteration": 0,
+                  "paused": false,
+                  "began": true,
+                  "completed": false,
+                  "backwards": false
+                },
+                "snapshot": {
+                  "targets": [
+                    {
+                      "width": "100px",
+                      "height": "20px"
+                    }
+                  ],
+                  "root": {
+                    "time": 33,
+                    "iterationTime": 33,
+                    "iteration": 0,
+                    "paused": false,
+                    "began": true,
+                    "completed": false,
+                    "backwards": false
+                  },
+                  "children": {
+                    "a": {
+                      "time": 0,
+                      "iterationTime": 0,
+                      "iteration": 0,
+                      "paused": true,
+                      "began": false,
+                      "completed": false,
+                      "backwards": false
+                    }
+                  }
+                }
+              },
               {
                 "kind": "event",
                 "id": "a",
@@ -250342,11 +250340,11 @@
                 }
               ],
               "root": {
-                "time": 13,
-                "iterationTime": 13,
+                "time": 0,
+                "iterationTime": 0,
                 "iteration": 0,
                 "paused": false,
-                "began": true,
+                "began": false,
                 "completed": false,
                 "backwards": false
               },
@@ -250364,93 +250362,8 @@
             },
             "writes": [],
             "effects": [],
-            "events": [
-              {
-                "id": "root",
-                "event": "Begin",
-                "self": {
-                  "time": 13,
-                  "iterationTime": 13,
-                  "iteration": 0,
-                  "paused": false,
-                  "began": true,
-                  "completed": false,
-                  "backwards": false
-                },
-                "snapshot": {
-                  "targets": [
-                    {
-                      "width": "0px",
-                      "height": "20px"
-                    }
-                  ],
-                  "root": {
-                    "time": 13,
-                    "iterationTime": 13,
-                    "iteration": 0,
-                    "paused": false,
-                    "began": true,
-                    "completed": false,
-                    "backwards": false
-                  },
-                  "children": {
-                    "a": {
-                      "time": 0,
-                      "iterationTime": 0,
-                      "iteration": 0,
-                      "paused": true,
-                      "began": false,
-                      "completed": false,
-                      "backwards": false
-                    }
-                  }
-                }
-              }
-            ],
-            "trace": [
-              {
-                "kind": "event",
-                "id": "root",
-                "event": "Begin",
-                "self": {
-                  "time": 13,
-                  "iterationTime": 13,
-                  "iteration": 0,
-                  "paused": false,
-                  "began": true,
-                  "completed": false,
-                  "backwards": false
-                },
-                "snapshot": {
-                  "targets": [
-                    {
-                      "width": "0px",
-                      "height": "20px"
-                    }
-                  ],
-                  "root": {
-                    "time": 13,
-                    "iterationTime": 13,
-                    "iteration": 0,
-                    "paused": false,
-                    "began": true,
-                    "completed": false,
-                    "backwards": false
-                  },
-                  "children": {
-                    "a": {
-                      "time": 0,
-                      "iterationTime": 0,
-                      "iteration": 0,
-                      "paused": true,
-                      "began": false,
-                      "completed": false,
-                      "backwards": false
-                    }
-                  }
-                }
-              }
-            ]
+            "events": [],
+            "trace": []
           }
         },
         {
@@ -250488,6 +250401,47 @@
             "writes": [],
             "effects": [],
             "events": [
+              {
+                "id": "root",
+                "event": "Begin",
+                "self": {
+                  "time": 33,
+                  "iterationTime": 33,
+                  "iteration": 0,
+                  "paused": false,
+                  "began": true,
+                  "completed": false,
+                  "backwards": false
+                },
+                "snapshot": {
+                  "targets": [
+                    {
+                      "width": "0px",
+                      "height": "20px"
+                    }
+                  ],
+                  "root": {
+                    "time": 33,
+                    "iterationTime": 33,
+                    "iteration": 0,
+                    "paused": false,
+                    "began": true,
+                    "completed": false,
+                    "backwards": false
+                  },
+                  "children": {
+                    "a": {
+                      "time": 0,
+                      "iterationTime": 0,
+                      "iteration": 0,
+                      "paused": true,
+                      "began": false,
+                      "completed": false,
+                      "backwards": false
+                    }
+                  }
+                }
+              },
               {
                 "id": "a",
                 "event": "Begin",
@@ -250531,6 +250485,48 @@
               }
             ],
             "trace": [
+              {
+                "kind": "event",
+                "id": "root",
+                "event": "Begin",
+                "self": {
+                  "time": 33,
+                  "iterationTime": 33,
+                  "iteration": 0,
+                  "paused": false,
+                  "began": true,
+                  "completed": false,
+                  "backwards": false
+                },
+                "snapshot": {
+                  "targets": [
+                    {
+                      "width": "0px",
+                      "height": "20px"
+                    }
+                  ],
+                  "root": {
+                    "time": 33,
+                    "iterationTime": 33,
+                    "iteration": 0,
+                    "paused": false,
+                    "began": true,
+                    "completed": false,
+                    "backwards": false
+                  },
+                  "children": {
+                    "a": {
+                      "time": 0,
+                      "iterationTime": 0,
+                      "iteration": 0,
+                      "paused": true,
+                      "began": false,
+                      "completed": false,
+                      "backwards": false
+                    }
+                  }
+                }
+              },
               {
                 "kind": "event",
                 "id": "a",

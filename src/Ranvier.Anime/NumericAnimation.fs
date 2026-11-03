@@ -63,7 +63,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
         let expected = clock.Generation
         let canWrite () = expected = clock.Generation && not clock.Cancelled && ancestorLive() && constructionAccepted && ownerAllowsWrite()
         let delta = sample.AbsoluteTime - clock.PreviousAbsoluteTime
-        let force = mode = PlaybackTickMode.Force || (if sample.Backwards then -delta else delta) >= 200.
+        let force = mode = PlaybackTickMode.Force || (if sample.Backwards then -delta else delta) >= clock.TickThreshold
         let absoluteTime = PropertyNumbers.round 1e12 (clock.Delay + sample.IterationTime)
         let start = PropertyNumbers.round 1e12 clock.Delay
         let eligible = force || ((tweenTime <> iterationDuration || absoluteTime <= start + iterationDuration) &&

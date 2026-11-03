@@ -1,7 +1,7 @@
 {
   "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
   "version": "4.5.0",
-  "initialization": "Explicit reset before initial snapshot; child construction callbacks are excluded. Frames model admitted host frames, not global engine arbitration.",
+  "initialization": "Explicit reset before initial snapshot; child construction callbacks are excluded. Frame actions use actual engine.update with a fresh source process per case.",
   "fixtures": [
     {
       "name": "property",
@@ -174926,73 +174926,16 @@
             "op": "frame",
             "after": 1
           },
-          "events": [
-            {
-              "id": "root",
-              "event": "Begin",
-              "self": {
-                "time": 13,
-                "iterationTime": 13,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 13,
-                  "iterationTime": 13,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  },
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                ],
-                "children": {
-                  "timer": {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                }
-              }
-            }
-          ],
+          "events": [],
           "state": {
             "value": 0,
             "root": {
-              "time": 13,
-              "iterationTime": 13,
+              "time": 0,
+              "iterationTime": 0,
               "iteration": 0,
               "backwards": false,
               "paused": false,
-              "began": true,
+              "began": false,
               "completed": false
             },
             "tracks": [
@@ -175034,6 +174977,62 @@
             "after": 20
           },
           "events": [
+            {
+              "id": "root",
+              "event": "Begin",
+              "self": {
+                "time": 33,
+                "iterationTime": 33,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "began": true,
+                "completed": false
+              },
+              "state": {
+                "value": 0,
+                "root": {
+                  "time": 33,
+                  "iterationTime": 33,
+                  "iteration": 0,
+                  "backwards": false,
+                  "paused": false,
+                  "began": true,
+                  "completed": false
+                },
+                "tracks": [
+                  {
+                    "time": 0,
+                    "iterationTime": 0,
+                    "iteration": 0,
+                    "backwards": false,
+                    "paused": true,
+                    "began": false,
+                    "completed": false
+                  },
+                  {
+                    "time": 0,
+                    "iterationTime": 0,
+                    "iteration": 0,
+                    "backwards": false,
+                    "paused": true,
+                    "began": false,
+                    "completed": false
+                  }
+                ],
+                "children": {
+                  "timer": {
+                    "time": 0,
+                    "iterationTime": 0,
+                    "iteration": 0,
+                    "backwards": false,
+                    "paused": true,
+                    "began": false,
+                    "completed": false
+                  }
+                }
+              }
+            },
             {
               "id": "timer",
               "event": "Begin",
@@ -175419,8 +175418,8 @@
           "state": {
             "value": 0,
             "root": {
-              "time": 59,
-              "iterationTime": 59,
+              "time": 58,
+              "iterationTime": 58,
               "iteration": 0,
               "backwards": false,
               "paused": false,
@@ -175429,8 +175428,8 @@
             },
             "tracks": [
               {
-                "time": 34,
-                "iterationTime": 34,
+                "time": 33,
+                "iterationTime": 33,
                 "iteration": 0,
                 "backwards": false,
                 "paused": true,
@@ -175449,8 +175448,8 @@
             ],
             "children": {
               "timer": {
-                "time": 34,
-                "iterationTime": 34,
+                "time": 33,
+                "iterationTime": 33,
                 "iteration": 0,
                 "backwards": false,
                 "paused": true,
@@ -189961,194 +189960,17 @@
             "op": "frame",
             "after": 1
           },
-          "events": [
-            {
-              "id": "root",
-              "event": "Begin",
-              "self": {
-                "time": 1e-11,
-                "iterationTime": 0,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 1e-11,
-                  "iterationTime": 0,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                ],
-                "children": {}
-              }
-            },
-            {
-              "id": "root",
-              "event": "BeforeUpdate",
-              "self": {
-                "time": 1e-11,
-                "iterationTime": 0,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 1e-11,
-                  "iterationTime": 0,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                ],
-                "children": {}
-              }
-            },
-            {
-              "id": "root",
-              "event": "Update",
-              "self": {
-                "time": 1e-11,
-                "iterationTime": 0,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 1e-11,
-                  "iterationTime": 0,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                ],
-                "children": {}
-              }
-            },
-            {
-              "id": "start",
-              "event": "Call",
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 1e-11,
-                  "iterationTime": 0,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": true,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": true,
-                    "completed": false
-                  }
-                ],
-                "children": {}
-              }
-            },
-            {
-              "id": "root",
-              "event": "Complete",
-              "self": {
-                "time": 1e-11,
-                "iterationTime": 0,
-                "iteration": 0,
-                "backwards": false,
-                "paused": true,
-                "began": true,
-                "completed": true
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 1e-11,
-                  "iterationTime": 0,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": true,
-                  "began": true,
-                  "completed": true
-                },
-                "tracks": [
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": true,
-                    "completed": true
-                  }
-                ],
-                "children": {}
-              }
-            }
-          ],
+          "events": [],
           "state": {
             "value": 0,
             "root": {
-              "time": 1e-11,
+              "time": 0,
               "iterationTime": 0,
               "iteration": 0,
               "backwards": false,
-              "paused": true,
-              "began": true,
-              "completed": true
+              "paused": false,
+              "began": false,
+              "completed": false
             },
             "tracks": [
               {
@@ -190157,8 +189979,8 @@
                 "iteration": 0,
                 "backwards": false,
                 "paused": true,
-                "began": true,
-                "completed": true
+                "began": false,
+                "completed": false
               }
             ],
             "children": {}
@@ -190169,44 +189991,15 @@
             "op": "seek",
             "time": 0
           },
-          "events": [
-            {
-              "id": "start",
-              "event": "Call",
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 0,
-                  "iterationTime": 0,
-                  "iteration": 0,
-                  "backwards": true,
-                  "paused": true,
-                  "began": false,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": true,
-                    "paused": true,
-                    "began": true,
-                    "completed": true
-                  }
-                ],
-                "children": {}
-              }
-            }
-          ],
+          "events": [],
           "state": {
             "value": 0,
             "root": {
               "time": 0,
               "iterationTime": 0,
               "iteration": 0,
-              "backwards": true,
-              "paused": true,
+              "backwards": false,
+              "paused": false,
               "began": false,
               "completed": false
             },
@@ -190215,7 +190008,7 @@
                 "time": 0,
                 "iterationTime": 0,
                 "iteration": 0,
-                "backwards": true,
+                "backwards": false,
                 "paused": true,
                 "began": true,
                 "completed": false
@@ -231562,185 +231355,16 @@
             "op": "frame",
             "after": 1
           },
-          "events": [
-            {
-              "id": "root",
-              "event": "Begin",
-              "self": {
-                "time": 13,
-                "iterationTime": 13,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 13,
-                  "iterationTime": 13,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  },
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                ],
-                "children": {
-                  "timer": {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                }
-              }
-            },
-            {
-              "id": "root",
-              "event": "BeforeUpdate",
-              "self": {
-                "time": 13,
-                "iterationTime": 13,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 13,
-                  "iterationTime": 13,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  },
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                ],
-                "children": {
-                  "timer": {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                }
-              }
-            },
-            {
-              "id": "root",
-              "event": "Update",
-              "self": {
-                "time": 13,
-                "iterationTime": 13,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 13,
-                  "iterationTime": 13,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  },
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                ],
-                "children": {
-                  "timer": {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                }
-              }
-            }
-          ],
+          "events": [],
           "state": {
             "value": 0,
             "root": {
-              "time": 13,
-              "iterationTime": 13,
+              "time": 0,
+              "iterationTime": 0,
               "iteration": 0,
               "backwards": false,
               "paused": false,
-              "began": true,
+              "began": false,
               "completed": false
             },
             "tracks": [
@@ -231782,6 +231406,62 @@
             "after": 20
           },
           "events": [
+            {
+              "id": "root",
+              "event": "Begin",
+              "self": {
+                "time": 33,
+                "iterationTime": 33,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "began": true,
+                "completed": false
+              },
+              "state": {
+                "value": 0,
+                "root": {
+                  "time": 33,
+                  "iterationTime": 33,
+                  "iteration": 0,
+                  "backwards": false,
+                  "paused": false,
+                  "began": true,
+                  "completed": false
+                },
+                "tracks": [
+                  {
+                    "time": 0,
+                    "iterationTime": 0,
+                    "iteration": 0,
+                    "backwards": false,
+                    "paused": true,
+                    "began": false,
+                    "completed": false
+                  },
+                  {
+                    "time": 0,
+                    "iterationTime": 0,
+                    "iteration": 0,
+                    "backwards": false,
+                    "paused": true,
+                    "began": false,
+                    "completed": false
+                  }
+                ],
+                "children": {
+                  "timer": {
+                    "time": 0,
+                    "iterationTime": 0,
+                    "iteration": 0,
+                    "backwards": false,
+                    "paused": true,
+                    "began": false,
+                    "completed": false
+                  }
+                }
+              }
+            },
             {
               "id": "root",
               "event": "BeforeUpdate",
@@ -232275,125 +231955,12 @@
             "op": "frame",
             "after": 1
           },
-          "events": [
-            {
-              "id": "root",
-              "event": "BeforeUpdate",
-              "self": {
-                "time": 59,
-                "iterationTime": 59,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 59,
-                  "iterationTime": 59,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 33,
-                    "iterationTime": 33,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": true,
-                    "completed": false
-                  },
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                ],
-                "children": {
-                  "timer": {
-                    "time": 33,
-                    "iterationTime": 33,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": true,
-                    "completed": false
-                  }
-                }
-              }
-            },
-            {
-              "id": "root",
-              "event": "Update",
-              "self": {
-                "time": 59,
-                "iterationTime": 59,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 59,
-                  "iterationTime": 59,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 33,
-                    "iterationTime": 33,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": true,
-                    "completed": false
-                  },
-                  {
-                    "time": 0,
-                    "iterationTime": 0,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": false,
-                    "completed": false
-                  }
-                ],
-                "children": {
-                  "timer": {
-                    "time": 33,
-                    "iterationTime": 33,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": true,
-                    "completed": false
-                  }
-                }
-              }
-            }
-          ],
+          "events": [],
           "state": {
             "value": 0,
             "root": {
-              "time": 59,
-              "iterationTime": 59,
+              "time": 58,
+              "iterationTime": 58,
               "iteration": 0,
               "backwards": false,
               "paused": false,
@@ -232402,8 +231969,8 @@
             },
             "tracks": [
               {
-                "time": 34,
-                "iterationTime": 34,
+                "time": 33,
+                "iterationTime": 33,
                 "iteration": 0,
                 "backwards": false,
                 "paused": true,
@@ -232422,8 +231989,8 @@
             ],
             "children": {
               "timer": {
-                "time": 34,
-                "iterationTime": 34,
+                "time": 33,
+                "iterationTime": 33,
                 "iteration": 0,
                 "backwards": false,
                 "paused": true,
@@ -232464,8 +232031,8 @@
                 },
                 "tracks": [
                   {
-                    "time": 34,
-                    "iterationTime": 34,
+                    "time": 33,
+                    "iterationTime": 33,
                     "iteration": 0,
                     "backwards": false,
                     "paused": true,
@@ -232484,8 +232051,8 @@
                 ],
                 "children": {
                   "timer": {
-                    "time": 34,
-                    "iterationTime": 34,
+                    "time": 33,
+                    "iterationTime": 33,
                     "iteration": 0,
                     "backwards": false,
                     "paused": true,
@@ -232520,8 +232087,8 @@
                 },
                 "tracks": [
                   {
-                    "time": 34,
-                    "iterationTime": 34,
+                    "time": 33,
+                    "iterationTime": 33,
                     "iteration": 0,
                     "backwards": false,
                     "paused": true,
@@ -232540,8 +232107,8 @@
                 ],
                 "children": {
                   "timer": {
-                    "time": 34,
-                    "iterationTime": 34,
+                    "time": 33,
+                    "iterationTime": 33,
                     "iteration": 0,
                     "backwards": false,
                     "paused": true,
@@ -233396,13 +232963,54 @@
             "op": "frame",
             "after": 1
           },
+          "events": [],
+          "state": {
+            "value": 0,
+            "root": {
+              "time": 0,
+              "iterationTime": 0,
+              "iteration": 0,
+              "backwards": false,
+              "paused": false,
+              "began": false,
+              "completed": false
+            },
+            "tracks": [
+              {
+                "time": 0,
+                "iterationTime": 0,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "began": false,
+                "completed": false
+              }
+            ],
+            "children": {
+              "a": {
+                "time": 0,
+                "iterationTime": 0,
+                "iteration": 0,
+                "backwards": false,
+                "paused": true,
+                "began": false,
+                "completed": false
+              }
+            }
+          }
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 80
+          },
           "events": [
             {
               "id": "root",
               "event": "Begin",
               "self": {
-                "time": 13,
-                "iterationTime": 13,
+                "time": 93,
+                "iterationTime": 93,
                 "iteration": 0,
                 "backwards": false,
                 "paused": false,
@@ -233412,8 +233020,102 @@
               "state": {
                 "value": 0,
                 "root": {
-                  "time": 13,
-                  "iterationTime": 13,
+                  "time": 93,
+                  "iterationTime": 93,
+                  "iteration": 0,
+                  "backwards": false,
+                  "paused": false,
+                  "began": true,
+                  "completed": false
+                },
+                "tracks": [
+                  {
+                    "time": 0,
+                    "iterationTime": 0,
+                    "iteration": 0,
+                    "backwards": false,
+                    "paused": true,
+                    "began": false,
+                    "completed": false
+                  }
+                ],
+                "children": {
+                  "a": {
+                    "time": 0,
+                    "iterationTime": 0,
+                    "iteration": 0,
+                    "backwards": false,
+                    "paused": true,
+                    "began": false,
+                    "completed": false
+                  }
+                }
+              }
+            },
+            {
+              "id": "root",
+              "event": "BeforeUpdate",
+              "self": {
+                "time": 93,
+                "iterationTime": 93,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "began": true,
+                "completed": false
+              },
+              "state": {
+                "value": 0,
+                "root": {
+                  "time": 93,
+                  "iterationTime": 93,
+                  "iteration": 0,
+                  "backwards": false,
+                  "paused": false,
+                  "began": true,
+                  "completed": false
+                },
+                "tracks": [
+                  {
+                    "time": 0,
+                    "iterationTime": 0,
+                    "iteration": 0,
+                    "backwards": false,
+                    "paused": true,
+                    "began": false,
+                    "completed": false
+                  }
+                ],
+                "children": {
+                  "a": {
+                    "time": 0,
+                    "iterationTime": 0,
+                    "iteration": 0,
+                    "backwards": false,
+                    "paused": true,
+                    "began": false,
+                    "completed": false
+                  }
+                }
+              }
+            },
+            {
+              "id": "root",
+              "event": "Update",
+              "self": {
+                "time": 93,
+                "iterationTime": 93,
+                "iteration": 0,
+                "backwards": false,
+                "paused": false,
+                "began": true,
+                "completed": false
+              },
+              "state": {
+                "value": 0,
+                "root": {
+                  "time": 93,
+                  "iterationTime": 93,
                   "iteration": 0,
                   "backwards": false,
                   "paused": false,
@@ -233448,100 +233150,11 @@
               "id": "a",
               "event": "Begin",
               "self": {
-                "time": 13,
-                "iterationTime": 13,
-                "iteration": 0,
-                "backwards": false,
-                "paused": true,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 13,
-                  "iterationTime": 13,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 13,
-                    "iterationTime": 13,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": true,
-                    "completed": false
-                  }
-                ],
-                "children": {
-                  "a": {
-                    "time": 13,
-                    "iterationTime": 13,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": true,
-                    "completed": false
-                  }
-                }
-              }
-            }
-          ],
-          "state": {
-            "value": 0,
-            "root": {
-              "time": 13,
-              "iterationTime": 13,
-              "iteration": 0,
-              "backwards": false,
-              "paused": false,
-              "began": true,
-              "completed": false
-            },
-            "tracks": [
-              {
-                "time": 13,
-                "iterationTime": 13,
-                "iteration": 0,
-                "backwards": false,
-                "paused": true,
-                "began": true,
-                "completed": false
-              }
-            ],
-            "children": {
-              "a": {
-                "time": 13,
-                "iterationTime": 13,
-                "iteration": 0,
-                "backwards": false,
-                "paused": true,
-                "began": true,
-                "completed": false
-              }
-            }
-          }
-        },
-        {
-          "step": {
-            "op": "frame",
-            "after": 80
-          },
-          "events": [
-            {
-              "id": "root",
-              "event": "BeforeUpdate",
-              "self": {
                 "time": 93,
                 "iterationTime": 93,
                 "iteration": 0,
                 "backwards": false,
-                "paused": false,
+                "paused": true,
                 "began": true,
                 "completed": false
               },
@@ -233558,8 +233171,8 @@
                 },
                 "tracks": [
                   {
-                    "time": 13,
-                    "iterationTime": 13,
+                    "time": 93,
+                    "iterationTime": 93,
                     "iteration": 0,
                     "backwards": false,
                     "paused": true,
@@ -233569,55 +233182,8 @@
                 ],
                 "children": {
                   "a": {
-                    "time": 13,
-                    "iterationTime": 13,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": true,
-                    "completed": false
-                  }
-                }
-              }
-            },
-            {
-              "id": "root",
-              "event": "Update",
-              "self": {
-                "time": 93,
-                "iterationTime": 93,
-                "iteration": 0,
-                "backwards": false,
-                "paused": false,
-                "began": true,
-                "completed": false
-              },
-              "state": {
-                "value": 0,
-                "root": {
-                  "time": 93,
-                  "iterationTime": 93,
-                  "iteration": 0,
-                  "backwards": false,
-                  "paused": false,
-                  "began": true,
-                  "completed": false
-                },
-                "tracks": [
-                  {
-                    "time": 13,
-                    "iterationTime": 13,
-                    "iteration": 0,
-                    "backwards": false,
-                    "paused": true,
-                    "began": true,
-                    "completed": false
-                  }
-                ],
-                "children": {
-                  "a": {
-                    "time": 13,
-                    "iterationTime": 13,
+                    "time": 93,
+                    "iterationTime": 93,
                     "iteration": 0,
                     "backwards": false,
                     "paused": true,
