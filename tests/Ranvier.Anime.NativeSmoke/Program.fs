@@ -49,6 +49,39 @@ let main args =
             host.Document.body.appendChild target |> ignore
             let inlineStyle=(target:>ElementCSSInlineStyle).style
             inlineStyle.setProperty("width","10px")
+            let mutable rootRenders=0
+            use timeline=new Timeline(scheduler,onRender=(fun _ -> rootRenders<-rootRenders+1))
+            owner.Attach timeline
+            let property=NumericProperty((fun () -> target.getBoundingClientRect().width),
+                (fun value -> StyleDeclaration.apply inlineStyle (Css.width(Css.px value))))
+            let options={KeyframeAnimationOptions.Default with Ease=id;Precision=None}
+            use first=timeline.AddKeyframes(property,Keyframe.values [|0.;100.;200.|],duration=200u,position=TimelinePosition.At 0.,options=options)
+            let inputs=ResizeArray<float>()
+            let frames=[|Keyframe<NumericProperty,float>.ToBy(fun context -> inputs.Add context.PreviousValue.Value;context.PreviousValue.Value+10.)
+                         Keyframe<NumericProperty,float>.ToBy(fun context -> inputs.Add context.PreviousValue.Value;context.PreviousValue.Value+20.)|]
+            use second=timeline.AddKeyframes(property,frames,duration=200u,position=TimelinePosition.At 75.,options=options)
+            require "public owned timeline keyframes prepare sampled caches without native target dispatch"
+                (target.getBoundingClientRect().width=10. && inputs.ToArray()=[|200.;200.|] && rootRenders=0)
+            timeline.Seek 125.
+            require "public owned timeline keyframes arbitrate native takeover and notify one root render"
+                (target.getBoundingClientRect().width=142.5 && rootRenders=1)
+            timeline.Seek(50.,muteCallbacks=true)
+            require "public owned timeline keyframes recover backward geometry and inherit parent muting"
+                (target.getBoundingClientRect().width=50. && rootRenders=1)
+            owner.Dispose()
+            host.Cycle(milliseconds=100)
+            host.Frame()
+            require "actual native owner cancellation closes the root and both public keyframe children"
+                (timeline.Cancelled && first.Cancelled && second.Cancelled && target.getBoundingClientRect().width=50.)
+            host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
             let registry=FrameSiblingRegistry()
             let keys=[|struct(box target,"width")|]
             let inputCaches=ResizeArray<float>()

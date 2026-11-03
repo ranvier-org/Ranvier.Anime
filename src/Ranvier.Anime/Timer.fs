@@ -278,11 +278,16 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member internal _.Delay = state.Delay
     /// <summary>Current gap between repeated iterations.</summary>
     member internal _.LoopDelay = state.LoopDelay
-    /// <summary>Assigns scheduling to the timeline and initializes silently, optionally refreshing caches without target dispatch.</summary>
-    member internal _.AttachToTimeline(?internalRender:bool) =
+    /// <summary>Prepares the source constructor's zero playhead before an owned animation notification.</summary>
+    member internal _.PrepareConstruction()=state.PrepareConstruction()
+    /// <summary>Assigns scheduling to the timeline before construction callbacks can resume this child.</summary>
+    member internal _.AssignToTimeline() =
         parented <- true
         stopFrame() |> ignore
-        state.TickChild(0., PlaybackTickMode.Force, true, false, false, (fun () -> true), ?internalRender=internalRender, initialize=true)
+    /// <summary>Assigns scheduling to the timeline and initializes silently, optionally refreshing caches without target dispatch.</summary>
+    member internal _.AttachToTimeline(?internalRender:bool,?canWrite:unit -> bool) =
+        this.AssignToTimeline()
+        state.TickChild(0., PlaybackTickMode.Force, true, false, false, defaultArg canWrite (fun () -> true), ?internalRender=internalRender, initialize=true)
     /// <summary>Samples a timeline child without an independent frame, optionally refreshing caches without target dispatch.</summary>
     member internal _.SampleChild(time, mode, muted, parentFps, backwards, parentBegan, canWrite, ?internalRender:bool) =
         if not state.Cancelled && canWrite() then

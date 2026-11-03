@@ -48,7 +48,7 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
         if not(System.Double.IsFinite loopDelay) then invalidArg "loopDelay" "Expected finite milliseconds."
     let duration =
         let total = defaultArg totalDuration ((iterationDuration + loopDelay) * iterationCount - loopDelay)
-        if System.Double.IsNaN total || total = 0. then 1e-11
+        if System.Double.IsNaN total || (total = 0. && totalDuration.IsNone) then 1e-11
         elif System.Double.IsPositiveInfinity total then 1e12
         elif System.Double.IsNegativeInfinity total then -1e12
         else total

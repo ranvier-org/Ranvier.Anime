@@ -41,6 +41,8 @@ Task1 evidence:36 isolated source schedules include cross-child providers and mo
 
 ## Task2: Owned child phase and construction
 
+Numeric adapter milestone: public AddKeyframes/AddKeyframesPrecise now construct existing KeyframeAnimation handles under pending lifetime and parent guards.34 exact source schedules compare complete construction, ordered effects/writes/events, root/child callback snapshots, resets and controls through this facade. Eleven internal factory contracts, ten numeric facade contracts and twelve owned sampling contracts cover interruption, actual ownership, admission, uint/precise timing, restoration and reentry. Numeric root integration and cross-child replacement pass; typed CSS, sparse row/offset and relative-value authoring plus mixed scalar/keyframe arbitration remain open. The unchecked items below still cover those complete interfaces.
+
 **Files:** PlaybackState.fs, Timer.fs, Timeline.fs, KeyframePlayback.fs, Keyframes.fs, KeyframeSequenceBinding.fs; new TimelineKeyframes.fs and TimelineKeyframeTests.fs; existing compile lists.
 
 **Interfaces:** Add a cache-only child sample context to the existing internal child phase. Report actual keyframe dispatch without inferring it from a nonzero clock. Add an internal timeline factory transaction that resolves position, registers pending cleanup before input effects, prepares existing children at the offset, constructs under the parent guard, attaches an owned child and resets cache/history. Public Timeline.AddKeyframes/AddKeyframesPrecise overloads return owned KeyframeAnimation controllers for existing numeric handles and typed CSS factories; existing standalone factories keep their behavior.
@@ -72,6 +74,8 @@ The scoped registry review found skipped explicit-pair getter effects. Raw gette
 - [ ] Add numeric raw/explicit/row/offset and typed CSS inline/computed/declaration overloads, with uint/precise durations and existing scoped restoration.
 
 ## Task3: Qualify and record
+
+Public numeric qualification:1954/1954 complete normal/Traced tests, XML0 and full source regeneration pass. Normal/Traced JIT and strict NativeAOT native layout/cache/takeover/muting/owner probes pass with all earlier probes and host.Errors0. Evidence docs/evidence/native-public45-p7-owned-numeric-timeline.json verifies2 receipts/18 archives/66 library hashes/2 consumers and357 authored/190 compiler inputs. One fresh scoped review's external-control context defect was reproduced and fixed; all existing timer source comparisons remain green. The full owned CSS/sequence/mixed-authoring milestone remains unfinished.
 
 Internal registry qualification: Registry checkpoint:1898/1898 full normal Release and Traced Debug tests, XML0 and complete source regeneration pass. Both public JIT and strict NativeAOT PEs pass shared sibling construction, cross-driver takeover, backward recovery and actual owner cancellation/link cleanup, with earlier native probes and host.Errors0. Immutable frame-siblings evidence verifies2 receipts/18 archives/64 current library hashes/2 consumers and strict Debug356 authored/190 compiler inputs. All15 warm Partas.Build gate records exit0; logs under artifacts/qualification/frame-sibling-final-gates. The public owned factory, mixed scalar/keyframe root integration and full42-trace owned replay remain required. The task checkboxes below still apply to the complete public owned factory.
 

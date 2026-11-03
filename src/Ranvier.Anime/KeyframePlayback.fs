@@ -57,15 +57,26 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                 let frame=frames[index]
                 let previous=frame.Previous
                 let next=frame.Next
+                let previousCross=not(isNull previous) && not(obj.ReferenceEquals(previous.Child,frame.Child))
+                let nextSame=not(isNull next) && obj.ReferenceEquals(next.Child,frame.Child)
+                let previousEnd=if isNull previous then 0. else previous.AbsoluteStart+previous.Change
                 let ending=frame.AbsoluteStart+frame.Change
-                let takeover=if isNull next || next.Overridden then ending else ending+next.Delay
-                let history=(frame.Time<>frame.Change || absolute<=takeover || (not(isNull previous) && isNull next)) &&
+                let takeover=
+                    if isNull next || next.Overridden then ending
+                    elif nextSame then ending+next.Delay
+                    elif next.AbsoluteStart<next.AbsoluteUpdateStart then next.AbsoluteStart
+                    else next.AbsoluteUpdateStart
+                let history=(frame.Time<>frame.Change || absolute<=takeover ||
+                             (not(isNull previous) && not previousCross && (isNull next || not nextSame))) &&
                             (frame.Time<>0. || absolute>=frame.AbsoluteStart ||
-                             (not(isNull next) && not next.Overridden && next.Time<>0. && sample.IterationTime<next.Start))
-                let eligible=(forced || history) && (isNull previous || sample.IterationTime>=frame.Start) &&
+                             (previousCross && not frame.Definition.HasFrom && not previous.Overridden && absolute>=previousEnd) ||
+                             (nextSame && not next.Overridden && next.Time<>0. && sample.IterationTime<next.Start))
+                let eligible=(forced || history) && (isNull previous || previousCross || sample.IterationTime>=frame.Start) &&
                              (not replace || (not frame.Overridden && (not frame.Overlapped || absolute<=ending) &&
                                               (isNull next || next.Overridden || absolute<=takeover) &&
-                                              (isNull previous || previous.Overridden || absolute>=previous.AbsoluteStart+previous.Change+frame.Delay)))
+                                              (isNull previous || previous.Overridden ||
+                                               (if not previousCross then absolute>=previousEnd+frame.Delay
+                                                else absolute>=frame.AbsoluteStart || (not frame.Definition.HasFrom && absolute>=previousEnd)))))
                 if eligible then
                     frame.Time<-Math.Clamp(sample.IterationTime-frame.Start,0.,frame.Change)
                     let definition=definitions[index]
@@ -81,7 +92,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                                 rendered<-true
                             alive<-current()
                         | _ -> alive<-false
-                elif frame.Time<>0. && not(isNull previous) && sample.IterationTime<frame.Start then frame.Time<-0.
+                elif frame.Time<>0. && not(isNull previous) && not previousCross && sample.IterationTime<frame.Start then frame.Time<-0.
         if alive && current() && rendered && sample.AboveZero && not muted then onRender |> Option.iter(fun action -> action clock)
     do
         clock.Seek(0.,muteCallbacks=true)
@@ -102,15 +113,20 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
     /// <summary>Independent snapshots of each tween's most recently sampled scalar/color/compound cache.</summary>
     member _.CurrentValues=frames |> Array.map(fun frame -> {frame.Value with Components=Array.copy frame.Value.Components})
     /// <summary>Notifies standalone explicit-from construction once, then resets; owned child initialization only refreshes caches.</summary>
-    member _.Initialize(?notifyConstruction:bool,?timelineChild:bool)=
-        let current=clock.CaptureWriteGuard()
+    member _.Initialize(?notifyConstruction:bool,?timelineChild:bool,?canWrite:unit -> bool)=
+        if defaultArg timelineChild false && not initialized && not clock.Cancelled then
+            clock.AssignToTimeline()
+            clock.PrepareConstruction()
+        let inherited=defaultArg canWrite (fun () -> true)
+        let clockCurrent=clock.CaptureWriteGuard()
+        let current()=clockCurrent() && inherited()
         try
             if current() && not initialized then
                 initialized<-true
                 if defaultArg notifyConstruction (not(defaultArg timelineChild false)) && (definitions |> Array.exists _.HasFrom) then
                     onRender |> Option.iter(fun action -> action clock)
             if current() then
-                if defaultArg timelineChild false then clock.AttachToTimeline(internalRender=true)
+                if defaultArg timelineChild false then clock.AttachToTimeline(internalRender=true,canWrite=inherited)
                 else clock.Reset()
         with _ ->
             try clock.Cancel() with _ -> ()

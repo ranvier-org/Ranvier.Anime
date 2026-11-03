@@ -262,6 +262,16 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
                     began<-false
                     completed<-false)
         finally parentContext <- previous
+    /// <summary>Exposes the source constructor's zero playhead before initialization applies configured reversal.</summary>
+    member _.PrepareConstruction() =
+        live()
+        change() |> ignore
+        sample<-timing.Sample(0.,delay,false,false,false,PlaybackTickMode.Force)
+        previousAbsoluteTime<-0.
+        lastTime<-0.
+        paused<-true
+        began<-false
+        completed<-false
     /// <summary>Resets child lifecycle flags while retaining its clock sample history.</summary>
     member _.ResetChildFlags() =
         paused <- true

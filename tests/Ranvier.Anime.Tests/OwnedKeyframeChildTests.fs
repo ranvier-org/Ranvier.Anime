@@ -13,6 +13,20 @@ let private compile first last modifier =
     |> Option.get
 
 let tests=testList "owned keyframe child sampling" [
+    testCase "owned constructor notification reentry retains timeline scheduling" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let program=compile (ValueInterpolation.Number 0.) (ValueInterpolation.Number 100.) id
+        let mutable writes=0
+        let mutable once=false
+        use driver=new KeyframePlayback(scheduler,program,(fun _ _ _ -> writes<-writes+1),false,false,-1,PlaybackOptions.Default,
+            onRender=(fun clock -> if not once then once<-true;clock.Seek(50.,muteCallbacks=true);clock.Resume()))
+        driver.Initialize(timelineChild=true,notifyConstruction=true)
+        let before=writes
+        scheduler.Advance 10.
+        scheduler.RunFrame()
+        Expect.equal writes before "notification cannot request an independent frame"
+        Expect.equal driver.Clock.CurrentTime 50. "reentrant seek retained"
+
     testCase "reentrant owned initialization retains the nested seek lifecycle state" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         let mutable active:Timer option=None

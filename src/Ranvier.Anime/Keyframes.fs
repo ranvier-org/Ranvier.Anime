@@ -51,6 +51,7 @@ type KeyframeAnimation internal(targetCount:int) =
     let mutable reverting=false
     let mutable generation=0
     let mutable restore:((unit -> bool) -> unit) option=None
+    let mutable cleanup:(unit -> unit) option=None
     /// <summary>Checks that construction still belongs to this lifetime.</summary>
     member internal _.EnsureLive()=if not active then raise(ObjectDisposedException(nameof KeyframeAnimation))
     /// <summary>Captures the current construction or restoration generation.</summary>
@@ -59,6 +60,8 @@ type KeyframeAnimation internal(targetCount:int) =
         fun () -> active && expected=generation
     /// <summary>Registers captured restoration before initialization invokes user code.</summary>
     member internal _.SetRestore(action)=restore<-Some action
+    /// <summary>Registers terminal sibling cleanup before construction can publish or invoke user callbacks.</summary>
+    member internal _.SetCleanup(action)=cleanup<-Some action
     /// <summary>Installs the prepared shared driver before initialization.</summary>
     member internal _.SetDriver(value)=driver<-Some value
     /// <summary>The existing shared Timer controller, including precise seek, repeat, direction and stretch controls.</summary>
@@ -73,7 +76,13 @@ type KeyframeAnimation internal(targetCount:int) =
             active<-false
             generation<-generation+1
             restore<-None
-            driver |> Option.iter(fun value -> value.Clock.Cancel())
+            let release=cleanup
+            cleanup<-None
+            let mutable failure:exn option=None
+            try release |> Option.iter(fun action -> action()) with error -> failure<-Some error
+            try driver |> Option.iter(fun value -> value.Clock.Cancel())
+            with error -> if failure.IsNone then failure<-Some error
+            failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     /// <summary>Rewinds and restores captured properties, then cancels; owner disposal suppresses later restoration writes.</summary>
     member this.Revert()=
         if active && not reverting then

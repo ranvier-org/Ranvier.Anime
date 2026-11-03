@@ -33,6 +33,7 @@
     <Compile Include="CssSerialization.fs" />
     <Compile Include="CssPropertySnapshot.fs" />
     <Compile Include="Keyframes.fs" />
+    <Compile Include="TimelineKeyframes.fs" />
     <Compile Include="KeyframeSequenceBinding.fs" />
     <Compile Include="AnimatableCss.fs" />
     <Compile Include="Css.fs" />
