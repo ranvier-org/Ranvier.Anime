@@ -42,6 +42,105 @@ let main args =
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
         do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let targets=[|host.Document.createElement "div" :?> HTMLElement;host.Document.createElement "div" :?> HTMLElement|]
+            let styles=targets |> Array.map(fun target -> (target:>ElementCSSInlineStyle).style)
+            for index in 0..1 do
+                host.Document.body.appendChild targets[index] |> ignore
+                styles[index].setProperty("font-size",if index=0 then "16px" else "32px")
+                styles[index].setProperty("width",if index=0 then "10px" else "20px")
+                styles[index].setProperty("height",(if index=0 then "20px" else "40px"),priority=(if index=0 then "" else "important"))
+            let originalChildren=host.Document.body.childNodes.length
+            let service=ComputedStyles.forHost host
+            let mutable reads=0
+            let computed={new ComputedStyleService with member _.Get(target,pseudo)=reads<-reads+1;service.Get(target,pseudo)}
+            let inputs=ResizeArray<uint*uint>()
+            let row=(KeyframeRow<HTMLElement,Declaration>.Create [||])
+                        .WithValueBy("width",fun context -> inputs.Add(context.Index,context.Count);Css.width(Css.em(2.+float context.Index)))
+                        .WithValue("height",Css.height(Css.em 3.))
+            let sequence=KeyframeSequence.Rows [|row|]
+            let mutable renders=0
+            use timeline=new Timeline(scheduler,onRender=(fun _ -> renders<-renders+1))
+            owner.Attach timeline
+            use child=timeline.CaptureCssKeyframes(computed,targets,sequence,duration=100u,
+                options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id})
+            require "owned CSS rows capture all native contexts without dispatch or leaked unit probes"
+                (reads=4 && inputs.ToArray()=[|0u,2u;1u,2u|] && styles[0].getPropertyValue "width"="10px" &&
+                 styles[1].getPropertyValue "height"="40px" && host.Document.body.childNodes.length=originalChildren && renders=0)
+            timeline.Seek 50.
+            require "owned CSS rows share one root render across native properties and independent font contexts"
+                (targets[0].getBoundingClientRect().width=21. && targets[1].getBoundingClientRect().width=58. &&
+                 targets[0].getBoundingClientRect().height=34. && targets[1].getBoundingClientRect().height=68. &&
+                 styles[1].getPropertyPriority "height"="important" && renders=1)
+            timeline.Resume()
+            pumpUntil host (fun () -> timeline.Completed)
+            require "actual host frames complete owned CSS sparse rows without computed recapture"
+                (reads=4 && targets[0].getBoundingClientRect().width=32. && targets[1].getBoundingClientRect().width=96. &&
+                 targets[0].getBoundingClientRect().height=48. && targets[1].getBoundingClientRect().height=96.)
+            styles[0].setProperty("color","red")
+            child.Revert()
+            require "owned CSS sequence revert restores every native snapshot and preserves unrelated edits"
+                (styles[0].getPropertyValue "width"="10px" && styles[1].getPropertyValue "width"="20px" &&
+                 styles[0].getPropertyValue "height"="20px" && styles[1].getPropertyValue "height"="40px" &&
+                 styles[1].getPropertyPriority "height"="important" && styles[0].getPropertyValue "color"<>"")
+            owner.Dispose()
+            require "actual owner closes native sparse CSS root and child" (timeline.Cancelled && child.Cancelled)
+            for target in targets do host.Document.body.removeChild target |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            inlineStyle.setProperty("height","20px")
+            use timeline=new Timeline(scheduler)
+            let width value=Css.width(Css.px value)
+            let options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=id}
+            use first=timeline.AddKeyframes((inlineStyle:>CSSStyleDeclaration),width 0.,Keyframe.values [|width 0.;width 100.;width 200.|],
+                duration=200u,position=TimelinePosition.At 0.,options=options)
+            let sequence=KeyframeSequence<HTMLElement,Declaration>.Rows [|KeyframeRow.declarations [|width 300.;Css.height(Css.px 200.)|]|]
+            use second=timeline.CaptureCssKeyframes(ComputedStyles.forHost host,target,sequence,
+                duration=100u,position=TimelinePosition.At 75.,options=options)
+            timeline.Seek 125.
+            require "owned multi-property CSS sequence shares native sibling identity with per-property style factory"
+                (target.getBoundingClientRect().width=187.5 && target.getBoundingClientRect().height=110.)
+            second.Revert()
+            require "owned CSS sibling sequence restores original native multi-property snapshot"
+                (inlineStyle.getPropertyValue "width"="10px" && inlineStyle.getPropertyValue "height"="20px")
+            timeline.Cancel()
+            host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","10px")
+            inlineStyle.setProperty("height","20px")
+            use timeline=new Timeline(scheduler)
+            owner.Attach timeline
+            let service=ComputedStyles.forHost host
+            let mutable reads=0
+            let computed=
+                {new ComputedStyleService with
+                    member _.Get(element,pseudo) =
+                        reads<-reads+1
+                        let result=service.Get(element,pseudo)
+                        owner.Dispose()
+                        result}
+            let sequence=KeyframeSequence<HTMLElement,Declaration>.Rows [|KeyframeRow.declarations [|Css.width(Css.px 100.);Css.height(Css.px 200.)|]|]
+            let mutable interrupted=false
+            try timeline.CaptureCssKeyframes(computed,[|target;target|],sequence,duration=100u) |> ignore
+            with :? InvalidOperationException -> interrupted<-true
+            require "actual owner disposal after native computed Get stops later sparse CSS cells and publication"
+                (interrupted && timeline.Cancelled && reads=1 && inlineStyle.getPropertyValue "width"="10px" &&
+                 inlineStyle.getPropertyValue "height"="20px")
+            require "owned sparse CSS factory keeps its native computed service borrowed"
+                ((service.Get((target:>Element),None)).getPropertyValue "width"="10px")
+            host.Document.body.removeChild target |> ignore
+        do
             let target=host.Document.createElement "div" :?> HTMLElement
             host.Document.body.appendChild target |> ignore
             let inlineStyle=(target:>ElementCSSInlineStyle).style

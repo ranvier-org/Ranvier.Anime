@@ -37,6 +37,8 @@
     <Compile Include="TimelineOwnedFactoryTests.fs" />
     <Compile Include="TimelineNumericKeyframeTests.fs" />
     <Compile Include="TimelineCssKeyframeTests.fs" />
+    <Compile Include="TimelineCssSequenceTests.fs" />
+    <Compile Include="TimelineCssSequenceSourceTests.fs" />
     <Compile Include="TimelineSequenceContractTests.fs" />
     <Compile Include="TimelineNumericKeyframeSourceTests.fs" />
     <Compile Include="Program.fs" />
@@ -62,5 +64,6 @@
     <None Include="../reference/animation-playback.json" Link="reference/animation-playback.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timeline-playback.json" Link="reference/timeline-playback.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timeline-keyframes.json" Link="reference/timeline-keyframes.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-css-keyframes.json" Link="reference/timeline-css-keyframes.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

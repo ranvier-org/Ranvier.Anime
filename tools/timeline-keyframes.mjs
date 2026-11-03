@@ -6,29 +6,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 
 const script=fileURLToPath(import.meta.url),root=resolve(dirname(script),'..'),upstream=resolve(root,'upstream/anime');
-const base=[
- {name:'rawFrames',children:[{id:'a',at:25,parameters:{x:[0,100,50],duration:200}}]},
- {name:'gappedFrames',children:[{id:'a',at:25,parameters:{x:[{from:0,to:100,duration:100},{to:200,duration:50,delay:100}],duration:300}}]},
- {name:'sparseRows',targets:[{x:10,y:20},{x:30,y:40}],children:[{id:'a',at:40,parameters:{duration:300,keyframes:[{x:100,duration:100},{y:200,duration:100},{x:0,y:0,duration:100}]}}]},
- {name:'sparseOffsets',children:[{id:'a',at:20,parameters:{duration:200,keyframes:{'0%':{x:0,y:0,ease:'inQuad'},'50%':{x:100,ease:'outQuad'},'100%':{x:200,y:200}}}}]},
- {name:'independentChildren',children:[{id:'a',at:0,parameters:{x:[0,100,200],duration:200}},{id:'b',at:50,parameters:{y:[0,200,100],duration:300}}]},
- {name:'overlappingChildren',children:[{id:'a',at:0,parameters:{x:[0,100,200],duration:200}},{id:'b',at:75,parameters:{x:[{to:300},{to:400}],duration:200}}]},
- {name:'reorderedChildren',children:[{id:'a',at:100,parameters:{x:[0,100,200],duration:200}},{id:'b',at:0,parameters:{x:[{to:300},{to:400}],duration:200}}]},
- {name:'modifiedPredecessors',children:[{id:'a',at:0,parameters:{x:[0,100,200],duration:200,modifier:'plusOne'}},{id:'b',at:100,parameters:{x:[{to:'+=100'},{to:'*=2'}],duration:200,modifier:'double'}}]},
- {name:'delayedLoopChild',parameters:{loop:1,alternate:true},children:[{id:'a',at:25,parameters:{x:[0,100,200],duration:200,delay:40,loop:1,loopDelay:30,alternate:true}}]},
- {name:'reverseChildAndRoot',parameters:{loop:2,alternate:true,reversed:true},children:[{id:'a',at:25,parameters:{x:[0,100,200],duration:200,reversed:true}}]},
- {name:'signedOffsetAndDelay',children:[{id:'a',at:-25,parameters:{x:[{to:100,delay:-20},{to:200,delay:10}],duration:200}}]},
- {name:'fractionalAbsoluteOffset',children:[{id:'a',at:5234.5,parameters:{x:[0,100,200,300,400],duration:4000,delay:0.125}}],times:[0,5234.5,5234.625,6234.625,7234.625,9234.625,6234.625,0]},
- {name:'zeroChild',parameters:{loop:2},children:[{id:'a',at:50,parameters:{x:[0,100],duration:0}}]},
- {name:'emptyChild',children:[{id:'a',at:25,parameters:{x:[],duration:100}}]},
- {name:'mutedResetComplete',children:[{id:'a',at:25,parameters:{x:[0,100,200],duration:200,loop:1}}],actions:[['seekMuted',50],['seekMuted',225],['reset'],['seek',50],['completeMuted'],['seek',0],['seek',125]]},
- {name:'scheduledSpeedFps',parameters:{frameRate:20,loop:1},children:[{id:'a',at:25,parameters:{x:[0,100,200],duration:200,playbackRate:2,frameRate:20}}],actions:[['resume'],['frame',1],['frame',20],['frame',25],['speed',2],['frame',100],['pause'],['frame',100],['reverse'],['frame',25],['reset'],['restart'],['frame',500]]},
- {name:'targetAwareTimeline',targets:[{x:10,y:20},{x:30,y:40}],children:[{id:'a',at:25,parameters:{x:[{to:{fn:'target',base:100,step:10},from:{fn:'index',base:0,step:10},duration:{fn:'index',base:100,step:25}},{to:{fn:'previous',base:100}}],duration:200}}]},
- {name:'previousAcrossChildren',children:[{id:'a',at:0,parameters:{x:[0,100],duration:100,modifier:'plusOne'}},{id:'b',at:100,parameters:{x:[{to:{fn:'previous',base:10}},{to:{fn:'previous',base:20}}],duration:200}}]},
- {name:'overlapInputTail',children:[{id:'a',at:0,parameters:{x:[0,100,200],duration:200}},{id:'b',at:75,parameters:{x:[{to:{fn:'previous',base:10},duration:100},{to:{fn:'previous',base:20},duration:100}],duration:200}}]},
- {name:'loopingPredecessor',children:[{id:'a',at:0,parameters:{x:[0,100,200],duration:200,loop:1}},{id:'b',at:250,parameters:{x:[300],duration:100}}]},
- {name:'relativeSiblingSource',children:[{id:'a',at:0,parameters:{x:[0,100,200],duration:200}},{id:'b',at:75,parameters:{x:[{from:'+=5',to:300,duration:100}],duration:100}}]},
-];
+import {timelineKeyframeCases as base} from './timeline-keyframe-cases.mjs';
 const cases=base.flatMap(input=>['none','replace'].map(composition=>({...input,name:composition+'-'+input.name,composition})));
 if(process.argv[2]==='--case'){
  let now=0;Date.now=()=>now;
