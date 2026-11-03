@@ -95,6 +95,24 @@ let main args =
         require "native timeline borrows repeated timer playback without disposing it"
             (borrowedTimer.CurrentTime = 0. && not borrowedTimer.Cancelled)
         use graph = new Graph()
+        let mutable curveValue = 0.
+        let writeCurve value =
+            curveValue <- value
+            style.setProperty("--anime-gap", value.ToString("G17", CultureInfo.InvariantCulture) + "px", priority = "important")
+        let piecewise = Ease.linear [|LinearStop.Value 0.; LinearStop.At(1.5, 0.5); LinearStop.Value 1.|]
+        use curveTween = new NumericAnimation(scheduler, (fun () -> curveValue), writeCurve, 100., 100., ease = piecewise)
+        curveTween.Seek 50.
+        require "native piecewise easing retains overshoot and layout"
+            (style.getPropertyValue "--anime-gap" = "150px" && abs(element.getBoundingClientRect().width - 150.) < 0.01)
+        curveTween.Resume()
+        pumpUntil host (fun () -> curveTween.Completed)
+        require "native piecewise easing finishes at its final stop" (curveValue = 100.)
+        let mutable randomCalls = 0
+        let irregular = Ease.irregularWith (fun () -> randomCalls <- randomCalls + 1; 0.5) 3u 1.
+        use irregularTween = new NumericAnimation(scheduler, (fun () -> 0.), writeCurve, 100., 100., ease = irregular)
+        irregularTween.Seek 50.
+        require "native irregular easing retains construction draws"
+            (curveValue = 75. && style.getPropertyValue "--anime-gap" = "75px" && randomCalls = 1)
         use activation = graph.Activate()
         let mutable writes = 0
         let owner, signal = Api.createRoot(fun owner ->

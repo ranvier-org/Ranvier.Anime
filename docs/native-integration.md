@@ -4,6 +4,8 @@ Development home: `C:/wk/ranvier-anime`. Open `Ranvier.Anime.Native.slnx` for th
 
 ## Current public cohort
 
+The latest source replay is [public45-p7-curves](evidence/native-public45-p7-curves.json). Both normal/Traced JIT and strict NativeAOT PE runs add piecewise overshoot through native layout, completion at the final stop and an irregular curve whose random draws remain fixed after construction. Full portable suites now pass799/799 in each mode. Immutable `native-public45-p7-curves-{Release,Debug}` snapshots bind these library/consumer sources; the unlabelled public cohort below retains the earlier checkpoint. To preserve a new replay, use `--label <unique-label>` for both evidence commands and summary.
+
 Normal Release and Traced Debug now pass fresh JIT builds/runs and strict NativeAOT publications/PE executions using public NuGet packages only: Core0.1.1-preview.1, DOM0.1.0-alpha.56, CSS0.1.1-alpha.2, Bindings0.1.1-alpha.1, CSS-DOM0.1.0-alpha.1, View/View.Dom0.1.45, View.WebCore0.1.0-alpha.45 and WebCore/Native0.1.1-preview.7. The headless consumer builds only the port and consumer projects; View/Core are package dependencies. Normal and Traced modes use matching managed packages.
 
 `build.public45.fsx` owns `artifacts/nuget-public45-p7` and `artifacts/native-public45-p7`. Every run verifies nine managed identities from nupkg entry through extracted cache and app; strict PE evidence also verifies the actual ILC DLL inputs. Each nupkg has an independently pinned hash, nuspec source commit and public-feed provenance. The View audit pins source6b1119c8; native CPU/meta audits pin source6f10bea, ABI62, win-x64/slim and all24 exact payload members. Sdl packages in the eight-package View audit are not consumed by this headless host.

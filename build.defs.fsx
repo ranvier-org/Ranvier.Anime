@@ -419,6 +419,12 @@ let root = Command.root {
             }
         }
     }
+    command "easing-reference" {
+        stage "upstream easing curves reference" {
+            workingDir __SOURCE_DIRECTORY__
+            run "rtk node tools/easing-curves.mjs"
+        }
+    }
     command "reference" {
         description "Generate comparison fixtures from the pinned upstream Anime.js source"
         stage "upstream reference" {
@@ -427,6 +433,7 @@ let root = Command.root {
             run "rtk node tools/timer-controls.mjs"
             run "rtk node tools/animation-playback.mjs"
             run "rtk node tools/timeline-playback.mjs"
+            run "rtk node tools/easing-curves.mjs"
         }
     }
 }

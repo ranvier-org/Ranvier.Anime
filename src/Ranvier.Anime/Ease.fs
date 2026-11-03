@@ -15,6 +15,19 @@ type EaseFamily =
     | Back of overshoot: float
     | Elastic of amplitude: float * period: float
 
+/// <summary>A finite piecewise-linear value with implicit spacing or an explicit normalized position.</summary>
+[<RequireQualifiedAccess; System.Diagnostics.DebuggerDisplay("{DebugText,nq}")>]
+type LinearStop =
+    | Value of value: float
+    /// <summary>A value at normalized progress; first and last positions are ignored.</summary>
+    | At of value: float * progress: float
+    override this.ToString() =
+        let text (value:float) = value.ToString("R", System.Globalization.CultureInfo.InvariantCulture)
+        match this with
+        | LinearStop.Value value -> "Value " + text value
+        | LinearStop.At(value, position) -> "At (" + text value + ", " + text position + ")"
+    member private this.DebugText = this.ToString()
+
 /// <summary>Anime.js easing formulas evaluated on normalized progress.</summary>
 [<RequireQualifiedAccess>]
 module Ease =
@@ -23,6 +36,58 @@ module Ease =
 
     let private progress time =
         finite "time" time
+
+    /// <summary>Captures ordered stops; empty input is identity and a single value is constant.</summary>
+    /// <remarks>Implicit positions use index spacing. Repeated or descending positions retain source arithmetic,
+    /// including nonfinite results.</remarks>
+    let linear (points:LinearStop array) =
+        if isNull points then nullArg "points"
+        let points = points |> Array.map(function LinearStop.Value value -> value, None | LinearStop.At(value, position) -> value, Some position)
+        for value, position in points do
+            finite "points" value
+            position |> Option.iter (finite "points")
+        if points.Length = 0 then fun time -> progress time; time
+        else
+            let last = points.Length - 1
+            let length = max 2 points.Length
+            let positions = Array.init length (fun index ->
+                if index = 0 then 0.
+                elif index = length - 1 then 1.
+                else snd points[index] |> Option.defaultValue(float index / float last))
+            let values = Array.init length (fun index -> fst points[min index last])
+            fun time ->
+                progress time
+                let mutable index = 1
+                while index < length && time > positions[index] do index <- index + 1
+                if index = length then values[length - 1]
+                else
+                    values[index - 1] + (values[index] - values[index - 1]) *
+                    (time - positions[index - 1]) / (positions[index] - positions[index - 1])
+
+    /// <summary>Constructs an irregular easing from finite randomness and one [0,1) draw per interior stop.</summary>
+    /// <remarks>Counts 0–2 yield the two endpoints. Draws occur only at construction; randomness may be signed or exceed 1.</remarks>
+    let irregularWith (random:unit -> float) (count:uint) randomness =
+        if isNull(box random) then nullArg "random"
+        finite "randomness" randomness
+        if count > uint Int32.MaxValue then invalidArg "count" "Count exceeds array capacity."
+        let length = max 2 (int count)
+        let values = Array.create length (LinearStop.Value 0.)
+        values[length - 1] <- LinearStop.Value 1.
+        let total = float count - 1.
+        let mutable previous = 0.
+        for index in 1 .. length - 2 do
+            let draw = random()
+            if not(Double.IsFinite draw) || draw < 0. || draw >= 1. then invalidArg "random" "Expected a draw in [0,1)."
+            let spacing = float index / total
+            let segmentEnd = float(index + 1) / total
+            let variation = spacing + (segmentEnd - spacing) * draw
+            let value = spacing * (1. - randomness) + variation * randomness
+            previous <- Math.Clamp(value, previous, 1.)
+            values[index] <- LinearStop.Value previous
+        linear values
+
+    /// <summary>Constructs an irregular easing using Random.Shared; counts and randomness follow irregularWith.</summary>
+    let irregular count randomness = irregularWith (fun () -> Random.Shared.NextDouble()) count randomness
 
     let private bounce time =
         if time < -1. / 11. then invalidArg "time" "Bounce extrapolation must not fall below -1/11."
