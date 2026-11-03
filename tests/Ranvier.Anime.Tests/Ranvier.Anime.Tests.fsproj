@@ -31,6 +31,7 @@
     <Compile Include="AnimationPlaybackTests.fs" />
     <Compile Include="TimelineClockTests.fs" />
     <Compile Include="TimelinePlaybackTests.fs" />
+    <Compile Include="TimelineKeyframeTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -53,5 +54,6 @@
     <None Include="../reference/timer-controls.json" Link="reference/timer-controls.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/animation-playback.json" Link="reference/animation-playback.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timeline-playback.json" Link="reference/timeline-playback.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-keyframes.json" Link="reference/timeline-keyframes.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

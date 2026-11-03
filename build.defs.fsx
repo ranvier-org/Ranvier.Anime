@@ -432,6 +432,7 @@ let root = Command.root {
             run "rtk node tools/keyframes.mjs --playback"
             run "rtk node tools/keyframes.mjs --inputs"
             run "rtk node tools/keyframes.mjs --computed"
+            run "rtk node tools/timeline-keyframes.mjs"
             run "rtk node tools/keyframe-css.mjs"
             run "rtk node tools/keyframe-sequences.mjs"
         }
@@ -457,6 +458,13 @@ let root = Command.root {
         stage "upstream computed keyframe reference" {
             workingDir __SOURCE_DIRECTORY__
             run "rtk node tools/keyframes.mjs --computed"
+            run "rtk node tools/timeline-keyframes.mjs"
+        }
+    }
+    command "timeline-keyframe-reference" {
+        stage "upstream owned timeline keyframe reference" {
+            workingDir __SOURCE_DIRECTORY__
+            run "rtk node tools/timeline-keyframes.mjs"
         }
     }
     command "unit-reference" {
