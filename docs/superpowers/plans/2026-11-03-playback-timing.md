@@ -34,4 +34,6 @@ Current native replay: the added timer/numeric code now passes both strict norma
 
 ## Review focus
 
+Task 3 timeline preparation:31 additional source traces now record root/child state, property values, all callback phases, repeated/alternate/reversed timelines, timer tracks, borrowed timer/animation/nested controllers, muting and admitted frames. Internal PlaybackState child-phase support passes29 root clock traces using recorded child completion aggregates, plus six ordering/interruption cases. This proves the root clock boundary rather than native child rendering; Timeline still uses its earlier driver, and the two scheduled cases await integration. Full suites527/527 normal Release and Traced Debug, XML audit0. No new NativeAOT claim for this source change.
+
 Check skipped iterations versus callback counts, delay/loop-gap boundaries, 32-bit JavaScript truncation and negative zero-duration iteration indices, infinite versus clamped total durations, mixed forward/backward sampling, render eligibility after completion, sample time versus public rounded getters, reentrant controls during callbacks, and float precision at maximum uint/large values. Current native lifetime adaptations must not silently change ordinary Anime.js clock geometry.

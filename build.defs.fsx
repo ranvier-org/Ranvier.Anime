@@ -321,6 +321,7 @@ let root = Command.root {
             run "rtk node tools/reference.mjs"
             run "rtk node tools/timer-controls.mjs"
             run "rtk node tools/animation-playback.mjs"
+            run "rtk node tools/timeline-playback.mjs"
         }
     }
 }

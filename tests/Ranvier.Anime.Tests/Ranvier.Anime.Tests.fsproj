@@ -12,6 +12,7 @@
     <Compile Include="PlaybackStateTests.fs" />
     <Compile Include="TimerTests.fs" />
     <Compile Include="AnimationPlaybackTests.fs" />
+    <Compile Include="TimelineClockTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -23,5 +24,6 @@
     <None Include="../reference/pure.json" Link="reference/pure.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timer-controls.json" Link="reference/timer-controls.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/animation-playback.json" Link="reference/animation-playback.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-playback.json" Link="reference/timeline-playback.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

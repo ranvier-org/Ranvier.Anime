@@ -1,6 +1,6 @@
 namespace Ranvier.Anime
 
-/// <summary>Callback phases for a standalone playback controller.</summary>
+/// <summary>Callback phases for a playback controller.</summary>
 [<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type internal PlaybackEvent =
     | Begin
@@ -19,7 +19,7 @@ type internal PlaybackEvent =
         | Pause -> "Pause"
         | Complete -> "Complete"
 
-/// <summary>Standalone callback and control state; clock input includes the initial delay.</summary>
+/// <summary>Playback callback and control state; clock input includes the initial delay.</summary>
 type internal PlaybackState(duration: float, iterations: float, delay: float, loopDelay: float,
                             initialReversed: bool, alternate: bool, callback: PlaybackEvent -> unit) =
     let mutable timing = PlaybackTiming(duration, iterations, delay, loopDelay)
@@ -35,6 +35,8 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let mutable generation = 0
     let mutable previousAbsoluteTime = 0.
     let mutable renderer : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
+    let mutable childRenderer : (PlaybackSample -> PlaybackTickMode -> bool -> bool) option = None
+    let mutable prepareLoop : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
 
     let live () =
         if cancelled then raise (System.ObjectDisposedException("Timer"))
@@ -57,22 +59,34 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             emit PlaybackEvent.Begin
         elif next.AbsoluteTime <= 0. then
             began <- false
-        if current() && next.AboveZero && next.Iteration <> previousIteration then emit PlaybackEvent.Loop
+        if childRenderer.IsNone && current() && next.AboveZero && next.Iteration <> previousIteration then emit PlaybackEvent.Loop
         if current() && next.ShouldRender then
             if next.AboveZero then
                 deltaTime <- next.PreviousTime - lastTime
                 lastTime <- next.PreviousTime
                 emit PlaybackEvent.BeforeUpdate
-            if current() then renderer next mode mute
+            if childRenderer.IsNone && current() then renderer next mode mute
             if next.AboveZero then emit PlaybackEvent.Update
         if current() then
             if next.AboveZero && next.AtEnd then
                 if System.Double.IsFinite iterations && float next.Iteration >= iterations - 1. then
                     paused <- true
-                    if not wasCompleted then
+                    if childRenderer.IsNone && not wasCompleted then
                         completed <- true
                         emit PlaybackEvent.Complete
             else completed <- false
+        match childRenderer with
+        | Some renderChildren when current() ->
+            if next.Iteration <> previousIteration then
+                prepareLoop next mode mute
+                if current() then emit PlaybackEvent.Loop
+            let childrenComplete = if current() then renderChildren next mode mute else false
+            if current() && (childrenComplete || next.Backwards) && next.AbsoluteTime >= timing.Duration then
+                paused <- true
+                if not completed then
+                    completed <- true
+                    emit PlaybackEvent.Complete
+        | _ -> ()
 
     do
         if sample.AboveZero then
@@ -152,6 +166,10 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     member _.Generation = generation
     /// <summary>Renders eligible samples between before-update and update callbacks, including muted and nonpositive samples.</summary>
     member _.Renderer with set value = renderer <- value
+    /// <summary>Renders timeline children after root update callbacks; loop preparation precedes the root loop callback.</summary>
+    member _.ConfigureChildren(beforeLoop, renderChildren) =
+        prepareLoop <- beforeLoop
+        childRenderer <- Some renderChildren
     /// <summary>Raw time preceding the current sample, used for forced property-render eligibility.</summary>
     member _.PreviousAbsoluteTime = previousAbsoluteTime
     /// <summary>Overrides total geometry for source animation setter durations while preserving iteration count.</summary>
@@ -167,7 +185,7 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             if not(System.Double.IsFinite value) then invalidArg "value" "Expected a finite playback rate."
             change() |> ignore
             speed <- System.Math.Max(1e-11, value)
-    /// <summary>Samples standalone timer callbacks using a source tick mode.</summary>
+    /// <summary>Samples controller callbacks and any configured child phase using a source tick mode.</summary>
     member _.Tick(time: float, mode: PlaybackTickMode, mute: bool) =
         run (fun _ -> render time mode mute)
     /// <summary>Seeks in milliseconds after the initial delay and retains the preceding scheduling state.</summary>
