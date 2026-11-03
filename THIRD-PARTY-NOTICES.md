@@ -10,6 +10,8 @@ Timeline iteration/child traversal in `src/Ranvier.Anime/Timeline.fs` and scalar
 
 Endpoint decomposition, homogenization and scalar/color/compound interpolation in `src/Ranvier.Anime/ValueInterpolation.fs` derive from the pinned core values, colors, helpers, render and animation code.
 
+Cached getters and retarget endpoint updates in `src/Ranvier.Anime/AnimatableValue.fs` follow the pinned animatable code, with guarded atomic updates and snapshot component getters.
+
 Contextual conversion in `src/Ranvier.Anime/CssUnits.fs` follows the pinned core units code's angle ratios and clone measurement procedure, with scoped cleanup and per-element construction measurements.
 
 The easing formulas retain Anime.js's credit to Robert Penner, Copyright (c) 2001 Robert Penner, from https://robertpenner.com/easing/.

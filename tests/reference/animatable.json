@@ -59,6 +59,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -124,6 +127,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -181,6 +187,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -244,6 +253,9 @@
                 "tweens": [
                   {
                     "number": 72,
+                    "time": 62,
+                    "updateDuration": 100,
+                    "easedProgress": 0.62,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -388,6 +400,9 @@
                 "tweens": [
                   {
                     "number": 110,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -576,6 +591,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -641,6 +659,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -698,6 +719,9 @@
                 "tweens": [
                   {
                     "number": 70.31,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.6031,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -761,6 +785,9 @@
                 "tweens": [
                   {
                     "number": 95.56,
+                    "time": 62,
+                    "updateDuration": 100,
+                    "easedProgress": 0.8556,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -905,6 +932,9 @@
                 "tweens": [
                   {
                     "number": 110,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -1104,6 +1134,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -1169,6 +1202,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -1226,6 +1262,9 @@
                 "tweens": [
                   {
                     "number": 37,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -1290,6 +1329,9 @@
                 "tweens": [
                   {
                     "number": 37,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 37,
                     "to": 200,
                     "components": [],
@@ -1348,6 +1390,9 @@
                 "tweens": [
                   {
                     "number": 37,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 37,
                     "to": 300,
                     "components": [],
@@ -1405,6 +1450,9 @@
                 "tweens": [
                   {
                     "number": 134.31,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 37,
                     "to": 300,
                     "components": [],
@@ -1549,6 +1597,9 @@
                 "tweens": [
                   {
                     "number": 300,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 37,
                     "to": 300,
                     "components": [],
@@ -1749,6 +1800,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -1814,6 +1868,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -1871,6 +1928,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -1936,6 +1996,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -2000,6 +2063,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 47,
                     "to": 210,
                     "components": [],
@@ -2057,6 +2123,9 @@
                 "tweens": [
                   {
                     "number": 107.31,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 47,
                     "to": 210,
                     "components": [],
@@ -2201,6 +2270,9 @@
                 "tweens": [
                   {
                     "number": 210,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 47,
                     "to": 210,
                     "components": [],
@@ -2396,6 +2468,9 @@
               "tweens": [
                 {
                   "number": 20,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -2461,6 +2536,9 @@
                 "tweens": [
                   {
                     "number": 80,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 40,
                     "to": 100,
                     "components": [],
@@ -2518,6 +2596,9 @@
                 "tweens": [
                   {
                     "number": 124.4,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 40,
                     "to": 100,
                     "components": [],
@@ -2582,6 +2663,9 @@
                 "tweens": [
                   {
                     "number": 497.6,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 248.8,
                     "to": 200,
                     "components": [],
@@ -2639,6 +2723,9 @@
                 "tweens": [
                   {
                     "number": 461.488,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 248.8,
                     "to": 200,
                     "components": [],
@@ -2783,6 +2870,9 @@
                 "tweens": [
                   {
                     "number": 400,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 248.8,
                     "to": 200,
                     "components": [],
@@ -2980,6 +3070,9 @@
               "tweens": [
                 {
                   "number": 6,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 5,
                   "to": 5,
                   "components": [],
@@ -3045,6 +3138,9 @@
                 "tweens": [
                   {
                     "number": 8,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 7,
                     "to": 20,
                     "components": [],
@@ -3102,6 +3198,9 @@
                 "tweens": [
                   {
                     "number": 12.809999999999999,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 7,
                     "to": 20,
                     "components": [],
@@ -3166,6 +3265,9 @@
                 "tweens": [
                   {
                     "number": 14.809999999999999,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 13.809999999999999,
                     "to": 40,
                     "components": [],
@@ -3223,6 +3325,9 @@
                 "tweens": [
                   {
                     "number": 24.5003,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 13.809999999999999,
                     "to": 40,
                     "components": [],
@@ -3367,6 +3472,9 @@
                 "tweens": [
                   {
                     "number": 41,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 13.809999999999999,
                     "to": 40,
                     "components": [],
@@ -3574,6 +3682,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -3641,6 +3752,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -3698,6 +3812,9 @@
                 "tweens": [
                   {
                     "number": 9.610000000000001,
+                    "time": 62,
+                    "updateDuration": 200,
+                    "easedProgress": 0.0961,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -3762,6 +3879,9 @@
                 "tweens": [
                   {
                     "number": 9.610000000000001,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 9.610000000000001,
                     "to": 200,
                     "components": [],
@@ -3819,6 +3939,9 @@
                 "tweens": [
                   {
                     "number": 27.906478999999997,
+                    "time": 62,
+                    "updateDuration": 200,
+                    "easedProgress": 0.0961,
                     "from": 9.610000000000001,
                     "to": 200,
                     "components": [],
@@ -3966,6 +4089,9 @@
                 "tweens": [
                   {
                     "number": 27.906478999999997,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 27.906478999999997,
                     "to": 300,
                     "components": [],
@@ -4023,6 +4149,9 @@
                 "tweens": [
                   {
                     "number": 196.60446202,
+                    "time": 62,
+                    "updateDuration": 100,
+                    "easedProgress": 0.62,
                     "from": 27.906478999999997,
                     "to": 300,
                     "components": [],
@@ -4147,6 +4276,9 @@
                 "tweens": [
                   {
                     "number": 300,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 27.906478999999997,
                     "to": 300,
                     "components": [],
@@ -4338,6 +4470,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -4404,6 +4539,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 0.125,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -4461,6 +4599,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 0.125,
+                    "updateDuration": 0.125,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -4646,6 +4787,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 0,
+                    "updateDuration": 0.125,
+                    "easedProgress": 0,
                     "from": 100,
                     "to": 200,
                     "components": [],
@@ -4703,6 +4847,9 @@
                 "tweens": [
                   {
                     "number": 200,
+                    "time": 0.125,
+                    "updateDuration": 0.125,
+                    "easedProgress": 1,
                     "from": 100,
                     "to": 200,
                     "components": [],
@@ -4919,6 +5066,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -4985,6 +5135,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 1e-11,
+                    "updateDuration": 1e-11,
+                    "easedProgress": 1,
                     "from": 10,
                     "to": 100,
                     "components": [],
@@ -5169,6 +5322,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 1e-11,
+                    "updateDuration": 1e-11,
+                    "easedProgress": 1,
                     "from": 10,
                     "to": 100,
                     "components": [],
@@ -5228,6 +5384,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 100,
                     "to": 200,
                     "components": [],
@@ -5285,6 +5444,9 @@
                 "tweens": [
                   {
                     "number": 137,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 100,
                     "to": 200,
                     "components": [],
@@ -5348,6 +5510,9 @@
                 "tweens": [
                   {
                     "number": 200,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 100,
                     "to": 200,
                     "components": [],
@@ -5559,6 +5724,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -5625,6 +5793,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 4294967295.0000005,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -5682,6 +5853,9 @@
                 "tweens": [
                   {
                     "number": 50.00000026775524,
+                    "time": 2147483659,
+                    "updateDuration": 4294967295.0000005,
+                    "easedProgress": 0.5000000026775524,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -5746,6 +5920,9 @@
                 "tweens": [
                   {
                     "number": 50.00000026775524,
+                    "time": 0,
+                    "updateDuration": 4294967295.0000005,
+                    "easedProgress": 0,
                     "from": 50.00000026775524,
                     "to": 200,
                     "components": [],
@@ -5803,6 +5980,9 @@
                 "tweens": [
                   {
                     "number": 125.00000053551048,
+                    "time": 2147483659,
+                    "updateDuration": 4294967295.0000005,
+                    "easedProgress": 0.5000000026775524,
                     "from": 50.00000026775524,
                     "to": 200,
                     "components": [],
@@ -6001,6 +6181,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -6066,6 +6249,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -6123,6 +6309,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -6188,6 +6377,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 47,
                     "to": 210,
                     "components": [],
@@ -6245,6 +6437,9 @@
                 "tweens": [
                   {
                     "number": 97.53,
+                    "time": 62,
+                    "updateDuration": 200,
+                    "easedProgress": 0.31,
                     "from": 47,
                     "to": 210,
                     "components": [],
@@ -6389,6 +6584,9 @@
                 "tweens": [
                   {
                     "number": 210,
+                    "time": 200,
+                    "updateDuration": 200,
+                    "easedProgress": 1,
                     "from": 47,
                     "to": 210,
                     "components": [],
@@ -6574,6 +6772,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -6639,6 +6840,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -6696,6 +6900,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -6759,6 +6966,9 @@
                 "tweens": [
                   {
                     "number": 110,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -6994,6 +7204,9 @@
               "tweens": [
                 {
                   "number": "undefined",
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [
@@ -7074,6 +7287,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -7143,6 +7359,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -7221,6 +7440,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -7290,6 +7512,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -7451,6 +7676,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -7520,6 +7748,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -7656,6 +7887,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -7868,6 +8102,9 @@
               "tweens": [
                 {
                   "number": "undefined",
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [
@@ -7948,6 +8185,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -8017,6 +8257,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -8095,6 +8338,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -8164,6 +8410,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -8320,6 +8569,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -8529,6 +8781,9 @@
               "tweens": [
                 {
                   "number": "undefined",
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [
@@ -8609,6 +8864,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -8678,6 +8936,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -8754,6 +9015,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -8823,6 +9087,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -8979,6 +9246,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -9185,6 +9455,9 @@
               "tweens": [
                 {
                   "number": "undefined",
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [
@@ -9263,6 +9536,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -9336,6 +9612,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -9405,6 +9684,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -9480,6 +9762,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -9715,6 +10000,9 @@
               "tweens": [
                 {
                   "number": "undefined",
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [
@@ -9805,6 +10093,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -9882,6 +10173,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -9968,6 +10262,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -10045,6 +10342,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -10209,6 +10509,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -10419,6 +10722,9 @@
               "tweens": [
                 {
                   "number": "undefined",
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [
@@ -10509,6 +10815,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -10586,6 +10895,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -10669,6 +10981,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -10904,6 +11219,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -10912,6 +11230,9 @@
                 },
                 {
                   "number": 50,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 50,
                   "to": 50,
                   "components": [],
@@ -10985,6 +11306,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -10993,6 +11317,9 @@
                   },
                   {
                     "number": 50,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 50,
                     "to": 110,
                     "components": [],
@@ -11053,6 +11380,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -11061,6 +11391,9 @@
                   },
                   {
                     "number": 72.2,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 50,
                     "to": 110,
                     "components": [],
@@ -11133,6 +11466,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 47,
                     "to": 210,
                     "components": [],
@@ -11141,6 +11477,9 @@
                   },
                   {
                     "number": 72.2,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 72.2,
                     "to": 210,
                     "components": [],
@@ -11201,6 +11540,9 @@
                 "tweens": [
                   {
                     "number": 107.31,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 47,
                     "to": 210,
                     "components": [],
@@ -11209,6 +11551,9 @@
                   },
                   {
                     "number": 123.186,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 72.2,
                     "to": 210,
                     "components": [],
@@ -11373,6 +11718,9 @@
                 "tweens": [
                   {
                     "number": 210,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 47,
                     "to": 210,
                     "components": [],
@@ -11381,6 +11729,9 @@
                   },
                   {
                     "number": 210,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 72.2,
                     "to": 210,
                     "components": [],
@@ -11609,6 +11960,9 @@
               "tweens": [
                 {
                   "number": "undefined",
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [
@@ -11626,6 +11980,9 @@
                 },
                 {
                   "number": "undefined",
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [
@@ -11714,6 +12071,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -11731,6 +12091,9 @@
                   },
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -11803,6 +12166,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -11820,6 +12186,9 @@
                   },
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -11906,6 +12275,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -11923,6 +12295,9 @@
                   },
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -11995,6 +12370,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -12012,6 +12390,9 @@
                   },
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -12188,6 +12569,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -12205,6 +12589,9 @@
                   },
                   {
                     "number": "undefined",
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -12435,6 +12822,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -12459,6 +12849,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 200,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -12530,6 +12923,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -12554,6 +12950,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 10,
                     "components": [],
@@ -12613,6 +13012,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -12637,6 +13039,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 210,
                     "components": [],
@@ -12695,6 +13100,9 @@
                 "tweens": [
                   {
                     "number": 37,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -12719,6 +13127,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 10,
                     "to": 210,
                     "components": [],
@@ -12873,6 +13284,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -12897,6 +13311,9 @@
                 "tweens": [
                   {
                     "number": 122.00000000000001,
+                    "time": 112,
+                    "updateDuration": 200,
+                    "easedProgress": 0.56,
                     "from": 10,
                     "to": 210,
                     "components": [],
@@ -13030,6 +13447,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -13054,6 +13474,9 @@
                 "tweens": [
                   {
                     "number": 210,
+                    "time": 200,
+                    "updateDuration": 200,
+                    "easedProgress": 1,
                     "from": 10,
                     "to": 210,
                     "components": [],
@@ -13224,6 +13647,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -13248,6 +13674,9 @@
                 "tweens": [
                   {
                     "number": 210,
+                    "time": 200,
+                    "updateDuration": 200,
+                    "easedProgress": 1,
                     "from": 10,
                     "to": 210,
                     "components": [],
@@ -13338,6 +13767,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 2000,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -13403,6 +13835,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 2000,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -13460,6 +13895,9 @@
                 "tweens": [
                   {
                     "number": 1.8499999999999999,
+                    "time": 37,
+                    "updateDuration": 2000,
+                    "easedProgress": 0.0185,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -13523,6 +13961,9 @@
                 "tweens": [
                   {
                     "number": 26.85,
+                    "time": 537,
+                    "updateDuration": 2000,
+                    "easedProgress": 0.2685,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -13667,6 +14108,9 @@
                 "tweens": [
                   {
                     "number": 51.849999999999994,
+                    "time": 1037,
+                    "updateDuration": 2000,
+                    "easedProgress": 0.5185,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -13811,6 +14255,9 @@
                 "tweens": [
                   {
                     "number": 76.85,
+                    "time": 1537,
+                    "updateDuration": 2000,
+                    "easedProgress": 0.7685,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -13874,6 +14321,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 2000,
+                    "updateDuration": 2000,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -13978,6 +14428,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 2000,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -14002,6 +14455,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -14073,6 +14529,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 2000,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -14097,6 +14556,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [],
@@ -14155,6 +14617,9 @@
                 "tweens": [
                   {
                     "number": 1.8499999999999999,
+                    "time": 37,
+                    "updateDuration": 2000,
+                    "easedProgress": 0.0185,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -14179,6 +14644,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [],
@@ -14243,6 +14711,9 @@
                 "tweens": [
                   {
                     "number": 56.85,
+                    "time": 1137,
+                    "updateDuration": 2000,
+                    "easedProgress": 0.5685,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -14267,6 +14738,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [],
@@ -14438,6 +14912,9 @@
                 "tweens": [
                   {
                     "number": 56.85,
+                    "time": 1137,
+                    "updateDuration": 2000,
+                    "easedProgress": 0.5685,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -14462,6 +14939,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -14520,6 +15000,9 @@
                 "tweens": [
                   {
                     "number": 58.099999999999994,
+                    "time": 1162,
+                    "updateDuration": 2000,
+                    "easedProgress": 0.581,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -14544,6 +15027,9 @@
                 "tweens": [
                   {
                     "number": 37,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -14613,6 +15099,9 @@
                 "tweens": [
                   {
                     "number": 63.1,
+                    "time": 1262,
+                    "updateDuration": 2000,
+                    "easedProgress": 0.631,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -14637,6 +15126,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -14791,6 +15283,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 2000,
+                    "updateDuration": 2000,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -14815,6 +15310,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -15006,6 +15504,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 300,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -15071,6 +15572,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 300,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -15128,6 +15632,9 @@
                 "tweens": [
                   {
                     "number": 37.333333333333336,
+                    "time": 112,
+                    "updateDuration": 300,
+                    "easedProgress": 0.37333333333333335,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -15191,6 +15698,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 300,
+                    "updateDuration": 300,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -15399,6 +15909,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -15464,6 +15977,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -15521,6 +16037,9 @@
                 "tweens": [
                   {
                     "number": 37,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -15584,6 +16103,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -15801,6 +16323,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -15867,6 +16392,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -15924,6 +16452,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -15981,6 +16512,9 @@
                 "tweens": [
                   {
                     "number": 3.5000000000000004,
+                    "time": 7,
+                    "updateDuration": 200,
+                    "easedProgress": 0.035,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -16044,6 +16578,9 @@
                 "tweens": [
                   {
                     "number": 16,
+                    "time": 32,
+                    "updateDuration": 200,
+                    "easedProgress": 0.16,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -16188,6 +16725,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 200,
+                    "updateDuration": 200,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -16395,6 +16935,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -16461,6 +17004,9 @@
                 "tweens": [
                   {
                     "number": 0,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -16518,6 +17064,9 @@
                 "tweens": [
                   {
                     "number": 18.5,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -16581,6 +17130,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 200,
+                    "updateDuration": 200,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -16725,6 +17277,9 @@
                 "tweens": [
                   {
                     "number": 69,
+                    "time": 138,
+                    "updateDuration": 200,
+                    "easedProgress": 0.69,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -16851,6 +17406,9 @@
                 "tweens": [
                   {
                     "number": 69,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 69,
                     "to": 200,
                     "components": [],
@@ -16908,6 +17466,9 @@
                 "tweens": [
                   {
                     "number": 117.47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 69,
                     "to": 200,
                     "components": [],
@@ -17032,6 +17593,9 @@
                 "tweens": [
                   {
                     "number": 200,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 69,
                     "to": 200,
                     "components": [],
@@ -17227,6 +17791,9 @@
               "tweens": [
                 {
                   "number": 0,
+                  "time": 100,
+                  "updateDuration": 100,
+                  "easedProgress": 1,
                   "from": 0,
                   "to": 0,
                   "components": [],
@@ -17292,6 +17859,9 @@
                 "tweens": [
                   {
                     "number": 100,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -17349,6 +17919,9 @@
                 "tweens": [
                   {
                     "number": 63,
+                    "time": 63,
+                    "updateDuration": 100,
+                    "easedProgress": 0.63,
                     "from": 0,
                     "to": 100,
                     "components": [],
@@ -17413,6 +17986,9 @@
                 "tweens": [
                   {
                     "number": 200,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 63,
                     "to": 200,
                     "components": [],
@@ -17470,6 +18046,9 @@
                 "tweens": [
                   {
                     "number": 149.31,
+                    "time": 63,
+                    "updateDuration": 100,
+                    "easedProgress": 0.63,
                     "from": 63,
                     "to": 200,
                     "components": [],
@@ -17614,6 +18193,9 @@
                 "tweens": [
                   {
                     "number": 63,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 63,
                     "to": 200,
                     "components": [],
@@ -17831,6 +18413,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -17855,6 +18440,9 @@
               "tweens": [
                 {
                   "number": 20,
+                  "time": 0,
+                  "updateDuration": 200,
+                  "easedProgress": 0,
                   "from": 20,
                   "to": 20,
                   "components": [],
@@ -17926,6 +18514,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -17950,6 +18541,9 @@
                 "tweens": [
                   {
                     "number": 20,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 20,
                     "to": 20,
                     "components": [],
@@ -18009,6 +18603,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -18033,6 +18630,9 @@
                 "tweens": [
                   {
                     "number": 20,
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 20,
                     "to": 220,
                     "components": [],
@@ -18091,6 +18691,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -18115,6 +18718,9 @@
                 "tweens": [
                   {
                     "number": 57,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 20,
                     "to": 220,
                     "components": [],
@@ -18269,6 +18875,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -18293,6 +18902,9 @@
                 "tweens": [
                   {
                     "number": 57,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 20,
                     "to": 220,
                     "components": [],
@@ -18351,6 +18963,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -18375,6 +18990,9 @@
                 "tweens": [
                   {
                     "number": 57,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 20,
                     "to": 220,
                     "components": [],
@@ -18539,6 +19157,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -18563,6 +19184,9 @@
                 "tweens": [
                   {
                     "number": 57,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 20,
                     "to": 220,
                     "components": [],
@@ -18621,6 +19245,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -18645,6 +19272,9 @@
                 "tweens": [
                   {
                     "number": 57,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 20,
                     "to": 220,
                     "components": [],
@@ -18703,6 +19333,9 @@
                 "tweens": [
                   {
                     "number": 84,
+                    "time": 74,
+                    "updateDuration": 100,
+                    "easedProgress": 0.74,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -18727,6 +19360,9 @@
                 "tweens": [
                   {
                     "number": 57,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 20,
                     "to": 220,
                     "components": [],
@@ -18791,6 +19427,9 @@
                 "tweens": [
                   {
                     "number": 110,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -18815,6 +19454,9 @@
                 "tweens": [
                   {
                     "number": 57,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 20,
                     "to": 220,
                     "components": [],
@@ -18879,6 +19521,9 @@
                 "tweens": [
                   {
                     "number": 110,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -18903,6 +19548,9 @@
                 "tweens": [
                   {
                     "number": 57,
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 20,
                     "to": 220,
                     "components": [],
@@ -19011,6 +19659,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -19038,6 +19689,9 @@
               "tweens": [
                 {
                   "number": "undefined",
+                  "time": 0,
+                  "updateDuration": 200,
+                  "easedProgress": 0,
                   "from": 0,
                   "to": 0,
                   "components": [
@@ -19118,6 +19772,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -19145,6 +19802,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -19216,6 +19876,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -19243,6 +19906,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 0,
+                    "updateDuration": 200,
+                    "easedProgress": 0,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -19310,6 +19976,9 @@
                 "tweens": [
                   {
                     "number": 47,
+                    "time": 37,
+                    "updateDuration": 100,
+                    "easedProgress": 0.37,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -19337,6 +20006,9 @@
                 "tweens": [
                   {
                     "number": "undefined",
+                    "time": 37,
+                    "updateDuration": 200,
+                    "easedProgress": 0.185,
                     "from": 0,
                     "to": 0,
                     "components": [
@@ -20355,6 +21027,9 @@
               "tweens": [
                 {
                   "number": 10,
+                  "time": 0,
+                  "updateDuration": 100,
+                  "easedProgress": 0,
                   "from": 10,
                   "to": 10,
                   "components": [],
@@ -20420,6 +21095,9 @@
                 "tweens": [
                   {
                     "number": 10,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -20478,6 +21156,9 @@
                 "tweens": [
                   {
                     "number": 60,
+                    "time": 50,
+                    "updateDuration": 100,
+                    "easedProgress": 0.5,
                     "from": 10,
                     "to": 110,
                     "components": [],
@@ -20542,6 +21223,9 @@
                 "tweens": [
                   {
                     "number": 60,
+                    "time": 0,
+                    "updateDuration": 100,
+                    "easedProgress": 0,
                     "from": 60,
                     "to": 210,
                     "components": [],
@@ -20600,6 +21284,9 @@
                 "tweens": [
                   {
                     "number": 135,
+                    "time": 50,
+                    "updateDuration": 100,
+                    "easedProgress": 0.5,
                     "from": 60,
                     "to": 210,
                     "components": [],
@@ -20664,6 +21351,9 @@
                 "tweens": [
                   {
                     "number": 210,
+                    "time": 100,
+                    "updateDuration": 100,
+                    "easedProgress": 1,
                     "from": 60,
                     "to": 210,
                     "components": [],

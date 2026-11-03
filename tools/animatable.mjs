@@ -84,6 +84,7 @@ if (process.argv[2] === '--case') {
     properties:Object.fromEntries(Object.entries(animatable.animations).map(([name,animation])=>{
       const tweens = [];
       for (let tween=animation._head;tween;tween=tween._next) tweens.push({number:finite(tween._number),
+        time:finite(tween._currentTime),updateDuration:finite(tween._updateDuration),easedProgress:finite(tween._ease(tween._currentTime/tween._updateDuration)),
         from:finite(tween._fromNumber),to:finite(tween._toNumber),components:tween._numbers ? [...tween._numbers] : null,
         fromComponents:tween._fromNumbers ? [...tween._fromNumbers] : null,toComponents:tween._toNumbers ? [...tween._toNumbers] : null});
       const value = animation._head ? animatable[name]() : undefined;

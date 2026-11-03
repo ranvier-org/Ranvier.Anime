@@ -11,6 +11,7 @@
     <Compile Include="NumericProperty.fs" />
     <Compile Include="PropertyTrack.fs" />
     <Compile Include="ValueInterpolation.fs" />
+    <Compile Include="AnimatableValue.fs" />
     <Compile Include="PlaybackTiming.fs" />
     <Compile Include="PlaybackState.fs" />
     <Compile Include="Timer.fs" />
@@ -33,5 +34,6 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Ranvier.Anime.Tests" />
+    <InternalsVisibleTo Include="Ranvier.Anime.NativeSmoke" />
   </ItemGroup>
 </Project>

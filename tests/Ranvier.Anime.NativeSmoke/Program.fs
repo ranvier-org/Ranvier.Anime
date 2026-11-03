@@ -6,6 +6,7 @@ open System.Globalization
 open Ranvier
 open Ranvier.Anime
 open Ranvier.Css
+open Ranvier.Css.Dom
 open Ranvier.Dom
 open Ranvier.View.WebCore
 
@@ -40,6 +41,38 @@ let main args =
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
+        let cache = AnimatableValue(ValueInterpolation.Number 10., None, false, None)
+        let live () = true
+        let double value = value*2.
+        cache.Sample(0.,4,double,live) |> ignore
+        require "animatable kernel getter applies its modifier to the cache" (cache.ScalarValue(double,live)=Some 40.)
+        require "animatable kernel retarget remains current" (cache.RetargetScalar(100.,double,live))
+        cache.Sample(0.,4,double,live) |> ignore
+        let scalarOutput=cache.Sample(0.37,4,double,live) |> Option.get
+        require "animatable kernel preserves repeated scalar modifier behavior"
+            (scalarOutput.Scalar |> Option.exists(fun value -> abs(value-124.4)<1e-10))
+        let compound=AnimatableValue(ValueInterpolation.Text "translate(10px,20px)",None,false,None)
+        compound.Sample(0.,4,id,live) |> ignore
+        compound.RetargetComponents([|110.;220.|],id,live) |> ignore
+        compound.Sample(0.37,4,id,live) |> ignore
+        compound.RetargetComponents([|210.|],id,live) |> ignore
+        let compoundOutput=compound.Sample(0.37,4,id,live) |> Option.get
+        let untransformed=element.getBoundingClientRect()
+        StyleDeclaration.apply style (Declaration.create "transform" compoundOutput.Text)
+        let transformed=element.getBoundingClientRect()
+        require "animatable kernel partial components drive native geometry"
+            (compoundOutput.Text="translate(107.31px,94px)" &&
+             abs(transformed.left-untransformed.left-107.31)<0.02 && abs(transformed.top-untransformed.top-94.)<0.02)
+        let components=compound.ComponentValues
+        components[0]<-999.
+        require "animatable kernel component snapshots preserve its cache" (compound.ComponentValues[0]=107.31)
+        style.removeProperty "transform" |> ignore
+        let superseded=AnimatableValue(ValueInterpolation.Number 10.,None,false,None)
+        superseded.RetargetScalar(100.,id,live) |> ignore
+        let retargetAgain value = superseded.RetargetScalar(300.,id,live) |> ignore; value
+        require "animatable kernel nested retarget interrupts stale sampling"
+            ((superseded.Sample(0.5,4,retargetAgain,live)).IsNone &&
+             (superseded.Sample(1.,4,id,live) |> Option.get).Scalar=Some 300.)
         style.setProperty("--anime-gap", "0px", priority = "important")
         style.setProperty("width", "var(--anime-gap)")
         style.setProperty("height", "20px")

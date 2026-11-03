@@ -124,7 +124,7 @@ module internal ValueInterpolation =
                        PropertyNumbers.round 1. (hue2rgb(hue-1./3.)*255.); alpha |]
     /// <summary>Decomposes finite scalars and source unit/color/compound syntax without native CSS resolution.</summary>
     let decompose literal =
-        let scalar number = {Kind=ValueKind.Number;Number=number;Unit=null;Operator=None;Components=[||];Strings=[||]}
+        let scalar number : Data = {Kind=ValueKind.Number;Number=number;Unit=null;Operator=None;Components=[||];Strings=[||]}
         match literal with
         | Number value -> finite "value" value; scalar value
         | Text text ->
@@ -150,7 +150,8 @@ module internal ValueInterpolation =
                         let components=digitsPattern.Matches text |> Seq.cast<Match> |> Seq.map(fun item -> parse item.Value) |> Seq.toArray
                         {scalar 0. with Kind=ValueKind.Complex;Components=components;Strings=digitsPattern.Split text}
     let private relative first last op = match op with '-' -> first-last | '+' -> first+last | _ -> first*last
-    let private prepareWith roundNumbers (convertUnit:(float -> string -> string -> float) option) original first last =
+    /// <summary>Normalizes relative endpoints, unit metadata and component templates during capture.</summary>
+    let normalize (convertUnit:(float -> string -> string -> float) option) original first last =
         let mutable first=decompose first
         let mutable last=decompose last
         match first.Operator with Some op -> first<-{first with Number=relative (decompose original).Number first.Number op} | None -> ()
@@ -158,7 +159,7 @@ module internal ValueInterpolation =
         if first.Kind<>last.Kind then
             if first.Kind=ValueKind.Complex || last.Kind=ValueKind.Complex then
                 let complex=if first.Kind=ValueKind.Complex then first else last
-                let convert value={value with Kind=ValueKind.Complex;Components=Array.create complex.Components.Length value.Number;Strings=Array.copy complex.Strings}
+                let convert (value:Data)={value with Kind=ValueKind.Complex;Components=Array.create complex.Components.Length value.Number;Strings=Array.copy complex.Strings}
                 if first.Kind=ValueKind.Complex then last<-convert last else first<-convert first
             elif first.Kind=ValueKind.Unit || last.Kind=ValueKind.Unit then
                 if first.Kind=ValueKind.Unit then last<-{last with Kind=ValueKind.Unit;Unit=first.Unit}
@@ -180,44 +181,53 @@ module internal ValueInterpolation =
                     last<-{last with Number=value;Unit=first.Unit}
         if first.Components.Length<>last.Components.Length then
             let longest=if first.Components.Length>last.Components.Length then first else last
-            let fill value={value with Components=Array.init longest.Components.Length (fun i -> if i<value.Components.Length then value.Components[i] else 0.);Strings=Array.copy longest.Strings}
+            let fill (value:Data)={value with Components=Array.init longest.Components.Length (fun i -> if i<value.Components.Length then value.Components[i] else 0.);Strings=Array.copy longest.Strings}
             if first.Components.Length>last.Components.Length then last<-fill last else first<-fill first
-        fun progress precision (modifier:float -> float) (canWrite:unit -> bool) ->
-            finite "progress" progress
-            let precision=if progress=0. || progress=1. || (first.Kind=ValueKind.Number && not roundNumbers) then -1 else precision
-            let round value=if precision<0 then value else PropertyNumbers.round (Math.Pow(10.,float precision)) value
-            let lerp first last = if progress=1. then last elif progress=0. then first else first+(last-first)*progress
-            let modify value =
-                if not(canWrite()) then None
-                else
-                    let result=modifier value
-                    if canWrite() then Some result else None
+        first,last
+
+    /// <summary>Samples normalized endpoints and returns the modified scalar cache with the composed output.</summary>
+    let sample (roundNumbers:bool, first:Data, last:Data, progress:float, precision:int, modifier:float -> float, canWrite:unit -> bool) =
+        finite "progress" progress
+        let precision=if progress=0. || progress=1. || (first.Kind=ValueKind.Number && not roundNumbers) then -1 else precision
+        let round value=if precision<0 then value else PropertyNumbers.round (Math.Pow(10.,float precision)) value
+        let lerp first last = if progress=1. then last elif progress=0. then first else first+(last-first)*progress
+        let modify value =
             if not(canWrite()) then None
-            elif first.Kind=ValueKind.Number || first.Kind=ValueKind.Unit then
-                modify(round(lerp first.Number last.Number)) |> Option.map(fun value ->
-                    {Scalar=(if first.Kind=ValueKind.Number then Some value else None)
-                     Text=number value+(if first.Kind=ValueKind.Unit then first.Unit else "");Components=[||]})
             else
-                let values=Array.zeroCreate last.Components.Length
-                let mutable alive=true
-                for index in 0..values.Length-1 do
-                    if alive then
-                        let value=
-                            if first.Kind=ValueKind.Color && index<3 then
-                                Math.Sqrt(first.Components[index]*first.Components[index]*(1.-progress)+last.Components[index]*last.Components[index]*progress)
-                            elif first.Kind=ValueKind.Color then lerp first.Components[index] last.Components[index]
-                            else round(lerp first.Components[index] last.Components[index])
-                        match modify value with Some value -> values[index]<-value | None -> alive<-false
-                if not alive || not(canWrite()) then None
-                else
-                    let text=
-                        if first.Kind=ValueKind.Color then
-                            "rgba("+String.concat "," [for i in 0..3 -> number(if i<3 then PropertyNumbers.round 1. values[i] else values[i])]+")"
-                        else
-                            let result=System.Text.StringBuilder(last.Strings[0])
-                            for index in 0..values.Length-1 do result.Append(number values[index]).Append(last.Strings[index+1]) |> ignore
-                            result.ToString()
-                    Some {Scalar=None;Text=text;Components=values}
+                let result=modifier value
+                if canWrite() then Some result else None
+        if not(canWrite()) then None
+        elif first.Kind=ValueKind.Number || first.Kind=ValueKind.Unit then
+            modify(round(lerp first.Number last.Number)) |> Option.map(fun value ->
+                struct(value,{Scalar=(if first.Kind=ValueKind.Number then Some value else None)
+                              Text=number value+(if first.Kind=ValueKind.Unit then first.Unit else "");Components=[||]}))
+        else
+            let values=Array.zeroCreate last.Components.Length
+            let mutable alive=true
+            for index in 0..values.Length-1 do
+                if alive then
+                    let value=
+                        if first.Kind=ValueKind.Color && index<3 then
+                            Math.Sqrt(first.Components[index]*first.Components[index]*(1.-progress)+last.Components[index]*last.Components[index]*progress)
+                        elif first.Kind=ValueKind.Color then lerp first.Components[index] last.Components[index]
+                        else round(lerp first.Components[index] last.Components[index])
+                    match modify value with Some value -> values[index]<-value | None -> alive<-false
+            if not alive || not(canWrite()) then None
+            else
+                let text=
+                    if first.Kind=ValueKind.Color then
+                        "rgba("+String.concat "," [for i in 0..3 -> number(if i<3 then PropertyNumbers.round 1. values[i] else values[i])]+")"
+                    else
+                        let result=System.Text.StringBuilder(last.Strings[0])
+                        for index in 0..values.Length-1 do result.Append(number values[index]).Append(last.Strings[index+1]) |> ignore
+                        result.ToString()
+                Some(struct(0.,{Scalar=None;Text=text;Components=values}))
+
+    let private prepareWith roundNumbers convertUnit original first last =
+        let first,last=normalize convertUnit original first last
+        fun progress precision modifier canWrite ->
+            sample(roundNumbers,first,last,progress,precision,modifier,canWrite)
+            |> Option.map(fun struct(_,output) -> output)
 
     /// <summary>Captures object endpoints and returns a guarded sampler; differing units require native conversion.</summary>
     let prepare original first last = prepareWith false None original first last
