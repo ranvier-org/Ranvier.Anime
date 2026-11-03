@@ -248,11 +248,19 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     /// <summary>Samples controller callbacks and any configured child phase using a source tick mode.</summary>
     member _.Tick(time: float, mode: PlaybackTickMode, mute: bool) =
         run (fun _ -> render time mode mute false)
-    /// <summary>Samples an owned timeline child with inherited direction, lifecycle filtering and ancestor interruption.</summary>
-    member _.TickChild(time, mode, mute, backwards, parentBegan, canWrite) =
+    /// <summary>Samples an owned child with inherited direction, lifecycle filtering and ancestor interruption;
+    /// rendering can refresh caches without target dispatch.</summary>
+    /// <remarks>Initialization clears lifecycle flags only while this sample's generation and inherited guards remain current.</remarks>
+    member _.TickChild(time, mode, mute, backwards, parentBegan, canWrite, ?internalRender:bool, ?initialize:bool) =
         let previous = parentContext
         parentContext <- Some(backwards, parentBegan, canWrite)
-        try run (fun _ -> render time mode mute false)
+        try
+            run (fun expected ->
+                render time mode mute (defaultArg internalRender false)
+                if defaultArg initialize false && current expected && writeGuard() && canWrite() then
+                    paused<-true
+                    began<-false
+                    completed<-false)
         finally parentContext <- previous
     /// <summary>Resets child lifecycle flags while retaining its clock sample history.</summary>
     member _.ResetChildFlags() =

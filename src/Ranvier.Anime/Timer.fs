@@ -278,17 +278,16 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member internal _.Delay = state.Delay
     /// <summary>Current gap between repeated iterations.</summary>
     member internal _.LoopDelay = state.LoopDelay
-    /// <summary>Assigns scheduling to the timeline and initializes the child silently.</summary>
-    member internal _.AttachToTimeline() =
+    /// <summary>Assigns scheduling to the timeline and initializes silently, optionally refreshing caches without target dispatch.</summary>
+    member internal _.AttachToTimeline(?internalRender:bool) =
         parented <- true
         stopFrame() |> ignore
-        state.TickChild(0., PlaybackTickMode.Force, true, false, false, fun () -> true)
-        state.ResetChildFlags()
-    /// <summary>Samples a timeline child without requesting an independent frame.</summary>
-    member internal _.SampleChild(time, mode, muted, parentFps, backwards, parentBegan, canWrite) =
+        state.TickChild(0., PlaybackTickMode.Force, true, false, false, (fun () -> true), ?internalRender=internalRender, initialize=true)
+    /// <summary>Samples a timeline child without an independent frame, optionally refreshing caches without target dispatch.</summary>
+    member internal _.SampleChild(time, mode, muted, parentFps, backwards, parentBegan, canWrite, ?internalRender:bool) =
         if not state.Cancelled && canWrite() then
             let mode = if fps < parentFps then requestTick(scheduler.Now()) else mode
-            state.TickChild(time, mode, muted, backwards, parentBegan, canWrite)
+            state.TickChild(time, mode, muted, backwards, parentBegan, canWrite, ?internalRender=internalRender)
     /// <summary>Emits the source reverse-loop boundary completion without changing child flags.</summary>
     member internal _.NotifyBoundaryCompletion() =
         if not state.Cancelled then callback PlaybackEvent.Complete

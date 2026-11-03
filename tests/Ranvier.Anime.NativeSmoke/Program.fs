@@ -42,6 +42,68 @@ let main args =
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
         do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","7px")
+            let mutable active:Timer option=None
+            let mutable armed=false
+            let modifier value=
+                if armed then armed<-false;active.Value.Seek(100.,muteCallbacks=true)
+                value
+            let frame={FrameInput.Default with From=Some(ValueInterpolation.Number 0.);To=Some(ValueInterpolation.Number 100.)}
+            let property={FrameProperty.Target=0;Name="width";Original=ValueInterpolation.Number 7.;Frames=[|frame|];ConvertUnit=None}
+            let program=KeyframeCompilation.compile({FrameDefaults.Default with Duration=100.;Ease=id;Modifier=modifier},[|property|],(fun () -> true)) |> Option.get
+            use child=new KeyframePlayback(scheduler,program,(fun _ _ output -> StyleDeclaration.apply inlineStyle (Css.width(Css.px output.Scalar.Value))),
+                false,false,-1,PlaybackOptions.Default)
+            active<-Some child.Clock
+            armed<-true
+            child.Initialize(timelineChild=true)
+            require "native child initialization preserves superseding seek geometry cache and completion flags"
+                (target.getBoundingClientRect().width=100. && child.Clock.CurrentTime=100. && child.Clock.Began &&
+                 child.Clock.Completed && child.CurrentValues[0].Scalar=Some 100. && child.RenderVersion=1L)
+            host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","7px")
+            let mutable armed=false
+            let modify value=
+                if armed then owner.Dispose()
+                value
+            let frame={FrameInput.Default with From=Some(ValueInterpolation.Number 0.);To=Some(ValueInterpolation.Number 100.)}
+            let property={FrameProperty.Target=0;Name="width";Original=ValueInterpolation.Number 7.;Frames=[|frame|];ConvertUnit=None}
+            let program=KeyframeCompilation.compile({FrameDefaults.Default with Duration=100.;Ease=id;Modifier=modify},[|property|],(fun () -> true)) |> Option.get
+            let mutable notifications=0
+            use child=new KeyframePlayback(scheduler,program,(fun _ _ output -> StyleDeclaration.apply inlineStyle (Css.width(Css.px output.Scalar.Value))),
+                false,false,-1,PlaybackOptions.Default,onRender=(fun _ -> notifications<-notifications+1),onUpdate=(fun _ -> notifications<-notifications+1))
+            owner.Attach child
+            child.Initialize(timelineChild=true)
+            require "owned keyframe child initialization refreshes native caches without target writes"
+                (target.getBoundingClientRect().width=7. && child.RenderVersion=0L && notifications=0)
+            child.Clock.SampleChild(50.,PlaybackTickMode.Force,true,240.,false,true,(fun () -> true))
+            require "muted owned keyframe child dispatches native geometry without lifecycle callbacks"
+                (target.getBoundingClientRect().width=50. && child.RenderVersion=1L && notifications=0)
+            child.Clock.SampleChild(75.,PlaybackTickMode.Force,true,240.,false,true,(fun () -> true),internalRender=true)
+            require "internal child sampling retains a new cache independently of native geometry"
+                (target.getBoundingClientRect().width=50. && child.CurrentValues[0].Scalar=Some 75. && child.RenderVersion=1L)
+            child.Clock.SampleChild(80.,PlaybackTickMode.Skip,false,240.,false,true,(fun () -> true))
+            child.Clock.Resume()
+            host.Cycle(milliseconds=1)
+            host.Frame()
+            require "skipped and parented native children cannot report stale dispatch or schedule their own writes"
+                (target.getBoundingClientRect().width=50. && child.RenderVersion=1L && notifications=0)
+            armed<-true
+            child.Clock.SampleChild(90.,PlaybackTickMode.Force,true,240.,false,true,(fun () -> true),internalRender=true)
+            require "actual native owner cancellation inside internal child sampling suppresses cache publication and dispatch"
+                (owner.IsDisposed && child.Clock.Cancelled && target.getBoundingClientRect().width=50. &&
+                 child.CurrentValues[0].Scalar=Some 75. && child.RenderVersion=1L && notifications=0)
+            host.Document.body.removeChild target |> ignore
+        do
             let elements=[|host.Document.createElement "div" :?> HTMLElement;host.Document.createElement "div" :?> HTMLElement|]
             let styles=elements |> Array.map(fun element -> (element:>ElementCSSInlineStyle).style)
             for index in 0..1 do

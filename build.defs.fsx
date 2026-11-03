@@ -179,7 +179,7 @@ let audit = input {
     return stage "XML documentation audit" {
         workingDir __SOURCE_DIRECTORY__
         run (fun _ -> if System.String.IsNullOrWhiteSpace script then invalidArg "--script" "Supply the fsharp-xml-docs audit.fsx path.")
-        run (cmd $"rtk proxy dotnet fsi {script} --compiler src tests")
+        run (cmd $"rtk proxy dotnet fsi {script} --check src tests")
     }
 }
 

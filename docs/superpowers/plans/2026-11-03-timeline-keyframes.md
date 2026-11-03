@@ -49,6 +49,18 @@ Source construction evidence: adding child b at75 internally samples a to75, use
 
 Source animation.js430-507 distinguishes raw preceding endpoints within a child from sampled sibling values for a child's first missing endpoint. Relative source operands still use predecessor raw to metadata. Preserve these as separate fields. Render feedback should compare a dispatch generation before/after sampling, so a skipped child cannot retain a stale true rendered flag. Parent cache-only samples update current caches and modifier effects while suppressing target writes.
 
+Internal sampling groundwork:
+- [x] Add scoped cache-only TickChild context through Timer; preserve ordinary child defaults and inherited guards.
+- [x] Retain independently readable current output caches separately from raw endpoints, including across stretch; advance RenderVersion only on target dispatch.
+- [x] Initialize a parented keyframe driver without dispatch or an independent frame lease; allow explicit constructor Render notification separately.
+- [x] Reproduce and fix attach reentry erasing nested Seek completion flags; reset lifecycle flags only while initialization still owns its generation and guards.
+
+Eleven persisted pure contracts cover context/fault/reentry scoping, ordinary/muted/internal/skipped modes, independent compound snapshots, stretch, ancestor interruption, parented scheduling, actual owner disposal and once-only constructor notification. Native probes exercise geometry/cache separation and owner cancellation through the internal phase. These do not yet implement the public owned factory or cross-child registry below.
+
+Sampling checkpoint:1876/1876 full normal/Traced tests, XML0, byte-stable complete source regeneration. One scoped review's attach reentry watchpoint was reproduced and fixed. Both normal/Traced JIT and strict NativeAOT PEs pass the internal phase and all earlier probes; evidence docs/evidence/native-public45-p7-owned-keyframe-sampling-final.json verifies both receipts/all18 archives,62 current library hashes and both consumers, with355 authored/190 compiler inputs. The public factory and cross-program composition work below remain open.
+
+Next registry implementation must distinguish the input provider's tail predecessor (chosen before timing callbacks) from the overlap-selected predecessor (chosen after timing is resolved). Capture an overlapping target-aware provider case to verify this distinction before coding it. Keep raw Last metadata separate from mutable current output: missing first endpoints can inherit sampled sibling output while relative source operands use raw to metadata. Cross-program playback links must span driver-local frame arrays. Stage registry mutations until guarded child publication succeeds so a cancelled/reentrant constructor cannot truncate existing siblings. Numeric identities reuse the existing NumericProperty handles; inspect actual Ranvier DOM identity behavior before choosing a CSS target key.
+
 - [ ] RED: replay Task1 root/child callbacks, self-state and target snapshots using a minimal owned factory, not Sync.
 - [ ] GREEN: implement inherited mute/direction/FPS/loop and cache-only construction through one Timer child phase; pass source offsets into compilation.
 - [ ] Preserve all existing owned timer and borrowed tests; prove owner cancellation, reentry, getter faults, child cancellation, constructor interruption and no independent frame lease.

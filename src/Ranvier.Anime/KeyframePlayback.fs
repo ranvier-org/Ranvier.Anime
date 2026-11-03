@@ -14,6 +14,7 @@ type private PlayingFrame(frame:FrameTween) =
     member val AbsoluteUpdateStart=frame.AbsoluteUpdateStart with get,set
     member val AbsoluteEnd=frame.AbsoluteEnd with get,set
     member val Time=0. with get,set
+    member val Value=frame.CachedEnd with get,set
     member val Previous = -1 with get,set
     member val Next = -1 with get,set
     member val Overridden=false with get,set
@@ -31,6 +32,7 @@ type private PlayingFrame(frame:FrameTween) =
         next.AbsoluteUpdateStart<-this.AbsoluteUpdateStart*scale
         next.AbsoluteEnd<-this.AbsoluteEnd*scale
         next.Time<-this.Time*scale
+        next.Value<-this.Value
         next.Previous<-this.Previous
         next.Next<-this.Next
         next.Overridden<-this.Overridden
@@ -93,6 +95,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                         prior.Overlapped<-true
                         if changed<1e-11 then overrideFrame previous
     let effectiveOptions={options with Delay=program.Delay;Repeat=(if definitions.Length=0 then PlaybackRepeat.Count 0u else options.Repeat)}
+    let mutable renderVersion=0L
     let clock=new Timer(scheduler,program.IterationDuration,options=effectiveOptions,
                         ?onBegin=onBegin,?onBeforeUpdate=onBeforeUpdate,?onUpdate=onUpdate,
                         ?onLoop=onLoop,?onPause=onPause,?onComplete=onComplete)
@@ -125,8 +128,10 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                     if alive then
                         match ValueInterpolation.sample(roundNumbers,definition.First,definition.Last,progress,precision,definition.Modifier,current) with
                         | Some struct(_,output) when current() ->
+                            frame.Value<-output
                             if not clock.InternalRender then
                                 write definition.Target definition.Name output
+                                renderVersion<-renderVersion+1L
                                 rendered<-true
                             alive<-current()
                         | _ -> alive<-false
@@ -146,14 +151,21 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
     member _.Clock=clock
     /// <summary>Independent per-frame time snapshots for source behavior verification.</summary>
     member _.Times=frames |> Array.map _.Time
-    /// <summary>Notifies explicit-from construction once, then renders initial directional values with muted reset callbacks.</summary>
-    member _.Initialize(?notifyConstruction:bool)=
+    /// <summary>Advances after each target write; cache-only and skipped samples leave it unchanged.</summary>
+    member _.RenderVersion=renderVersion
+    /// <summary>Independent snapshots of each tween's most recently sampled scalar/color/compound cache.</summary>
+    member _.CurrentValues=frames |> Array.map(fun frame -> {frame.Value with Components=Array.copy frame.Value.Components})
+    /// <summary>Notifies standalone explicit-from construction once, then resets; owned child initialization only refreshes caches.</summary>
+    member _.Initialize(?notifyConstruction:bool,?timelineChild:bool)=
         let current=clock.CaptureWriteGuard()
         try
             if current() && not initialized then
                 initialized<-true
-                if defaultArg notifyConstruction true && (definitions |> Array.exists _.HasFrom) then onRender |> Option.iter(fun action -> action clock)
-            if current() then clock.Reset()
+                if defaultArg notifyConstruction (not(defaultArg timelineChild false)) && (definitions |> Array.exists _.HasFrom) then
+                    onRender |> Option.iter(fun action -> action clock)
+            if current() then
+                if defaultArg timelineChild false then clock.AttachToTimeline(internalRender=true)
+                else clock.Reset()
         with _ ->
             try clock.Cancel() with _ -> ()
             reraise()

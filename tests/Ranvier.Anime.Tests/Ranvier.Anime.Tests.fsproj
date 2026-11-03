@@ -9,6 +9,7 @@
     <Compile Include="ValueInterpolationTests.fs" />
     <Compile Include="KeyframeCompilationTests.fs" />
     <Compile Include="KeyframePlaybackTests.fs" />
+    <Compile Include="OwnedKeyframeChildTests.fs" />
     <Compile Include="KeyframeNumericTests.fs" />
     <Compile Include="KeyframeComputedTests.fs" />
     <Compile Include="KeyframeCssTests.fs" />
