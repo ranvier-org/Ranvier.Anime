@@ -37,6 +37,14 @@ type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundN
     member _.ScalarValue(modifier,canWrite) =
         if not scalar then invalidOp "The property has component values."
         modify modifier (capture canWrite) cachedNumber
+    /// <summary>Composes an independent cached snapshot.</summary>
+    /// <remarks>Scalar getters apply their modifier again; component getters retain cached values.</remarks>
+    member _.Snapshot(modifier,canWrite) =
+        let current=capture canWrite
+        if scalar then
+            modify modifier current cachedNumber |> Option.map(fun value -> compose(first,value,[||]))
+        elif current() then Some(compose(last,0.,Array.copy cachedComponents))
+        else None
     /// <summary>Samples cached endpoints; superseded modifiers discard the whole pending cache update.</summary>
     member _.Sample(progress,precision,modifier,canWrite) =
         let current=capture canWrite

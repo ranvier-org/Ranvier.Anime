@@ -185,6 +185,23 @@ module internal ValueInterpolation =
             if first.Components.Length>last.Components.Length then last<-fill last else first<-fill first
         first,last
 
+    /// <summary>Composes modified cached values using captured unit and component metadata.</summary>
+    /// <remarks>The output retains the supplied component array.</remarks>
+    let compose (template:Data, scalar:float, values:float array) : Output =
+        if template.Kind=ValueKind.Number || template.Kind=ValueKind.Unit then
+            { Scalar=(if template.Kind=ValueKind.Number then Some scalar else None)
+              Text=number scalar+(if template.Kind=ValueKind.Unit then template.Unit else "")
+              Components=[||] }
+        else
+            let text=
+                if template.Kind=ValueKind.Color then
+                    "rgba("+String.concat "," [for i in 0..3 -> number(if i<3 then PropertyNumbers.round 1. values[i] else values[i])]+")"
+                else
+                    let result=System.Text.StringBuilder(template.Strings[0])
+                    for index in 0..values.Length-1 do result.Append(number values[index]).Append(template.Strings[index+1]) |> ignore
+                    result.ToString()
+            {Scalar=None;Text=text;Components=values}
+
     /// <summary>Samples normalized endpoints and returns the modified scalar cache with the composed output.</summary>
     let sample (roundNumbers:bool, first:Data, last:Data, progress:float, precision:int, modifier:float -> float, canWrite:unit -> bool) =
         finite "progress" progress
@@ -199,8 +216,7 @@ module internal ValueInterpolation =
         if not(canWrite()) then None
         elif first.Kind=ValueKind.Number || first.Kind=ValueKind.Unit then
             modify(round(lerp first.Number last.Number)) |> Option.map(fun value ->
-                struct(value,{Scalar=(if first.Kind=ValueKind.Number then Some value else None)
-                              Text=number value+(if first.Kind=ValueKind.Unit then first.Unit else "");Components=[||]}))
+                struct(value,compose(first,value,[||])))
         else
             let values=Array.zeroCreate last.Components.Length
             let mutable alive=true
@@ -214,14 +230,7 @@ module internal ValueInterpolation =
                     match modify value with Some value -> values[index]<-value | None -> alive<-false
             if not alive || not(canWrite()) then None
             else
-                let text=
-                    if first.Kind=ValueKind.Color then
-                        "rgba("+String.concat "," [for i in 0..3 -> number(if i<3 then PropertyNumbers.round 1. values[i] else values[i])]+")"
-                    else
-                        let result=System.Text.StringBuilder(last.Strings[0])
-                        for index in 0..values.Length-1 do result.Append(number values[index]).Append(last.Strings[index+1]) |> ignore
-                        result.ToString()
-                Some(struct(0.,{Scalar=None;Text=text;Components=values}))
+                Some(struct(0.,compose(last,0.,values)))
 
     let private prepareWith roundNumbers convertUnit original first last =
         let first,last=normalize convertUnit original first last

@@ -51,12 +51,22 @@ let main args =
         let scalarOutput=cache.Sample(0.37,4,double,live) |> Option.get
         require "animatable kernel preserves repeated scalar modifier behavior"
             (scalarOutput.Scalar |> Option.exists(fun value -> abs(value-124.4)<1e-10))
+        let scalarSnapshot=cache.Snapshot(double,live) |> Option.get
+        require "animatable cached scalar snapshot applies getter modifier without changing its cache"
+            (scalarSnapshot.Scalar |> Option.exists(fun value -> abs(value-248.8)<1e-10) && abs(cache.CachedScalar-124.4)<1e-10)
+        let signedColor=AnimatableValue(ValueInterpolation.Text "rgba(10,20,30,0.5)",None,true,None)
+        signedColor.Sample(0.,4,(fun value -> -value),live) |> ignore
+        let signedSnapshot=signedColor.Snapshot((fun _ -> failwith "component getter repeated modifier"),live) |> Option.get
+        signedSnapshot.Components[0]<-999.
+        require "animatable cached color snapshot preserves signed modifier results and independent components"
+            (signedSnapshot.Text="rgba(-10,-20,-30,-0.5)" && signedColor.ComponentValues[0]= -10.)
         let compound=AnimatableValue(ValueInterpolation.Text "translate(10px,20px)",None,false,None)
         compound.Sample(0.,4,id,live) |> ignore
         compound.RetargetComponents([|110.;220.|],id,live) |> ignore
         compound.Sample(0.37,4,id,live) |> ignore
         compound.RetargetComponents([|210.|],id,live) |> ignore
-        let compoundOutput=compound.Sample(0.37,4,id,live) |> Option.get
+        compound.Sample(0.37,4,id,live) |> ignore
+        let compoundOutput=compound.Snapshot((fun _ -> failwith "compound getter repeated modifier"),live) |> Option.get
         let untransformed=element.getBoundingClientRect()
         StyleDeclaration.apply style (Declaration.create "transform" compoundOutput.Text)
         let transformed=element.getBoundingClientRect()
@@ -84,6 +94,8 @@ let main args =
         require "native animatable retarget retains typed units and uses changed easing and timing"
             (style.getPropertyValue "width"="125px" && style.getPropertyPriority "width"="important" &&
              abs(element.getBoundingClientRect().width-125.)<0.01)
+        require "native animatable track exposes its composed cached unit snapshot"
+            ((retargetTrack.Snapshot(0) |> Option.get).Text="125px")
         retargetTrack.Cancel()
         do
             use retargetGraph=new Graph()

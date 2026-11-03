@@ -84,6 +84,10 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
         values[index].ScalarValue(modifier,fun () -> expected=clock.Generation)
     /// <summary>Returns an independent snapshot of cached color or compound components.</summary>
     member _.Components(index)=values[index].ComponentValues
+    /// <summary>Returns a composed cached snapshot, applying only the scalar getter modifier.</summary>
+    member _.Snapshot(index)=
+        let expected=clock.Generation
+        values[index].Snapshot(modifier,fun () -> expected=clock.Generation)
     /// <summary>The captured scalar/unit/color/compound category.</summary>
     member _.Kind(index)=values[index].Kind
     /// <summary>Retargets a finite scalar, retaining omitted duration and easing.</summary>

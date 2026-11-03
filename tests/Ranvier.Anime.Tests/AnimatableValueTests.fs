@@ -90,6 +90,36 @@ let tests = testList "animatable value cache" [
         snapshot[0]<-999.
         output.Components[1]<-999.
         compareComponents [|10.;20.|] kernel.ComponentValues
+    testCase "cached color snapshots preserve signed modified components without repeating modifiers" <| fun _ ->
+        let kernel=AnimatableValue(Text "rgba(10,20,30,0.5)",None,true,None)
+        kernel.Sample(0.,4,(fun value -> -value),yes) |> ignore
+        let snapshot=kernel.Snapshot((fun _ -> failtest "component snapshot repeated modifier"),yes) |> Option.get
+        Expect.equal snapshot.Text "rgba(-10,-20,-30,-0.5)" "composed modified cache"
+        snapshot.Components[0]<-999.
+        compareComponents [|-10.;-20.;-30.;-0.5|] kernel.ComponentValues
+    testCase "cached scalar snapshots apply getter modifiers without committing their result" <| fun _ ->
+        let kernel=AnimatableValue(Text "10px",None,true,None)
+        kernel.Sample(0.,4,(fun value -> value+1.),yes) |> ignore
+        let snapshot=kernel.Snapshot((fun value -> value*2.),yes) |> Option.get
+        Expect.equal snapshot.Text "22px" "getter modification with captured units"
+        Expect.equal kernel.CachedScalar 11. "getter leaves sampled cache intact"
+    testCase "cached compound snapshots retain templates and independent components" <| fun _ ->
+        let kernel=AnimatableValue(Text "translate(10px,20px)",None,true,None)
+        kernel.RetargetComponents([|100.;200.|],id,yes) |> ignore
+        kernel.Sample(0.5,4,id,yes) |> ignore
+        let snapshot=kernel.Snapshot((fun _ -> failtest "compound snapshot repeated modifier"),yes) |> Option.get
+        Expect.equal snapshot.Text "translate(55px,110px)" "captured component template"
+        snapshot.Components[1]<-999.
+        Expect.equal ((kernel.Snapshot(id,yes) |> Option.get).Text) "translate(55px,110px)" "independent snapshot"
+    testCase "superseded cached scalar snapshots discard the getter result" <| fun _ ->
+        let kernel=AnimatableValue(Number 10.,None,false,None)
+        let modifier value = kernel.RetargetScalar(300.,id,yes) |> ignore; value
+        Expect.isNone (kernel.Snapshot(modifier,yes)) "nested retarget supersedes getter"
+        Expect.equal ((kernel.Sample(1.,4,id,yes) |> Option.get).Scalar) (Some 300.) "nested destination retained"
+    testCase "inactive cached snapshots have no modifier effects" <| fun _ ->
+        for original in [Number 10.; Text "v(10,20)"; Text "#123456"] do
+            let kernel=AnimatableValue(original,None,false,None)
+            Expect.isNone (kernel.Snapshot((fun _ -> failtest "inactive snapshot modifier"),(fun () -> false))) "inactive snapshot"
     testCase "cancelled component retarget discards staged endpoints" <| fun _ ->
         let kernel=AnimatableValue(Text "v(10,20)",None,false,None)
         kernel.Sample(0.,4,id,yes) |> ignore
