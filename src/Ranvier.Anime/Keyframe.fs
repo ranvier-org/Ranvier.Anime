@@ -27,38 +27,40 @@ type Keyframe<'Target,'Value> private
      last:FrameValue<KeyframeContext<'Target,'Value>,'Value> option,
      duration:FrameValue<KeyframeContext<'Target,'Value>,float> option,
      delay:FrameValue<KeyframeContext<'Target,'Value>,float> option,
-     ease:(float -> float) option,modifier:(float -> float) option) =
+     ease:(float -> float) option,modifier:(float -> float) option,
+     computed:(KeyframeContext<'Target,'Value> -> Keyframe<'Target,'Value>) option,
+     pair:(KeyframeContext<'Target,'Value> -> 'Value*'Value) option) =
     let checkCallback name action=if isNull(box action) then invalidArg name "A callback is required."
     let timing value=if not(Double.IsFinite value) || value<0. then invalidArg "duration" "Expected finite nonnegative milliseconds."
     let finiteDelay value=if not(Double.IsFinite value) then invalidArg "delay" "Expected finite milliseconds."
     /// <summary>Sets an unsigned whole-millisecond duration override.</summary>
-    member _.WithDuration(value:uint)=Keyframe(first,last,Some(FrameValue(Some(float value),None)),delay,ease,modifier)
+    member _.WithDuration(value:uint)=Keyframe<'Target,'Value>(first,last,Some(FrameValue(Some(float value),None)),delay,ease,modifier,computed,pair)
     /// <summary>Sets a finite nonnegative precise duration override in milliseconds.</summary>
-    member _.WithDurationPrecise(value:float)=timing value;Keyframe(first,last,Some(FrameValue(Some value,None)),delay,ease,modifier)
+    member _.WithDurationPrecise(value:float)=timing value;Keyframe<'Target,'Value>(first,last,Some(FrameValue(Some value,None)),delay,ease,modifier,computed,pair)
     /// <summary>Computes an unsigned duration once for each target during construction.</summary>
     member _.WithDurationBy(read:KeyframeContext<'Target,'Value> -> uint)=
         checkCallback "read" read
-        Keyframe(first,last,Some(FrameValue(None,Some(fun context -> float(read context)))),delay,ease,modifier)
+        Keyframe<'Target,'Value>(first,last,Some(FrameValue(None,Some(fun context -> float(read context)))),delay,ease,modifier,computed,pair)
     /// <summary>Computes finite nonnegative precise milliseconds once for each target.</summary>
     member _.WithDurationPreciseBy(read:KeyframeContext<'Target,'Value> -> float)=
         checkCallback "read" read
-        Keyframe(first,last,Some(FrameValue(None,Some read)),delay,ease,modifier)
+        Keyframe<'Target,'Value>(first,last,Some(FrameValue(None,Some read)),delay,ease,modifier,computed,pair)
     /// <summary>Sets a finite signed delay override in milliseconds.</summary>
-    member _.WithDelay(value:float)=finiteDelay value;Keyframe(first,last,duration,Some(FrameValue(Some value,None)),ease,modifier)
+    member _.WithDelay(value:float)=finiteDelay value;Keyframe<'Target,'Value>(first,last,duration,Some(FrameValue(Some value,None)),ease,modifier,computed,pair)
     /// <summary>Computes a finite signed delay once for each target.</summary>
     member _.WithDelayBy(read:KeyframeContext<'Target,'Value> -> float)=
         checkCallback "read" read
-        Keyframe(first,last,duration,Some(FrameValue(None,Some read)),ease,modifier)
+        Keyframe<'Target,'Value>(first,last,duration,Some(FrameValue(None,Some read)),ease,modifier,computed,pair)
     /// <summary>Sets per-frame interpolation easing, including overshoot.</summary>
-    member _.WithEase(value:float -> float)=checkCallback "ease" value;Keyframe(first,last,duration,delay,Some value,modifier)
+    member _.WithEase(value:float -> float)=checkCallback "ease" value;Keyframe<'Target,'Value>(first,last,duration,delay,Some value,modifier,computed,pair)
     /// <summary>Sets the callback applied to each interpolated scalar or color/compound component.</summary>
-    member _.WithModifier(value:float -> float)=checkCallback "modifier" value;Keyframe(first,last,duration,delay,ease,Some value)
+    member _.WithModifier(value:float -> float)=checkCallback "modifier" value;Keyframe<'Target,'Value>(first,last,duration,delay,ease,Some value,computed,pair)
     /// <summary>Computes the source endpoint once for each target.</summary>
     member _.WithFromBy(read:KeyframeContext<'Target,'Value> -> 'Value)=
         checkCallback "read" read
-        Keyframe(Some(FrameValue(None,Some read)),last,duration,delay,ease,modifier)
+        Keyframe<'Target,'Value>(Some(FrameValue(None,Some read)),last,duration,delay,ease,modifier,computed,pair)
     /// <summary>Sets an explicit source endpoint.</summary>
-    member _.WithFrom(value:'Value)=Keyframe(Some(FrameValue(Some value,None)),last,duration,delay,ease,modifier)
+    member _.WithFrom(value:'Value)=Keyframe<'Target,'Value>(Some(FrameValue(Some value,None)),last,duration,delay,ease,modifier,computed,pair)
     member private _.DurationInput=duration
     member private _.DelayInput=delay
     member private _.EaseInput=ease
@@ -66,40 +68,74 @@ type Keyframe<'Target,'Value> private
     member private _.DestinationInput=last
     /// <summary>Shares row timing providers without changing endpoint capture or callback evaluation order.</summary>
     member internal _.WithTimingDefaults(defaults:Keyframe<'Target,'Value>) =
-        Keyframe(first,last,Option.orElse defaults.DurationInput duration,Option.orElse defaults.DelayInput delay,
-                 Option.orElse defaults.EaseInput ease,Option.orElse defaults.ModifierInput modifier)
+        Keyframe<'Target,'Value>(first,last,Option.orElse defaults.DurationInput duration,Option.orElse defaults.DelayInput delay,
+                 Option.orElse defaults.EaseInput ease,Option.orElse defaults.ModifierInput modifier,computed,pair)
     /// <summary>Uses another offset key's destination provider as the explicit source endpoint.</summary>
     member internal _.WithFromDestination(value:Keyframe<'Target,'Value>) =
-        Keyframe(value.DestinationInput,last,duration,delay,ease,modifier)
+        Keyframe<'Target,'Value>(value.DestinationInput,last,duration,delay,ease,modifier,computed,pair)
     /// <summary>Captures constant inputs for validation before target reads or callback effects.</summary>
     member internal _.Template(convert:'Value -> Literal) : FrameInput =
-        {From=first |> Option.bind _.Constant |> Option.map convert;To=last |> Option.bind _.Constant |> Option.map convert
-         Duration=duration |> Option.map(fun value -> defaultArg value.Constant 0.);Delay=delay |> Option.map(fun value -> defaultArg value.Constant 0.);Ease=ease;Modifier=modifier}
+        if computed.IsSome then
+            {From=None;To=None;Duration=Some 0.;Delay=Some 0.;Ease=None;Modifier=None}
+        else
+            {From=(if pair.IsSome then None else first |> Option.bind _.Constant |> Option.map convert)
+             To=last |> Option.bind _.Constant |> Option.map convert
+             Duration=duration |> Option.map(fun value -> defaultArg value.Constant 0.);Delay=delay |> Option.map(fun value -> defaultArg value.Constant 0.);Ease=ease;Modifier=modifier}
     /// <summary>Evaluates callbacks under a construction guard and returns no frame after interruption.</summary>
-    member internal _.Resolve(context:KeyframeContext<'Target,'Value>,convert:'Value -> Literal,current:unit -> bool) =
+    member internal _.Resolve(context:KeyframeContext<'Target,'Value>,convert:'Value -> Literal,current:unit -> bool) : FrameInput option =
         let read provider =
             match provider with
             | Some (provider:FrameValue<KeyframeContext<'Target,'Value>,'T>) when current() ->
                 let value=provider.Read context
                 if current() then Some value else None
             | _ -> None
-        let destination=read last
-        let source=read first
-        let milliseconds=read duration
-        let wait=read delay
-        if current() then Some {From=source |> Option.map convert;To=destination |> Option.map convert
-                                Duration=milliseconds;Delay=wait;Ease=ease;Modifier=modifier}
-        else None
+        match computed with
+        | Some compute when current() ->
+            let frame=compute context
+            if not(current()) then None
+            else
+                if isNull(box frame) then invalidArg "read" "A computed frame is required."
+                if not(frame.IsComputedResult) then invalidArg "read" "Computed frames require a constant destination without nested frame providers."
+                frame.Resolve(context,convert,current)
+        | Some _ -> None
+        | None ->
+            let endpoints=
+                match pair with
+                | Some compute when current() ->
+                    let endpoints=compute context
+                    if current() then Some endpoints else None
+                | _ -> None
+            let destination=if pair.IsSome then endpoints |> Option.map snd else read last
+            let source=read first
+            let milliseconds=read duration
+            let wait=read delay
+            if current() then
+                let source=match endpoints with Some(first,_) -> Some first | None -> source
+                Some {From=source |> Option.map convert;To=destination |> Option.map convert
+                      Duration=milliseconds;Delay=wait;Ease=ease;Modifier=modifier}
+            else None
+    member private _.IsComputedResult=computed.IsNone && pair.IsNone && (last |> Option.exists(fun value -> value.Constant.IsSome))
+    /// <summary>Computes a complete frame once per target during construction.</summary>
+    /// <remarks>The result replaces outer frame settings and requires a constant destination. Source and timing providers remain deferred.
+    /// Nested computed frames and destination providers in the result raise ArgumentException.</remarks>
+    static member Compute(read:KeyframeContext<'Target,'Value> -> Keyframe<'Target,'Value>) : Keyframe<'Target,'Value> =
+        if isNull(box read) then nullArg "read"
+        Keyframe<'Target,'Value>(None,None,None,None,None,None,Some read,None)
+    /// <summary>Computes one source/destination pair per target, retaining outer timing and easing.</summary>
+    /// <remarks>The pair callback precedes outer source and timing providers; its source overrides the outer source result.</remarks>
+    static member BetweenBy(read:KeyframeContext<'Target,'Value> -> 'Value*'Value) : Keyframe<'Target,'Value> =
+        if isNull(box read) then nullArg "read"
+        Keyframe<'Target,'Value>(None,None,None,None,None,None,None,Some read)
     /// <summary>Creates a constant destination frame; missing source inherits the preceding raw endpoint.</summary>
-    static member To(value:'Value) : Keyframe<'Target,'Value> =Keyframe(None,Some(FrameValue(Some value,None)),None,None,None,None)
+    static member To(value:'Value) : Keyframe<'Target,'Value> =Keyframe<'Target,'Value>(None,Some(FrameValue(Some value,None)),None,None,None,None,None,None)
     /// <summary>Creates a target-aware destination frame evaluated once during construction.</summary>
     static member ToBy(read:KeyframeContext<'Target,'Value> -> 'Value)=
         if isNull(box read) then nullArg "read"
-        Keyframe(None,Some(FrameValue(None,Some read)),None,None,None,None)
+        Keyframe<'Target,'Value>(None,Some(FrameValue(None,Some read)),None,None,None,None,None,None)
     /// <summary>Creates a hold frame retaining the preceding raw endpoint.</summary>
-    static member Hold() : Keyframe<'Target,'Value> =Keyframe(None,None,None,None,None,None)
+    static member Hold() : Keyframe<'Target,'Value> =Keyframe<'Target,'Value>(None,None,None,None,None,None,None,None)
     /// <summary>A diagnostic identifying this frame's authored endpoint shape.</summary>
-    override _.ToString()=if first.IsSome then "Keyframe(from/to)" elif last.IsSome then "Keyframe(to)" else "Keyframe(hold)"
+    override _.ToString()=if computed.IsSome then "Keyframe(computed)" elif pair.IsSome then "Keyframe(pair)" elif first.IsSome then "Keyframe(from/to)" elif last.IsSome then "Keyframe(to)" else "Keyframe(hold)"
 
 /// <summary>Typed keyframe factories; the binding infers the target type for constant values.</summary>
 [<RequireQualifiedAccess>]
@@ -110,6 +146,10 @@ module Keyframe =
     let between first last=(Keyframe<'Target,'Value>.To last).WithFrom first
     /// <summary>Creates a destination callback with a statically typed target context.</summary>
     let toBy read=Keyframe<'Target,'Value>.ToBy read
+    /// <summary>Computes a complete typed frame once per target during construction.</summary>
+    let compute read=Keyframe<'Target,'Value>.Compute read
+    /// <summary>Computes one source/destination pair while retaining outer frame settings.</summary>
+    let betweenBy read=Keyframe<'Target,'Value>.BetweenBy read
     /// <summary>Creates a hold frame.</summary>
     let hold<'Target,'Value> ()=Keyframe<'Target,'Value>.Hold()
     /// <summary>Captures raw values with source one-value, two-value and longer-array meanings.</summary>

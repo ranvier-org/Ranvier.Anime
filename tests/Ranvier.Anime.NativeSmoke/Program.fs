@@ -44,6 +44,70 @@ let main args =
         do
             let elements=[|host.Document.createElement "div" :?> HTMLElement;host.Document.createElement "div" :?> HTMLElement|]
             let styles=elements |> Array.map(fun element -> (element:>ElementCSSInlineStyle).style)
+            for index in 0..1 do
+                host.Document.body.appendChild elements[index] |> ignore
+                styles[index].setProperty("font-size",(if index=0 then "16px" else "32px"))
+                styles[index].setProperty("width",(if index=0 then "7px" else "11px"))
+            let calls=ResizeArray<string>()
+            let frame=Keyframe.compute(fun (context:KeyframeContext<HTMLElement,Declaration>) ->
+                if context.Count<>2u || not(obj.ReferenceEquals(context.Target,elements[int context.Index])) then failwith "computed frame target context"
+                calls.Add "frame"
+                (Keyframe.toValue(Declaration.important(Css.width(Css.em 3.))))
+                    .WithFromBy(fun _ -> calls.Add "from";Css.width(Css.em 1.))
+                    .WithDurationBy(fun _ -> calls.Add "duration";100u+100u*context.Index))
+            let outer=frame.WithFromBy(fun _ -> failwith "replaced outer source")
+                           .WithDurationBy(fun _ -> failwith "replaced outer duration")
+            let mutable renders=0
+            use animation=Keyframes.CaptureCss(scheduler,ComputedStyles.forHost host,elements,"width",[|outer|],
+                options={Ranvier.Anime.KeyframeAnimationOptions.Default with Autoplay=false;Ease=id;OnRender=(fun _ -> renders<-renders+1)})
+            renders<-0
+            animation.Playback.Seek 50.
+            require "computed typed frames use actual target contexts returned timing and native element units"
+                (abs(elements[0].getBoundingClientRect().width-32.)<0.02 &&
+                 abs(elements[1].getBoundingClientRect().width-48.)<0.02 && renders=1 &&
+                 calls.ToArray()=[|"frame";"from";"duration";"frame";"from";"duration"|] &&
+                 styles[0].getPropertyPriority "width"="important" && styles[1].getPropertyPriority "width"="important")
+            animation.Playback.Stretch 400.
+            animation.Playback.Seek 100.
+            require "computed frame stretching keeps captured endpoints and does not rerun providers"
+                (abs(elements[0].getBoundingClientRect().width-32.)<0.02 &&
+                 abs(elements[1].getBoundingClientRect().width-48.)<0.02 && calls.Count=6)
+            animation.Revert()
+            require "computed typed frames restore original values and priorities"
+                (styles[0].getPropertyValue "width"="7px" && styles[1].getPropertyValue "width"="11px" &&
+                 styles[0].getPropertyPriority "width"="" && styles[1].getPropertyPriority "width"="" && calls.Count=6)
+            for element in elements do host.Document.body.removeChild element |> ignore
+        do
+            let target=host.Document.createElement "div" :?> HTMLElement
+            host.Document.body.appendChild target |> ignore
+            let inlineStyle=(target:>ElementCSSInlineStyle).style
+            inlineStyle.setProperty("width","7px")
+            let calls=ResizeArray<string>()
+            let pair=Keyframe.betweenBy(fun (_:KeyframeContext<HTMLElement,Declaration>) ->
+                calls.Add "pair";Css.width(Css.px 10.),Css.width(Css.px 110.))
+            let frame=pair.WithFromBy(fun _ -> calls.Add "from";Css.width(Css.px 999.)).WithDurationBy(fun _ -> calls.Add "duration";100u)
+            use animation=Keyframes.CaptureCss(scheduler,ComputedStyles.forHost host,target,"width",[|frame|],
+                options={Ranvier.Anime.KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+            animation.Playback.Seek 50.
+            require "typed endpoint pair callbacks retain source timing effects and override the sampled source"
+                (abs(target.getBoundingClientRect().width-60.)<0.02 && calls.ToArray()=[|"pair";"from";"duration"|])
+            animation.Revert()
+            require "typed endpoint pair revert restores the native inline snapshot" (inlineStyle.getPropertyValue "width"="7px")
+            host.Document.body.removeChild target |> ignore
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let frame=Keyframe.compute(fun (_:KeyframeContext<HTMLElement,Declaration>) ->
+                owner.Dispose();Unchecked.defaultof<Keyframe<HTMLElement,Declaration>>)
+            let mutable interrupted=false
+            try Keyframes.CaptureCss(scheduler,ComputedStyles.forHost host,element,"width",[|frame|],owner=owner) |> ignore
+            with :? ObjectDisposedException -> interrupted<-true
+            require "actual owner disposal inside computed typed frame suppresses invalid return and dispatch"
+                (interrupted && owner.IsDisposed && style.getPropertyValue "width"="")
+        do
+            let elements=[|host.Document.createElement "div" :?> HTMLElement;host.Document.createElement "div" :?> HTMLElement|]
+            let styles=elements |> Array.map(fun element -> (element:>ElementCSSInlineStyle).style)
             for element in elements do host.Document.body.appendChild element |> ignore
             for index in 0..1 do
                 styles[index].setProperty("width",(if index=0 then "7px" else "17px"))

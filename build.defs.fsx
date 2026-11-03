@@ -431,6 +431,7 @@ let root = Command.root {
             run "rtk node tools/keyframes.mjs"
             run "rtk node tools/keyframes.mjs --playback"
             run "rtk node tools/keyframes.mjs --inputs"
+            run "rtk node tools/keyframes.mjs --computed"
             run "rtk node tools/keyframe-css.mjs"
             run "rtk node tools/keyframe-sequences.mjs"
         }
@@ -450,6 +451,12 @@ let root = Command.root {
         stage "upstream sparse sequence reference" {
             workingDir __SOURCE_DIRECTORY__
             run "rtk node tools/keyframe-sequences.mjs"
+        }
+    }
+    command "computed-reference" {
+        stage "upstream computed keyframe reference" {
+            workingDir __SOURCE_DIRECTORY__
+            run "rtk node tools/keyframes.mjs --computed"
         }
     }
     command "unit-reference" {
@@ -487,6 +494,7 @@ let root = Command.root {
             run "rtk node tools/keyframes.mjs"
             run "rtk node tools/keyframes.mjs --playback"
             run "rtk node tools/keyframes.mjs --inputs"
+            run "rtk node tools/keyframes.mjs --computed"
             run "rtk node tools/keyframe-css.mjs"
             run "rtk node tools/keyframe-sequences.mjs"
         }

@@ -6,7 +6,8 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 const script=fileURLToPath(import.meta.url);
 const root=resolve(dirname(script),'..'),upstream=resolve(root,'upstream/anime');
-const inputMode=process.argv.includes('--inputs');
+const computedMode=process.argv.includes('--computed');
+const inputMode=process.argv.includes('--inputs')||computedMode;
 const playback=process.argv.includes('--playback')||inputMode;
 let cases=[
  {name:'oneValue',original:{x:10},duration:100,properties:{x:[100]}},
@@ -78,6 +79,20 @@ if(inputMode)cases=[
  {name:'emptyRepeated',original:{x:10},duration:100,loop:3,properties:{x:[]}},
  {name:'dynamicDurationsOverrideSubprecisionDefaults',original:{x:10},duration:1e-12,properties:{x:[{to:{fn:'target',base:100},duration:{fn:'index',base:100}},{to:{fn:'previous',base:100},duration:{fn:'index',base:100}},{to:300,duration:{fn:'index',base:100}}]}},
 ].map(input=>({...input,composition:'replace'}));
+if(computedMode)cases=[
+ {name:'returnedDestination',original:{x:10},duration:200,properties:{x:[{to:{fn:'frame',result:{to:100}}},{to:200}]}},
+ {name:'returnedEndpointsAndTiming',targets:[{x:10},{x:20}],duration:300,properties:{x:[{to:{fn:'frame',result:{to:100,from:{fn:'index',base:5,step:10},duration:{fn:'index',base:100,step:50},delay:{fn:'index',base:-10,step:5}}}},{to:200}]}},
+ {name:'returnedObjectReplacesOuter',original:{x:10},duration:300,properties:{x:[{to:{fn:'frame',result:{from:20,to:100}},from:{fn:'mutate',base:999},duration:{fn:'mutate',base:999},delay:{fn:'mutate',base:999},ease:'inQuad',modifier:'double'},{to:200}]}},
+ {name:'returnedObjectInheritsGlobal',original:{x:10},duration:300,delay:40,ease:'outQuad',modifier:'plusOne',properties:{x:[{to:{fn:'frame',result:{to:100}}},{to:{fn:'frame',result:{to:200}}}]}},
+ {name:'returnedMutationBeforeOriginalRead',original:{x:10},duration:100,properties:{x:[{to:{fn:'frame',mutate:40,result:{to:100}}}]}},
+ {name:'returnedModifierPreviousCache',original:{x:10},duration:200,modifier:'double',properties:{x:[{to:{fn:'frame',result:{to:100,modifier:'plusOne'}}},{to:{fn:'frame',result:{to:200,from:{fn:'previous',base:5}}}}]}},
+ {name:'returnedZeroDurationAndSignedDelay',original:{x:10},duration:200,properties:{x:[{to:{fn:'frame',result:{from:0,to:100,duration:0}}},{to:{fn:'frame',result:{to:200,duration:100,delay:-20}}}]}},
+ {name:'returnedDurationsOverrideSubprecision',original:{x:10},duration:1e-12,properties:{x:[{to:{fn:'frame',result:{to:100,duration:100}}},{to:{fn:'frame',result:{to:200,duration:{fn:'index',base:100}}}},{to:{fn:'frame',result:{to:300,duration:100}}}]}},
+ {name:'returnedPreciseTiming',targets:[{x:10},{x:20}],duration:1,properties:{x:[{to:{fn:'frame',result:{to:100,from:0,duration:0.125,delay:0.1,ease:'inQuad'}}},{to:{fn:'frame',result:{to:200,duration:0.125,delay:0.025,ease:'outQuad'}}}]}},
+ {name:'returnedFramesAcrossLoops',original:{x:10},duration:200,loop:2,loopDelay:30,alternate:true,properties:{x:[{to:{fn:'frame',result:{to:100}}},{to:{fn:'frame',result:{to:200}}}]}},
+ {name:'returnedPair',targets:[{x:10},{x:20}],duration:100,properties:{x:[{to:{fn:'pair',base:5,step:10,toBase:100,toStep:25}}]}},
+ {name:'returnedPairWithOuterTiming',original:{x:10},duration:200,properties:{x:[{to:{fn:'pair',base:0,toBase:100},from:{fn:'index',base:999},duration:{fn:'index',base:100},delay:{fn:'index',base:10}},{to:{fn:'pair',base:200,toBase:300},duration:50,ease:'inQuad'}]}},
+].flatMap(input=>['none','replace'].map(composition=>({...input,name:composition+'-'+input.name,composition})));
 if(process.argv[2]==='--case'){
  let now=0;
  Date.now=()=>now;
@@ -94,6 +109,11 @@ if(process.argv[2]==='--case'){
   if(value&&typeof value==='object'&&value.fn)return(target,index,all,previous)=>{
    calls.push({field,index,count:all.length,previous:previous?previous._value:null,targetValue:target.x});
    const base=(value.base??0)+(value.step??0)*index;
+   if(value.fn==='frame'){
+    if(value.mutate!==undefined)target.x=value.mutate;
+    return convert(value.result);
+   }
+   if(value.fn==='pair')return [base,(value.toBase??0)+(value.toStep??0)*index];
    if(value.fn==='mutate')target.x=base;
    return value.fn==='target'?target.x+base:value.fn==='previous'?(previous?previous._value:target.x)+base:base;
   };
@@ -145,10 +165,10 @@ if(process.argv[2]==='--case'){
  assert.equal(engine._head,null);
  process.stdout.write(JSON.stringify({name:input.name,input,construction,initial,samples}));
 }else{
- const revision=execFileSync('git',['-C',upstream,'rev-parse','HEAD'],{encoding:'utf8'}).trim();
- const clean=()=>assert.equal(execFileSync('git',['-C',upstream,'status','--porcelain'],{encoding:'utf8'}).trim(),'');
+ const revision=execFileSync('rtk',['proxy','git','-C',upstream,'rev-parse','HEAD'],{encoding:'utf8'}).trim();
+ const clean=()=>assert.equal(execFileSync('rtk',['proxy','git','-C',upstream,'status','--porcelain'],{encoding:'utf8'}).trim(),'');
  assert.equal(revision,'2c9cf8ea00329f6768c7d7902252ed977d75ce42');clean();
- const fixtures=cases.map((_,index)=>JSON.parse(execFileSync(process.execPath,[script,'--case',String(index),...(inputMode?['--inputs']:playback?['--playback']:[])],{encoding:'utf8',maxBuffer:8*1024*1024})));
+ const fixtures=cases.map((_,index)=>JSON.parse(execFileSync(process.execPath,[script,'--case',String(index),...(computedMode?['--computed']:inputMode?['--inputs']:playback?['--playback']:[])],{encoding:'utf8',maxBuffer:8*1024*1024})));
  const byName=Object.fromEntries(fixtures.map(fixture=>[fixture.name,fixture]));
  if(!playback){
  assert.equal(byName.fromTo.construction.tweens.length,1);
@@ -161,6 +181,6 @@ if(process.argv[2]==='--case'){
  clean();
  const output=JSON.stringify({upstreamCommit:revision,version:JSON.parse(readFileSync(resolve(upstream,'package.json'),'utf8')).version,
   scope:playback?'Actual isolated JSAnimation none and same-parent replace write-order/playhead traces; not cross-animation arbitration or native CSS acceptance.':'Actual unmodified JSAnimation construction and seek snapshots, isolated per case; composition none isolates keyframe normalization from global arbitration. These are object targets, not native CSS acceptance.',fixtures},null,2)+'\n';
- writeFileSync(resolve(root,'tests/reference/'+(inputMode?'keyframe-inputs':playback?'keyframe-playback':'keyframes')+'.json'),output);
+ writeFileSync(resolve(root,'tests/reference/'+(computedMode?'keyframe-computed':inputMode?'keyframe-inputs':playback?'keyframe-playback':'keyframes')+'.json'),output);
  console.log('Captured '+fixtures.length+' isolated keyframe traces; SHA256 '+createHash('sha256').update(output).digest('hex'));
 }

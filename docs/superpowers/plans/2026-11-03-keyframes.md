@@ -84,6 +84,17 @@ CSS gates:1715/1715 normal Release and Traced Debug, XML0. Both public JIT consu
 
 Global replace/add/blend arbitration across independent animations and full timeline controls remain required work beyond sequence-local composition.
 
+### Computed complete frames and endpoint pairs
+
+Reuse Keyframe as the typed callback result for source functions returning a frame object. Add Keyframe.compute/Compute for one construction-time callback per target/frame; its returned frame replaces outer from/timing/ease/modifier overrides, while missing settings inherit animation defaults. Returned frames require a constant destination and may have source/timing providers; nested computed frames and dynamic returned destinations reject without recursive execution. Keyframe.betweenBy/BetweenBy accepts one callback returning a source/destination pair, preserving outer timing settings and callback order. Both paths use existing bindings, contexts, snapshots and interpolation. No replacement CSS contract or new scheduler is introduced.
+
+- [x] Capture24 isolated actual-source object/pair schedules covering replacement, inheritance, order, target mutation, modified-cache chaining, signed/zero/precise timing and loop playback; demonstrate missing typed factories in SageFs.
+- [x] Prove guarded computed-frame/pair resolution in SageFs; persist and replay all captured writes, callback snapshots and clock state.
+- [x] Add invalid-return, null, disposal/fault/atomic staging contracts and actual typed CSS native ownership/layout/revert probes.
+- [x] Run normal/Traced full tests/XML, complete reference regeneration, one scoped review and fresh source-bound native JIT/strict NativeAOT evidence; retain remaining scope.
+
+Computed-frame checkpoint:24 source schedules and16 contracts pass, full1864/1864 normal/Traced tests, XML0; scoped review found no concrete defects. Actual native typed results/pairs pass target/unit contexts, returned importance, effect order, shared stretching without recapture, scoped revert and actual owner disposal. Both JIT and strict NativeAOT modes pass with host.Errors0. Immutable evidence docs/evidence/native-public45-p7-computed-keyframes.json verifies both receipts/all18 files,62 current library hashes and both consumers; strict Debug355 authored/190 compiler inputs. Broader returned shapes, refresh, opaque CSS snapshots, timeline integration and full port scope remain active.
+
 ## Task 3 follow-up: shorthand snapshots
 
 Reuse the existing public CSS factories. Generate internal shorthand/alias and logical-counterpart metadata from the public NativeP7 manifest's WebKit commit b95c91b1c0ee43cc86d25ff7af73038f67a88e04, reading the pinned Git blob rather than a possibly modified working file. Keep the generator behind Partas.Build and retain provenance/notices. No new public CSS value contract or upstream modification is needed.
