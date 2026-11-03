@@ -419,6 +419,12 @@ let root = Command.root {
             }
         }
     }
+    command "animatable-reference" {
+        stage "upstream animatable reference" {
+            workingDir __SOURCE_DIRECTORY__
+            run "rtk node tools/animatable.mjs"
+        }
+    }
     command "unit-reference" {
         stage "upstream unit conversion reference" {
             workingDir __SOURCE_DIRECTORY__
@@ -448,6 +454,9 @@ let root = Command.root {
             run "rtk node tools/animation-playback.mjs"
             run "rtk node tools/timeline-playback.mjs"
             run "rtk node tools/easing-curves.mjs"
+            run "rtk node tools/value-interpolation.mjs"
+            run "rtk node tools/unit-conversion.mjs"
+            run "rtk node tools/animatable.mjs"
         }
     }
 }
