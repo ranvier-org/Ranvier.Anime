@@ -121,4 +121,10 @@ let tests = testList "value interpolation kernel" [
     testCase "unsupported source color syntax is rejected" <| fun _ ->
         for text in ["rgba(1,2,3)";"rgb(1,2,3,0.5)";"hsla(0,50%,50%)";"hsl(0,50%,50%,0.5)";"rgb(10 20 30 / 0.5)"] do
             Expect.throwsT<ArgumentException> (fun () -> decompose(Text text) |> ignore) "no implicit browser color normalization"
+    testCase "interpolation diagnostics use authored BCL output" <| fun _ ->
+        Expect.equal ((Number 1.25).ToString()) "Number 1.25" "literal diagnostic"
+        Expect.equal ((Text null).ToString()) "Text <null>" "null literal diagnostic"
+        Expect.equal ((decompose(Text "2px")).ToString()) "ValueData(Unit, 2)" "decomposed diagnostic"
+        let output=prepare (Number 0.) (Text "0px") (Text "10px") 0.5 4 id (fun () -> true) |> Option.get
+        Expect.equal (output.ToString()) "5px" "sample diagnostic"
 ]

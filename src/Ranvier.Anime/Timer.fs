@@ -137,12 +137,13 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
 
     let setTimeGuarded canWrite time =
         finite "time" time
-        let wasPaused = state.Paused
-        operate (fun current ->
-            state.Pause()
-            if current() && canWrite() then state.Seek(time, false)
-            if current() && canWrite() && not wasPaused then state.Resume())
-            (fun () -> if canWrite() && not state.Paused then reanchor 12.)
+        state.WithWriteGuard(canWrite, fun () ->
+            let wasPaused = state.Paused
+            operate (fun current ->
+                state.Pause()
+                if current() && canWrite() then state.Seek(time, false)
+                if current() && canWrite() && not wasPaused then state.Resume())
+                (fun () -> if canWrite() && not state.Paused then reanchor 12.))
 
     let setTime time = setTimeGuarded (fun () -> true) time
 
@@ -238,6 +239,11 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member internal _.Sample = state.Sample
     /// <summary>Both scheduler and state generations for guarding property writes across user code.</summary>
     member internal _.Generation = generation, state.Generation
+    /// <summary>Captures clock/state generations and current inherited guards before an easing or modifier callback.</summary>
+    member internal _.CaptureWriteGuard() =
+        let expected = generation
+        let inherited = state.CaptureWriteGuard()
+        fun () -> expected = generation && inherited()
     /// <summary>Raw time immediately before the current sample.</summary>
     member internal _.PreviousAbsoluteTime = state.PreviousAbsoluteTime
     /// <summary>Installs an animation renderer and an optional source setter-duration override before sampling.</summary>

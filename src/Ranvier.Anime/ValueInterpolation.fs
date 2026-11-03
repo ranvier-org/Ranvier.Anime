@@ -9,11 +9,29 @@ module internal ValueInterpolation =
     /// <summary>The source decomposition category.</summary>
     type ValueKind = Number = 0 | Unit = 1 | Color = 2 | Complex = 3
     /// <summary>A numeric or serialized endpoint before source decomposition.</summary>
-    type Literal = Number of float | Text of string
+    [<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+    type Literal =
+        | Number of float
+        | Text of string
+        /// <summary>An invariant case/value diagnostic without structural formatting.</summary>
+        override this.ToString() =
+            match this with
+            | Number value -> "Number "+value.ToString("R",CultureInfo.InvariantCulture)
+            | Text value -> "Text "+(if isNull value then "<null>" else value)
     /// <summary>Source value kind, scalar, unit/operator and compound components/template.</summary>
-    type Data = { Kind:ValueKind; Number:float; Unit:string; Operator:char option; Components:float array; Strings:string array }
+    [<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+    type Data =
+        { Kind:ValueKind; Number:float; Unit:string; Operator:char option; Components:float array; Strings:string array }
+        /// <summary>An invariant value-kind/scalar diagnostic.</summary>
+        override this.ToString() =
+            "ValueData("+this.Kind.ToString()+", "+this.Number.ToString("R",CultureInfo.InvariantCulture)+")"
     /// <summary>A composed scalar or string with the sampled component values.</summary>
-    type Output = { Scalar:float option; Text:string; Components:float array }
+    [<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+    type Output =
+        { Scalar:float option; Text:string; Components:float array }
+        /// <summary>The invariant scalar or composed text.</summary>
+        override this.ToString() =
+            match this.Scalar with Some value -> value.ToString("R",CultureInfo.InvariantCulture) | None -> this.Text
     let private finite name value = if not(Double.IsFinite value) then invalidArg name "Expected finite input."
     /// <summary>Formats source-style shortest numbers and exponent thresholds, including IEEE values.</summary>
     let number (value:float) =
@@ -132,8 +150,7 @@ module internal ValueInterpolation =
                         let components=digitsPattern.Matches text |> Seq.cast<Match> |> Seq.map(fun item -> parse item.Value) |> Seq.toArray
                         {scalar 0. with Kind=ValueKind.Complex;Components=components;Strings=digitsPattern.Split text}
     let private relative first last op = match op with '-' -> first-last | '+' -> first+last | _ -> first*last
-    /// <summary>Captures homogeneous endpoints and returns a guarded per-component sampler; differing units require native conversion.</summary>
-    let prepare original first last =
+    let private prepareWith roundNumbers original first last =
         let mutable first=decompose first
         let mutable last=decompose last
         match first.Operator with Some op -> first<-{first with Number=relative (decompose original).Number first.Number op} | None -> ()
@@ -156,7 +173,7 @@ module internal ValueInterpolation =
             if first.Components.Length>last.Components.Length then last<-fill last else first<-fill first
         fun progress precision (modifier:float -> float) (canWrite:unit -> bool) ->
             finite "progress" progress
-            let precision=if progress=0. || progress=1. || first.Kind=ValueKind.Number then -1 else precision
+            let precision=if progress=0. || progress=1. || (first.Kind=ValueKind.Number && not roundNumbers) then -1 else precision
             let round value=if precision<0 then value else PropertyNumbers.round (Math.Pow(10.,float precision)) value
             let lerp first last = if progress=1. then last elif progress=0. then first else first+(last-first)*progress
             let modify value =
@@ -190,3 +207,9 @@ module internal ValueInterpolation =
                             for index in 0..values.Length-1 do result.Append(number values[index]).Append(last.Strings[index+1]) |> ignore
                             result.ToString()
                     Some {Scalar=None;Text=text;Components=values}
+
+    /// <summary>Captures object endpoints and returns a guarded sampler; differing units require native conversion.</summary>
+    let prepare original first last = prepareWith false original first last
+
+    /// <summary>Captures CSS endpoints, rounding intermediate unitless scalars before modifiers as source CSS dispatch does.</summary>
+    let prepareCss original first last = prepareWith true original first last

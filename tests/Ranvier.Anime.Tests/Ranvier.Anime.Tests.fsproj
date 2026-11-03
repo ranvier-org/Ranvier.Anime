@@ -7,6 +7,7 @@
     <Compile Include="EaseTests.fs" />
     <Compile Include="CurveTests.fs" />
     <Compile Include="ValueInterpolationTests.fs" />
+    <Compile Include="DeclarationTests.fs" />
     <Compile Include="SpringTests.fs" />
     <Compile Include="StaggerTests.fs" />
     <Compile Include="TimelineTests.fs" />

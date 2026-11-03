@@ -36,6 +36,7 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let mutable generation = 0
     let mutable previousAbsoluteTime = 0.
     let mutable parentContext : (bool * bool * (unit -> bool)) option = None
+    let mutable writeGuard = fun () -> true
     let mutable completingSetter = false
     let mutable renderer : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
     let mutable childRenderer : (PlaybackSample -> PlaybackTickMode -> bool -> bool) option = None
@@ -56,7 +57,8 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         let next = timing.Sample(previousAbsoluteTime, time, reversed, alternate, wasCompleted, mode,
                                  ?parentBackwards=(parentContext |> Option.map(fun (backwards,_,_) -> backwards)), child=parentContext.IsSome)
         sample <- next
-        let current () = expected = generation && not cancelled && (parentContext |> Option.forall(fun (_,_,live) -> live()))
+        let current () = expected = generation && not cancelled && writeGuard() &&
+                         (parentContext |> Option.forall(fun (_,_,live) -> live()))
         let parentAllowsLifecycle () = parentContext |> Option.forall(fun (_,parentBegan,_) -> not next.Backwards && parentBegan)
         let emit event = if not mute && current() then callback event
         if next.AboveZero && not began then
@@ -177,6 +179,17 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     member _.DeltaTime = deltaTime
     /// <summary>Changes on control operations and sampling, allowing callers to reject interrupted work.</summary>
     member _.Generation = generation
+    /// <summary>Captures this sample's generation and inherited write guards for user-code interruption checks.</summary>
+    member _.CaptureWriteGuard() =
+        let expected = generation
+        let inherited = writeGuard
+        let parent = parentContext
+        fun () -> expected = generation && not cancelled && inherited() && (parent |> Option.forall(fun (_,_,live) -> live()))
+    /// <summary>Scopes a borrowed setter's complete ancestor guard across rendering and lifecycle callbacks.</summary>
+    member _.WithWriteGuard(guard: unit -> bool, action: unit -> unit) =
+        let previous = writeGuard
+        writeGuard <- guard
+        try action() finally writeGuard <- previous
     /// <summary>Renders eligible samples between before-update and update callbacks, including muted and nonpositive samples.</summary>
     member _.Renderer with set value = renderer <- value
     /// <summary>Renders timeline children after root update callbacks; loop preparation precedes the root loop callback.</summary>

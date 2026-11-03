@@ -38,6 +38,7 @@ const inputs = [
   [20, '+=0xff', '*=0b10'], [5, '-=0o10', '+=0x20'],
   [20, '+=', '*= '],
   [0, 'NaN', 'nan'], [0, 'infinity', '-infinity'],
+  [0, 'translate(0px,0px)', 'translate(100%,100%)'],
 ];
 let state = 1937;
 const next = () => ((state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 4294967296);
@@ -71,9 +72,34 @@ for (let index = 0; index < inputs.length; index++) {
   }
 }
 const decomposed = inputs.flatMap(([,first,last]) => [first,last]).map(raw => ({ raw, value: decomposeRawValue(raw, createDecomposedValueTargetObject()) }));
+const cssCases = cases.map(entry => {
+  globals.precision = entry.precision;
+  const property = 'opacity';
+  const samples = progresses.map(progress => {
+    const properties = { [property]: String(entry.base) };
+    const style = {
+      getPropertyValue: name => properties[name] ?? '',
+      setProperty: (name, value) => { properties[name] = String(value); },
+    };
+    Object.defineProperty(style, property, {
+      enumerable: true, get: () => properties[property], set: value => { properties[property] = String(value); },
+    });
+    const target = { nodeType: 1, style };
+    const animation = animate(target, {
+      [property]: [entry.first, entry.last], duration: 100, ease: () => progress,
+      modifier: modifiers[entry.modifier], composition: 'none', autoplay: false,
+    });
+    animation.seek(50);
+    const result = properties[property];
+    if (animation._head._tweenType !== 2) throw new Error('Reference did not use CSS dispatch');
+    animation.cancel();
+    return { progress, result };
+  });
+  return { ...entry, samples };
+});
 const numberStrings = [0, -0, 1e-7, 1e-6, 1e20, 1e21, 1.0000000000000001e18, 1.2345678901234567, -2.2250738585072014e-308, Number.MAX_VALUE, 5e-324, Infinity, -Infinity, NaN]
   .map(value => ({ value: Object.is(value, -0) ? '-0' : String(value), result: String(value) }));
-const fixture = { upstreamCommit: commit, decomposed, cases, numberStrings };
+const fixture = { upstreamCommit: commit, decomposed, cases, cssCases, numberStrings };
 const output = JSON.stringify(fixture, null, 2) + '\n';
 writeFileSync(resolve(root, 'tests/reference/value-interpolation.json'), output);
 console.log(`Captured ${decomposed.length} decompositions and ${cases.length} value composition cases`);

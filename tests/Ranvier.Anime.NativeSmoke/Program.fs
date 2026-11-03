@@ -114,6 +114,53 @@ let main args =
         require "native irregular easing retains construction draws"
             (curveValue = 75. && style.getPropertyValue "--anime-gap" = "75px" && randomCalls = 1)
         use activation = graph.Activate()
+        use declarationWidth = CssAnimation.declaration scheduler style
+                                    (Ranvier.Css.Css.width(Ranvier.Css.Css.px 0.))
+                                    (Ranvier.Css.Css.width(Ranvier.Css.Css.px 120.)) 100u
+        declarationWidth.Seek 50.
+        require "native typed declaration drives layout"
+            (abs(element.getBoundingClientRect().width - 60.) < 0.01)
+        declarationWidth.Cancel()
+        use declarationColor = CssAnimation.declaration scheduler style
+                                    (Declaration.create "background-color" "#000")
+                                    (Declaration.create "background-color" "#fff") 100u
+        declarationColor.Seek 50.
+        require "native color declaration uses source gamma-like interpolation"
+            (style.getPropertyValue "background-color" = "rgb(180, 180, 180)")
+        declarationColor.Cancel()
+        let beforeTransform = element.getBoundingClientRect().left
+        use declarationTransform = CssAnimation.declaration scheduler style
+                                        (Declaration.create "transform" "translate(0px,0px)")
+                                        (Declaration.create "transform" "translate(100px,50px)") 100u
+        declarationTransform.Seek 50.
+        require "native compound declaration changes transformed geometry"
+            (abs(element.getBoundingClientRect().left - beforeTransform - 50.) < 0.01)
+        declarationTransform.Cancel()
+        style.removeProperty "transform" |> ignore
+        let mutable modifierArmed = false
+        let mutable modifierCalls = 0
+        let mutable declarationUpdates = 0
+        let declarationOwner, ownedDeclaration = Api.createRoot(fun owner ->
+            let modify value =
+                if modifierArmed then
+                    modifierCalls <- modifierCalls + 1
+                    owner.Dispose()
+                value
+            let settings =
+                { DeclarationAnimationOptions.Default with
+                    Modifier = modify
+                    OnUpdate = (fun _ -> declarationUpdates <- declarationUpdates + 1) }
+            let clock = CssAnimation.declarationWith settings scheduler style
+                            (Declaration.create "transform" "translate(0px,0px)")
+                            (Declaration.create "transform" "translate(100px,50px)") 1000u |> Timer.own
+            owner, clock)
+        use ownedDeclaration = ownedDeclaration
+        let retainedTransform = style.getPropertyValue "transform"
+        modifierArmed <- true
+        pumpUntil host (fun () -> ownedDeclaration.Cancelled)
+        require "native declaration owner cancellation interrupts component modifiers"
+            (modifierCalls = 1 && declarationUpdates = 0 && style.getPropertyValue "transform" = retainedTransform)
+        declarationOwner.Dispose()
         let mutable writes = 0
         let owner, signal = Api.createRoot(fun owner ->
             let signal = Api.createSignal 0.
