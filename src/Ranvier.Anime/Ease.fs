@@ -3,9 +3,14 @@ namespace Ranvier.Anime
 open System
 
 /// <summary>The placement of acceleration and deceleration within an easing interval.</summary>
-type EaseDirection = In | Out | InOut | OutIn
+[<Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+type EaseDirection =
+    | In | Out | InOut | OutIn
+    /// <summary>The easing direction name.</summary>
+    override this.ToString() = match this with In -> "In" | Out -> "Out" | InOut -> "InOut" | OutIn -> "OutIn"
 
 /// <summary>Parameterized easing families. Numeric parameters must be finite.</summary>
+[<Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type EaseFamily =
     | Power of exponent: float
     | Sine
@@ -14,6 +19,17 @@ type EaseFamily =
     | Bounce
     | Back of overshoot: float
     | Elastic of amplitude: float * period: float
+    /// <summary>The family name and invariant numeric parameters.</summary>
+    override this.ToString() =
+        let text (value:float)=value.ToString("R",Globalization.CultureInfo.InvariantCulture)
+        match this with
+        | Power value -> "Power "+text value
+        | Sine -> "Sine"
+        | Circular -> "Circular"
+        | Exponential -> "Exponential"
+        | Bounce -> "Bounce"
+        | Back value -> "Back "+text value
+        | Elastic(amplitude,period) -> "Elastic ("+text amplitude+", "+text period+")"
 
 /// <summary>A finite piecewise-linear value with implicit spacing or an explicit normalized position.</summary>
 [<RequireQualifiedAccess; System.Diagnostics.DebuggerDisplay("{DebugText,nq}")>]

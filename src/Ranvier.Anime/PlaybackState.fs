@@ -40,6 +40,7 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let mutable parentContext : (bool * bool * (unit -> bool)) option = None
     let mutable writeGuard = fun () -> true
     let mutable completingSetter = false
+    let mutable internalRender = false
     let mutable renderer : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
     let mutable childRenderer : (PlaybackSample -> PlaybackTickMode -> bool -> bool) option = None
     let mutable prepareLoop : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
@@ -51,59 +52,64 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         generation <- generation + 1
         generation
 
-    let render time mode mute =
-        let expected = generation
-        let previousIteration = sample.Iteration
-        let wasCompleted = completed
-        previousAbsoluteTime <- sample.AbsoluteTime
-        let next = timing.Sample(previousAbsoluteTime, time, reversed, alternate, wasCompleted, mode,
-                                 ?parentBackwards=(parentContext |> Option.map(fun (backwards,_,_) -> backwards)), child=parentContext.IsSome)
-        sample <- next
-        let current () = expected = generation && not cancelled && writeGuard() &&
-                         (parentContext |> Option.forall(fun (_,_,live) -> live()))
-        let parentAllowsLifecycle () = parentContext |> Option.forall(fun (_,parentBegan,_) -> not next.Backwards && parentBegan)
-        let emit event = if not mute && current() then callback event
-        if next.AboveZero && not began then
-            began <- true
-            if parentAllowsLifecycle() then emit PlaybackEvent.Begin
-        elif next.AbsoluteTime <= 0. then
-            began <- false
-        if childRenderer.IsNone && current() && next.AboveZero && next.Iteration <> previousIteration then emit PlaybackEvent.Loop
-        if current() && next.ShouldRender then
-            if next.AboveZero then
-                deltaTime <- next.PreviousTime - lastTime
-                lastTime <- next.PreviousTime
-                emit PlaybackEvent.BeforeUpdate
-            if childRenderer.IsNone && current() then renderer next mode mute
-            if next.AboveZero then emit PlaybackEvent.Update
-        if current() then
-            if parentContext.IsSome && timing.Duration <= 1e-11 then
-                let _,parentBegan,_ = parentContext.Value
-                if not mute && not completingSetter &&
-                   ((parentBegan && not next.Backwards && next.AbsoluteTime > 0. && not completed) ||
-                    (next.Backwards && next.AbsoluteTime <= 1e-11 && completed)) then
-                    completingSetter <- true
-                    try emit PlaybackEvent.Complete finally completingSetter <- false
-                    if current() then completed <- not next.Backwards
-            elif next.AboveZero && next.AtEnd then
-                if System.Double.IsFinite iterations && float next.Iteration >= iterations - 1. then
+    let render time mode mute soft =
+        let previousInternal = internalRender
+        internalRender <- soft
+        try
+            let expected = generation
+            let previousIteration = sample.Iteration
+            let wasCompleted = completed
+            previousAbsoluteTime <- sample.AbsoluteTime
+            let next = timing.Sample(previousAbsoluteTime, time, reversed, alternate, wasCompleted, mode,
+                                     ?parentBackwards=(parentContext |> Option.map(fun (backwards,_,_) -> backwards)), child=parentContext.IsSome)
+            sample <- next
+            let current () = expected = generation && not cancelled && writeGuard() &&
+                             (parentContext |> Option.forall(fun (_,_,live) -> live()))
+            let parentAllowsLifecycle () = parentContext |> Option.forall(fun (_,parentBegan,_) -> not next.Backwards && parentBegan)
+            let emit event = if not mute && current() then callback event
+            if next.AboveZero && not began then
+                began <- true
+                if parentAllowsLifecycle() then emit PlaybackEvent.Begin
+            elif next.AbsoluteTime <= 0. then
+                began <- false
+            if childRenderer.IsNone && current() && next.AboveZero && next.Iteration <> previousIteration then emit PlaybackEvent.Loop
+            if current() && next.ShouldRender then
+                if next.AboveZero then
+                    deltaTime <- next.PreviousTime - lastTime
+                    lastTime <- next.PreviousTime
+                    emit PlaybackEvent.BeforeUpdate
+                if childRenderer.IsNone && current() then renderer next mode mute
+                if next.AboveZero then emit PlaybackEvent.Update
+            if current() then
+                if parentContext.IsSome && timing.Duration <= 1e-11 then
+                    let _,parentBegan,_ = parentContext.Value
+                    if not mute && not completingSetter &&
+                       ((parentBegan && not next.Backwards && next.AbsoluteTime > 0. && not completed) ||
+                        (next.Backwards && next.AbsoluteTime <= 1e-11 && completed)) then
+                        completingSetter <- true
+                        try emit PlaybackEvent.Complete finally completingSetter <- false
+                        if current() then completed <- not next.Backwards
+                elif next.AboveZero && next.AtEnd then
+                    if System.Double.IsFinite iterations && float next.Iteration >= iterations - 1. then
+                        paused <- true
+                        if childRenderer.IsNone && not wasCompleted then
+                            completed <- true
+                            if parentAllowsLifecycle() then emit PlaybackEvent.Complete
+                else completed <- false
+            match childRenderer with
+            | Some renderChildren when current() ->
+                if next.Iteration <> previousIteration then
+                    prepareLoop next mode mute
+                    if current() then emit PlaybackEvent.Loop
+                let childrenComplete = if current() then renderChildren next mode mute else false
+                if current() && (childrenComplete || next.Backwards) && next.AbsoluteTime >= timing.Duration then
                     paused <- true
-                    if childRenderer.IsNone && not wasCompleted then
+                    if not completed then
                         completed <- true
-                        if parentAllowsLifecycle() then emit PlaybackEvent.Complete
-            else completed <- false
-        match childRenderer with
-        | Some renderChildren when current() ->
-            if next.Iteration <> previousIteration then
-                prepareLoop next mode mute
-                if current() then emit PlaybackEvent.Loop
-            let childrenComplete = if current() then renderChildren next mode mute else false
-            if current() && (childrenComplete || next.Backwards) && next.AbsoluteTime >= timing.Duration then
-                paused <- true
-                if not completed then
-                    completed <- true
-                    emit PlaybackEvent.Complete
-        | _ -> ()
+                        emit PlaybackEvent.Complete
+            | _ -> ()
+
+        finally internalRender <- previousInternal
 
     do
         if sample.AboveZero then
@@ -120,14 +126,14 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let rec resume expected =
         if current expected && paused then
             paused <- false
-            if timing.Duration <= 1e-11 && childRenderer.IsNone then render 1e-11 PlaybackTickMode.Force false
+            if timing.Duration <= 1e-11 && childRenderer.IsNone then render 1e-11 PlaybackTickMode.Force false false
     and seek expected time mute =
         if not(System.Double.IsFinite time) then invalidArg "time" "Expected finite milliseconds."
         if current expected then
             completed <- false
             let wasPaused = paused
             paused <- true
-            render (time + delay) PlaybackTickMode.Auto mute
+            render (time + delay) PlaybackTickMode.Auto mute false
             if current expected && not wasPaused then resume expected
     and toggle expected =
         let count = if System.Double.IsPositiveInfinity iterations then System.Math.Floor(1e12 / duration) else iterations
@@ -144,10 +150,10 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         if reversed then toggle expected
         resume expected
 
-    let reset expected =
+    let reset expected soft =
         if reversed && not initialReversed then play expected
         if current expected then
-            render 0. PlaybackTickMode.Force true
+            render 0. PlaybackTickMode.Force true soft
             if current expected then
                 paused <- true
                 began <- false
@@ -165,6 +171,8 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
 
     /// <summary>Most recent geometry, including raw time and public rounded getters.</summary>
     member _.Sample = sample
+    /// <summary>Whether the current renderer invocation updates caches without target dispatch.</summary>
+    member _.InternalRender = internalRender
     /// <summary>Total duration including repeated iterations and gaps.</summary>
     member _.Duration = timing.Duration
     /// <summary>Whether scheduling is paused.</summary>
@@ -239,12 +247,12 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             speed <- System.Math.Max(1e-11, value)
     /// <summary>Samples controller callbacks and any configured child phase using a source tick mode.</summary>
     member _.Tick(time: float, mode: PlaybackTickMode, mute: bool) =
-        run (fun _ -> render time mode mute)
+        run (fun _ -> render time mode mute false)
     /// <summary>Samples an owned timeline child with inherited direction, lifecycle filtering and ancestor interruption.</summary>
     member _.TickChild(time, mode, mute, backwards, parentBegan, canWrite) =
         let previous = parentContext
         parentContext <- Some(backwards, parentBegan, canWrite)
-        try run (fun _ -> render time mode mute)
+        try run (fun _ -> render time mode mute false)
         finally parentContext <- previous
     /// <summary>Resets child lifecycle flags while retaining its clock sample history.</summary>
     member _.ResetChildFlags() =
@@ -260,9 +268,11 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     /// <summary>Resumes scheduling; zero-duration standalone timers complete immediately.</summary>
     member _.Resume() = run resume
     /// <summary>Resets time and flags with muted render callbacks, restoring the initial direction policy.</summary>
-    member _.Reset() = run reset
+    member _.Reset() = run (fun expected -> reset expected false)
+    /// <summary>Refreshes caches during reset while exposing an internal-render context to the renderer.</summary>
+    member _.SoftReset() = run (fun expected -> reset expected true)
     /// <summary>Resets and resumes scheduling.</summary>
-    member _.Restart() = run (fun expected -> reset expected; resume expected)
+    member _.Restart() = run (fun expected -> reset expected false; resume expected)
     /// <summary>Mirrors time and changes direction according to repeat parity.</summary>
     member _.Alternate() = run toggle
     /// <summary>Resumes forward playback, mirroring time when currently reversed.</summary>

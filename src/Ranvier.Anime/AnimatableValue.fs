@@ -5,13 +5,11 @@ open Ranvier.Anime.ValueInterpolation
 
 /// <summary>Cached scalar or component endpoints for guarded animatable retargeting on the scheduler thread.</summary>
 /// <remarks>Sampling commits atomically after modifiers. Component getters return independent snapshots.</remarks>
-type internal AnimatableValue(original:Literal, unit:string option, roundNumbers:bool,
-                              convertUnit:(float -> string -> string -> float) option) =
-    let initialFirst,initialLast=normalize convertUnit original original (Text("+=0"+defaultArg unit ""))
+type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundNumbers:bool,number:float,components:float array) =
     let mutable first=initialFirst
     let mutable last=initialLast
-    let mutable cachedNumber=first.Number
-    let mutable cachedComponents=Array.copy first.Components
+    let mutable cachedNumber=number
+    let mutable cachedComponents=components
     let mutable generation=0L
     let scalar=first.Kind=ValueKind.Number || first.Kind=ValueKind.Unit
     let finite name value = if not(Double.IsFinite value) then invalidArg name "Expected finite input."
@@ -23,6 +21,12 @@ type internal AnimatableValue(original:Literal, unit:string option, roundNumbers
         else
             let result=modifier value
             if canWrite() then Some result else None
+    /// <summary>Captures normalized endpoints and the original unmodified cache.</summary>
+    new(original:Literal,unit:string option,roundNumbers:bool,convertUnit:(float -> string -> string -> float) option) =
+        let first,last=normalize convertUnit original original (Text("+=0"+defaultArg unit ""))
+        AnimatableValue(first,last,roundNumbers,first.Number,Array.copy first.Components)
+    /// <summary>Copies endpoints and cached values for atomic multi-target preparation without repeating context conversion.</summary>
+    member _.Fork() = AnimatableValue(first,last,roundNumbers,cachedNumber,Array.copy cachedComponents)
     /// <summary>The normalized endpoint category retained across retargets.</summary>
     member _.Kind=first.Kind
     /// <summary>The cached modified scalar before the getter applies its modifier.</summary>

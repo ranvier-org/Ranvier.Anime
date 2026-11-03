@@ -67,6 +67,47 @@ let main args =
         components[0]<-999.
         require "animatable kernel component snapshots preserve its cache" (compound.ComponentValues[0]=107.31)
         style.removeProperty "transform" |> ignore
+        let retargetWrites=ref 0
+        use retargetTrack=new AnimatableTrack(scheduler,[|AnimatableValue(ValueInterpolation.Text "0px",None,true,None)|],
+            (fun _ output ->
+                retargetWrites.Value<-retargetWrites.Value+1
+                StyleDeclaration.apply style (Declaration.create "width" output.Text |> Declaration.important)),
+            100.,PlaybackOptions.Default,id,id,4)
+        retargetTrack.Initialize()
+        let beforeRetarget=retargetWrites.Value
+        retargetTrack.RetargetScalar 100.
+        require "native animatable retarget updates cache without a target write"
+            (retargetWrites.Value=beforeRetarget && style.getPropertyValue "width"="0px")
+        pumpUntil host (fun () -> retargetTrack.Clock.Completed)
+        retargetTrack.RetargetScalar(200.,newDuration=200.,newEase=Ease.named "inQuad")
+        retargetTrack.Clock.Seek 100.
+        require "native animatable retarget retains typed units and uses changed easing and timing"
+            (style.getPropertyValue "width"="125px" && style.getPropertyPriority "width"="important" &&
+             abs(element.getBoundingClientRect().width-125.)<0.01)
+        retargetTrack.Cancel()
+        do
+            use retargetGraph=new Graph()
+            use retargetActivation=retargetGraph.Activate()
+            let mutable armed=false
+            let mutable modifierCalls=0
+            let mutable ownedWrites=0
+            let owner,owned=Api.createRoot(fun owner ->
+                let modifier value =
+                    if armed then
+                        modifierCalls<-modifierCalls+1
+                        if modifierCalls=2 then owner.Dispose()
+                    value
+                let track=new AnimatableTrack(scheduler,[|AnimatableValue(ValueInterpolation.Number 10.,None,false,None)|],
+                    (fun _ _ -> ownedWrites<-ownedWrites+1),100.,PlaybackOptions.Default,id,modifier,4)
+                Timer.own track.Clock |> ignore
+                track.Initialize()
+                owner,track)
+            use owned=owned
+            armed<-true
+            owned.RetargetScalar 100.
+            require "native animatable owner disposal inside soft reset prevents dispatch"
+                (owned.Clock.Cancelled && modifierCalls=2 && ownedWrites=1 && not owned.Clock.InternalRender)
+            owner.Dispose()
         let superseded=AnimatableValue(ValueInterpolation.Number 10.,None,false,None)
         superseded.RetargetScalar(100.,id,live) |> ignore
         let retargetAgain value = superseded.RetargetScalar(300.,id,live) |> ignore; value

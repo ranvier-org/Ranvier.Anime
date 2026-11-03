@@ -301,6 +301,24 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             state.Resize value
             duration <- value
             if current() then state.Reset()) ignore
+    /// <summary>Whether the current renderer invocation refreshes caches without target dispatch.</summary>
+    member internal _.InternalRender = state.InternalRender
+    /// <summary>Prepares endpoints, optional stretch, cache-only reset and resume under one interruption guard.</summary>
+    member internal _.Retarget(prepare: (unit -> bool) -> bool, ?newDuration:float) =
+        live()
+        let next=newDuration |> Option.bind state.PrepareStretch
+        let scale=newDuration |> Option.map(fun value -> value/state.Duration)
+        operate (fun current ->
+            if prepare current && current() then
+                match next,scale with
+                | Some geometry,Some scale ->
+                    stretchRenderer scale
+                    if current() then
+                        state.ApplyStretch geometry
+                        duration <- geometry.IterationDuration
+                | _ -> ()
+                if current() then state.SoftReset()
+                if current() then state.Resume()) (fun () -> reanchor 12.)
     /// <summary>Resets retargeted endpoints without dispatching a reset write, then resumes under one interruption guard.</summary>
     member internal _.Rebase(prepare: unit -> unit) =
         operate (fun current ->
