@@ -54,14 +54,14 @@ let main args =
         use scheduler = Frames.forHost host
         EngineCoreNativeProbe.run host scheduler
         CompositionNativeIdentityProbe.run host.Document
-        SvgNativeProbe.run host.Document (ComputedStyles.forHost host) |> printfn "%A"
-        SvgNativeProbe.scopeOwnersAndReentry host.Document (ComputedStyles.forHost host) |> printfn "%A"
+        SvgNativeProbe.run host.Document (ComputedStyles.forHost host) |> ignore
+        SvgNativeProbe.scopeOwnersAndReentry host.Document (ComputedStyles.forHost host) |> ignore
         ScrollNativeProbe.run host
         ScrollNativeProbe.runViewportAndShutdown ()
-        LayoutNativeProbe.run host.Document (ComputedStyles.forHost host) |> printfn "%A"
-        LayoutNativeProbe.runTransforms host.Document (ComputedStyles.forHost host) |> printfn "%A"
-        LayoutNativeProbe.runSwapEasing host.Document (ComputedStyles.forHost host) |> printfn "%A"
-        LayoutNativeProbe.runEntryExit host.Document (ComputedStyles.forHost host) |> printfn "%A"
+        LayoutNativeProbe.run host.Document (ComputedStyles.forHost host) |> ignore
+        LayoutNativeProbe.runTransforms host.Document (ComputedStyles.forHost host) |> ignore
+        LayoutNativeProbe.runSwapEasing host.Document (ComputedStyles.forHost host) |> ignore
+        LayoutNativeProbe.runEntryExit host.Document (ComputedStyles.forHost host) |> ignore
         do
             use graph=new Graph()
             use activation=graph.Activate()
@@ -71,9 +71,14 @@ let main args =
                   Geometry=Geometry.forHost host; Resize=ResizeObservation.forHost host; Media=MediaQueries.forHost host
                   Viewport=Viewport.forHost host; WindowScroll=ViewportScroll.forHost host }
             Api.runWithOwner owner (fun () ->
-                DraggableNativeProbe.runDefault services (mouseHost host) (advanceHost host) |> printfn "%A"
+                DraggableNativeProbe.runDefault services (mouseHost host) (advanceHost host) |> ignore
+                DraggableNativeProbe.mappedTransforms services
+                DraggableNativeProbe.compositeConstructorFailure services (mouseHost host) (advanceHost host)
+                DraggableNativeProbe.complexInlineRejection services (mouseHost host) (advanceHost host)
+                DraggableNativeProbe.constructorFailure scheduler host.Document (ComputedStyles.forHost host)
+                    (Geometry.forHost host) (MediaQueries.forHost host)
                 DraggableHostProbe.mouse host scheduler host.Document (ComputedStyles.forHost host) (Geometry.forHost host)
-                    (ResizeObservation.forHost host) (MediaQueries.forHost host) (advanceHost host) |> printfn "%A")
+                    (ResizeObservation.forHost host) (MediaQueries.forHost host) (advanceHost host) |> ignore)
             owner.Dispose()
         do
             use touchHost=WebCoreHost.Create(320,200)
@@ -84,7 +89,7 @@ let main args =
             Api.runWithOwner owner (fun () ->
                 DraggableHostProbe.touch touchHost touchScheduler touchHost.Document (ComputedStyles.forHost touchHost)
                     (Geometry.forHost touchHost) (ResizeObservation.forHost touchHost) (MediaQueries.forHost touchHost)
-                    (advanceHost touchHost) |> printfn "%A")
+                    (advanceHost touchHost) |> ignore)
             owner.Dispose()
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore

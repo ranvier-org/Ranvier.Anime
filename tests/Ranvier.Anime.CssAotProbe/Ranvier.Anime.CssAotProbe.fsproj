@@ -14,6 +14,6 @@
     <PackageReference Include="Ranvier.Css$(RanvierPackageSuffix)" Version="[$(RanvierCssVersion)]" />
     <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssBindingsVersion)]" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.14" />
+    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" ILCompilerPackVersion="10.0.14" />
   </ItemGroup>
 </Project>

@@ -8,6 +8,7 @@
     <ILLinkTreatWarningsAsErrors>true</ILLinkTreatWarningsAsErrors>
     <IlcTreatWarningsAsErrors>true</IlcTreatWarningsAsErrors>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RanvierTrace)' == 'true'">
     <DefineConstants>$(DefineConstants);EXPECT_TRACED</DefineConstants>
@@ -31,7 +32,7 @@
     <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" Condition="'$(NativeSmokeGraph)' != 'public45'" />
     <PackageReference Include="Ranvier.View.WebCore$(RanvierPackageSuffix)" Version="[0.1.0-alpha.45]" Condition="'$(NativeSmokeGraph)' == 'public45'" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.14" />
+    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" ILCompilerPackVersion="10.0.14" />
     <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssBindingsVersion)]" />
   </ItemGroup>
   <Target Name="RequirePinnedSourceGraph" BeforeTargets="PrepareForBuild">

@@ -68,6 +68,7 @@
     <Compile Include="SvgLifetimeGuardTests.fs" />
     <Compile Include="ScrollTests.fs" />
     <Compile Include="ScrollDomTests.fs" />
+    <Compile Include="ScrollDebugTests.fs" />
     <Compile Include="DragPhysicsTests.fs" />
     <Compile Include="DraggableControllerTests.fs" />
     <Compile Include="DraggableReleaseTests.fs" />

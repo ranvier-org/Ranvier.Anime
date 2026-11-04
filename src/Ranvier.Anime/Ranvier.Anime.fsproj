@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AssemblyName>Ranvier.Anime</AssemblyName>
     <IsPackable>false</IsPackable>
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Ease.fs" />

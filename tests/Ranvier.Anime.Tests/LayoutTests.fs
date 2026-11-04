@@ -379,6 +379,25 @@ let tests=testList "native layout transitions" [
         Expect.isTrue animation.Completed "no effects"
         Expect.isFalse (root.Classes.Contains "is-animated") "idle class"
 
+    testCase "empty layout change emits no callbacks" <| fun _ ->
+        let events=ResizeArray<string>()
+        let callbacks={LayoutCallbacks.Default with OnBegin=(fun _ -> events.Add "begin");OnUpdate=(fun _ -> events.Add "update")
+                                                    OnComplete=(fun _ -> events.Add "complete");OnPause=(fun _ -> events.Add "pause")}
+        let _,_,_,_,_,layout=setup {linear with Callbacks=callbacks}
+        use layout=layout
+        layout.Animate() |> ignore
+        Expect.isEmpty events "source onPause wrapper returns without is-animated"
+
+    testCase "empty linked layout change emits completion before pause" <| fun _ ->
+        let events=ResizeArray<string>()
+        let callbacks={LayoutCallbacks.Default with OnBegin=(fun _ -> events.Add "begin");OnUpdate=(fun _ -> events.Add "update")
+                                                    OnComplete=(fun _ -> events.Add "complete");OnPause=(fun _ -> events.Add "pause")}
+        let _,_,_,_,_,layout=setup {linear with Callbacks=callbacks;RetainLayoutOnComplete=true}
+        use layout=layout
+        let animation=layout.Animate()
+        Expect.isTrue animation.Completed "no effects"
+        Expect.sequenceEqual events ["complete";"pause"] "source linked onPause wrapper on cancel"
+
     testCase "native transforms preserve exact endpoints and overshoot progress" <| fun _ ->
         let configured={linear with Ease=(fun t -> if t=0. then 0. else 1.25)}
         let _,child,_,_,_,layout=setup configured

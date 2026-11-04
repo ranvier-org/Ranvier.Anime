@@ -117,7 +117,7 @@ module DraggableNativeProbe =
     let mappedTransforms (services:DraggableNativeServices) =
         let target=services.Document.createElement("div") :?> HTMLElement
         let style=(target:>ElementCSSInlineStyle).style
-        let original="translate(3px,4px) rotate(5deg) scale(2)"
+        let original="translate(3px, 4px) rotate(5deg) scale(2)"
         StyleDeclaration.apply style (Declaration.create "transform" original)
         services.Document.body.appendChild target |> ignore
         let options={NativeDraggableOptions.Default with X=DraggableAxisMapping.Transform "rotate";Y=DraggableAxisMapping.Transform "scale"}
@@ -127,7 +127,7 @@ module DraggableNativeProbe =
             require (facade.X=5. && facade.Y=2.) "Mapped scalar initial values."
             facade.X<-15.
             facade.Y<-3.
-            require (style.getPropertyValue "transform"="translate(3px,4px) rotate(15deg) scale(3) ") "Mapped transform units/order."
+            require (style.getPropertyValue "transform"="translate(3px, 4px) rotate(15deg) scale(3)") "Mapped transform units/order."
             facade.Revert()
             require (style.getPropertyValue "transform"=original) "Mapped transform snapshot restoration."
             use alias=NativeDraggable.createWith {options with X=DraggableAxisMapping.Transform "translateX";Y=DraggableAxisMapping.Translation} services target

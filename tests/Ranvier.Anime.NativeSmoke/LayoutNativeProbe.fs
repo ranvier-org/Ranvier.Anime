@@ -26,7 +26,7 @@ let runEntryExit (document:Document) (computed:ComputedStyleService) =
         exit.Seek(25.,muteCallbacks=true)
         let leavingOpacity=Double.Parse((computed.Get(child,None)).getPropertyValue "opacity",Globalization.CultureInfo.InvariantCulture)
         if abs(leavingOpacity-0.75)>0.01 || layout.Leaving<>[|child|] then
-            failwithf "Native exit expected one leaving target at opacity .75, got %g" leavingOpacity
+            failwith ("Native exit expected one leaving target at opacity .75, got "+string leavingOpacity)
         exit.Resume()
         exit.Pause()
         if (style child).getPropertyValue "display"<>"none" || root.classList.contains "is-animated" then
@@ -37,7 +37,7 @@ let runEntryExit (document:Document) (computed:ComputedStyleService) =
         enter.Seek(25.,muteCallbacks=true)
         let enteringOpacity=Double.Parse((computed.Get(child,None)).getPropertyValue "opacity",Globalization.CultureInfo.InvariantCulture)
         if abs(enteringOpacity-0.25)>0.01 || layout.Entering<>[|child|] then
-            failwithf "Native entry expected one entering target at opacity .25, got %g" enteringOpacity
+            failwith ("Native entry expected one entering target at opacity .25, got "+string enteringOpacity)
         layout.Revert()
         if (style child).getPropertyValue "display"<>"block" || (style child).getPropertyValue "opacity"<>"" then
             failwith "Native lifecycle revert lost the mutation or retained owned opacity."
@@ -78,7 +78,7 @@ let runSwapEasing (document:Document) (computed:ComputedStyleService) =
         animation.Seek 75.
         let after=nested.getBoundingClientRect().width
         if abs(before-20.)>0.01 || abs(muted-20.)>0.01 || abs(after-50.)>0.01 then
-            failwithf "Native eased swap expected 20/20/50, got %g/%g/%g" before muted after
+            failwith ("Native eased swap expected 20/20/50, got "+string before+"/"+string muted+"/"+string after)
         if abs(animation.CurrentTime-75.)>0.001 || abs(animation.IterationCurrentTime-56.25)>0.001 then
             failwith "Native eased swap exposed incorrect raw or mapped controller time."
         layout.Revert()
@@ -108,7 +108,7 @@ let run (document:Document) (computed:ComputedStyleService) =
         use layout=new AutoLayout(root,computed,scheduler:>FrameScheduler,
                                   options={LayoutOptions.Default with Duration=(fun _ -> 100.);Ease=id})
         let original=child.getBoundingClientRect()
-        if abs(original.width-100.)>0.01 then failwithf "Native layout setup width %g" original.width
+        if abs(original.width-100.)>0.01 then failwith ("Native layout setup width "+string original.width)
         apply child "left" "60px"
         apply child "top" "80px"
         apply child "width" "160px"
@@ -117,7 +117,7 @@ let run (document:Document) (computed:ComputedStyleService) =
         animation.Seek(25.,muteCallbacks=true)
         let measured=child.getBoundingClientRect()
         if abs(measured.width-115.)>0.01 || abs(measured.height-92.5)>0.01 then
-            failwithf "Native layout quarter dimensions %g x %g" measured.width measured.height
+            failwith ("Native layout quarter dimensions "+string measured.width+" x "+string measured.height)
         let translation=(style child).getPropertyValue "translate"
         animation.Complete()
         if (style child).getPropertyValue "width"<>"160px" || (style child).getPropertyValue "height"<>"70px" then
@@ -155,7 +155,7 @@ let runTransforms (document:Document) (computed:ComputedStyleService) =
                         |> Seq.cast<System.Text.RegularExpressions.Match>
                         |> Seq.map(fun m -> Double.Parse(m.Value,Globalization.CultureInfo.InvariantCulture)) |> Seq.toArray
             if not(transform.StartsWith "matrix(") || numbers.Length<>6 || abs(numbers[4]-expected)>0.01 then
-                failwithf "Native %s transform expected translateX %g, got %s" name expected transform
+                failwith ("Native "+name+" transform expected translateX "+string expected+", got "+transform)
             layout.Revert()
             if (style child).getPropertyValue "transform"<>"translateX(110px)" then
                 failwith "Native transform revert did not retain post-mutation inline transform."

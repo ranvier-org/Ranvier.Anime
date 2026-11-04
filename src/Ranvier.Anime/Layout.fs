@@ -629,7 +629,11 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                 for position,apply in swaps do animation.Call(apply,position=TimelinePosition.At position) |> ignore)
             if not empty then root.classList.add [|"is-animated"|]
             animation.Reset()
-            if empty then animation.Complete(muteCallbacks=true); finish false
+            if empty then
+                animation.Complete(muteCallbacks=true); finish false
+                if options.RetainLayoutOnComplete && live() then
+                    options.Callbacks.OnComplete animation
+                    if live() then options.Callbacks.OnPause animation
             elif options.Autoplay then animation.Resume()
             match viewport,scroll with
             | Some v,Some position ->
