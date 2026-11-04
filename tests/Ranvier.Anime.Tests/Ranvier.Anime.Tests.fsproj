@@ -66,6 +66,9 @@
     <Compile Include="SvgTests.fs" />
     <Compile Include="SvgReentryTests.fs" />
     <Compile Include="SvgLifetimeGuardTests.fs" />
+    <Compile Include="TimelinePlaybackEaseTests.fs" />
+    <Compile Include="LayoutSnapshotTests.fs" />
+    <Compile Include="LayoutTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -100,5 +103,7 @@
     <None Include="../reference/engine-quiescence-reference.json" Link="reference/engine-quiescence-reference.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/engine-idle-phase-reference.json" Link="reference/engine-idle-phase-reference.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/svg-reference.json" Link="reference/svg-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-playback-ease.json" Link="reference/timeline-playback-ease.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/layout.json" Link="reference/layout.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

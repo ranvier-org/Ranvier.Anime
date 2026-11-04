@@ -22,6 +22,7 @@
     <Compile Include="CompositionNativeIdentityProbe.fs" />
     <Compile Include="EngineCoreNativeProbe.fs" />
     <Compile Include="SvgNativeProbe.fs" />
+    <Compile Include="LayoutNativeProbe.fs" />
     <Compile Include="Program.fs" />
     <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
     <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" Condition="'$(NativeSmokeGraph)' != 'public45'" />

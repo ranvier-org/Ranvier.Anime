@@ -50,6 +50,8 @@
     <Compile Include="KeyframeSequenceBinding.fs" />
     <Compile Include="AnimatableCss.fs" />
     <Compile Include="Css.fs" />
+    <Compile Include="LayoutStyleSnapshot.fs" />
+    <Compile Include="Layout.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Ranvier$(RanvierPackageSuffix)" Version="[0.1.1-preview.1]" Condition="'$(UseLocalRanvier)' != 'true'" />

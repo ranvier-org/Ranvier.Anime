@@ -4,12 +4,15 @@ open System
 open Ranvier.Dom
 
 /// <summary>A paused timeline with shared repeat/direction controls, numeric property tracks and borrowed controllers.</summary>
-/// <remarks>Use the scheduler's owning thread. Resume includes a 12 ms clock lead. Disposal is terminal and preserves child values.</remarks>
-type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
+/// <remarks>Use the scheduler's owning thread. Resume includes a 12 ms clock lead. Disposal is terminal and preserves child values.
+/// Optional playback easing remaps every child from the directional iteration time; CurrentTime remains raw.
+/// Callback snapshots expose mapped IterationCurrentTime. Internal construction renders retain raw time.</remarks>
+type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEase: (float -> float),
               ?onBegin: Timeline -> unit, ?onBeforeUpdate: Timeline -> unit,
               ?onRender: Timeline -> unit, ?onUpdate: Timeline -> unit,
               ?onLoop: Timeline -> unit, ?onPause: Timeline -> unit,
               ?onComplete: Timeline -> unit) as this =
+    do playbackEase |> Option.iter(fun ease -> if isNull(box ease) then nullArg "playbackEase")
     let frameSiblings=FrameSiblingRegistry()
     let pending=System.Collections.Generic.List<IDisposable>()
     let children = System.Collections.Generic.List<TimelineEntry>()
@@ -20,6 +23,12 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
     let mutable duration = 0.
     let mutable hasEntries = false
     let mutable sampledTime = 0.
+    let mutable playbackIterationTime = 0.
+    let mutable playbackRootGeneration = Int32.MinValue
+    let mutable playbackClockGeneration = ValueNone
+    let mutable preparePlaybackState: unit -> bool = fun () -> true
+    let notify callback =
+        if playbackEase.IsNone || preparePlaybackState() then callback |> Option.iter(fun callback -> callback this)
     let mutable cancelled = false
     let mutable reverting = false
     let restorations=System.Collections.Generic.List<(unit -> bool) -> unit>()
@@ -28,10 +37,10 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
     let mutable internalRendering = false
     let mutable internalTime=0.
     let clock = ScopeRegistration.run ignore (fun () -> new Timer(scheduler, 0., ?options=options,
-        onBegin=(fun _ -> onBegin |> Option.iter(fun callback -> callback this)),
-        onBeforeUpdate=(fun _ -> onBeforeUpdate |> Option.iter(fun callback -> callback this)),
-        onUpdate=(fun _ -> onUpdate |> Option.iter(fun callback -> callback this)),
-        onLoop=(fun _ -> onLoop |> Option.iter(fun callback -> callback this)),
+        onBegin=(fun _ -> notify onBegin),
+        onBeforeUpdate=(fun _ -> notify onBeforeUpdate),
+        onUpdate=(fun _ -> notify onUpdate),
+        onLoop=(fun _ -> notify onLoop),
         onPause=(fun _ -> onPause |> Option.iter(fun callback -> callback this)),
         onComplete=(fun _ -> onComplete |> Option.iter(fun callback -> callback this))))
     let finite name value = if not(Double.IsFinite value) then invalidArg name "Expected a finite time."
@@ -63,6 +72,26 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
     do clock.OnFault <- cancel
     let canRender expected clockGeneration () =
         expected = generation && clockGeneration = clock.Generation && not cancelled && ancestorLive()
+    let preparePlayback() =
+        let expected=generation
+        let clockGeneration=clock.Generation
+        let current=canRender expected clockGeneration
+        if current() then
+            if playbackRootGeneration<>expected || playbackClockGeneration<>ValueSome clockGeneration then
+                let raw=clock.Sample.IterationTime
+                let mapped=
+                    match playbackEase with
+                    | None -> raw
+                    | Some ease ->
+                        let value=duration*ease(raw/duration)
+                        if Double.IsNaN value || value=0. then 0. else value
+                if current() then
+                    playbackIterationTime<-mapped
+                    playbackRootGeneration<-expected
+                    playbackClockGeneration<-ValueSome clockGeneration
+            current()
+        else false
+    do preparePlaybackState<-preparePlayback
     let resetTracks () =
         for entry in children do
             match entry with
@@ -74,10 +103,11 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
         let expected = generation
         let clockGeneration = clock.Generation
         let previous = sampledTime
-        let time = requestedTime
-        sampledTime <- requestedTime
         let backwards = if internalRender && not internalRendering then requestedTime < previous else clock.Backwards
         let canWrite () = canRender expected clockGeneration () && ancestor()
+        let prepared=playbackEase.IsNone || (canWrite() && preparePlayback())
+        let time=if internalRender || playbackEase.IsNone then requestedTime else playbackIterationTime
+        if prepared && canWrite() then sampledTime<-requestedTime
         let snapshots = children.ToArray()
         let snapshots = if backwards then Array.rev snapshots else snapshots
         let mutable allComplete = true
@@ -436,7 +466,9 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions,
     /// <summary>Last sampled time with source bounds and four-decimal precision.</summary>
     member _.CurrentTime = clock.CurrentTime
     /// <summary>Directional time within the current iteration.</summary>
-    member _.IterationCurrentTime = clock.IterationCurrentTime
+    member _.IterationCurrentTime =
+        if playbackEase.IsNone then clock.IterationCurrentTime
+        else Math.Clamp(PropertyNumbers.round 1e4 playbackIterationTime,0.,duration)
     /// <summary>Current signed source iteration index.</summary>
     member _.CurrentIteration = clock.CurrentIteration
     /// <summary>Captures the shared clock's iteration, direction and scheduling anchor.</summary>
