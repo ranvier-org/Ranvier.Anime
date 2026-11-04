@@ -619,15 +619,17 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                                                onRender=options.Callbacks.OnRender,onUpdate=options.Callbacks.OnUpdate,
                                                onLoop=options.Callbacks.OnLoop,onPause=onPause,onComplete=onComplete))
             clock<-Some animation
-            ScopeRegistration.run ignore (fun () ->
+            let empty=renders.Count=0 && swaps.Count=0
+            if not empty then
+              ScopeRegistration.run ignore (fun () ->
                 let renderDriver=new NumericAnimation(scheduler,(fun () -> 0.),(fun t -> for render in renders do if live() then render t),
                                                      duration,duration)
                 driver<-Some renderDriver
                 animation.Sync(renderDriver,position=TimelinePosition.At 0.) |> ignore
                 for position,apply in swaps do animation.Call(apply,position=TimelinePosition.At position) |> ignore)
-            if renders.Count>0 || swaps.Count>0 then root.classList.add [|"is-animated"|]
+            if not empty then root.classList.add [|"is-animated"|]
             animation.Reset()
-            if renders.Count=0 && swaps.Count=0 then animation.Complete(muteCallbacks=true); finish false
+            if empty then animation.Complete(muteCallbacks=true); finish false
             elif options.Autoplay then animation.Resume()
             match viewport,scroll with
             | Some v,Some position ->
