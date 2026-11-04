@@ -61,6 +61,8 @@
     <Compile Include="TransformCache.fs" />
     <Compile Include="DraggableTransformTarget.fs" />
     <Compile Include="NativeDraggable.fs" />
+    <Compile Include="LayoutStyleSnapshot.fs" />
+    <Compile Include="Layout.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Ranvier$(RanvierPackageSuffix)" Version="[0.1.1-preview.1]" Condition="'$(UseLocalRanvier)' != 'true'" />

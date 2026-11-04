@@ -76,6 +76,9 @@
     <Compile Include="NativeDraggableLifetimeTests.fs" />
     <Compile Include="DraggableInlineSourceTests.fs" />
     <Compile Include="DraggableVelocityRangeTests.fs" />
+    <Compile Include="TimelinePlaybackEaseTests.fs" />
+    <Compile Include="LayoutSnapshotTests.fs" />
+    <Compile Include="LayoutTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -116,5 +119,7 @@
     <None Include="../reference/release-reference.json" Link="reference/release-reference.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/transform-reference.json" Link="reference/transform-reference.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/inline-reference.json" Link="reference/inline-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-playback-ease.json" Link="reference/timeline-playback-ease.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/layout.json" Link="reference/layout.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

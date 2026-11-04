@@ -44,6 +44,10 @@ let main args =
         SvgNativeProbe.scopeOwnersAndReentry host.Document (ComputedStyles.forHost host)
         ScrollNativeProbe.run host
         ScrollNativeProbe.runViewportAndShutdown ()
+        LayoutNativeProbe.run host.Document (ComputedStyles.forHost host)
+        LayoutNativeProbe.runTransforms host.Document (ComputedStyles.forHost host)
+        LayoutNativeProbe.runSwapEasing host.Document (ComputedStyles.forHost host)
+        LayoutNativeProbe.runEntryExit host.Document (ComputedStyles.forHost host)
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
