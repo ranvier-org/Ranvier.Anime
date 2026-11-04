@@ -72,7 +72,7 @@ module DraggableNativeProbe =
     let runDefault (services:DraggableNativeServices) dispatchInput (advance:uint -> unit) =
         let target=services.Document.createElement("div") :?> HTMLElement
         let style=(target:>ElementCSSInlineStyle).style
-        let original="rotate(5deg) translate(3px,4px)"
+        let original="rotate(5deg) translate(3px, 4px)"
         StyleDeclaration.applyMany style [
             Declaration.create "position" "absolute";Declaration.create "left" "20px";Declaration.create "top" "20px"
             Declaration.create "width" "20px";Declaration.create "height" "20px"
@@ -92,7 +92,7 @@ module DraggableNativeProbe =
             advance 51u
             require (abs(facade.X-23.)<0.001 && abs(facade.Y-14.)<0.001) "Default native translation did not retain initial scalar coordinates."
             let rendered=style.getPropertyValue "transform"
-            require (rendered.StartsWith("translate(23px,14px) rotate(5deg)",StringComparison.Ordinal)) ("Default source transform order: "+rendered)
+            require (rendered.StartsWith("translate(23px, 14px) rotate(5deg)",StringComparison.Ordinal)) ("Default source transform order: "+rendered)
             let after=target.getBoundingClientRect()
             require (abs(after.left-before.left-20.)<0.01 && abs(after.top-before.top-10.)<0.01) "Native geometry did not reflect transformed pointer movement."
             require (callbacks.Contains "update") "Default native movement lacked callback."

@@ -5,6 +5,7 @@ open System.Diagnostics
 open System.Globalization
 open Ranvier
 open Ranvier.Anime
+open Ranvier.Anime.Tests
 open Ranvier.Css
 open Ranvier.Css.Dom
 open Ranvier.Dom
@@ -20,6 +21,19 @@ let private pumpUntil (host: WebCoreHost) condition =
         host.Cycle(milliseconds = 1)
         host.Frame()
     require "native frame loop reached its target" (condition())
+
+let private advanceHost (host: WebCoreHost) (milliseconds: uint) =
+    host.Cycle(milliseconds = int milliseconds)
+    host.Frame()
+
+let private mouseHost (host: WebCoreHost) (name: string) (x: float) (y: float) =
+    let phase =
+        match name with
+        | "mousemove" -> 0
+        | "mousedown" -> 1
+        | "mouseup" -> 2
+        | _ -> invalidArg "name" ("Unknown mouse phase: " + name)
+    host.Mouse(phase, int(Math.Round x), int(Math.Round y), (if phase = 0 then -1 else 0), (if phase = 0 then 0 else 1), 0) |> ignore
 
 [<EntryPoint>]
 let main args =
@@ -48,6 +62,30 @@ let main args =
         LayoutNativeProbe.runTransforms host.Document (ComputedStyles.forHost host) |> printfn "%A"
         LayoutNativeProbe.runSwapEasing host.Document (ComputedStyles.forHost host) |> printfn "%A"
         LayoutNativeProbe.runEntryExit host.Document (ComputedStyles.forHost host) |> printfn "%A"
+        do
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            let services:DraggableNativeServices=
+                { Scheduler=scheduler; Document=host.Document; Computed=ComputedStyles.forHost host
+                  Geometry=Geometry.forHost host; Resize=ResizeObservation.forHost host; Media=MediaQueries.forHost host
+                  Viewport=Viewport.forHost host; WindowScroll=ViewportScroll.forHost host }
+            Api.runWithOwner owner (fun () ->
+                DraggableNativeProbe.runDefault services (mouseHost host) (advanceHost host) |> printfn "%A"
+                DraggableHostProbe.mouse host scheduler host.Document (ComputedStyles.forHost host) (Geometry.forHost host)
+                    (ResizeObservation.forHost host) (MediaQueries.forHost host) (advanceHost host) |> printfn "%A")
+            owner.Dispose()
+        do
+            use touchHost=WebCoreHost.Create(320,200)
+            use touchScheduler=Frames.forHost touchHost
+            use graph=new Graph()
+            use activation=graph.Activate()
+            let owner=Api.createRoot id
+            Api.runWithOwner owner (fun () ->
+                DraggableHostProbe.touch touchHost touchScheduler touchHost.Document (ComputedStyles.forHost touchHost)
+                    (Geometry.forHost touchHost) (ResizeObservation.forHost touchHost) (MediaQueries.forHost touchHost)
+                    (advanceHost touchHost) |> printfn "%A")
+            owner.Dispose()
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
