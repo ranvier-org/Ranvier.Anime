@@ -34,9 +34,12 @@
     <Compile Include="TimelinePosition.fs" />
     <Compile Include="TimelineConstruction.fs" />
     <Compile Include="Timeline.fs" />
+    <Compile Include="Scroll.fs" />
     <Compile Include="ScopeAnimation.fs" />
     <Compile Include="Reactive.fs" />
     <Compile Include="CssUnits.fs" />
+    <Compile Include="ScrollDebug.fs" />
+    <Compile Include="ScrollDom.fs" />
     <Compile Include="CssPropertyMetadata.fs" />
     <Compile Include="CssSerialization.fs" />
     <Compile Include="CssPropertySnapshot.fs" />

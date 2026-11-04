@@ -42,6 +42,8 @@ let main args =
         CompositionNativeIdentityProbe.run host.Document
         SvgNativeProbe.run host.Document (ComputedStyles.forHost host)
         SvgNativeProbe.scopeOwnersAndReentry host.Document (ComputedStyles.forHost host)
+        ScrollNativeProbe.run host
+        ScrollNativeProbe.runViewportAndShutdown ()
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style
