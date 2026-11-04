@@ -33,9 +33,7 @@ type SvgMorph internal (source:SVGGeometryElement,destination:SVGGeometryElement
     member internal _.Initialize()=
         try
             lifetime.EnsureConstruction()
-            let first,last=
-                try Svg.morphEndpoints source destination precision previous (fun()->lifetime.ConstructionCurrent) (fun()->mutated<-true)
-                with :? SvgSupersededOperation -> raise(ObjectDisposedException "SVG construction")
+            let first,last=Svg.morphEndpoints source destination precision previous (fun()->lifetime.ConstructionCurrent) (fun()->mutated<-true)
             lifetime.EnsureConstruction()
             interpolate<-Some(ValueInterpolation.prepare (ValueInterpolation.Text first) (ValueInterpolation.Text first) (ValueInterpolation.Text last))
             lifetime.EnsureConstruction()
@@ -70,9 +68,7 @@ module SvgProperties =
             ScopeRegistration.register close
             lifetime.Attach {new IDisposable with member _.Dispose()=close()}
             lifetime.EnsureConstruction()
-            let sample=
-                try Svg.captureMotion path inSvg offset (fun()->lifetime.ConstructionCurrent)
-                with :? SvgSupersededOperation -> raise(ObjectDisposedException "SVG construction")
+            let sample=Svg.captureMotion path inSvg offset (fun()->lifetime.ConstructionCurrent)
             lifetime.EnsureConstruction()
             lifetime.Commit()
             NumericProperty((fun()->currentValue),(fun value->

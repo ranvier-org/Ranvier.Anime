@@ -9,6 +9,11 @@ open Ranvier.Dom
 open Ranvier.Anime
 open Ranvier.Anime.Tests.SvgTests
 
+/// <summary>Accepts ObjectDisposedException and its subtypes, including internal supersession.</summary>
+let private throwsDisposed (action:unit->unit) message =
+    Expect.throwsC action (fun error ->
+        Expect.isTrue (error :? ObjectDisposedException) $"{message}: expected ObjectDisposedException, got {error.GetType().FullName}")
+
 let private computed cap vector =
     proxy<CSSStyleDeclaration>(fun methodInfo args ->
         if methodInfo.Name="getPropertyValue" then box(if string args[0]="stroke-linecap" then cap else vector)
@@ -65,7 +70,7 @@ let svgReentryTests=testList "SVG scope owner and native-call reentry regression
                 scope.Revert()
                 attrs["pathLength"]<-"17"
                 attrs["draw"]<-"replacement")
-        Expect.throwsT<ObjectDisposedException> (fun()->
+        throwsDisposed (fun()->
             scope.Execute(fun _->Svg.createDrawable path (computed "round" "none") 0.2 0.8 |> ignore) |> ignore) "stale constructor rejected"
         Expect.equal attrs["pathLength"] "17" "replacement path length"
         Expect.equal attrs["draw"] "replacement" "no late initialization/rollback overwrite"
@@ -157,7 +162,7 @@ let svgReentryTests=testList "SVG scope owner and native-call reentry regression
         use scope=new Scope()
         let raw,_,_=geometry "path" 10. "line" Unchecked.defaultof<SVGMatrix>
         let path=intercept raw noHook (fun name _->if name="getCTM" then scope.Revert())
-        Expect.throwsT<ObjectDisposedException> (fun()->
+        throwsDisposed (fun()->
             scope.Execute(fun _->SvgProperties.motion path false 0. ignore |> ignore) |> ignore) "CTM superseded constructor"
 
     testCase "motion callback first fault ends later effects" <| fun _ ->
@@ -183,7 +188,7 @@ let svgReentryTests=testList "SVG scope owner and native-call reentry regression
                 trigger<-false
                 scope.Revert()
                 attrs["d"]<-"replacement")
-        Expect.throwsT<ObjectDisposedException> (fun()->
+        throwsDisposed (fun()->
             scope.Execute(fun _->SvgProperties.morph source destination 0.1 (Some "M9 8 L7 6") |> ignore) |> ignore) "stale morph constructor"
         Expect.equal attrs["d"] "replacement" "no late endpoint/rollback overwrite"
         Expect.equal points 0 "geometry not sampled after reentry"

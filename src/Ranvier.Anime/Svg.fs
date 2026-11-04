@@ -139,9 +139,7 @@ module Svg =
     let createMotionPath (path:SVGGeometryElement) (inSvg:bool) (offset:float) =
         let lifetime=SvgOperationLifetime()
         lifetime.EnsureConstruction()
-        let sample=
-            try captureMotion path inSvg offset (fun()->lifetime.ConstructionCurrent)
-            with :? SvgSupersededOperation -> raise(ObjectDisposedException "SVG construction")
+        let sample=captureMotion path inSvg offset (fun()->lifetime.ConstructionCurrent)
         lifetime.Commit()
         fun progress ->
             let current=lifetime.BeginOperation()
