@@ -50,6 +50,14 @@
     <Compile Include="KeyframeSequenceBinding.fs" />
     <Compile Include="AnimatableCss.fs" />
     <Compile Include="Css.fs" />
+    <Compile Include="DragPhysics.fs" />
+    <Compile Include="Draggable.fs" />
+    <Compile Include="DraggableScroll.fs" />
+    <Compile Include="DraggableDom.fs" />
+    <Compile Include="DraggableCss.fs" />
+    <Compile Include="TransformCache.fs" />
+    <Compile Include="DraggableTransformTarget.fs" />
+    <Compile Include="NativeDraggable.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Ranvier$(RanvierPackageSuffix)" Version="[0.1.1-preview.1]" Condition="'$(UseLocalRanvier)' != 'true'" />
