@@ -53,6 +53,10 @@ module NativeDraggableLifetimeTests =
             Expect.equal (x.Value,y.Value) (12.,23.) "original axes restored"
             Expect.equal (log |> Seq.filter((<>) "axis") |> Seq.toList) ["css";"cancel-capture"] "CSS restore precedes cancellation"
             Expect.isTrue facade.Value.Cancelled "actual scope owner ended lifetime"
+            // Anime.js removes cancelled tickables on the next engine update and releases the frame request one frame later.
+            frames.Advance()
+            Expect.equal frames.Pending 1 "source engine retains one cleanup frame"
+            frames.Advance()
             Expect.equal frames.Pending 0 "all source roots removed"
         testCase "suppressed hidden resources leave exactly one outer registration" <| fun _ ->
             use owner=new Owner()
