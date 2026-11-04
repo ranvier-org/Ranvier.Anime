@@ -56,9 +56,11 @@ let run (document:Document) (computed:ComputedStyleService) =
                 let motionClock=Keyframes.Numeric(scheduler,motion,[|Keyframe.To 100.|],duration=100u,options=options)
                 let morphClock=Keyframes.Numeric(scheduler,morph.Progress,[|Keyframe.To 1.|],duration=100u,options=options)
                 owner,drawable,morph,motionClock,morphClock)
-        scheduler.Advance 50.
+        // Anime.js resume() leads the start time by 12 ms, so advancing 38 ms samples t=50.
+        scheduler.Advance 38.
         scheduler.RunFrame()
-        require (path.getAttribute("d")="M0 0 L50 50 ") "shared morph midpoint through existing runner"
+        let morphed=path.getAttribute("d")
+        require (morphed="M0 0 L50 50 ") ("shared morph midpoint through existing runner: d=\""+morphed+"\"")
         require (follower.getAttribute("transform")="translate(50 0)") "typed motion setter through existing runner"
         (owner:>IDisposable).Dispose()
         require drawable.IsReverted "owned drawable disposed"

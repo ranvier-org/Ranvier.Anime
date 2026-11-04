@@ -40,14 +40,14 @@ let main args =
         use scheduler = Frames.forHost host
         EngineCoreNativeProbe.run host scheduler
         CompositionNativeIdentityProbe.run host.Document
-        SvgNativeProbe.run host.Document (ComputedStyles.forHost host)
-        SvgNativeProbe.scopeOwnersAndReentry host.Document (ComputedStyles.forHost host)
+        SvgNativeProbe.run host.Document (ComputedStyles.forHost host) |> printfn "%A"
+        SvgNativeProbe.scopeOwnersAndReentry host.Document (ComputedStyles.forHost host) |> printfn "%A"
         ScrollNativeProbe.run host
         ScrollNativeProbe.runViewportAndShutdown ()
-        LayoutNativeProbe.run host.Document (ComputedStyles.forHost host)
-        LayoutNativeProbe.runTransforms host.Document (ComputedStyles.forHost host)
-        LayoutNativeProbe.runSwapEasing host.Document (ComputedStyles.forHost host)
-        LayoutNativeProbe.runEntryExit host.Document (ComputedStyles.forHost host)
+        LayoutNativeProbe.run host.Document (ComputedStyles.forHost host) |> printfn "%A"
+        LayoutNativeProbe.runTransforms host.Document (ComputedStyles.forHost host) |> printfn "%A"
+        LayoutNativeProbe.runSwapEasing host.Document (ComputedStyles.forHost host) |> printfn "%A"
+        LayoutNativeProbe.runEntryExit host.Document (ComputedStyles.forHost host) |> printfn "%A"
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style

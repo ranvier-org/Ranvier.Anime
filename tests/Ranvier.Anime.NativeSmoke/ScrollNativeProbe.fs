@@ -59,7 +59,10 @@ let run (host:WebCoreHost) =
         require "two observers retain independent debug overlays" (element.childNodes.length=nodes+2u)
         element.scrollTop <- int (observer.OffsetStart+observer.Distance/2.)
         dispatch host (element:>EventTarget)
+        // The first frame begins the wake timer, which resumes the scroll ticker; Anime.js ticks a root resumed
+        // during traversal on the following frame.
         scheduler.Advance 40.; scheduler.RunFrame()
+        scheduler.Advance 17.; scheduler.RunFrame()
         require "real native scroll event scrubs borrowed timer" (close timer.Progress 0.5 && updates>0)
         observer.Revert()
         require "remaining debug overlay retains positioning lease" (style.getPropertyValue "position"="relative" && registry.Count=1)
