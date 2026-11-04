@@ -42,6 +42,8 @@ Typed CSS cached getters and component retargeting in `src/Ranvier.Anime/Animata
 
 Contextual conversion in `src/Ranvier.Anime/CssUnits.fs` follows the pinned core units code's angle ratios and clone measurement procedure, with scoped cleanup and per-element construction measurements.
 
+SVG geometry motion sampling, drawable attribute and inline stroke-linecap handling, and morph endpoint generation in `src/Ranvier.Anime/Svg.fs` and `src/Ranvier.Anime/SvgProperties.fs` derive from the pinned Anime.js v4.5.0 SVG and morph logic. They use typed Ranvier DOM geometry, the actual Ranvier owner and scope restoration, and canonical CSS snapshots. The behavioral oracle `tools/svg-reference.mjs` generates `tests/reference/svg-reference.json` (SHA-256 `6459c0c0c83d7519656a76e4532d0fc32d17306bd610f4dfa4fbb3bd1cf60a34`). These derived files are covered by the Anime.js MIT License below.
+
 The easing formulas retain Anime.js's credit to Robert Penner, Copyright (c) 2001 Robert Penner, from https://robertpenner.com/easing/.
 The cubic Bezier solver retains Anime.js's credit to https://github.com/gre/bezier-easing, Copyright (c) 2014 Gaëtan Renaudeau.
 These credits are preserved in the ported source as well as this notice.

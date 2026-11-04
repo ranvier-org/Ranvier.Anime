@@ -63,6 +63,9 @@
     <Compile Include="EngineRootTests.fs" />
     <Compile Include="EngineQuiescenceTests.fs" />
     <Compile Include="SourceCleanupTests.fs" />
+    <Compile Include="SvgTests.fs" />
+    <Compile Include="SvgReentryTests.fs" />
+    <Compile Include="SvgLifetimeGuardTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -96,5 +99,6 @@
     <None Include="../reference/engine-roots-reference.json" Link="reference/engine-roots-reference.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/engine-quiescence-reference.json" Link="reference/engine-quiescence-reference.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/engine-idle-phase-reference.json" Link="reference/engine-idle-phase-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/svg-reference.json" Link="reference/svg-reference.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

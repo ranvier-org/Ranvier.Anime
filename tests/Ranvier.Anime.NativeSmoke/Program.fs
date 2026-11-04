@@ -40,6 +40,8 @@ let main args =
         use scheduler = Frames.forHost host
         EngineCoreNativeProbe.run host scheduler
         CompositionNativeIdentityProbe.run host.Document
+        SvgNativeProbe.run host.Document (ComputedStyles.forHost host)
+        SvgNativeProbe.scopeOwnersAndReentry host.Document (ComputedStyles.forHost host)
         let element = host.Document.createElement "div" :?> HTMLElement
         host.Document.body.appendChild element |> ignore
         let style = (element :> ElementCSSInlineStyle).style

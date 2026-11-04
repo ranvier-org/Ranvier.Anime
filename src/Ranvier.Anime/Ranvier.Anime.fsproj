@@ -40,6 +40,8 @@
     <Compile Include="CssPropertyMetadata.fs" />
     <Compile Include="CssSerialization.fs" />
     <Compile Include="CssPropertySnapshot.fs" />
+    <Compile Include="Svg.fs" />
+    <Compile Include="SvgProperties.fs" />
     <Compile Include="Keyframes.fs" />
     <Compile Include="TimelineKeyframes.fs" />
     <Compile Include="TimelineKeyframeSequences.fs" />
