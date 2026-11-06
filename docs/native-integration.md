@@ -14,7 +14,7 @@ build ["css-aot-probe"; "-c"; "Release"]          // strict NativeAOT publish of
 
 The CLI uses the same tree: `rtk proxy dotnet fsi build.fsx -- native-build -c Debug`. Native outputs go to `artifacts/native`; packages restore into the shared repository cache `artifacts/nuget-packages`. Publishes treat ILLink and ILC warnings as errors, and the build additionally fails if the publish log reports a call that will always throw.
 
-The smoke host also mounts a Ranvier.View list with the native `Motion` parts from `src/Ranvier.View.Anime` (see its README).
+The smoke host also mounts Ranvier.View templates with the `Motion` parts of `src/Ranvier.View.Anime` on the native page (`MotionViewProbe`, `MotionPartsProbe`) and renders the README templates on the server against twins without parts (`MotionServerProbe`). The same project compiles with Fable over anime.js; `build ["browser"]` runs its jsdom checks (`tests/Ranvier.View.Anime.Browser`). See the project README.
 
 Coverage is Windows headless CPU smoke. It does not establish GPU presentation, hardware acceleration, Linux execution, host-destruction safety or full Anime.js parity.
 

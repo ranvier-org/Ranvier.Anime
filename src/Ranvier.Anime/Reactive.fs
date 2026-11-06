@@ -4,11 +4,6 @@ open System
 open Ranvier
 open Ranvier.Dom
 
-/// <summary>Whether animations run in full or reduced to their end states.</summary>
-type MotionPolicy =
-    | Full
-    | Reduced
-
 /// <summary>Owned reactive targets whose frames write directly to their destination.</summary>
 [<RequireQualifiedAccess>]
 module Reactive =
@@ -56,6 +51,11 @@ module Reactive =
                 child.Dispose()
                 reraise()))
         child :> IDisposable
+
+    /// <summary>Whether animations run in full or reduced to their end states.</summary>
+    type MotionPolicy =
+        | Full
+        | Reduced
 
     let private policies = Runtime.CompilerServices.ConditionalWeakTable<Graph, Signal<MotionPolicy>>()
 

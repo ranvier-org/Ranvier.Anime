@@ -1,5 +1,7 @@
 namespace Ranvier.View.Anime
 
+#if !FABLE_COMPILER
+
 open System
 open Ranvier.Dom
 open Ranvier.Anime
@@ -89,3 +91,4 @@ type MotionHost =
         | ValueSome interaction -> interaction
         | ValueNone ->
             raise (InvalidOperationException "Motion.drag and Motion.scroll need MotionHost.Install with interaction services.")
+#endif

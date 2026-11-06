@@ -8,14 +8,22 @@
     <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="BrowserOptions.fs" />
     <Compile Include="MotionHost.fs" />
     <Compile Include="Motion.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../Ranvier.Anime/Ranvier.Anime.fsproj" />
     <PackageReference Include="Ranvier.View$(RanvierPackageSuffix)" Version="[$(RanvierViewVersion)]" />
+  </ItemGroup>
+  <!-- .NET hosts run the parts on Ranvier.Anime; Fable compiles them over anime.js through Fable.Ranvier.Anime. -->
+  <ItemGroup Condition="'$(FABLE_COMPILER)' != 'true'">
+    <ProjectReference Include="../Ranvier.Anime/Ranvier.Anime.fsproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FABLE_COMPILER)' == 'true'">
+    <PackageReference Include="Fable.Ranvier.Anime$(RanvierPackageSuffix)" Version="[$(FableRanvierAnimeVersion)]" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Ranvier.Anime.Tests" />
+    <InternalsVisibleTo Include="Ranvier.View.Anime.Browser" />
   </ItemGroup>
 </Project>

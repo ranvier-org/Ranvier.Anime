@@ -77,7 +77,7 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
         require "flip animates the reorder" (listRoot.classList.contains "is-animated")
         require "flip settles" (pump (fun () -> not (listRoot.classList.contains "is-animated")))
 
-        graph.Run(fun () -> Reactive.policy().Value <- Reduced)
+        graph.Run(fun () -> Reactive.policy().Value <- Reactive.Reduced)
         graph.Run(fun () -> items.Value <- [| 3 |])
         require "reduced policy removes a row at once" (texts () = [ "3" ])
     finally

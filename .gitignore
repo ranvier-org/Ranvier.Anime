@@ -6,3 +6,6 @@ upstream/
 artifacts/
 .SageFs/*
 !.SageFs/init.fsx
+node_modules/
+tests/Ranvier.View.Anime.Browser/generated/
+tests/Ranvier.View.Anime.Browser/generated-size/

@@ -11,6 +11,7 @@
     <RanvierDomVersion Condition="'$(RanvierDomVersion)' == ''">0.1.0-rc.1</RanvierDomVersion>
     <RanvierCssBindingsVersion Condition="'$(RanvierCssBindingsVersion)' == ''">0.1.1-alpha.1</RanvierCssBindingsVersion>
     <RanvierViewVersion Condition="'$(RanvierViewVersion)' == ''">0.1.49-rc.1</RanvierViewVersion>
+    <FableRanvierAnimeVersion Condition="'$(FableRanvierAnimeVersion)' == ''">0.1.44</FableRanvierAnimeVersion>
     <RanvierViewWebCoreVersion Condition="'$(RanvierViewWebCoreVersion)' == ''">0.1.0-rc.1</RanvierViewWebCoreVersion>
   </PropertyGroup>
 </Project>

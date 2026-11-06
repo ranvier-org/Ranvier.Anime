@@ -129,6 +129,18 @@ let cssAotProbe = input {
     }
 }
 
+let private browserTests = "tests/Ranvier.View.Anime.Browser"
+
+/// The shared Motion parts compiled with Fable over anime.js and checked under jsdom, with the README and bundle checks.
+let browser = input {
+    return stage "browser Motion parts" {
+        workingDir (Path.Combine(root', browserTests))
+        envVars [("NUGET_PACKAGES", packageCache)]
+        run (cmd $"rtk npm ci --no-audit --no-fund")
+        run (cmd $"rtk proxy npm test")
+    }
+}
+
 /// Every source oracle under tools/, with the extra modes some of them expose. Each writes into tests/reference.
 let private referenceScripts =
     [ "reference.mjs", []; "timer-controls.mjs", []; "animation-playback.mjs", []; "timeline-playback.mjs", []
@@ -171,6 +183,7 @@ let root = Command.root {
     command "native-build" { description "Restore and build the win-x64 native smoke host"; nativeRestore false; nativeBuild }
     command "native-run" { description "Run the built (or, with --aot, published) native smoke host"; nativeRun }
     command "native-publish" { description "Strict NativeAOT publish of the native smoke host"; nativeRestore true; nativePublish }
+    command "browser" { description "Compile the Motion parts with Fable and run the browser checks under jsdom"; browser }
     command "css-aot-probe" { description "Strict NativeAOT publish of the isolated typed CSS probe"; nativeRestore true; cssAotProbe }
     command "css-metadata" {
         description "Regenerate or verify snapshot metadata from the matched WebKit Git blob"

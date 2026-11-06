@@ -68,6 +68,7 @@ let main args =
         MotionViewProbe.run host scheduler
         MotionViewProbe.runInteraction ()
         MotionPartsProbe.run host scheduler
+        MotionServerProbe.run ()
         do
             use graph=new Graph()
             use activation=graph.Activate()

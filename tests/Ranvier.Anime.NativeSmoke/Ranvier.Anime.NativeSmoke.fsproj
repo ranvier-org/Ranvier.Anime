@@ -35,6 +35,8 @@
     <Compile Include="FullFamiliesNativeProbe.fs" />
     <Compile Include="MotionViewProbe.fs" />
     <Compile Include="MotionPartsProbe.fs" />
+    <Compile Include="MotionFixtures.fs" />
+    <Compile Include="MotionServerProbe.fs" />
     <Compile Include="Program.fs" />
     <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
     <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />

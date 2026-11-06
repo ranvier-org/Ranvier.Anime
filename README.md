@@ -54,6 +54,8 @@ CssAnimation.declarationOn scheduler element
 
 Open `Ranvier.Anime.slnx` in Rider. It contains the library and test project and will be updated as projects are added.
 
+`src/Ranvier.View.Anime` holds the `Motion` parts for Ranvier.View templates, one source over this port on .NET hosts and over anime.js under Fable; see [its README](src/Ranvier.View.Anime/README.md).
+
 `Ranvier.Anime.Native.slnx` contains the independent native host consumer and isolated typed-CSS AOT probe, built against the public package cohort pinned in `Directory.Build.props`. This covers Windows headless CPU smoke; hardware acceleration and broader native feature coverage remain open. See [native integration](docs/native-integration.md) for its commands and scope.
 
 Project operations use Partas.Build 0.8.2 from the public Cloudsmith feed configured in `nuget.config`:

@@ -1,13 +1,33 @@
 namespace Ranvier.View.Anime
 
+// One Motion API over two engines: anime.js through Fable.Ranvier.Anime in the browser, Ranvier.Anime on .NET hosts.
+// The shared types and part signatures read the same on both; `Element` and `HTMLElement` are the DOM types of the target.
+
 open System
 open System.Collections.Generic
 open Ranvier
+#if FABLE_COMPILER
+open Fable.Core
+open Fable.Core.TS.Dom
+#else
 open Ranvier.Dom
+#endif
 open Ranvier.Anime
 open Ranvier.View.Representation
 open Ranvier.View.Template
 open Ranvier.View.Sugar
+
+// The ITickable members the shared types use, named per engine.
+module internal Tick =
+#if FABLE_COMPILER
+    let completed (tickable: ITickable) = tickable.completed
+    let cancelled (tickable: ITickable) = tickable.cancelled
+    let cancel (tickable: ITickable) = tickable.cancel ()
+#else
+    let completed (tickable: ITickable) = tickable.Completed
+    let cancelled (tickable: ITickable) = tickable.Cancelled
+    let cancel (tickable: ITickable) = tickable.Cancel()
+#endif
 
 /// <summary>
 /// The one animation an instance runs outside its parts, such as a spring a handler starts: playing another cancels the
@@ -23,7 +43,7 @@ type MotionSlot internal () =
     member _.Running = running
 
     /// <summary>Whether the latest animation is live: played, and not yet completed or cancelled.</summary>
-    member _.Playing = not (isNull running) && not running.Completed && not running.Cancelled
+    member _.Playing = not (isNull running) && not (Tick.completed running) && not (Tick.cancelled running)
 
     /// <summary>
     /// Cancels the running animation, then plays the one <c>start</c> creates while the instance is live; after its
@@ -36,14 +56,14 @@ type MotionSlot internal () =
             let next = start () :> ITickable
 
             if not (isNull running) && not (obj.ReferenceEquals(running, next)) then
-                running.Cancel()
+                Tick.cancel running
 
             running <- next
 
     /// <summary>Cancels the running animation at its current values.</summary>
     member _.Stop() =
         if not (isNull running) then
-            running.Cancel()
+            Tick.cancel running
             running <- null
 
     member internal this.Close() =
@@ -99,6 +119,554 @@ type DragBinding =
 /// starts from the current values. The server omits every part. Under <c>Reactive.policy</c> <c>Reduced</c>, enter and
 /// flip do not play and an exit finishes at once. Parts read <c>MotionHost.Current</c> when the element is placed.
 /// </remarks>
+#if FABLE_COMPILER
+[<RequireQualifiedAccess>]
+module Motion =
+    // Sets, not WeakSets: flip scans their members, and every member leaves with its part's cleanup or its exit's end.
+    [<Emit("new Set()")>]
+    let private markSet () : obj = jsNative
+
+    // Elements whose Motion exit runs.
+    let private departing = markSet ()
+    // Elements whose Motion enter started in a pass that has not yet been laid out.
+    let private arriving = markSet ()
+    // Elements whose Motion part animates them.
+    let private animated = markSet ()
+
+    [<Emit("$0.size")>]
+    let private sizeOf (set: obj) : int = jsNative
+
+    /// <summary>The number of elements whose Motion exit runs.</summary>
+    let internal departures () = sizeOf departing
+
+    [<Emit("$0.add($1)")>]
+    let private mark (set: obj) (element: obj) : unit = jsNative
+
+    [<Emit("$0.delete($1)")>]
+    let private forget (set: obj) (element: obj) : unit = jsNative
+
+    [<Emit("(r => { if (typeof r.pause === 'function') r.pause(); else if (r.animations) for (const k in r.animations) r.animations[k].pause(); })($0)")>]
+    let private pauseIfPlayable (revertible: obj) : unit = jsNative
+
+    [<Emit("((t, k, f) => { const previous = t[k]; t[k] = self => { if (previous) previous(self); f(self); }; })($0, $1, $2)")>]
+    let private chain (target: obj) (callback: string) (after: obj -> unit) : unit = jsNative
+
+    [<Emit("Object.assign({}, $0, {[$1]: $2})")>]
+    let private withKey (parameters: 'p) (key: string) (value: obj) : 'p = jsNative
+
+    [<Emit("Object.assign({[$1]: $2}, $0)")>]
+    let private withDefault (parameters: 'p) (key: string) (value: obj) : 'p = jsNative
+
+    [<Emit("(e => { const top = e.offsetTop, left = e.offsetLeft, width = e.offsetWidth, height = e.offsetHeight, s = e.style; s.position = 'absolute'; s.top = top + 'px'; s.left = left + 'px'; s.width = width + 'px'; s.height = height + 'px'; s.margin = '0'; s.boxSizing = 'border-box'; })($0)")>]
+    let private pinOutOfFlow (element: obj) : unit = jsNative
+
+    [<Emit("Array.prototype.filter.call($0.children, c => !$1.has(c) && !$2.has(c))")>]
+    let private liveChildren (root: obj) (leaving: obj) (entering: obj) : Element array = jsNative
+
+    // Takes the layout's visual properties (opacity, colours, borders, filters, clip paths, font size) that `parameters`
+    // do not name out of its animated and recorded properties while an element under the root carries a Motion part, and
+    // puts them back otherwise. anime 4.5.0 has no public way to remove them (AutoLayout's `properties` and
+    // `recordedProperties` Sets).
+    [<Emit("((l, p, r, a, b, c) => { if (!l.motionVisual) { const named = new Set([...(p.properties || []), ...Object.keys(p.enterFrom || {}), ...Object.keys(p.leaveTo || {}), ...Object.keys(p.swapAt || {})]); l.motionVisual = ['opacity', 'fontSize', 'color', 'backgroundColor', 'borderRadius', 'border', 'filter', 'clipPath'].filter(n => !named.has(n)); } const owned = [a, b, c].some(s => { for (const n of s) if (r.contains(n)) return true; return false; }); for (const n of l.motionVisual) { if (owned) { l.properties.delete(n); l.recordedProperties.delete(n); } else { l.properties.add(n); l.recordedProperties.add(n); } } })($0, $1, $2, $3, $4, $5)")>]
+    let private leaveVisuals (layout: AutoLayout) (parameters: obj) (root: obj) (animated: obj) (departing: obj) (arriving: obj) : unit =
+        jsNative
+
+    [<Emit("(r => { for (const c of r.children) $1.delete(c); })($0)")>]
+    let private laidOut (root: obj) (arriving: obj) : unit = jsNative
+
+    [<Emit("$0.children = $1")>]
+    let private measureChildren (layout: AutoLayout) (children: Element array) : unit = jsNative
+
+    [<Emit("$0.motionFrom = $0.getBoundingClientRect()")>]
+    let private keepBox (element: Element) : unit = jsNative
+
+    // Moves the recorded box of each child carrying a `flipFrom` box to that box, and removes the box.
+    [<Emit("((l, c) => { for (const e of c) { const r = e.motionFrom; if (r) { delete e.motionFrom; const p = l.oldState.getNode(e).properties; p.x += r.left - p.left; p.y += r.top - p.top; p.left = r.left; p.top = r.top; } } })($0, $1)")>]
+    let private startFrom (layout: AutoLayout) (children: Element array) : unit = jsNative
+
+    // The parameters without the shared unit, which anime would read as a property, and with the property's own entry,
+    // which takes the shared unit when it sets none.
+    [<Emit("(({unit, ...p}, k) => { const e = p[k]; p[k] = Object.assign({unit}, typeof e === 'number' ? {duration: e} : e); return p; })($0, $1)")>]
+    let private withUnit (parameters: obj) (property: string) : AnimatableParams = jsNative
+
+    [<Emit("$0.animations[$1].complete()")>]
+    let private completeProperty (animatable: Animatable) (property: string) : unit = jsNative
+
+    [<Emit("((el, f) => ({ get draw() { return f; }, set draw(v) { f = v; el.setAttribute('draw', '0 ' + v); } }))($0, $1)")>]
+    let private strokeTarget (drawable: Element) (initial: float) : obj = jsNative
+
+    [<Emit("($0.tagName.toLowerCase() === 'path' ? 'd' : 'points')")>]
+    let private shapeAttribute (element: obj) : string = jsNative
+
+    [<Emit("((e, a, v) => { const shape = e.ownerDocument.createElementNS('http://www.w3.org/2000/svg', e.tagName.toLowerCase()); shape.setAttribute(a, v); return shape; })($0, $1, $2)")>]
+    let private shapeLike (element: obj) (attribute: string) (shape: string) : Element = jsNative
+
+    [<Emit("$0.setAttribute($1, $2)")>]
+    let private setShape (element: obj) (attribute: string) (shape: string) : unit = jsNative
+
+    [<Emit("(d => { d.stop(); d.disable(); d.$target.classList.remove('is-disabled'); d.updateTicker.pause(); d.overshootTicker.pause(); d.resizeTicker.pause(); for (const k in d.animate.animations) d.animate.animations[k].pause(); d.resizeObserver.disconnect(); })($0)")>]
+    let private freezeDraggable (draggable: Draggable) : unit = jsNative
+
+    // Runs `after` once each of the draggable's position animations completes, after its last frame.
+    [<Emit("((d, f) => { for (const k of [d.xProp, d.yProp]) { const a = d.animate.animations[k]; if (a) { const p = a.onComplete; a.onComplete = s => { if (p) p(s); f(s); }; } } })($0, $1)")>]
+    let private whenPositioned (draggable: Draggable) (after: obj -> unit) : unit = jsNative
+
+    [<Emit("(s => { clearTimeout(s.resizeTimeout); s.resizeObserver.disconnect(); })($0)")>]
+    let private freezeSplitter (splitter: TextSplitter) : unit = jsNative
+
+    [<Emit("((e, names) => { const kept = names.map(n => e.getAttribute(n)); return () => names.forEach((n, i) => kept[i] == null ? e.removeAttribute(n) : e.setAttribute(n, kept[i])); })($0, $1)")>]
+    let private keepAttributes (element: obj) (names: string array) : unit -> unit = jsNative
+
+    [<Emit("$0.scrollHeight")>]
+    let private contentHeight (element: obj) : float = jsNative
+
+    [<Emit("$0.style.overflow = $1")>]
+    let private overflow (element: obj) (value: string) : unit = jsNative
+
+    [<Emit("Object.assign({}, $0, $1 ? {container: $1} : {}, {target: $2})")>]
+    let private observing (parameters: obj) (container: obj) (target: obj) : Ranvier.Anime.ScrollParams = jsNative
+
+    // The numeric-token checks of Fable.Ranvier.Anime's internal CssAnimationRuntime, which Fable cannot reach from a
+    // package under another assembly name.
+    let private unitOf (value: Ranvier.Css.Value<'syntax>) =
+        match Ranvier.Css.RuntimeApi.tryNumericValue value with
+        | Some (number, suffix) when not (Double.IsNaN number || Double.IsInfinity number) -> suffix
+        | _ -> invalidArg "value" "Animation endpoints require numeric CSS tokens. Animate a variable consumed by the CSS expression."
+
+    let private requireUnit expected value =
+        if unitOf value <> expected then
+            invalidArg "value" "Animation endpoints must use the same unit suffix. Convert endpoints to a common unit first."
+
+    [<Emit("(() => { const style = $0.style; const value = style.getPropertyValue($1); const priority = style.getPropertyPriority($1); return () => { if (value) style.setProperty($1, value, priority); else style.removeProperty($1); }; })()")>]
+    let private captureProperty (element: Element) (name: string) : unit -> unit = jsNative
+
+    [<Emit("Object.assign({}, $0, {unit: $1})")>]
+    let private propertyWithUnit (parameters: AnimatableProp) (suffix: string) : AnimatableProp = jsNative
+
+    let inline private targetsOf (node: 'native) : Targets = Erased.cast node
+
+    let inline private elementOf (node: 'native) : Element = Erased.cast node
+
+    let private nothing () = ()
+
+    let private reduced () =
+        match Api.untrack (fun () -> (Reactive.policy ()).Value) with
+        | Reactive.Reduced -> true
+        | Reactive.Full -> false
+
+    // The cleanup of a part's anime object: paused while the element's exit follows, reverted otherwise.
+    let private settle (context: MotionContext) (revertible: IRevertible) =
+        let release () =
+            if context.ExitPending () then
+                pauseIfPlayable revertible
+            else
+                revertible.revert ()
+
+        release
+
+    // Marks the element as animated by a Motion part until `release` runs.
+    let private owning (element: obj) (release: unit -> unit) =
+        mark animated element
+
+        let owned () =
+            forget animated element
+            release ()
+
+        owned
+
+    let private entering (play: 'inst -> Element -> #ITickable) =
+        Func<'inst, 'native, MotionContext, unit -> unit>(fun inst node context ->
+            if context.Inserted && not (reduced ()) then
+                let element = box node
+                let tickable = play inst (elementOf node) :> ITickable
+                mark arriving element
+                let stop = settle context tickable
+
+                let release () =
+                    forget arriving element
+                    stop ()
+
+                owning element release
+            else
+                nothing)
+
+    // Starts the exit, pinned out of flow when `pin`; the element leaves once the tickable completes, and at once under
+    // Reduced. The returned cancel stops the tickable.
+    let private departure (pin: bool) (play: 'inst -> Element -> #ITickable) =
+        Func<'inst, 'native, unit -> unit, unit -> unit>(fun inst node finish ->
+            let element = box node
+
+            let finished () =
+                forget departing element
+                finish ()
+
+            if reduced () then
+                finished ()
+                nothing
+            else
+                mark departing element
+
+                if pin then
+                    pinOutOfFlow element
+
+                let tickable =
+                    try
+                        play inst (elementOf node) :> ITickable
+                    with _ ->
+                        forget departing element
+                        reraise ()
+
+                chain tickable "onComplete" (fun _ -> finished ())
+
+                let cancel () =
+                    forget departing element
+                    tickable.cancel ()
+
+                cancel)
+
+    let on (play: 'inst -> Element -> #IRevertible) : Part<'native, 'inst> =
+        Hooks.motion (Func<_, _, _, _>(fun inst node context -> owning (box node) (settle context (play inst (elementOf node) :> IRevertible))))
+
+    let appear (play: 'inst -> Element -> #IRevertible) : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst node context ->
+                if context.Hydrated then
+                    nothing
+                else
+                    owning (box node) (settle context (play inst (elementOf node) :> IRevertible)))
+        )
+
+    let enter (play: 'inst -> Element -> #ITickable) : Part<'native, 'inst> = Hooks.motion (entering play)
+
+    let exit (play: 'inst -> Element -> #ITickable) : Part<'native, 'inst> = Hooks.exit (departure false play)
+
+    let presence (enter: 'inst -> Element -> #ITickable) (exit: 'inst -> Element -> #ITickable) : Part<'native, 'inst> =
+        Hooks.both (Hooks.motion (entering enter), Hooks.exit (departure true exit))
+
+    let fade<'native, 'inst> : Part<'native, 'inst> =
+        presence
+            (fun (_: 'inst) node -> Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 240, ease = Ease.outQuad)))
+            (fun _ node -> Anime.animate (node, Anim (opacity = 0, duration = 180, ease = Ease.inQuad)))
+
+    let rise<'native, 'inst> : Part<'native, 'inst> =
+        presence
+            (fun (_: 'inst) node ->
+                Anime.animate (node, Anim (y = Value.fromTo (12, 0), opacity = Value.fromTo (0, 1), duration = 240, ease = Ease.outQuad)))
+            (fun _ node -> Anime.animate (node, Anim (y = -12, opacity = 0, duration = 180, ease = Ease.inQuad)))
+
+    let scale<'native, 'inst> : Part<'native, 'inst> =
+        presence
+            (fun (_: 'inst) node ->
+                Anime.animate (node, Anim (scale = Value.fromTo (0.92, 1), opacity = Value.fromTo (0, 1), duration = 240, ease = Ease.outQuad)))
+            (fun _ node -> Anime.animate (node, Anim (scale = 0.92, opacity = 0, duration = 180, ease = Ease.inQuad)))
+
+    let private unfold (_: 'inst) (node: Element) =
+        let element = box node
+        overflow element "hidden"
+
+        Anime.animate (
+            node,
+            Anim (
+                height = Value.fromTo (0, contentHeight element),
+                duration = 240,
+                ease = Ease.outQuad,
+                onComplete =
+                    fun animation ->
+                        Utils.cleanInlineStyles animation
+                        overflow element ""
+            )
+        )
+
+    let private fold (_: 'inst) (node: Element) =
+        overflow (box node) "hidden"
+        Anime.animate (node, Anim (height = 0, duration = 180, ease = Ease.inQuad))
+
+    let collapse<'native, 'inst> : Part<'native, 'inst> =
+        Hooks.both (Hooks.motion (entering unfold), Hooks.exit (departure false fold))
+
+    let flip (parameters: LayoutOptions) : Part<'native, 'inst> =
+        let converted = BrowserParams.layout parameters
+
+        Hooks.reflow (fun _ node ->
+            let root = box node
+            let layout: AutoLayout ref = ref null
+            let recorded = ref false
+
+            Api.onCleanup (fun () ->
+                if not (isNull layout.Value) then
+                    layout.Value.revert ())
+
+            {
+                Before =
+                    fun () ->
+                        recorded.Value <- not (reduced ())
+
+                        if recorded.Value then
+                            let children = liveChildren root departing arriving
+
+                            if isNull layout.Value then
+                                layout.Value <- Anime.layout (elementOf node, withKey (Erased.cast converted: LayoutParams) "children" children)
+                            else
+                                measureChildren layout.Value children
+                                leaveVisuals layout.Value converted root animated departing arriving
+                                layout.Value.record () |> ignore
+
+                            startFrom layout.Value children
+                After =
+                    fun () ->
+                        if recorded.Value then
+                            recorded.Value <- false
+                            measureChildren layout.Value (liveChildren root departing arriving)
+                            leaveVisuals layout.Value converted root animated departing arriving
+                            layout.Value.animate () |> ignore
+                            laidOut root arriving
+            })
+
+    let flipFrom (element: Element) : unit =
+        match Graph.TryCurrent with
+        | ValueSome _ when reduced () -> ()
+        | _ -> keepBox element
+
+    let slot () : MotionSlot =
+        let created = MotionSlot ()
+        Api.onCleanup created.Close
+        created
+
+    let follow (property: string) (parameters: ComposedAnimationOptions) (read: 'inst -> float) : Part<'native, 'inst> =
+        let converted = BrowserParams.composed parameters
+
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst node context ->
+                let animatable = Anime.animatable (targetsOf node, withUnit converted property)
+                let first = ref true
+
+                Api.createEffectOn (fun () -> read inst) (fun value ->
+                    animatable.set (property, value)
+
+                    if first.Value then
+                        first.Value <- false
+                        completeProperty animatable property)
+
+                owning (box node) (settle context animatable))
+        )
+
+    let followCss
+        (property: Ranvier.Css.CustomProperty<'syntax>)
+        (parameters: ComposedAnimationOptions)
+        (read: 'inst -> Ranvier.Css.Value<'syntax>)
+        : Part<'native, 'inst> =
+        let converted: AnimatableProp = Erased.cast (BrowserParams.composed parameters)
+
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst node context ->
+                let initial = read inst
+                let suffix = unitOf initial
+                let name = Ranvier.Css.RuntimeApi.customPropertyName property
+                let restore = captureProperty (elementOf node) name
+                let settings = propertyWithUnit converted suffix
+                let seed = Utils.set (targetsOf node, Anim().With(property, initial))
+
+                let animatable =
+                    Anime.animatable (targetsOf node, AnimatableParams().With(name, settings))
+
+                let first = ref true
+
+                Api.createEffectOn (fun () -> read inst) (fun value ->
+                    requireUnit suffix value
+
+                    let number, _ =
+                        Ranvier.Css.RuntimeApi.tryNumericValue value
+                        |> Option.get
+
+                    animatable.set (name, number)
+
+                    if first.Value then
+                        first.Value <- false
+                        completeProperty animatable name)
+
+                let release () =
+                    if context.ExitPending () then
+                        pauseIfPlayable animatable
+                    else
+                        animatable.revert ()
+                        seed.revert ()
+                        restore ()
+
+                owning (box node) release)
+        )
+
+    let animateOn (read: 'inst -> 'v) (play: 'inst -> Element -> 'v -> #ITickable) : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst node context ->
+                let current: ITickable ref = ref null
+
+                Api.createEffectOn (fun () -> read inst) (fun value ->
+                    let tickable = play inst (elementOf node) value :> ITickable
+
+                    if isNull current.Value then
+                        tickable.complete ()
+
+                    current.Value <- tickable)
+
+                let release () =
+                    if not (isNull current.Value) then
+                        settle context current.Value ()
+
+                owning (box node) release)
+        )
+
+    let draw (parameters: ComposedAnimationOptions) (read: 'inst -> float) : Part<'native, 'inst> =
+        let converted: AnimatableParams = Erased.cast (BrowserParams.composed parameters)
+
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst node context ->
+                let initial = read inst
+
+                let restore =
+                    keepAttributes (box node) [| "pathLength"; "stroke-dasharray"; "stroke-dashoffset" |]
+
+                let drawable = (Svg.drawable (targetsOf node, 0., initial))[0]
+
+                let animatable =
+                    Anime.animatable (Targets.object (strokeTarget drawable initial), withDefault converted "draw" (AnimatableProp ()))
+
+                Api.createEffectOn (fun () -> read inst) (fun fraction -> animatable.set ("draw", fraction))
+
+                let release () =
+                    if context.ExitPending () then
+                        pauseIfPlayable animatable
+                    else
+                        animatable.revert ()
+                        restore ()
+
+                release)
+        )
+
+    let morph (parameters: ComposedAnimationOptions) (read: 'inst -> string) : Part<'native, 'inst> =
+        let converted: Anim = Erased.cast (BrowserParams.composed parameters)
+
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst node context ->
+                let element = box node
+                let attribute = shapeAttribute element
+                let restore = keepAttributes element [| attribute |]
+                let current: JSAnimation ref = ref null
+                let first = ref true
+
+                Api.createEffectOn (fun () -> read inst) (fun shape ->
+                    if first.Value then
+                        first.Value <- false
+                        setShape element attribute shape
+                    else
+                        let morphing =
+                            Anime.animate (targetsOf node, withKey converted attribute (Svg.morphTo (Erased.cast (shapeLike element attribute shape))))
+
+                        chain morphing "onComplete" (fun _ -> setShape element attribute shape)
+                        current.Value <- morphing)
+
+                let release () =
+                    if context.ExitPending () then
+                        if not (isNull current.Value) then
+                            current.Value.pause ()
+                    else
+                        if not (isNull current.Value) then
+                            current.Value.cancel ()
+
+                        restore ()
+
+                release)
+        )
+
+    let scroll (parameters: ScrollParams) (bind: 'inst -> ScrollBinding) (play: 'inst -> Element -> #ITickable) : Part<'native, 'inst> =
+        let converted = BrowserParams.scroll parameters.Options
+
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst node context ->
+                let binding = bind inst
+                let graph = Graph.Current
+                let target = parameters.Target |> Option.map box |> Option.defaultValue (box node)
+                let container = parameters.Container |> Option.map box |> Option.toObj
+                let observer = Anime.onScroll (observing converted container target)
+                let tickable = play inst (elementOf node) :> ITickable
+                observer.link tickable |> ignore
+
+                match binding.Progress with
+                | ValueSome progress -> chain observer "onUpdate" (fun _ -> graph.Batch (fun () -> progress.Value <- observer.progress))
+                | ValueNone -> ()
+
+                match binding.InView with
+                | ValueSome inView ->
+                    chain observer "onEnter" (fun _ -> graph.Batch (fun () -> inView.Value <- true))
+                    chain observer "onLeave" (fun _ -> graph.Batch (fun () -> inView.Value <- false))
+                | ValueNone -> ()
+
+                let stop = settle context tickable
+
+                let release () =
+                    stop ()
+                    observer.revert ()
+
+                release)
+        )
+
+    let drag (parameters: NativeDraggableOptions) (bind: 'inst -> DragBinding) : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst node context ->
+                let binding = bind inst
+                let graph = Graph.Current
+                let draggable = Anime.draggable (targetsOf node, Erased.cast (BrowserParams.draggable parameters))
+
+                let publish _ =
+                    graph.Batch (fun () -> binding.Position.Value <- struct (draggable.x, draggable.y))
+
+                chain draggable "onUpdate" publish
+                whenPositioned draggable publish
+
+                match binding.Slot with
+                | ValueSome owned -> chain draggable "onGrab" (fun _ -> owned.Stop ())
+                | ValueNone -> ()
+
+                match binding.Dragging with
+                | ValueSome dragging ->
+                    chain draggable "onGrab" (fun _ -> graph.Batch (fun () -> dragging.Value <- true))
+                    chain draggable "onRelease" (fun _ -> graph.Batch (fun () -> dragging.Value <- false))
+                | ValueNone -> ()
+
+                Api.createEffectOn (fun () -> binding.Position.Value) (fun (struct (x, y)) ->
+                    if x <> draggable.x then
+                        draggable.setX (x, true) |> ignore
+
+                    if y <> draggable.y then
+                        draggable.setY (y, true) |> ignore)
+
+                let release () =
+                    if context.ExitPending () then
+                        freezeDraggable draggable
+                    else
+                        draggable.revert ()
+
+                release)
+        )
+
+    let split (parameters: TextSplitterOptions) (play: 'inst -> TextSplitter -> #ITickable) : Part<'native, 'inst> =
+        let converted: SplitParams = Erased.cast (BrowserParams.split parameters)
+
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst node context ->
+                let splitter = Anime.splitText (elementOf node, converted)
+                let tickable = play inst splitter :> ITickable
+
+                let release () =
+                    if context.ExitPending () then
+                        tickable.pause ()
+                        freezeSplitter splitter
+                    else
+                        tickable.revert ()
+                        splitter.revert ()
+
+                release)
+        )
+#else
 [<RequireQualifiedAccess>]
 module Motion =
     // Elements are compared by identity, falling back to isSameNode for hosts that rewrap nodes.
@@ -131,8 +699,8 @@ module Motion =
 
     let private reduced () =
         match Api.untrack (fun () -> (Reactive.policy ()).Value) with
-        | Reduced -> true
-        | Full -> false
+        | Reactive.Reduced -> true
+        | Reactive.Full -> false
 
     let private options (services: MotionServices) (duration: float) (ease: string) =
         Some
@@ -751,3 +1319,4 @@ module Motion =
                         splitter.Revert() |> ignore
                         root.Dispose())
         )
+#endif
