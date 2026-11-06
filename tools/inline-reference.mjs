@@ -93,6 +93,6 @@ if(process.argv[2]==='--case'){
  assert.equal(byName.scalarAngleUnit.samples[1].state.inline,'translateY(7px) rotate(12turn) ');
  assert.equal(byName.scalarScale.samples[1].state.inline,'translateY(7px) scale(12) ');
  assert.equal(git('status','--porcelain'),'');
- writeFileSync(resolve(lane,'inline-reference.json'),JSON.stringify({upstreamCommit:git('rev-parse','HEAD'),scope:'Actual unmodified Draggable constructor, methods, Timer, Animatable, Spring and engine. Fixed synthetic DOM/CSS and identity ancestor geometry isolate pixel physics/callbacks; no native DOM proof.',fixtures},null,2)+'\n');
+ writeFileSync(resolve(lane,'../tests/reference/inline-reference.json'),JSON.stringify({upstreamCommit:git('rev-parse','HEAD'),scope:'Actual unmodified Draggable constructor, methods, Timer, Animatable, Spring and engine. Fixed synthetic DOM/CSS and identity ancestor geometry isolate pixel physics/callbacks; no native DOM proof.',fixtures},null,2)+'\n');
  console.log(`Captured ${fixtures.length} source inline scalar/complex behavior traces`);
 }

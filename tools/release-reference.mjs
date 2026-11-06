@@ -91,6 +91,6 @@ if(process.argv[2]==='--case'){
  assert.equal(git('rev-parse','HEAD'),'2c9cf8ea00329f6768c7d7902252ed977d75ce42');assert.equal(git('status','--porcelain'),'');
  const fixtures=cases.map((_,index)=>JSON.parse(execFileSync('rtk',['proxy',process.execPath,script,'--case',String(index)],{encoding:'utf8',maxBuffer:8*1024*1024})));
  assert.equal(git('status','--porcelain'),'');
- writeFileSync(resolve(lane,'release-reference.json'),JSON.stringify({upstreamCommit:git('rev-parse','HEAD'),scope:'Actual unmodified Draggable constructor, methods, Timer, Animatable, Spring and engine. Fixed synthetic DOM/CSS and identity ancestor geometry isolate pixel physics/callbacks; no native DOM proof.',fixtures},null,2)+'\n');
+ writeFileSync(resolve(lane,'../tests/reference/release-reference.json'),JSON.stringify({upstreamCommit:git('rev-parse','HEAD'),scope:'Actual unmodified Draggable constructor, methods, Timer, Animatable, Spring and engine. Fixed synthetic DOM/CSS and identity ancestor geometry isolate pixel physics/callbacks; no native DOM proof.',fixtures},null,2)+'\n');
  console.log(`Captured ${fixtures.length} full source draggable release/callback traces`);
 }

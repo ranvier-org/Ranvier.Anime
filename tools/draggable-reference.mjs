@@ -48,5 +48,5 @@ for(const [x,y,velocity,angle,friction,snapX,snapY] of [[10,20,1,0,.8,0,0],[10,2
  record('release',{x,y,velocity,angle,friction,snapX,snapY},{destX:self.destX,destY:self.destY,calls,events,grabbed:self.grabbed,released:self.released,cleanupError});
 }
 assert.equal(git('status','--porcelain'),'');
-writeFileSync(resolve(lane,'draggable-reference.json'),JSON.stringify({upstreamCommit:git('rev-parse','HEAD'),license:'Anime.js MIT, copyright Julian Garnier; see canonical THIRD-PARTY-NOTICES.md and upstream/anime/LICENSE.md',scope:'Actual unmodified prototype methods. Synthetic event/geometry/animatable dependencies; no browser/native rendering proof. handleUp listener cleanup error recorded after physics/callbacks because imported doc is null in Node.',fixtures},null,2)+'\n');
+writeFileSync(resolve(lane,'../tests/reference/draggable-reference.json'),JSON.stringify({upstreamCommit:git('rev-parse','HEAD'),license:'Anime.js MIT, copyright Julian Garnier; see canonical THIRD-PARTY-NOTICES.md and upstream/anime/LICENSE.md',scope:'Actual unmodified prototype methods. Synthetic event/geometry/animatable dependencies; no browser/native rendering proof. handleUp listener cleanup error recorded after physics/callbacks because imported doc is null in Node.',fixtures},null,2)+'\n');
 console.log(`Captured ${fixtures.length} dragging source method cases`);

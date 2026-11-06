@@ -34,5 +34,5 @@ const fixtures=inputs.map(inline=>{
 assert.equal(fixtures[2].built,'translate(10px,20px) rotate(45deg) ');
 assert.equal(fixtures[4].built,'translate3d(1px,2%,3rem) rotate3d(1,0,0,45deg) scale3d(1,2,3) ');
 assert.equal(git('status','--porcelain'),'');
-writeFileSync(resolve(lane,'transform-reference.json'),JSON.stringify({upstreamCommit:git('rev-parse','HEAD'),scope:'Actual unmodified core/transforms.js parser and serializer; synthetic style object, no native CSS parsing proof.',fixtures},null,2)+'\n');
+writeFileSync(resolve(lane,'../tests/reference/transform-reference.json'),JSON.stringify({upstreamCommit:git('rev-parse','HEAD'),scope:'Actual unmodified core/transforms.js parser and serializer; synthetic style object, no native CSS parsing proof.',fixtures},null,2)+'\n');
 console.log(`Verified ${fixtures.length} source transform parse/build/move cases`);

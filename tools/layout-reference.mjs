@@ -1,4 +1,4 @@
-// Exercises Anime.js v4.5.0, copyright (c) 2025 Julian Garnier; see LICENSE-AnimeJS.
+// Exercises Anime.js v4.5.0, copyright (c) 2025 Julian Garnier; see THIRD-PARTY-NOTICES.md.
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {writeFileSync,readFileSync} from 'node:fs';
@@ -119,6 +119,6 @@ for(const input of cases){
 }
 assert.equal(git('status','--porcelain'),'');
 const result={upstreamCommit:revision,version:JSON.parse(readFileSync(resolve(upstream,'package.json'))).version,scope:'Executes untouched AutoLayout and actual JS Timeline against deterministic recording HTML-shaped objects. Rectangles and computed CSS are inputs. Native requests record actual WAAPI keyframes/timing/control calls without simulating native interpolation. This proves source calculations/classification/playback/request shape only; it does not prove real CSS parsing, WebCore layout, rendering or acceleration.',fixtures};
-writeFileSync(resolve(lane,'layout-reference.json'),JSON.stringify(result,null,2)+'\n');
+writeFileSync(resolve(lane,'../tests/reference/layout.json'),JSON.stringify(result,null,2)+'\n');
 console.log('Captured '+fixtures.length+' actual pinned AutoLayout traces.');
 

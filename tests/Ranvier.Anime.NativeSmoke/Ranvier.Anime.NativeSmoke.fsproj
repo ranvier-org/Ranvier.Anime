@@ -2,7 +2,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
-    <PublishAot Condition="'$(PublishAot)' == ''">false</PublishAot>
+    <!-- A global PublishAot would also reach Ranvier.Anime and its implicit ILCompiler; this opt-in stays local. -->
+    <NativeSmokeAot Condition="'$(NativeSmokeAot)' == ''">false</NativeSmokeAot>
+    <PublishAot Condition="'$(PublishAot)' == ''">$(NativeSmokeAot)</PublishAot>
     <IsAotCompatible>true</IsAotCompatible>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <ILLinkTreatWarningsAsErrors>true</ILLinkTreatWarningsAsErrors>

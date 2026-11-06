@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 const arg = name => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i+1]; };
 const root = resolve(arg('--root') ?? process.env.RANVIER_ANIME_ROOT ?? 'C:/wk/ranvier-anime');
-const out = resolve(arg('--out') ?? 'C:/wk/ranvier-anime-lanes/svg/svg-reference.json');
+const out = resolve(arg('--out') ?? resolve(root,'tests/reference/svg-reference.json'));
 const source = resolve(root, 'upstream/anime');
 const expected = '2c9cf8ea00329f6768c7d7902252ed977d75ce42';
 const runGit = args => execFileSync('rtk', ['proxy','git','-C',source,...args], {encoding:'utf8'}).trim();

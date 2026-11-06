@@ -1,4 +1,4 @@
-// Anime.js v4.5.0, copyright (c) 2025 Julian Garnier; see LICENSE-AnimeJS.
+// Anime.js v4.5.0, copyright (c) 2025 Julian Garnier; see THIRD-PARTY-NOTICES.md.
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync,writeFileSync} from 'node:fs';
@@ -68,7 +68,7 @@ for(const input of cases){
  timeline.cancel();child?.cancel();
 }
 assert.equal(git('status','--porcelain'),'');
-writeFileSync(resolve(lane,'timeline-playback-ease-reference.json'),JSON.stringify({upstreamCommit:revision,version:JSON.parse(readFileSync(resolve(upstream,'package.json'))).version,
+writeFileSync(resolve(lane,'../tests/reference/timeline-playback-ease.json'),JSON.stringify({upstreamCommit:revision,version:JSON.parse(readFileSync(resolve(upstream,'package.json'))).version,
  scope:'Actual untouched JS Timeline, timer, object-animation and nested-controller traces. These are portable clock/callback/value comparisons; no DOM or native backend is modeled.',fixtures},null,2)+'\n');
 console.log('Captured '+fixtures.length+' actual Timeline playbackEase traces.');
 
