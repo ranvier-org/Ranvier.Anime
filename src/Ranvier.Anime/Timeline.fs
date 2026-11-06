@@ -662,6 +662,14 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
             failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     /// <summary>Stops future writes and releases borrowed references.</summary>
     member _.Cancel() = cancel()
+    interface ITickable with
+        member this.Revert() = this.Revert() |> ignore
+        member this.Completed = this.Completed
+        member this.Cancelled = this.Cancelled
+        member this.Pause() = this.Pause() |> ignore
+        member this.Cancel() = this.Cancel()
+        member this.Complete() = this.Complete() |> ignore
+        member this.WhenCompleted(callback) = this.Then(fun _ -> callback ()) |> ignore
     interface IDisposable with member _.Dispose() = cancel()
 
 and [<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>] private TimelineEntry =

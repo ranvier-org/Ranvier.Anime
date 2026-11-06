@@ -33,8 +33,10 @@
     <Compile Include="TextNativeProbe.fs" />
     <Compile Include="WaapiNativeProbe.fs" />
     <Compile Include="FullFamiliesNativeProbe.fs" />
+    <Compile Include="MotionViewProbe.fs" />
     <Compile Include="Program.fs" />
     <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
+    <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
     <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" Condition="'$(NativeSmokeGraph)' == 'source'" />
     <PackageReference Include="Ranvier.View.WebCore$(RanvierPackageSuffix)" Version="[$(RanvierViewWebCoreVersion)]" Condition="'$(NativeSmokeGraph)' != 'source'" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />

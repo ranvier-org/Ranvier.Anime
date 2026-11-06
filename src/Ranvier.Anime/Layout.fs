@@ -695,6 +695,8 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         check()
         ScopeRegistration.attach(this:>IDisposable)
         this
+    interface IRevertible with
+        member this.Revert() = this.Revert()
     interface IDisposable with
         member _.Dispose() =
             if not disposed then

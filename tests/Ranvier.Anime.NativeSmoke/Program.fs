@@ -65,6 +65,7 @@ let main args =
         TextNativeProbe.run host scheduler
         WaapiNativeProbe.run host scheduler
         FullFamiliesNativeProbe.run host scheduler
+        MotionViewProbe.run host scheduler
         do
             use graph=new Graph()
             use activation=graph.Activate()

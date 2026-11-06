@@ -21,6 +21,7 @@
     <Compile Include="PlaybackState.fs" />
     <Compile Include="ScopeRegistration.fs" />
     <Compile Include="EngineFrames.fs" />
+    <Compile Include="Tickable.fs" />
     <Compile Include="Timer.fs" />
     <Compile Include="Engine.fs" />
     <Compile Include="Scope.fs" />

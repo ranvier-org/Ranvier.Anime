@@ -1132,6 +1132,14 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         "ComposedAnimation(Targets=" + targets.Length.ToString(CultureInfo.InvariantCulture) +
         "; Tweens=" + this.ActiveTweenCount.ToString(CultureInfo.InvariantCulture) + ")"
 
+    interface ITickable with
+        member this.Revert() = this.Revert() |> ignore
+        member this.Completed = this.Completed
+        member this.Cancelled = this.Cancelled
+        member this.Pause() = this.Pause() |> ignore
+        member this.Cancel() = this.Cancel()
+        member this.Complete() = this.Complete() |> ignore
+        member this.WhenCompleted(callback) = this.Then(fun _ -> callback ()) |> ignore
     interface IDisposable with
         member this.Dispose() = this.Cancel()
 
@@ -1303,6 +1311,14 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     /// <summary>Invariant diagnostic of the composed timeline.</summary>
     override _.ToString() = "ComposedTimeline(Children=" + entries.Count.ToString(CultureInfo.InvariantCulture) + ")"
 
+    interface ITickable with
+        member this.Revert() = this.Revert() |> ignore
+        member this.Completed = this.Completed
+        member this.Cancelled = this.Cancelled
+        member this.Pause() = this.Pause() |> ignore
+        member this.Cancel() = this.Cancel()
+        member this.Complete() = this.Seek(this.Duration) |> ignore
+        member this.WhenCompleted(callback) = this.Then(fun _ -> callback ()) |> ignore
     interface IDisposable with
         member this.Dispose() = this.Cancel()
 

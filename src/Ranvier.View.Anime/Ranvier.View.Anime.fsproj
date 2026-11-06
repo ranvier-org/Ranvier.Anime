@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Ranvier.View.Anime</AssemblyName>
+    <RootNamespace>Ranvier.View.Anime</RootNamespace>
+    <Description>Motion parts for Ranvier.View templates on .NET hosts such as native WebCore, powered by Ranvier.Anime.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MotionHost.fs" />
+    <Compile Include="Motion.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Ranvier.Anime/Ranvier.Anime.fsproj" />
+    <PackageReference Include="Ranvier.View$(RanvierPackageSuffix)" Version="[$(RanvierViewVersion)]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ranvier.Anime.Tests" />
+  </ItemGroup>
+</Project>

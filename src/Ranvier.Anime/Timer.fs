@@ -567,6 +567,14 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
                 renderingEnabled <- false
                 try state.Reset() finally renderingEnabled <- true
             if current() then state.Resume()) (fun () -> reanchor 12.)
+    interface ITickable with
+        member this.Revert() = this.Revert() |> ignore
+        member this.Completed = this.Completed
+        member this.Cancelled = this.Cancelled
+        member this.Pause() = this.Pause() |> ignore
+        member this.Cancel() = this.Cancel()
+        member this.Complete() = this.Complete()
+        member this.WhenCompleted(callback) = this.Then(fun _ -> callback ()) |> ignore
     interface IDisposable with
         member _.Dispose() = cancel true
 

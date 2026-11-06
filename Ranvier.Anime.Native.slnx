@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Ranvier.Anime/Ranvier.Anime.fsproj" />
+    <Project Path="src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Ranvier.Anime.CssAotProbe/Ranvier.Anime.CssAotProbe.fsproj" />

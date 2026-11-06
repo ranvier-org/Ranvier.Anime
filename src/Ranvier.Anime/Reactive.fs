@@ -4,6 +4,11 @@ open System
 open Ranvier
 open Ranvier.Dom
 
+/// <summary>Whether animations run in full or reduced to their end states.</summary>
+type MotionPolicy =
+    | Full
+    | Reduced
+
 /// <summary>Owned reactive targets whose frames write directly to their destination.</summary>
 [<RequireQualifiedAccess>]
 module Reactive =
@@ -51,3 +56,16 @@ module Reactive =
                 child.Dispose()
                 reraise()))
         child :> IDisposable
+
+    let private policies = Runtime.CompilerServices.ConditionalWeakTable<Graph, Signal<MotionPolicy>>()
+
+    /// <summary>The motion policy of the current graph: one writable signal per graph, seeded <c>Full</c>.</summary>
+    /// <remarks>Native hosts have no reduced-motion media query yet; write <c>Reduced</c> to turn enter, exit and FLIP off.</remarks>
+    let policy () : Signal<MotionPolicy> =
+        let graph = Graph.Current
+        match policies.TryGetValue graph with
+        | true, signal -> signal
+        | _ ->
+            let signal = Api.createSignal Full
+            policies.Add(graph, signal)
+            signal
