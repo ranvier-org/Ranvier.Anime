@@ -66,7 +66,7 @@ let sourceTests=testList "timeline revert source" [
         testCase name <| fun _ ->
             let _,state,trace,_,expected,actual=run fixture
             Expect.isTrue state "original values and terminal root state"
-            Expect.isTrue trace (sprintf "source restoration writes: expected%A, actual%A" expected actual)
+            Expect.isTrue trace ($"source restoration writes: expected {expected.ToString()}, actual {actual.ToString()}")
 ]
 
 let guardTests=testList "timeline revert lifetime" [

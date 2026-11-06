@@ -24,9 +24,9 @@ type DeclarationAnimationOptions =
       OnLoop: Timer -> unit
       OnPause: Timer -> unit
       OnComplete: Timer -> unit }
-    /// <summary>Active scope clock, easing and modifier defaults with four decimal places and silent callbacks.</summary>
+    /// <summary>Active scope clock, easing and modifier defaults with engine decimal precision and silent callbacks.</summary>
     static member Default =
-        { Playback=PlaybackDefaults.current(); Ease=AnimationDefaults.ease id; Modifier=AnimationDefaults.modifier id; Precision=Some 4u
+        { Playback=PlaybackDefaults.current(); Ease=AnimationDefaults.ease id; Modifier=AnimationDefaults.modifier id; Precision=EngineDefaults.precision()
           OnBegin=ignore; OnBeforeUpdate=ignore; OnRender=ignore; OnUpdate=ignore
           OnLoop=ignore; OnPause=ignore; OnComplete=ignore }
     /// <summary>An invariant clock/precision diagnostic; callback functions are omitted.</summary>

@@ -1,0 +1,329 @@
+{
+  "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "fixtures": [
+    {
+      "name": "none_concurrent",
+      "trace": [
+        {
+          "clock": 20,
+          "x": 40,
+          "scale": 3.4000000000000004,
+          "a1Completed": false,
+          "a1Cancelled": false,
+          "a2Completed": false
+        },
+        {
+          "clock": 40,
+          "x": 65,
+          "scale": 4,
+          "a1Completed": false,
+          "a1Cancelled": false,
+          "a2Completed": true
+        },
+        {
+          "clock": 60,
+          "x": 90,
+          "scale": 1.9,
+          "a1Completed": false,
+          "a1Cancelled": false,
+          "a2Completed": true
+        },
+        {
+          "clock": 80,
+          "x": 100,
+          "scale": 2,
+          "a1Completed": true,
+          "a1Cancelled": false,
+          "a2Completed": true
+        },
+        {
+          "clock": 100,
+          "x": 100,
+          "scale": 2,
+          "a1Completed": true,
+          "a1Cancelled": true,
+          "a2Completed": true
+        }
+      ]
+    },
+    {
+      "name": "replace_delayed_takeover",
+      "trace": [
+        {
+          "clock": 20,
+          "x": 0,
+          "a1Completed": false,
+          "a1Cancelled": true,
+          "a2Completed": false
+        },
+        {
+          "clock": 40,
+          "x": -12,
+          "a1Completed": false,
+          "a1Cancelled": true,
+          "a2Completed": false
+        },
+        {
+          "clock": 60,
+          "x": -32,
+          "a1Completed": false,
+          "a1Cancelled": true,
+          "a2Completed": false
+        },
+        {
+          "clock": 100,
+          "x": -72,
+          "a1Completed": false,
+          "a1Cancelled": true,
+          "a2Completed": false
+        },
+        {
+          "clock": 140,
+          "x": -100,
+          "a1Completed": false,
+          "a1Cancelled": true,
+          "a2Completed": true
+        },
+        {
+          "clock": 160,
+          "x": -100,
+          "a1Completed": false,
+          "a1Cancelled": true,
+          "a2Completed": true
+        }
+      ]
+    },
+    {
+      "name": "replace_loop_override",
+      "trace": [
+        {
+          "clock": 20,
+          "scale": 3.4000000000000004,
+          "a1Completed": false,
+          "a1Cancelled": true,
+          "a2Completed": false
+        },
+        {
+          "clock": 40,
+          "scale": 4,
+          "a1Completed": false,
+          "a1Cancelled": true,
+          "a2Completed": true
+        },
+        {
+          "clock": 60,
+          "scale": 4,
+          "a1Completed": false,
+          "a1Cancelled": true,
+          "a2Completed": true
+        }
+      ]
+    },
+    {
+      "name": "replace_partial_keeps_running",
+      "trace": [
+        {
+          "clock": 20,
+          "x": 40,
+          "scale": 3.4000000000000004,
+          "a1Cancelled": false,
+          "a2Completed": false
+        },
+        {
+          "clock": 40,
+          "x": 65,
+          "scale": 4,
+          "a1Cancelled": false,
+          "a2Completed": true
+        },
+        {
+          "clock": 60,
+          "x": 90,
+          "scale": 4,
+          "a1Cancelled": false,
+          "a2Completed": true
+        },
+        {
+          "clock": 80,
+          "x": 85,
+          "scale": 4,
+          "a1Cancelled": false,
+          "a2Completed": true
+        }
+      ]
+    },
+    {
+      "name": "blend_scalar_two",
+      "trace": [
+        {
+          "clock": 25,
+          "x": 55.5,
+          "scale": 1.9250000000000003,
+          "a1Completed": false,
+          "a2Completed": false
+        },
+        {
+          "clock": 50,
+          "x": 93,
+          "scale": 2.5500000000000003,
+          "a1Completed": false,
+          "a2Completed": false
+        },
+        {
+          "clock": 100,
+          "x": 156,
+          "scale": 3.56,
+          "a1Completed": false,
+          "a2Completed": true
+        },
+        {
+          "clock": 150,
+          "x": 181,
+          "scale": 3.81,
+          "a1Completed": false,
+          "a2Completed": true
+        },
+        {
+          "clock": 200,
+          "x": 200,
+          "scale": 4,
+          "a1Completed": true,
+          "a2Completed": true
+        },
+        {
+          "clock": 225,
+          "x": 200,
+          "scale": 4,
+          "a1Completed": true,
+          "a2Completed": true
+        }
+      ]
+    },
+    {
+      "name": "blend_scalar_three_staggered",
+      "trace": [
+        {
+          "clock": 25,
+          "x": 24.8,
+          "c1": false,
+          "c2": false,
+          "c3": false
+        },
+        {
+          "clock": 50,
+          "x": 40.8,
+          "c1": false,
+          "c2": false,
+          "c3": false
+        },
+        {
+          "clock": 75,
+          "x": 32.099999999999994,
+          "c1": false,
+          "c2": false,
+          "c3": false
+        },
+        {
+          "clock": 100,
+          "x": -15.200000000000003,
+          "c1": true,
+          "c2": false,
+          "c3": false
+        },
+        {
+          "clock": 125,
+          "x": -36.5,
+          "c1": true,
+          "c2": false,
+          "c3": true
+        },
+        {
+          "clock": 150,
+          "x": -30,
+          "c1": true,
+          "c2": true,
+          "c3": true
+        },
+        {
+          "clock": 175,
+          "x": -30,
+          "c1": true,
+          "c2": true,
+          "c3": true
+        }
+      ]
+    },
+    {
+      "name": "blend_color",
+      "trace": [
+        {
+          "clock": 25,
+          "color": "rgba(139,334,124,0.63)",
+          "c1": false,
+          "c2": false
+        },
+        {
+          "clock": 50,
+          "color": "rgba(99,225,67,0.5)",
+          "c1": false,
+          "c2": true
+        },
+        {
+          "clock": 75,
+          "color": "rgba(79,214,52,0.5)",
+          "c1": false,
+          "c2": true
+        },
+        {
+          "clock": 100,
+          "color": "rgba(50,200,30,0.5)",
+          "c1": true,
+          "c2": true
+        },
+        {
+          "clock": 125,
+          "color": "rgba(50,200,30,0.5)",
+          "c1": true,
+          "c2": true
+        }
+      ]
+    },
+    {
+      "name": "remove_specific_target_and_prop",
+      "trace": [
+        {
+          "step": "at25",
+          "t1x": 37,
+          "t1y": 74,
+          "t2x": 37,
+          "t2y": 74,
+          "cancelled": false
+        },
+        {
+          "step": "at50_after_remove_t1x",
+          "t1x": 37,
+          "t1y": 124,
+          "t2x": 62,
+          "t2y": 124,
+          "cancelled": false
+        },
+        {
+          "step": "at75_after_remove_t1y",
+          "t1x": 37,
+          "t1y": 124,
+          "t2x": 87,
+          "t2y": 174,
+          "cancelled": false
+        },
+        {
+          "step": "after_remove_t2",
+          "t1x": 37,
+          "t1y": 124,
+          "t2x": 87,
+          "t2y": 174,
+          "cancelled": true
+        }
+      ]
+    }
+  ]
+}

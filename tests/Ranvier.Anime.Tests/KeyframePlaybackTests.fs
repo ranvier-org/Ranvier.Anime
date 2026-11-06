@@ -99,7 +99,7 @@ let private replay (fixture:JsonElement)=
             | other -> failtestf "Unsupported source operation %s" other
         | _ -> driver.Clock.Seek time
         try verify(sample.GetProperty("state"))
-        with error -> failtestf "At action %A, time %g: %s" (optional "action" sample |> Option.map _.GetString()) time error.Message
+        with error -> failtestf "At action %s, time %g: %s" (optional "action" sample |> Option.map _.GetString() |> Option.defaultValue "None") time error.Message
 
 let playbackTests=testList "keyframe playback" [
     for fixture in fixtures() do testCase ("source "+fixture.GetProperty("name").GetString()) <| fun _ -> replay fixture

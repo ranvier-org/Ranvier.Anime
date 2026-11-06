@@ -22,6 +22,7 @@
     <Compile Include="ScopeRegistration.fs" />
     <Compile Include="EngineFrames.fs" />
     <Compile Include="Timer.fs" />
+    <Compile Include="Engine.fs" />
     <Compile Include="Scope.fs" />
     <Compile Include="ScopeRoots.fs" />
     <Compile Include="ScopeTimer.fs" />
@@ -64,6 +65,14 @@
     <Compile Include="NativeDraggable.fs" />
     <Compile Include="LayoutStyleSnapshot.fs" />
     <Compile Include="Layout.fs" />
+    <Compile Include="ElementTransforms.fs" />
+    <Compile Include="Adapters.fs" />
+    <Compile Include="Composition.fs" />
+    <Compile Include="Waapi.fs" />
+    <Compile Include="Utils.fs" />
+    <Compile Include="TextScramble.fs" />
+    <Compile Include="TextSplit.fs" />
+    <Compile Include="DeferredStubs.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Ranvier$(RanvierPackageSuffix)" Version="[0.1.1-preview.1]" Condition="'$(UseLocalRanvier)' != 'true'" />

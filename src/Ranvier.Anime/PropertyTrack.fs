@@ -20,6 +20,9 @@ module internal PropertyNumbers =
 [<Sealed>]
 type internal NumericPropertyTrack private (property: NumericProperty, first: float, target: float, offset: float,
                                 duration: float, updateDuration: float, ease: float -> float, modifier: float -> float, hasFrom: bool, cached: float) =
+    let mutable offset = offset
+    let mutable duration = duration
+    let mutable updateDuration = updateDuration
     let mutable previous: NumericPropertyTrack option = None
     let mutable next: NumericPropertyTrack option = None
     let mutable overridden = false
@@ -31,12 +34,29 @@ type internal NumericPropertyTrack private (property: NumericProperty, first: fl
     let mutable backwardsValue = false
     let mutable rendered = false
     let mutable cachedValue = cached
-    let absoluteStart = PropertyNumbers.round 1e12 offset
-    let absoluteEnd = PropertyNumbers.round 1e12 (offset + updateDuration)
+    let mutable absoluteStart = PropertyNumbers.round 1e12 offset
+    let mutable absoluteEnd = PropertyNumbers.round 1e12 (offset + updateDuration)
     /// <summary>The raw timeline offset in milliseconds.</summary>
     member _.Offset = offset
     /// <summary>The normalized child duration in milliseconds.</summary>
     member _.Duration = duration
+    /// <summary>Underlying numeric property handle.</summary>
+    member _.Property = property
+    /// <summary>Scales offset and duration geometry by a positive finite stretch factor.</summary>
+    member _.Stretch(scale: float) =
+        let normalize value =
+            if value <= 1e-11 then 1e-11
+            else
+                let rounded = PropertyNumbers.round 1e12 value
+                if System.Double.IsPositiveInfinity rounded then 1e12 else rounded
+        offset <- offset * scale
+        duration <- if duration <= 1e-11 then 1e-11 else normalize (duration * scale)
+        updateDuration <- normalize (updateDuration * scale)
+        changeDuration <- if overridden then 1e-11 else normalize (changeDuration * scale)
+        tweenTime <- if overridden then 1e-11 else tweenTime * scale
+        parentTime <- parentTime * scale
+        absoluteStart <- PropertyNumbers.round 1e12 offset
+        absoluteEnd <- PropertyNumbers.round 1e12 (offset + updateDuration)
     /// <summary>Whether the most recent sample completed this track.</summary>
     member _.Completed = completed
     /// <summary>Raw time at the preceding sample.</summary>

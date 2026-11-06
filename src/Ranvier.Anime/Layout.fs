@@ -666,6 +666,30 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         identities.Clear()
         measurements<-[||]
         entering<-[||]; leaving<-[||]; animating<-[||]; swapping<-[||]
+    /// <summary>The most recently constructed layout transition timeline, if active.</summary>
+    member _.Timeline = clock
+    /// <summary>Registers an optional completion callback on the active layout transition and returns a settling task.</summary>
+    member this.Then(?callback: AutoLayout -> unit) : Threading.Tasks.Task<AutoLayout> =
+        let invoke () = callback |> Option.iter (fun action -> action this)
+        match clock with
+        | None ->
+            invoke()
+            Threading.Tasks.Task.FromResult this
+        | Some active when active.Completed ->
+            invoke()
+            Threading.Tasks.Task.FromResult this
+        | Some active when active.Cancelled ->
+            Threading.Tasks.Task.FromCanceled<AutoLayout>(Threading.CancellationToken(true))
+        | Some active ->
+            let source = Threading.Tasks.TaskCompletionSource<AutoLayout>()
+            active.Then(fun _ -> invoke()).ContinueWith((fun (task: Threading.Tasks.Task<Timeline>) ->
+                if task.IsCanceled then source.TrySetCanceled() |> ignore
+                elif task.IsFaulted then source.TrySetException(task.Exception.InnerExceptions) |> ignore
+                else source.TrySetResult this |> ignore
+            ), Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously) |> ignore
+            source.Task
+    /// <summary>Returns a task settling when the active layout transition completes.</summary>
+    member this.AsTask() : Threading.Tasks.Task<AutoLayout> = this.Then()
     /// <summary>Attaches this layout's cleanup to the current Ranvier owner.</summary>
     member _.Own() =
         check()
@@ -676,4 +700,14 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
             if not disposed then
                 disposed<-true
                 this.Revert()
+
+/// <summary>Factory functions matching Anime.js createLayout.</summary>
+[<RequireQualifiedAccess>]
+module Layout =
+    /// <summary>Creates an AutoLayout observer for the root element and records its initial state.</summary>
+    let create (root: HTMLElement) (computed: ComputedStyleService) (scheduler: FrameScheduler)
+               (options: LayoutOptions option) (viewport: ViewportScrollService option) =
+        let instance = new AutoLayout(root, computed, scheduler, ?options=options, ?viewport=viewport)
+        instance.Record()
+        instance
 

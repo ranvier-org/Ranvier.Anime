@@ -118,7 +118,7 @@ type private Element(name:string,rect:float*float*float*float) as this =
                     | "cancel" -> nativeCalls.Add "cancel";null
                     | "commitStyles" -> nativeCalls.Add "commit";null
                     | "get_effect" -> box effect
-                    | "set_currentTime" -> nativeCalls.Add("time:"+sprintf "%A" args[0]);null
+                    | "set_currentTime" -> nativeCalls.Add("time:"+ (args[0].ToString()));null
                     | _ -> failwith("native animation "+methodInfo.Name)))
             | "get_classList" -> box tokens
             | "get_clientLeft" -> box(int borderLeft)

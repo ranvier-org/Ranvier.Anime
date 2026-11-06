@@ -80,6 +80,11 @@
     <Compile Include="TimelinePlaybackEaseTests.fs" />
     <Compile Include="LayoutSnapshotTests.fs" />
     <Compile Include="LayoutTests.fs" />
+    <Compile Include="EngineAndPromiseTests.fs" />
+    <Compile Include="UtilsTests.fs" />
+    <Compile Include="CompositionAndTransformTests.fs" />
+    <Compile Include="AdapterTests.fs" />
+    <Compile Include="TextTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -122,5 +127,8 @@
     <None Include="../reference/inline-reference.json" Link="reference/inline-reference.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/timeline-playback-ease.json" Link="reference/timeline-playback-ease.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../reference/layout.json" Link="reference/layout.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/utils-reference.json" Link="reference/utils-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/composition-reference.json" Link="reference/composition-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/text-reference.json" Link="reference/text-reference.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

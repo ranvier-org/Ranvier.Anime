@@ -82,14 +82,27 @@ module internal ScrollMath =
         else round 6 (Math.Clamp(value,0.,1.))
 
 /// <summary>Lifecycle notifications in source callback order.</summary>
-[<RequireQualifiedAccess>]
+[<RequireQualifiedAccess; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type ScrollEvent =
     | Enter | Leave | EnterForward | LeaveForward | EnterBackward | LeaveBackward
     | Update | Resize | SyncComplete
+    /// <summary>The invariant scroll event name.</summary>
+    override this.ToString() =
+        match this with
+        | Enter -> "Enter" | Leave -> "Leave"
+        | EnterForward -> "EnterForward" | LeaveForward -> "LeaveForward"
+        | EnterBackward -> "EnterBackward" | LeaveBackward -> "LeaveBackward"
+        | Update -> "Update" | Resize -> "Resize" | SyncComplete -> "SyncComplete"
 
 /// <summary>Playback commands accepted by method synchronization.</summary>
-[<RequireQualifiedAccess>]
-type ScrollCommand = Play | Pause | Resume | Reverse | Alternate | Restart | Reset | Complete
+[<RequireQualifiedAccess; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+type ScrollCommand =
+    | Play | Pause | Resume | Reverse | Alternate | Restart | Reset | Complete
+    /// <summary>The invariant playback command name.</summary>
+    override this.ToString() =
+        match this with
+        | Play -> "Play" | Pause -> "Pause" | Resume -> "Resume" | Reverse -> "Reverse"
+        | Alternate -> "Alternate" | Restart -> "Restart" | Reset -> "Reset" | Complete -> "Complete"
 
 /// <summary>Typed access to an existing animation controller; the observer does not own its lifetime.</summary>
 type ScrollLink =

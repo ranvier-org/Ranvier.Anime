@@ -2,13 +2,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
-    <PublishAot>true</PublishAot>
+    <PublishAot Condition="'$(PublishAot)' == ''">false</PublishAot>
     <IsAotCompatible>true</IsAotCompatible>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <ILLinkTreatWarningsAsErrors>true</ILLinkTreatWarningsAsErrors>
     <IlcTreatWarningsAsErrors>true</IlcTreatWarningsAsErrors>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
+    <NativeSmokeGraph Condition="'$(NativeSmokeGraph)' == ''">public</NativeSmokeGraph>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RanvierTrace)' == 'true'">
     <DefineConstants>$(DefineConstants);EXPECT_TRACED</DefineConstants>
@@ -27,18 +28,20 @@
     <Compile Include="DraggableNativeProbe.fs" />
     <Compile Include="DraggableHostProbe.fs" />
     <Compile Include="LayoutNativeProbe.fs" />
+    <Compile Include="TextNativeProbe.fs" />
+    <Compile Include="WaapiNativeProbe.fs" />
+    <Compile Include="FullFamiliesNativeProbe.fs" />
     <Compile Include="Program.fs" />
     <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
-    <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" Condition="'$(NativeSmokeGraph)' != 'public45'" />
-    <PackageReference Include="Ranvier.View.WebCore$(RanvierPackageSuffix)" Version="[0.1.0-alpha.45]" Condition="'$(NativeSmokeGraph)' == 'public45'" />
+    <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" Condition="'$(NativeSmokeGraph)' == 'source'" />
+    <PackageReference Include="Ranvier.View.WebCore$(RanvierPackageSuffix)" Version="[$(RanvierViewWebCoreVersion)]" Condition="'$(NativeSmokeGraph)' != 'source'" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
-    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" ILCompilerPackVersion="10.0.14" />
+    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" ILCompilerPackVersion="10.0.14" Condition="'$(PublishAot)' == 'true'" />
     <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssBindingsVersion)]" />
   </ItemGroup>
   <Target Name="RequirePinnedSourceGraph" BeforeTargets="PrepareForBuild">
-    <Error Condition="'$(NativeSmokeGraph)' != 'source' and '$(NativeSmokeGraph)' != 'core56' and '$(NativeSmokeGraph)' != 'public45'" Text="Run the native smoke through build.fsx to select an explicit cohort graph." />
+    <Error Condition="'$(NativeSmokeGraph)' != 'source' and '$(NativeSmokeGraph)' != 'public'" Text="Select NativeSmokeGraph=public or source." />
     <Error Condition="'$(NativeSmokeGraph)' == 'source' and '$(UseLocalRanvier)' != 'true'" Text="The source cohort requires local Core projects." />
-    <Error Condition="'$(NativeSmokeGraph)' == 'core56' and ('$(UseLocalRanvier)' == 'true' or '$(RanvierDomVersion)' != '0.1.0-alpha.56')" Text="The public-Core cohort requires actual public DOM alpha.56 packages." />
-    <Error Condition="'$(NativeSmokeGraph)' == 'public45' and ('$(UseLocalRanvier)' == 'true' or '$(UseLocalRanvierWebCore)' == 'true' or '$(RanvierWebCoreNativeDir)' != '' or '$(RanvierDomVersion)' != '0.1.0-alpha.56')" Text="The public View45 cohort requires package-only Core/View/Native inputs." />
+    <Error Condition="'$(NativeSmokeGraph)' == 'public' and ('$(UseLocalRanvier)' == 'true' or '$(UseLocalRanvierWebCore)' == 'true')" Text="The public cohort requires package-only Core/View/Native inputs." />
   </Target>
 </Project>

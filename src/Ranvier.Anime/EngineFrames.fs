@@ -5,14 +5,34 @@ open System.Collections.Generic
 open System.Runtime.CompilerServices
 open Ranvier.Dom
 
-/// <summary>Forwards source Clock FPS increases to the existing global playback-default cell.</summary>
+/// <summary>Forwards source Clock FPS increases and global engine precision/duration settings to playback defaults.</summary>
 module internal EngineDefaults =
     let mutable private frameRate=240.
     let mutable private changed:float -> unit=ignore
+    let mutable private scaleDuration:float -> unit=ignore
+    let mutable private currentPrecision:uint option=Some 4u
+    let mutable private currentTimeScale=1.
     /// <summary>Raises future constructor defaults while preserving current explicit factory options.</summary>
     let raiseFrameRate value=frameRate<-Math.Max(frameRate,value);changed value
     /// <summary>Attaches the existing playback-default cell after its declaration.</summary>
     let attach callback=changed<-callback;callback frameRate
+    /// <summary>Attaches the global default-duration scaling callback for engine time-unit switches.</summary>
+    let attachDurationScale callback=scaleDuration<-callback
+    /// <summary>Applies a time-unit duration scale factor (0.001 for seconds, 1000 for milliseconds).</summary>
+    let applyTimeScale (isSeconds:bool) =
+        let target = if isSeconds then 0.001 else 1.
+        if currentTimeScale <> target then
+            currentTimeScale <- target
+            scaleDuration (if isSeconds then 0.001 else 1000.)
+    /// <summary>Current engine time scale (1.0 for milliseconds, 0.001 for seconds).</summary>
+    let timeScale () = currentTimeScale
+    /// <summary>Current default rounding precision for interpolated CSS and compound values.</summary>
+    let precision () = currentPrecision
+    /// <summary>Updates default rounding precision (at most 308 decimal places, or None for unrounded).</summary>
+    let setPrecision (value:uint option) =
+        match value with
+        | Some places when places > 308u -> invalidArg "value" "Precision exceeds 308 decimal places."
+        | _ -> currentPrecision <- value
 
 /// <summary>The source Clock's tolerance, remainder and admitted-frame delta history.</summary>
 type internal EngineClock(initialTime:float) =
@@ -63,8 +83,10 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
     let mutable seconds=false
     let mutable suspended=false
     let mutable useDefaultMainLoop=true
+    let mutable pauseOnDocumentHidden=true
     let mutable frameSpeed=1.
     let mutable frameFps=240.
+    let mutable afterUpdate:unit -> unit=ignore
     let cancelRequest () =
         requestGeneration<-requestGeneration+1L
         let previous=pending
@@ -96,6 +118,7 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
                         entries.Remove cursor
                         entry.Node<-None
                     cursor<-next
+                afterUpdate()
         finally
             pumping<-false
     let rec schedule wake allowPump =
@@ -113,6 +136,12 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
                     else logicalRequest<-false))
     /// <summary>Enables host frame requests; manual Update remains available while disabled.</summary>
     member _.UseDefaultMainLoop with get()=useDefaultMainLoop and set value=useDefaultMainLoop<-value
+    /// <summary>Whether attached document visibility listeners pause and resume the engine automatically.</summary>
+    member _.PauseOnDocumentHidden with get()=pauseOnDocumentHidden and set value=pauseOnDocumentHidden<-value
+    /// <summary>Post-root pass invoked at the end of each admitted engine frame (used by additive blend composition).</summary>
+    member _.AfterUpdate with get()=afterUpdate and set value=afterUpdate<-value
+    /// <summary>Underlying host scheduler for this engine queue.</summary>
+    member _.HostScheduler=scheduler
     /// <summary>Samples the host's current time through the shared gate, including when the automatic loop is paused.</summary>
     member _.Update()=update()
     /// <summary>Source engine clock settings and last admitted phase.</summary>

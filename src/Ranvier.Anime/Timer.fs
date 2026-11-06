@@ -68,13 +68,18 @@ type PlaybackDefaults =
                          "; Alternate="; optional (fun (value:bool) -> value.ToString()) this.Alternate
                          "; Speed="; optional number this.Speed; "; FrameRate="; optional number this.FrameRate; ")" |]
 
-/// <summary>Sequence-local endpoint arbitration; independent-animation composition remains separate.</summary>
+/// <summary>Endpoint arbitration across sequence frames and concurrent animations.</summary>
 [<RequireQualifiedAccess; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type KeyframeComposition =
     | None
     | Replace
+    | Blend
     /// <summary>The invariant composition mode name.</summary>
-    override this.ToString()=match this with KeyframeComposition.None -> "None" | KeyframeComposition.Replace -> "Replace"
+    override this.ToString() =
+        match this with
+        | KeyframeComposition.None -> "None"
+        | KeyframeComposition.Replace -> "Replace"
+        | KeyframeComposition.Blend -> "Blend"
 
 /// <summary>Resolved constant animation defaults; target-dependent authoring remains on the typed keyframe APIs.</summary>
 [<NoEquality;NoComparison;System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
@@ -144,6 +149,8 @@ module internal ScopePlaybackContext =
     do EngineDefaults.attach(fun frameRate ->
         if frameRate>globalDefaults.Options.FrameRate then
             globalDefaults.Options<-{globalDefaults.Options with FrameRate=frameRate})
+    do EngineDefaults.attachDurationScale(fun scale ->
+        globalDefaults.Animation<-{globalDefaults.Animation with Duration=globalDefaults.Animation.Duration*scale})
     let private active = new System.Threading.ThreadLocal<ScopeClockDefaults option>(fun () -> None)
     let current () = defaultArg active.Value globalDefaults
     let isScoped () = active.Value.IsSome
@@ -198,6 +205,20 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let mutable duration = duration
     let options = ScopePlaybackContext.resolve options
     let iterations = match options.Repeat with PlaybackRepeat.Count count -> float count + 1. | PlaybackRepeat.Forever -> infinity
+    let completionWaiters = Collections.Generic.List<Timer -> unit>()
+    let cancelWaiters = Collections.Generic.List<unit -> unit>()
+    let settleCompletion () =
+        if completionWaiters.Count > 0 then
+            let snapshot = completionWaiters.ToArray()
+            completionWaiters.Clear()
+            cancelWaiters.Clear()
+            for waiter in snapshot do waiter this
+    let settleCancelled () =
+        completionWaiters.Clear()
+        if cancelWaiters.Count > 0 then
+            let snapshot = cancelWaiters.ToArray()
+            cancelWaiters.Clear()
+            for waiter in snapshot do waiter()
     let callback event =
         let action =
             match event with
@@ -208,6 +229,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             | PlaybackEvent.Pause -> onPause
             | PlaybackEvent.Complete -> onComplete
         action |> Option.iter(fun action -> action this)
+        if event = PlaybackEvent.Complete then settleCompletion()
     let state = PlaybackState(duration, iterations, options.Delay, options.LoopDelay, options.Reversed, options.Alternate, callback)
     let finite name value =
         if not(Double.IsFinite value) then invalidArg name "Expected a finite number."
@@ -251,6 +273,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         stopFrame() |> ignore
         try state.Cancel() with _ -> ()
         try EngineFrames.terminate scheduler with _ -> ()
+        try settleCancelled() with _ -> ()
         try onFault() with _ -> ()
 
     let rec queue () =
@@ -305,6 +328,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             try action() with error -> if failure.IsNone then failure<-Some error
         attempt state.Cancel
         attempt(fun () -> EngineFrames.terminate scheduler)
+        if not state.Completed then attempt settleCancelled
         if notify then attempt onCancel
         failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     do EngineFrames.configure scheduler (fun () -> reanchor 0.) 1.
@@ -355,6 +379,28 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member _.Stretch(milliseconds:uint) = this.Stretch(float milliseconds)
     /// <summary>Ends the disposable lifetime; repeated cancellation is harmless.</summary>
     member _.Cancel() = cancel true
+    /// <summary>Rewinds to zero with muted render callbacks and cancels this timer.</summary>
+    member _.Revert() =
+        if not state.Cancelled then this.RewindForRevert()
+    /// <summary>Registers an optional completion callback and returns a task settling when this timer completes.</summary>
+    member _.Then(?callback: Timer -> unit) : Threading.Tasks.Task<Timer> =
+        let invoke () = callback |> Option.iter (fun action -> action this)
+        if state.Completed then
+            invoke()
+            Threading.Tasks.Task.FromResult this
+        elif state.Cancelled then
+            Threading.Tasks.Task.FromCanceled<Timer>(Threading.CancellationToken(true))
+        else
+            let source = Threading.Tasks.TaskCompletionSource<Timer>()
+            completionWaiters.Add(fun timer ->
+                try
+                    invoke()
+                    source.TrySetResult timer |> ignore
+                with error -> source.TrySetException error |> ignore)
+            cancelWaiters.Add(fun () -> source.TrySetCanceled() |> ignore)
+            source.Task
+    /// <summary>Returns a task settling with this timer upon completion or cancelling if explicitly cancelled beforehand.</summary>
+    member this.AsTask() : Threading.Tasks.Task<Timer> = this.Then()
     /// <summary>Last sampled time in milliseconds; setting it emits pause when active and then restores playback.</summary>
     member _.CurrentTime with get() = state.Sample.CurrentTime and set value = setTime value
     /// <summary>Gets bounded overall progress; setting scales by total duration and seeks with playback preserved.</summary>

@@ -62,6 +62,9 @@ let main args =
         LayoutNativeProbe.runTransforms host.Document (ComputedStyles.forHost host) |> ignore
         LayoutNativeProbe.runSwapEasing host.Document (ComputedStyles.forHost host) |> ignore
         LayoutNativeProbe.runEntryExit host.Document (ComputedStyles.forHost host) |> ignore
+        TextNativeProbe.run host scheduler
+        WaapiNativeProbe.run host scheduler
+        FullFamiliesNativeProbe.run host scheduler
         do
             use graph=new Graph()
             use activation=graph.Activate()

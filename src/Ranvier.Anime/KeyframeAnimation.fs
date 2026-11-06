@@ -18,9 +18,9 @@ type KeyframeAnimationOptions =
       OnLoop:Timer -> unit
       OnPause:Timer -> unit
       OnComplete:Timer -> unit }
-    /// <summary>Active scope clock and animation defaults, four decimal places and silent callbacks.</summary>
+    /// <summary>Active scope clock and animation defaults, engine decimal precision and silent callbacks.</summary>
     static member Default=
-        {Playback=PlaybackDefaults.current();Ease=(AnimationDefaults.current()).Ease;Modifier=AnimationDefaults.modifier id;Precision=Some 4u
+        {Playback=PlaybackDefaults.current();Ease=(AnimationDefaults.current()).Ease;Modifier=AnimationDefaults.modifier id;Precision=EngineDefaults.precision()
          Autoplay=AnimationDefaults.autoplay true;Composition=AnimationDefaults.composition KeyframeComposition.Replace;OnBegin=ignore;OnBeforeUpdate=ignore
          OnRender=ignore;OnUpdate=ignore;OnLoop=ignore;OnPause=ignore;OnComplete=ignore}
     /// <summary>A diagnostic identifying startup and composition settings without formatting callback functions.</summary>
@@ -110,4 +110,23 @@ type KeyframeAnimation internal(targetCount:int) =
             try this.Cancel() with error -> if failure.IsNone then failure<-Some error
             reverting<-false
             failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
+    /// <summary>Registers an optional completion callback and returns a task settling when playback completes.</summary>
+    member this.Then(?callback: KeyframeAnimation -> unit) : Threading.Tasks.Task<KeyframeAnimation> =
+        let clock = this.Playback
+        let invoke () = callback |> Option.iter (fun action -> action this)
+        if clock.Completed then
+            invoke()
+            Threading.Tasks.Task.FromResult this
+        elif not active || clock.Cancelled then
+            Threading.Tasks.Task.FromCanceled<KeyframeAnimation>(Threading.CancellationToken(true))
+        else
+            let source = Threading.Tasks.TaskCompletionSource<KeyframeAnimation>()
+            clock.Then(fun _ -> invoke()).ContinueWith((fun (task: Threading.Tasks.Task<Timer>) ->
+                if task.IsCanceled then source.TrySetCanceled() |> ignore
+                elif task.IsFaulted then source.TrySetException(task.Exception.InnerExceptions) |> ignore
+                else source.TrySetResult this |> ignore
+            ), Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously) |> ignore
+            source.Task
+    /// <summary>Returns a task settling with this keyframe animation upon completion.</summary>
+    member this.AsTask() : Threading.Tasks.Task<KeyframeAnimation> = this.Then()
     interface IDisposable with member this.Dispose()=this.Cancel()

@@ -183,9 +183,11 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
             reverting <- false
             failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     /// <summary>Last sampled time with source bounds and four-decimal precision.</summary>
-    member _.CurrentTime = clock.CurrentTime
+    member _.CurrentTime with get() = clock.CurrentTime and set value = clock.CurrentTime <- value
     /// <summary>Bounded directional time inside the current iteration.</summary>
-    member _.IterationCurrentTime = clock.IterationCurrentTime
+    member _.IterationCurrentTime with get() = clock.IterationCurrentTime and set value = clock.IterationCurrentTime <- value
+    /// <summary>Bounded directional progress inside the current iteration.</summary>
+    member _.IterationProgress with get() = clock.IterationProgress and set value = clock.IterationProgress <- value
     /// <summary>Current iteration index using source signed 32-bit conversion.</summary>
     member _.CurrentIteration = clock.CurrentIteration
     /// <summary>Total duration of the repeat sequence, excluding initial delay.</summary>
@@ -193,11 +195,30 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     /// <summary>Normalized duration of one iteration in milliseconds.</summary>
     member _.IterationDuration = clock.IterationDuration
     /// <summary>Bounded overall progress at the source's ten-decimal precision.</summary>
-    member _.Progress = clock.Progress
+    member _.Progress with get() = clock.Progress and set value = clock.Progress <- value
     /// <summary>Whether directional sampling is running backwards.</summary>
     member _.Backwards = clock.Backwards
     /// <summary>Whether the base playback direction is reversed.</summary>
-    member _.Reversed = clock.Reversed
+    member _.Reversed with get() = clock.Reversed and set value = clock.Reversed <- value
+    /// <summary>Registers an optional completion callback and returns a task settling when this animation completes.</summary>
+    member this.Then(?callback: NumericAnimation -> unit) : Threading.Tasks.Task<NumericAnimation> =
+        let invoke () = callback |> Option.iter (fun action -> action this)
+        if clock.Completed then
+            invoke()
+            Threading.Tasks.Task.FromResult this
+        elif clock.Cancelled then
+            Threading.Tasks.Task.FromCanceled<NumericAnimation>(Threading.CancellationToken(true))
+        else
+            let source = Threading.Tasks.TaskCompletionSource<NumericAnimation>()
+            let inner = clock.Then(fun _ -> invoke())
+            inner.ContinueWith((fun (task: Threading.Tasks.Task<Timer>) ->
+                if task.IsCanceled then source.TrySetCanceled() |> ignore
+                elif task.IsFaulted then source.TrySetException(task.Exception.InnerExceptions) |> ignore
+                else source.TrySetResult this |> ignore
+            ), Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously) |> ignore
+            source.Task
+    /// <summary>Returns a task settling with this animation upon completion.</summary>
+    member this.AsTask() : Threading.Tasks.Task<NumericAnimation> = this.Then()
     /// <summary>Whether positive time has been sampled since reset.</summary>
     member _.Began = clock.Began
     /// <summary>Whether the most recent sample completed the finite repeat sequence.</summary>

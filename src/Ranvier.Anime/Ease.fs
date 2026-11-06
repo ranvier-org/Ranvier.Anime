@@ -174,6 +174,74 @@ module Ease =
                     | _ -> invalidArg "name" "Unknown easing name."
                 create family direction
 
+    /// <summary>Parses a named or parameterized Anime.js easing string, returning None for unknown or non-family syntax.</summary>
+    let tryParseString (text: string) : (float -> float) option =
+        if isNull text then None
+        elif text = "linear" || text = "none" then Some(create (Power 1.) In)
+        else
+            let prefixes = ["inOut", InOut; "outIn", OutIn; "in", In; "out", Out]
+            let tryNumber (raw: string) fallback =
+                let trimmed = raw.Trim()
+                if String.IsNullOrEmpty trimmed then Some fallback
+                else
+                    match Double.TryParse(trimmed, Globalization.NumberStyles.Float, Globalization.CultureInfo.InvariantCulture) with
+                    | true, value when Double.IsFinite value -> Some value
+                    | _ -> None
+            let paren = text.IndexOf '('
+            if paren < 0 then
+                match prefixes |> List.tryFind (fun (prefix, _) -> text.StartsWith(prefix, StringComparison.Ordinal)) with
+                | None -> None
+                | Some (prefix, direction) ->
+                    match text.Substring prefix.Length with
+                    | "" -> Some(create (Power 1.68) direction)
+                    | "Quad" -> Some(create (Power 2.) direction)
+                    | "Cubic" -> Some(create (Power 3.) direction)
+                    | "Quart" -> Some(create (Power 4.) direction)
+                    | "Quint" -> Some(create (Power 5.) direction)
+                    | "Sine" -> Some(create Sine direction)
+                    | "Circ" -> Some(create Circular direction)
+                    | "Expo" -> Some(create Exponential direction)
+                    | "Bounce" -> Some(create Bounce direction)
+                    | "Back" -> Some(create (Back 1.7) direction)
+                    | "Elastic" -> Some(create (Elastic (1., 0.3)) direction)
+                    | _ -> None
+            elif not (text.EndsWith(")", StringComparison.Ordinal)) || text.IndexOf('(', paren + 1) >= 0 then None
+            else
+                let head = text.Substring(0, paren)
+                let body = text.Substring(paren + 1, text.Length - paren - 2)
+                let parts = body.Split ','
+                match prefixes |> List.tryFind (fun (prefix, _) -> head.StartsWith(prefix, StringComparison.Ordinal)) with
+                | None -> None
+                | Some (prefix, direction) ->
+                    match head.Substring prefix.Length with
+                    | "" ->
+                        tryNumber parts[0] 1.68 |> Option.map (fun exp -> create (Power exp) direction)
+                    | "Back" ->
+                        tryNumber parts[0] 1.7 |> Option.map (fun overshoot -> create (Back overshoot) direction)
+                    | "Elastic" ->
+                        match tryNumber parts[0] 1. with
+                        | None -> None
+                        | Some amp ->
+                            let periodOpt = if parts.Length > 1 then tryNumber parts[1] 0.3 else Some 0.3
+                            periodOpt |> Option.map (fun per -> create (Elastic (amp, per)) direction)
+                    | _ -> None
+
+    /// <summary>Parses a named or parameterized Anime.js easing string, falling back to linear identity like source parseEase.</summary>
+    let parse (text: string) : float -> float =
+        if isNull text then nullArg "text"
+        let deprecated = [| "steps("; "irregular("; "linear("; "cubicBezier(" |]
+        if deprecated |> Array.exists (fun prefix -> text.StartsWith(prefix, StringComparison.Ordinal)) then
+            create (Power 1.) In
+        else
+            tryParseString text |> Option.defaultWith (fun () -> create (Power 1.) In)
+
+    /// <summary>Parses a named or parameterized Anime.js easing string, raising ArgumentException when unrecognized.</summary>
+    let parseStrict (text: string) : float -> float =
+        if isNull text then nullArg "text"
+        match tryParseString text with
+        | Some ease -> ease
+        | None -> invalidArg "text" ("Unknown or unsupported easing string: " + text)
+
     /// <summary>Creates equal-width steps; zero steps is rejected and progress is clamped to the unit interval.</summary>
     let steps (count: uint) fromStart =
         if count = 0u then invalidArg "count" "At least one step is required."
