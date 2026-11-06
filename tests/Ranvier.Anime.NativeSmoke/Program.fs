@@ -67,6 +67,7 @@ let main args =
         FullFamiliesNativeProbe.run host scheduler
         MotionViewProbe.run host scheduler
         MotionViewProbe.runInteraction ()
+        MotionPartsProbe.run host scheduler
         do
             use graph=new Graph()
             use activation=graph.Activate()

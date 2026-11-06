@@ -382,6 +382,12 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         root.classList.remove [|"is-animated"|]
         measurements<-current
         scroll<-viewport |> Option.map(fun v -> v.Position())
+    /// <summary>Moves the recorded box of <c>element</c> to the viewport position <c>left</c>, <c>top</c>, keeping its recorded size.</summary>
+    /// <remarks>Used by view integrations to start a row's next transition from its visual box rather than its laid-out box.</remarks>
+    member internal _.StartFrom(element:HTMLElement, left:float, top:float) =
+        measurements <-
+            measurements |> Array.map(fun m ->
+                if same m.Element element then { m with X=m.X+left-m.Left; Y=m.Y+top-m.Top; Left=left; Top=top } else m)
     /// <summary>Recaptures the current layout without starting a transition.</summary>
     member _.Refresh()=this.Record()
     /// <summary>Animates from the recorded state to the current DOM and returns paused-capable playback.</summary>

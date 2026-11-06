@@ -630,6 +630,16 @@ type TextSplitter(target: HTMLElement, ?options: TextSplitterOptions) as this =
         runSplit true true
         this
 
+    /// <summary>Stops resize observation and pending re-splits, keeping the split content in place.</summary>
+    member internal _.Freeze() =
+        clearResizeTimeout()
+        match resizeObserver with
+        | Some obs ->
+            resizeObserver <- None
+            try obs.Disconnect() with _ -> ()
+            try obs.Dispose() with _ -> ()
+        | None -> ()
+
     /// <summary>Disconnects resize observation, runs effect cleanups/reverts and restores original innerHTML.</summary>
     member this.Revert() =
         if not reverted then

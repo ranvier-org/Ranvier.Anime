@@ -301,6 +301,19 @@ module Motion =
     let collapse<'native, 'inst> : Part<'native, 'inst> =
         Hooks.both (Hooks.motion (entering unfold), Hooks.exit (departure false fold))
 
+    // Visual boxes kept by `flipFrom` for the next FLIP pass that measures the element as a row.
+    let private boxes = List<struct (Node * float * float)>()
+
+    let private takeBox (node: Node) =
+        let index = boxes.FindIndex(fun (struct (kept, _, _)) -> same kept node)
+
+        if index < 0 then
+            ValueNone
+        else
+            let struct (_, left, top) = boxes[index]
+            boxes.RemoveAt index
+            ValueSome (struct (left, top))
+
     // The layout properties Motion parts animate themselves; a pass leaves them to the parts while one runs under the root.
     let private visual =
         HashSet<string>(LayoutOptions.Default.Properties, StringComparer.Ordinal)
@@ -356,7 +369,14 @@ module Motion =
                                 else parameters.Properties
 
                             let options = { parameters with Targets = Some (liveChildren root); Properties = properties }
-                            layout <- Some (Layout.create (unbox<HTMLElement> (box root)) services.Computed services.Scheduler (Some options) None)
+                            let created = Layout.create (unbox<HTMLElement> (box root)) services.Computed services.Scheduler (Some options) None
+
+                            for child in options.Targets.Value do
+                                match takeBox child with
+                                | ValueSome (struct (left, top)) -> created.StartFrom(child, left, top)
+                                | ValueNone -> ()
+
+                            layout <- Some created
                 After =
                     fun () ->
                         if recorded then
@@ -366,6 +386,23 @@ module Motion =
                             for child in childElements root do
                                 arriving.Remove child
             })
+
+    /// <summary>
+    /// Starts the element's next FLIP from its current visual box, drag transform included, instead of its recorded
+    /// layout box: the next <c>flip</c> pass that measures the element as a row moves it from there to its new place.
+    /// </summary>
+    /// <remarks>
+    /// Call before the change that moves the row, and before the drag position is reset. The FLIP keeps the recorded size;
+    /// only the position moves. Under the ambient graph's <c>Reactive.policy</c> <c>Reduced</c> the call returns at once.
+    /// </remarks>
+    let flipFrom (element: Element) : unit =
+        match Graph.TryCurrent with
+        | ValueSome _ when reduced () -> ()
+        | _ ->
+            let rect = element.getBoundingClientRect()
+            let node = element :> Node
+            boxes.RemoveAll(fun (struct (kept, _, _)) -> same kept node) |> ignore
+            boxes.Add(struct (node, rect.left, rect.top))
 
     /// <summary>
     /// A slot for the animations the current instance starts outside its parts, from a handler or an effect; call it in
@@ -383,20 +420,23 @@ module Motion =
             StringComparer.Ordinal
         )
 
-    // Keeps the inline declaration `property` writes (transform for the transform aliases) and returns its restore.
-    let private keepInline (element: Element) (property: string) =
+    // Keeps the inline declaration `name` and returns its restore.
+    let private keepDeclaration (element: Element) (name: string) =
         let style = styleOf element
-
-        let name =
-            if transformNames.Contains property then "transform"
-            else Text.RegularExpressions.Regex.Replace(property, "([a-z0-9])([A-Z])", "$1-$2").ToLowerInvariant()
-
         let value = style.getPropertyValue name
         let priority = style.getPropertyPriority name
 
         fun () ->
             if String.IsNullOrEmpty value then style.removeProperty name |> ignore
             else style.setProperty(name, value, priority = priority)
+
+    // Keeps the inline declaration `property` writes (transform for the transform aliases) and returns its restore.
+    let private keepInline (element: Element) (property: string) =
+        if transformNames.Contains property then keepDeclaration element "transform"
+        else keepDeclaration element (Text.RegularExpressions.Regex.Replace(property, "([a-z0-9])([A-Z])", "$1-$2").ToLowerInvariant())
+
+    let private withComputed (services: MotionServices) (parameters: ComposedAnimationOptions) =
+        Some { parameters with Computed = parameters.Computed |> Option.orElse (Some services.Computed) }
 
     /// <summary>
     /// Animates the element's <c>property</c> to <c>read</c>'s value whenever it changes, from wherever the property is;
@@ -551,4 +591,163 @@ module Motion =
                     if y <> draggable.Y then draggable.Y <- y)
 
                 fun () -> if context.ExitPending() then draggable.Cancel() else draggable.Revert())
+        )
+
+    let private invariant (value: float) = value.ToString("R", Globalization.CultureInfo.InvariantCulture)
+
+    /// <summary>Sets a typed numeric CSS custom property immediately, then animates each reader change from its current value.</summary>
+    /// <remarks>
+    /// Each reader value must carry numeric token metadata with the first value's unit suffix, or the effect raises
+    /// <c>ArgumentException</c>. The part pauses during an exit and restores the original inline value and priority on
+    /// ordinary disposal.
+    /// </remarks>
+    let followCss
+        (property: Ranvier.Css.CustomProperty<'syntax>)
+        (parameters: ComposedAnimationOptions)
+        (read: 'inst -> Ranvier.Css.Value<'syntax>)
+        : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst native context ->
+                let element = elementOf native
+                let services = MotionHost.Current
+                let name = Ranvier.Css.RuntimeApi.customPropertyName property
+
+                let numeric (value: Ranvier.Css.Value<'syntax>) =
+                    match Ranvier.Css.RuntimeApi.tryNumericValue value with
+                    | Some (number, suffix) -> number, suffix
+                    | None -> invalidArg "read" (name + " values need numeric token metadata.")
+
+                let restore = keepDeclaration element name
+                let _, suffix = numeric (Api.untrack (fun () -> read inst))
+                let mutable current: ComposedAnimation option = None
+
+                Api.createEffectOn (fun () -> read inst) (fun value ->
+                    let number, unit = numeric value
+
+                    if unit <> suffix then
+                        invalidArg "read" (name + " changed its unit from '" + suffix + "' to '" + unit + "'.")
+
+                    let next =
+                        Composed.animate services.Scheduler (box element) [| PropertySpec.Text(name, invariant number + suffix) |]
+                            (withComputed services parameters)
+
+                    if current.IsNone then next.Complete() |> ignore
+                    current <- Some next)
+
+                owning (nodeOf native) (fun () ->
+                    if context.ExitPending() then
+                        current |> Option.iter (fun animation -> animation.Pause() |> ignore)
+                    else
+                        current |> Option.iter (fun animation -> animation.Cancel())
+                        restore ()))
+        )
+
+    /// <summary>
+    /// On an SVG geometry element: draws the stroke from its start to the fraction <c>read</c> returns, in 0..1, animating
+    /// to each new fraction with <c>parameters</c>' timing; the first fraction is drawn at once. The cleanup restores the
+    /// element's stroke attributes.
+    /// </summary>
+    let draw (parameters: ComposedAnimationOptions) (read: 'inst -> float) : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst native context ->
+                let element = elementOf native
+                let services = MotionHost.Current
+                let initial = Api.untrack (fun () -> read inst)
+
+                // The drawable lives in its own root, so an exit keeps the stroke where it is.
+                let root, last =
+                    Api.createRoot (fun root ->
+                        let drawable =
+                            Svg.createDrawable (unbox<SVGGeometryElement> (box element)) (services.Computed.Get(element, None)) 0. initial
+
+                        let _, last = SvgProperties.drawRange drawable 0. initial
+                        root, last)
+
+                let mutable current: ComposedAnimation option = None
+
+                Api.createEffectOn (fun () -> read inst) (fun fraction ->
+                    if fraction <> last.Value then
+                        current <-
+                            Some (
+                                Composed.animate services.Scheduler (box last) [| PropertySpec.Scalar("value", fraction) |]
+                                    (withComputed services parameters)
+                            ))
+
+                fun () ->
+                    if context.ExitPending() then
+                        current |> Option.iter (fun animation -> animation.Pause() |> ignore)
+                    else
+                        current |> Option.iter (fun animation -> animation.Cancel())
+                        root.Dispose())
+        )
+
+    let private svgNamespace = "http://www.w3.org/2000/svg"
+
+    /// <summary>
+    /// On a <c>path</c>, <c>polygon</c> or <c>polyline</c>: morphs the shape to the <c>d</c> or <c>points</c> that
+    /// <c>read</c> returns whenever it changes, with <c>parameters</c>' timing. The first shape is set at once, and each
+    /// completed morph leaves exactly the shape read. The cleanup restores the shape the element had before the first.
+    /// </summary>
+    let morph (parameters: ComposedAnimationOptions) (read: 'inst -> string) : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst native context ->
+                let element = elementOf native
+                let services = MotionHost.Current
+                let tag = element.tagName.ToLowerInvariant()
+                let attribute = if tag = "path" then "d" else "points"
+                let original = element.getAttribute attribute
+                let root = Api.createRoot id
+                let mutable current: ComposedAnimation option = None
+                let mutable first = true
+
+                Api.createEffectOn (fun () -> read inst) (fun shape ->
+                    if first then
+                        first <- false
+                        element.setAttribute(attribute, shape)
+                    else
+                        current |> Option.iter (fun animation -> animation.Cancel())
+                        let destination = (element :> Node).ownerDocument.createElementNS(svgNamespace, tag) :?> SVGGeometryElement
+                        destination.setAttribute(attribute, shape)
+
+                        let morphing =
+                            Api.runWithOwner root (fun () -> SvgProperties.morph (unbox<SVGGeometryElement> (box element)) destination 0.33 None)
+
+                        let animation =
+                            Composed.animate services.Scheduler (box morphing.Progress) [| PropertySpec.Scalar("value", 1., fromValue = 0.) |]
+                                (withComputed services parameters)
+
+                        (animation :> ITickable).WhenCompleted(fun () -> element.setAttribute(attribute, shape))
+                        current <- Some animation)
+
+                fun () ->
+                    if context.ExitPending() then
+                        current |> Option.iter (fun animation -> animation.Pause() |> ignore)
+                    else
+                        current |> Option.iter (fun animation -> animation.Cancel())
+                        root.Dispose()
+
+                        if isNull original then element.removeAttribute attribute
+                        else element.setAttribute(attribute, original))
+        )
+
+    /// <summary>
+    /// Splits the element's static text with a Ranvier.Anime <c>TextSplitter</c> and plays <c>play</c> over the parts; the
+    /// cleanup reverts the tickable, then the split. On an element whose exit follows, the split stays and stops resizing.
+    /// </summary>
+    /// <remarks>The element's content must be static text: a text slot or region inside it stops updating once split.</remarks>
+    let split (parameters: TextSplitterOptions) (play: 'inst -> TextSplitter -> #ITickable) : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst native context ->
+                let root = Api.createRoot id
+                let splitter = Api.runWithOwner root (fun () -> Text.splitText (unbox<HTMLElement> (box native)) (Some parameters))
+                let tickable = play inst splitter :> ITickable
+
+                fun () ->
+                    if context.ExitPending() then
+                        tickable.Pause()
+                        splitter.Freeze()
+                    else
+                        tickable.Revert()
+                        splitter.Revert() |> ignore
+                        root.Dispose())
         )

@@ -44,7 +44,7 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
 
     let rows () =
         let found = container.querySelectorAll "li"
-        [ for index in 0u .. found.length - 1u -> unbox<Element> (found.item index) ]
+        [ for index in 0 .. int found.length - 1 -> unbox<Element> (found.item (uint index)) ]
 
     let texts () = rows () |> List.map (fun item -> (item :> Node).textContent)
     let opacity (item: Element) = (unbox<ElementCSSInlineStyle> (box item)).style.getPropertyValue "opacity"

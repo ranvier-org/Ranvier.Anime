@@ -31,21 +31,28 @@ finish exits at once.
 | `fade`, `rise`, `scale`, `collapse` | implemented, same timings and eases |
 | `flip` | implemented over `AutoLayout`; takes `LayoutOptions` |
 | `slot` / `MotionSlot` | implemented |
-| `follow` | implemented over `Composed.animate`; takes `ComposedAnimationOptions` |
+| `follow`, `followCss` | implemented over `Composed.animate`; take `ComposedAnimationOptions` |
 | `animateOn` | implemented |
 | `scroll` / `ScrollBinding` | implemented over `ScrollContainerRegistry`; takes `ScrollParams` (container, target, `ScrollOptions`) and links a `Timer`, `Timeline` or `ComposedAnimation` |
 | `drag` / `DragBinding` | implemented over `NativeDraggable`; takes `NativeDraggableOptions` |
-| `flipFrom`, `followCss`, `draw`, `morph`, `split` | not yet |
+| `flipFrom` | implemented; the next `flip` pass starts the row from its kept visual box |
+| `draw` | implemented over `Svg.createDrawable`; takes `ComposedAnimationOptions` |
+| `morph` | implemented over `SvgProperties.morph` (precision 0.33); takes `ComposedAnimationOptions` |
+| `split` | implemented over `TextSplitter`; takes `TextSplitterOptions` |
+
+Every part of the browser module now has a native counterpart.
 
 ## Differences from the browser package
 
 - Play functions receive a `Ranvier.Dom.Element` and return a `Ranvier.Anime.ITickable` (`on`/`appear`: `IRevertible`).
   `Timer`, `Timeline`, `ComposedAnimation` and `ComposedTimeline` implement it; `AutoLayout` is an `IRevertible`.
-- Parameter types are Ranvier.Anime's (`LayoutOptions`, `ComposedAnimationOptions`) rather than anime.js parameter objects.
+- Parameter types are Ranvier.Anime's (`LayoutOptions`, `ComposedAnimationOptions`, `ScrollParams`,
+  `NativeDraggableOptions`, `TextSplitterOptions`) rather than anime.js parameter objects.
 - An interrupted FLIP pass restarts from the rows' laid-out boxes instead of their in-flight visual boxes.
 
 These are the points where the browser package is expected to move toward this one.
 
-Coverage: `tests/Ranvier.Anime.NativeSmoke/MotionViewProbe.fs` mounts a real View list on WebCore and checks first pass,
+Coverage: `tests/Ranvier.Anime.NativeSmoke/MotionPartsProbe.fs` checks every part's placement, change and cleanup,
+including pause-instead-of-revert under a following exit; `MotionViewProbe.fs` mounts a real View list on WebCore and checks first pass,
 enter, exit pinning and removal, FLIP on reorder and the reduced policy; `runInteraction` drives a real window scroll
 and native mouse drag through `scroll` and `drag`, both signal directions included.
