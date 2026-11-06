@@ -50,6 +50,43 @@ type MotionSlot internal () =
         closed <- true
         this.Stop()
 
+/// <summary>The instance signals a scroll-linked element writes; each is written while given.</summary>
+[<NoEquality; NoComparison>]
+type ScrollBinding =
+    {
+        /// <summary>The observer's progress between its enter and leave thresholds, in 0..1.</summary>
+        Progress: Signal<float> voption
+        /// <summary>Whether the element is between its thresholds.</summary>
+        InView: Signal<bool> voption
+    }
+
+/// <summary>Where <c>Motion.scroll</c> observes: the scroll container, the observed element and the observer's thresholds and sync.</summary>
+[<NoEquality; NoComparison>]
+type ScrollParams =
+    {
+        /// <summary>The scrolling element; <c>None</c> follows the window.</summary>
+        Container: HTMLElement option
+        /// <summary>The element whose position drives progress; <c>None</c> observes the part's element.</summary>
+        Target: HTMLElement option
+        /// <summary>Thresholds, repeat and playback synchronisation.</summary>
+        Options: ScrollOptions
+    }
+
+    /// <summary>The window, the part's element and the default thresholds.</summary>
+    static member Default = { Container = None; Target = None; Options = ScrollOptions.Default }
+
+/// <summary>The instance signals a draggable element shares with the rest of the instance.</summary>
+[<NoEquality; NoComparison>]
+type DragBinding =
+    {
+        /// <summary>The element's drag position in pixels, written by dragging and read to move the element.</summary>
+        Position: Signal<struct (float * float)>
+        /// <summary>True from grab to release.</summary>
+        Dragging: Signal<bool> voption
+        /// <summary>The slot whose running animation a grab cancels, such as the spring a release starts.</summary>
+        Slot: MotionSlot voption
+    }
+
 /// <summary>
 /// Template parts that animate elements with Ranvier.Anime: lifecycle parts (<c>on</c>, <c>appear</c>, <c>enter</c>,
 /// <c>exit</c>, <c>presence</c> and its presets, <c>flip</c>) and reactive parts (<c>follow</c>, <c>animateOn</c>), with
@@ -409,4 +446,109 @@ module Motion =
                     current <- tickable)
 
                 owning (nodeOf native) (fun () -> if not (isNull current) then settle context current ()))
+        )
+
+    let private linkOf (tickable: ITickable) =
+        match box tickable with
+        | :? Timer as timer -> ScrollLink.OfTimer timer
+        | :? Timeline as timeline -> ScrollLink.OfTimeline timeline
+        | :? ComposedAnimation as animation ->
+            { Duration = (fun () -> animation.Duration)
+              CurrentTime = (fun () -> animation.CurrentTime)
+              Progress = (fun () -> animation.Progress)
+              Completed = (fun () -> animation.Completed)
+              Seek = (fun time muted -> animation.Seek(time, muteCallbacks = muted) |> ignore)
+              Command =
+                function
+                | ScrollCommand.Play -> animation.Play() |> ignore
+                | ScrollCommand.Pause -> animation.Pause() |> ignore
+                | ScrollCommand.Resume -> animation.Resume() |> ignore
+                | ScrollCommand.Reverse -> animation.Reverse() |> ignore
+                | ScrollCommand.Alternate -> animation.Alternate() |> ignore
+                | ScrollCommand.Restart -> animation.Restart() |> ignore
+                | ScrollCommand.Reset -> animation.Reset() |> ignore
+                | ScrollCommand.Complete -> animation.Complete() |> ignore }
+        | _ -> invalidArg "play" "Motion.scroll links a Timer, Timeline or ComposedAnimation."
+
+    /// <summary>
+    /// Links <c>play</c>'s animation to a scroll observer of the element, or of <c>parameters</c>' target, and writes the
+    /// observer's progress and in-view state into the signals <c>bind</c> returns.
+    /// </summary>
+    /// <remarks>Needs <c>MotionHost.Install</c> with interaction services. <c>play</c> returns a <c>Timer</c>, <c>Timeline</c> or <c>ComposedAnimation</c>.</remarks>
+    let scroll (parameters: ScrollParams) (bind: 'inst -> ScrollBinding) (play: 'inst -> Element -> #ITickable) : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst native context ->
+                let binding = bind inst
+                let graph = Graph.Current
+                let interaction, registry = MotionHost.Interaction
+
+                let container =
+                    match parameters.Container with
+                    | Some element -> registry.ForElement element
+                    | None -> registry.ForViewport(interaction.Viewport, interaction.Draggable.WindowScroll)
+
+                let tickable = play inst (elementOf native) :> ITickable
+                let target = defaultArg parameters.Target (unbox<HTMLElement> (box native))
+
+                let write (signal: Signal<'v> voption) (value: 'v) =
+                    signal |> ValueOption.iter (fun signal -> graph.Batch(fun () -> signal.Value <- value))
+
+                let onEvent event (observer: ScrollObserver) =
+                    match event with
+                    | ScrollEvent.Update -> write binding.Progress observer.Progress
+                    | ScrollEvent.Enter -> write binding.InView true
+                    | ScrollEvent.Leave -> write binding.InView false
+                    | _ -> ()
+
+                let observer =
+                    container.ObserveLinked(linkOf tickable, [ target ], options = (fun () -> parameters.Options), onEvent = onEvent)
+
+                let stop = settle context tickable
+
+                fun () ->
+                    stop ()
+                    observer.Revert())
+        )
+
+    /// <summary>
+    /// Makes the element draggable, two-way: dragging, and the end of a release's motion, write <c>Position</c>, and a write to
+    /// <c>Position</c> from elsewhere moves the element. A grab cancels the running animation of <c>Slot</c>.
+    /// </summary>
+    /// <remarks>
+    /// Needs <c>MotionHost.Install</c> with interaction services. <c>parameters</c>' callbacks run before the binding's. On an
+    /// element whose exit follows, the draggable stops where it is; otherwise the cleanup reverts it.
+    /// </remarks>
+    let drag (parameters: NativeDraggableOptions) (bind: 'inst -> DragBinding) : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst native context ->
+                let binding = bind inst
+                let graph = Graph.Current
+                let interaction, _ = MotionHost.Interaction
+                let callbacks = parameters.Callbacks
+
+                let publish (draggable: NativeDraggable) =
+                    graph.Batch(fun () -> binding.Position.Value <- struct (draggable.X, draggable.Y))
+
+                let dragging value =
+                    binding.Dragging |> ValueOption.iter (fun signal -> graph.Batch(fun () -> signal.Value <- value))
+
+                let chained =
+                    { callbacks with
+                        OnUpdate = fun draggable -> callbacks.OnUpdate draggable; publish draggable
+                        OnSettle = fun draggable -> callbacks.OnSettle draggable; publish draggable
+                        OnGrab =
+                            fun draggable ->
+                                callbacks.OnGrab draggable
+                                binding.Slot |> ValueOption.iter (fun slot -> slot.Stop())
+                                dragging true
+                        OnRelease = fun draggable -> callbacks.OnRelease draggable; dragging false }
+
+                let draggable =
+                    NativeDraggable.createWith { parameters with Callbacks = chained } interaction.Draggable (unbox<HTMLElement> (box native))
+
+                Api.createEffectOn (fun () -> binding.Position.Value) (fun (struct (x, y)) ->
+                    if x <> draggable.X then draggable.X <- x
+                    if y <> draggable.Y then draggable.Y <- y)
+
+                fun () -> if context.ExitPending() then draggable.Cancel() else draggable.Revert())
         )

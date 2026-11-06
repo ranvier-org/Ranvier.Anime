@@ -15,6 +15,10 @@ let list = Component.define (fun _ items -> items) (fun t ->
     t.ul [| Motion.flip LayoutOptions.Default |] [| t.each id (fun (items: Signal<int array>) -> items.Value) row |])
 ```
 
+`scroll` and `drag` also need input, resize and viewport services: install with
+`MotionHost.Install(services, { Draggable = draggableServices; Viewport = Viewport.provider host })`, where
+`draggableServices` is the `DraggableNativeServices` record built from the host's `forHost` providers.
+
 Install the host services on the host thread before mounting; parts read them when their element is placed.
 `Reactive.policy ()` (in Ranvier.Anime) is a per-graph signal seeded `Full`; write `Reduced` to skip enter and FLIP and
 finish exits at once.
@@ -29,7 +33,9 @@ finish exits at once.
 | `slot` / `MotionSlot` | implemented |
 | `follow` | implemented over `Composed.animate`; takes `ComposedAnimationOptions` |
 | `animateOn` | implemented |
-| `flipFrom`, `followCss`, `draw`, `morph`, `scroll`, `drag`, `split` | not yet |
+| `scroll` / `ScrollBinding` | implemented over `ScrollContainerRegistry`; takes `ScrollParams` (container, target, `ScrollOptions`) and links a `Timer`, `Timeline` or `ComposedAnimation` |
+| `drag` / `DragBinding` | implemented over `NativeDraggable`; takes `NativeDraggableOptions` |
+| `flipFrom`, `followCss`, `draw`, `morph`, `split` | not yet |
 
 ## Differences from the browser package
 
@@ -41,4 +47,5 @@ finish exits at once.
 These are the points where the browser package is expected to move toward this one.
 
 Coverage: `tests/Ranvier.Anime.NativeSmoke/MotionViewProbe.fs` mounts a real View list on WebCore and checks first pass,
-enter, exit pinning and removal, FLIP on reorder and the reduced policy.
+enter, exit pinning and removal, FLIP on reorder and the reduced policy; `runInteraction` drives a real window scroll
+and native mouse drag through `scroll` and `drag`, both signal directions included.

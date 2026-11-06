@@ -66,6 +66,7 @@ let main args =
         WaapiNativeProbe.run host scheduler
         FullFamiliesNativeProbe.run host scheduler
         MotionViewProbe.run host scheduler
+        MotionViewProbe.runInteraction ()
         do
             use graph=new Graph()
             use activation=graph.Activate()

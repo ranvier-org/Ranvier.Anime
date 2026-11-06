@@ -84,3 +84,115 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
         graph.Run(fun () -> mounted.Dispose())
         graph.Dispose()
         host.Document.body.removeChild container |> ignore
+
+[<NoEquality; NoComparison>]
+type private Interactive =
+    { Progress: Signal<float>
+      InView: Signal<bool>
+      Position: Signal<struct (float * float)>
+      Dragging: Signal<bool> }
+
+let private interactive =
+    Component.define
+        (fun _ (signals: Interactive) -> signals)
+        (fun t ->
+            t.div
+                [||]
+                [| t.div
+                       [| t.Attrs.attribute ("style", "position:absolute;top:600px;left:0;width:50px;height:50px")
+                          Motion.scroll
+                              ScrollParams.Default
+                              (fun state -> { Progress = ValueSome state.Progress; InView = ValueSome state.InView })
+                              (fun _ element ->
+                                  let services = MotionHost.Current
+                                  Composed.animate services.Scheduler (box element) [| PropertySpec.Scalar("opacity", 1., fromValue = 0.) |]
+                                      (Some { ComposedAnimationOptions.Default with Duration = 1000.; Computed = Some services.Computed })) |]
+                       [||]
+                   t.div
+                       [| t.Attrs.attribute ("style", "position:absolute;top:20px;left:20px;width:40px;height:40px;background:red")
+                          Motion.drag
+                              NativeDraggableOptions.Default
+                              (fun state -> { Position = state.Position; Dragging = ValueSome state.Dragging; Slot = ValueNone }) |]
+                       [||] |])
+
+/// <summary>Mounts Motion.scroll and Motion.drag on the native host and drives real scroll and mouse input.</summary>
+let runInteraction () =
+    use host = WebCoreHost.Create(320, 200)
+    use scheduler = Frames.forHost host
+    let require name condition =
+        if not condition then failwith ("Motion interaction: " + name)
+        Console.WriteLine("PASS motion interaction " + name)
+
+    let pump condition =
+        let watch = Stopwatch.StartNew()
+        while not (condition ()) && watch.ElapsedMilliseconds < 3000L do
+            host.Cycle(milliseconds = 1)
+            host.Frame()
+        condition ()
+
+    let mouse phase (x: float) (y: float) =
+        host.Mouse(phase, int (Math.Round x), int (Math.Round y), (if phase = 0 then -1 else 0), (if phase = 0 then 0 else 1), 0) |> ignore
+
+    let computed = ComputedStyles.forHost host
+    let windowScroll = ViewportScroll.forHost host
+
+    let interaction =
+        { Draggable =
+            { Scheduler = scheduler; Document = host.Document; Computed = computed; Geometry = Geometry.forHost host
+              Resize = ResizeObservation.forHost host; Media = MediaQueries.forHost host; Viewport = Viewport.forHost host
+              WindowScroll = windowScroll }
+          Viewport = Viewport.provider host }
+
+    use motion = MotionHost.Install({ Scheduler = scheduler; Computed = computed }, interaction)
+    (unbox<ElementCSSInlineStyle> (box host.Document.body)).style.setProperty("height", "2000px")
+    (unbox<ElementCSSInlineStyle> (box host.Document.body)).style.setProperty("margin", "0")
+    let graph = new Graph()
+    let container = host.Document.createElement "div"
+    host.Document.body.appendChild container |> ignore
+    let state =
+        graph.Run(fun () ->
+            { Progress = Api.createSignal 0.
+              InView = Api.createSignal false
+              Position = Api.createSignal (struct (0., 0.))
+              Dragging = Api.createSignal false })
+
+    let mounted =
+        Mounting.mount graph None (fun errors -> raise (AggregateException(errors: exn seq))) container None (fun context ->
+            Program.run (Component.render interactive state) context.Backend)
+
+    let read (signal: Signal<'v>) = graph.Run(fun () -> Api.untrack (fun () -> signal.Value))
+
+    try
+        let probe = (container.querySelectorAll "div").item 1u |> unbox<Element>
+        let handle = (container.querySelectorAll "div").item 2u |> unbox<Element>
+        windowScroll.ScrollTo { Left = None; Top = Some 525.; Behavior = ScrollBehavior.Instant }
+        let scrollEvent = (EventConstruction.forHost host).Create("scroll", Ranvier.Dom.EventConstruction.Event EventOptions.Default)
+        (Viewport.provider host).Window.dispatchEvent scrollEvent |> ignore
+        let opacity () = (unbox<ElementCSSInlineStyle> (box probe)).style.getPropertyValue "opacity"
+        let scrubbed () =
+            match Double.TryParse(opacity (), Globalization.NumberStyles.Float, Globalization.CultureInfo.InvariantCulture) with
+            | true, value -> value > 0.2 && value < 0.8
+            | _ -> false
+        require "scroll scrubs the linked animation" (pump scrubbed)
+        require "scroll writes progress" (let progress = read state.Progress in progress > 0.2 && progress < 0.8)
+        require "scroll writes in-view" (read state.InView)
+
+        windowScroll.ScrollTo { Left = None; Top = Some 0.; Behavior = ScrollBehavior.Instant }
+        host.Frame()
+        let rect = handle.getBoundingClientRect()
+        let x, y = rect.left + 5., rect.top + 5.
+        mouse 1 x y
+        mouse 0 (x + 10.) y
+        mouse 0 (x + 30.) (y + 10.)
+        let transform () = (unbox<ElementCSSInlineStyle> (box handle)).style.getPropertyValue "transform"
+        require "drag writes position" (pump (fun () -> read state.Position = struct (30., 10.)))
+        require "drag moves the element" (transform().StartsWith("translate(30px, 10px)", StringComparison.Ordinal))
+        require "drag writes dragging" (read state.Dragging)
+        mouse 2 (x + 30.) (y + 10.)
+        require "release clears dragging" (not (read state.Dragging))
+        graph.Run(fun () -> state.Position.Value <- struct (5., 7.))
+        require "position writes move the element" (pump (fun () -> transform().StartsWith("translate(5px, 7px)", StringComparison.Ordinal)))
+    finally
+        graph.Run(fun () -> mounted.Dispose())
+        graph.Dispose()
+        host.Document.body.removeChild container |> ignore
