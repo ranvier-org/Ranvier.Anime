@@ -104,6 +104,11 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
             snapped[index]<-DragPhysics.snap snapRule target
             axis |> Option.iter(fun axis -> axis.To(target,duration=0u))
             manual<-false
+    // Source's angle runs from the previous pointer event to the latest. A native host delivers every event, so the
+    // last two can share a pixel, where atan2 would point right; that pair keeps the previous angle.
+    let pointerAngle () =
+        let x,y=pointer[0]-pointer[2],pointer[1]-pointer[3]
+        if x<>0. || y<>0. then angle<-Math.Atan2(y,x)
     let sampleVelocity dx dy=velocity.Sample(scheduler.Now(),dx,dy,config.VelocityMultiplier,config.MinVelocity,config.MaxVelocity)
     let update () =
         if not disposed && ownerAllowsWrite() then
@@ -118,7 +123,7 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
             setAxis 0 config.XEnabled axisX config.SnapX (DragPhysics.resist b.Left b.Right config.ContainerFriction config.DragSpeed coordinates[0]) false
             setAxis 1 config.YEnabled axisY config.SnapY (DragPhysics.resist b.Top b.Bottom config.ContainerFriction config.DragSpeed coordinates[1]) false
             sampleVelocity dx dy |> ignore
-            angle<-Math.Atan2(pointer[1]-pointer[3],pointer[0]-pointer[2])
+            pointerAngle()
             if oldSnapX<>snapped[0] && config.SnapX<>DragSnap.None || oldSnapY<>snapped[1] && config.SnapY<>DragSnap.None then notify onSnap
     let ticker=ScopeRegistration.run ignore (fun () -> new Timer(scheduler,1e12,onUpdate=(fun _ -> update())))
     do updateTicker<-Some ticker;ticker.Reset()
@@ -271,7 +276,7 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
             let b=config.Bounds
             let currentX,currentY=this.X,this.Y
             let pv=sampleVelocity (pointer[0]-pointer[4]) (pointer[1]-pointer[5])
-            angle<-Math.Atan2(pointer[1]-pointer[3],pointer[0]-pointer[2])
+            pointerAngle()
             let displacement=pv*150.
             let struct(dx,bx)=DragPhysics.releaseAxis b.Left b.Right config.ReleaseContainerFriction config.DragSpeed config.SnapX currentX (Math.Cos angle*displacement)
             let struct(dy,by)=DragPhysics.releaseAxis b.Top b.Bottom config.ReleaseContainerFriction config.DragSpeed config.SnapY currentY (Math.Sin angle*displacement)

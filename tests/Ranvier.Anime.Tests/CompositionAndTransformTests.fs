@@ -53,6 +53,20 @@ let tests =
             close (sObj.GetNumber "x") 100. "s1 finished x at 100"
             close (sObj.GetNumber "scale") 2. "s1 finished scale at 2"
 
+        testCase "composition Replace starts a unit value from its rendered value, not the replaced tween's end" <| fun _ ->
+            use host = new ManualFrameScheduler()
+            let target = AnimatedObject [ "x", AdaptedValue.Text "0px" ]
+            let opts =
+                Some { ComposedAnimationOptions.Default with
+                         Duration = 100.; Ease = id; Composition = KeyframeComposition.Replace; Autoplay = false }
+            use first = Composed.animate host (box target) [| PropertySpec.Text("x", "100px") |] opts
+            first.Seek 50. |> ignore
+            Expect.equal (target.GetText "x") "50px" "the first tween is halfway"
+            use second = Composed.animate host (box target) [| PropertySpec.Text("x", "200px") |] opts
+            second.Seek 0. |> ignore
+            Expect.equal (target.GetText "x") "50px" "the retarget starts where the property is"
+            second.Seek 50. |> ignore
+            Expect.equal (target.GetText "x") "125px" "and moves from there"
         testCase "composition Replace truncates overlapping tweens, cancels fully overridden loops/timelines, and spares partial overrides" <| fun _ ->
             use host = new ManualFrameScheduler()
             // 1. Looped single-property animation overridden -> cancelled immediately on construction

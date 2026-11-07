@@ -703,16 +703,22 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                         if comp = KeyframeComposition.Replace then
                             manager.LatestReplaceSibling(target, canonical, absStart)
                         else None
+                    // As anime.js, a replaced property starts from its rendered value; only a sibling of the same timeline
+                    // hands over its own value.
                     let fallbackStartLiteral =
                         match prevTween with
                         | Some (prev: ComposedTween) -> ValueInterpolation.Text prev.CachedEnd
                         | None ->
                             match prevSibling with
-                            | Some (sib: ComposedTween) ->
+                            | Some (sib: ComposedTween) when
+                                (match parentTimelineRef, sib.Parent.ParentTimeline with
+                                 | Some mine, Some theirs -> obj.ReferenceEquals (mine, theirs)
+                                 | _ -> false)
+                                ->
                                 match sib.Last.Kind with
                                 | ValueInterpolation.ValueKind.Number -> ValueInterpolation.Number sib.CurrentNumber
                                 | _ -> ValueInterpolation.Text sib.CachedEnd
-                            | None -> origLiteral
+                            | _ -> origLiteral
                     let rawFrom =
                         match step.From with
                         | Some f -> DomTargetHelpers.toLiteral kind canonical f

@@ -46,6 +46,23 @@ module DraggableControllerTests =
                 controller.Move(10.,0.)
                 for _ in 1..6 do frames.Step 17.
                 Expect.equal (x,y,updates) (10.,0.,1) "Only changed coordinates emit onUpdate"
+            testCase "a pointer event at the previous position keeps the drag direction" <| fun _ ->
+                let frames=DragManualFrames()
+                let mutable x=0.
+                let mutable y=0.
+                use controller=new Draggable(frames.Scheduler,NumericProperty((fun()->x),(fun value->x<-value)),NumericProperty((fun()->y),(fun value->y<-value)))
+                controller.Grab(100.,0.)
+                controller.Move(90.,0.)
+                frames.Step 17.
+                controller.Move(80.,0.)
+                controller.Move(80.,0.)
+                frames.Step 17.
+                Expect.floatClose Accuracy.high controller.Angle Math.PI "Leftward movement points left"
+                let atRelease=x
+                controller.Release()
+                Expect.floatClose Accuracy.high controller.Angle Math.PI "Release keeps the leftward direction"
+                for _ in 1..60 do frames.Step 17.
+                Expect.isLessThan x atRelease "The throw continues left"
             testCase "cancel drops pending frames and retains the last value" <| fun _ ->
                 let frames=DragManualFrames()
                 let mutable x=0.
