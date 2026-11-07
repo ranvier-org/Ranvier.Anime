@@ -52,7 +52,6 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         generation <- generation + 1
         generation
 
-    let childFlag = Some true
     let render time mode mute soft =
         let previousInternal = internalRender
         internalRender <- soft
@@ -62,8 +61,8 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             let wasCompleted = completed
             previousAbsoluteTime <- sample.AbsoluteTime
             let next = timing.Sample(previousAbsoluteTime, time, reversed, alternate, wasCompleted, mode,
-                                     ?parentBackwards=(match parentContext with Some(backwards,_,_) -> Some backwards | None -> None),
-                                     ?child=(if parentContext.IsSome then childFlag else None))
+                                     ?parentBackwards=(match parentContext with Some(backwards,_,_) -> ValueSome backwards | None -> ValueNone),
+                                     ?child=(if parentContext.IsSome then ValueSome true else ValueNone))
             sample <- next
             let current () = expected = generation && not cancelled && writeGuard() &&
                              (parentContext |> Option.forall(fun (_,_,live) -> live()))
@@ -258,14 +257,14 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     /// <summary>Samples an owned child with inherited direction, lifecycle filtering and ancestor interruption;
     /// rendering can refresh caches without target dispatch.</summary>
     /// <remarks>Initialization clears lifecycle flags only while this sample's generation and inherited guards remain current.</remarks>
-    member _.TickChild(time, mode, mute, backwards, parentBegan, canWrite, ?internalRender:bool, ?initialize:bool) =
+    member _.TickChild(time, mode, mute, backwards, parentBegan, canWrite, [<Struct>] ?internalRender:bool, [<Struct>] ?initialize:bool) =
         let previous = parentContext
         parentContext <- Some(backwards, parentBegan, canWrite)
         try
             live()
             let expected = change()
-            render time mode mute (defaultArg internalRender false)
-            if defaultArg initialize false && current expected && writeGuard() && canWrite() then
+            render time mode mute (defaultValueArg internalRender false)
+            if defaultValueArg initialize false && current expected && writeGuard() && canWrite() then
                 paused<-true
                 began<-false
                 completed<-false

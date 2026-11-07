@@ -539,13 +539,13 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         lastTick <- 0.
         stopFrame() |> ignore
     /// <summary>Assigns scheduling to the timeline and initializes silently, optionally refreshing caches without target dispatch.</summary>
-    member internal _.AttachToTimeline(?internalRender:bool,?canWrite:unit -> bool) =
+    member internal _.AttachToTimeline([<Struct>] ?internalRender:bool,?canWrite:unit -> bool) =
         this.AssignToTimeline()
         state.TickChild(0., PlaybackTickMode.Force, true, false, false, defaultArg canWrite (fun () -> true), ?internalRender=internalRender, initialize=true)
     /// <summary>Samples a timeline child without an independent frame, optionally refreshing caches without target dispatch.</summary>
-    member internal _.SampleChild(time, mode, muted, parentFps, backwards, parentBegan, canWrite, ?internalRender:bool, ?applyFrameRate:bool) =
+    member internal _.SampleChild(time, mode, muted, parentFps, backwards, parentBegan, canWrite, [<Struct>] ?internalRender:bool, [<Struct>] ?applyFrameRate:bool) =
         if not state.Cancelled && canWrite() then
-            let mode = if defaultArg applyFrameRate true && fps < parentFps then requestTick(scheduler.Now()) else mode
+            let mode = if defaultValueArg applyFrameRate true && fps < parentFps then requestTick(scheduler.Now()) else mode
             state.TickChild(time, mode, muted, backwards, parentBegan, canWrite, ?internalRender=internalRender)
     /// <summary>Emits the source reverse-loop boundary completion without changing child flags.</summary>
     member internal _.NotifyBoundaryCompletion() =
