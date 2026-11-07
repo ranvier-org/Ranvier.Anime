@@ -134,6 +134,9 @@ toggle (`examples/Ranvier.Motion.Native/src/Graphs.fs:372`). The browser page ke
 **Upstream fix needed.** A `show` (and presumably other conditional arms) inside SVG should create its children with
 the parent's namespace.
 
+**Fixed** in Ranvier.View 0.1.49-rc.2 ([Ranvier.View#99](https://github.com/ranvier-org/Ranvier.View/pull/99)). The page
+uses `show` with `Motion.fade` again, and the smoke checks that the returning line is an SVG `path`.
+
 ## 6. Upstream: measuring layout inside a reactive read silently ends the effect
 
 **Symptom.** The routes tab indicator never moved, and its inline style stayed empty. No mount or commit error was
@@ -151,6 +154,12 @@ read uses (`examples/Ranvier.Motion.Native/src/Routes.fs:304`).
 
 **Upstream follow-up.** Either layout reads inside tracking should be safe, or the failure should be reported rather
 than dropping the effect.
+
+**Fixed.** The cause wasn't layout: any WebCore call that returns a node asked the core for the current owner, which
+fails inside a pure read. Ranvier 0.1.1-preview.2 adds `Api.tryGetOwner`
+([Ranvier#300](https://github.com/ranvier-org/Ranvier/pull/300)), and Ranvier.View.WebCore 0.1.0-rc.2 uses it
+([Ranvier.View#100](https://github.com/ranvier-org/Ranvier.View/pull/100)). The indicator measures itself inside the
+`follow` read again, and `TabWidth` is gone.
 
 ## App-only findings
 

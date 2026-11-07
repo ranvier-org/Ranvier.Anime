@@ -94,6 +94,9 @@ let mount (host: WebCoreHost) (start: string) : Running =
                     scheduler.Dispose () }
     }
 
+/// <summary>SDL's renderer for a window: direct3d11 where the native runtime presents shared D3D11 frames, SDL's choice elsewhere.</summary>
+let renderer = if WebCoreHost.Has "presentation-d3d11" then Some "direct3d11" else None
+
 /// <summary>One turn of the window loop: SDL events, the page's frame, then the timers now due.</summary>
 let step (window: Window) =
     let wait =

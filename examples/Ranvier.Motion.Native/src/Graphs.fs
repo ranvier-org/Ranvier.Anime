@@ -368,16 +368,9 @@ let private inspector =
 
                     path (Attrs.className "signal-area", Attrs.attribute ("d", curve 0. + " L960 280 L0 280 Z")) { () }
 
-                    // The browser shows this line with show and Motion.fade. On WebCore, Ranvier.View 0.1.49-rc.1 creates a
-                    // show's children outside the SVG namespace, so the line stays placed and fades out and in instead.
-                    path (
-                        Attrs.className "comparison-line",
-                        Attrs.attribute ("d", curve 1.7),
-                        Motion.animateOn (fun (store: Store) -> store.Comparison.Value) (fun _ element shown ->
-                            Native.animate element (Native.timing 240. Native.outQuart) [| Native.toward "opacity" (if shown then 1. else 0.) |])
-                    ) {
-                        ()
-                    }
+                    show
+                        (fun (store: Store) -> store.Comparison.Value)
+                        (path (Attrs.className "comparison-line", Attrs.attribute ("d", curve 1.7), Motion.fade) { () })
 
                     path (Attrs.className "signal-line", Attrs.attribute ("d", curve 0.)) { () }
 

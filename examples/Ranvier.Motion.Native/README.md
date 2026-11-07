@@ -30,21 +30,24 @@ mounts. `Shell.fs` replaces the separate documents with one frame: the site head
 in an arm that owns its state and timers, and opening a page loads its stylesheets (`styles/`, copied unchanged) and
 scrolls to the top, as a page load does.
 
+On Windows x64 the app uses the GPU WebCore runtime (`Ranvier.WebCore.Native.Gpu.win-x64`) in place of the
+aggregate's Slim one, and opens its window with SDL's `direct3d11` renderer. The page is then presented as shared
+D3D11 textures at display scale 1; other display scales and other platforms paint on the CPU.
+
 ## Differences from the browser pages
 
 - **Routes** has no location hash, so the tabs dispatch the route they name. The tab indicator follows in pixels of its
   measured width, where the browser uses `x` in `%`.
 - **Graphs** listens for mouse events (the native host sends no pointer events) and reads the viewBox from its
-  attribute. The tooltip eases to percentage text through `animateOn`, because the native `follow` has no `Unit`. The
-  worker comparison line fades in place rather than through `show`, because on WebCore Ranvier.View 0.1.49-rc.1
-  creates a `show`'s children inside `<svg>` in the XHTML namespace.
+  attribute. The tooltip eases to percentage text through `animateOn`, because the native `follow` has no `Unit`.
 - **Story** is mounted, not served and hydrated.
 - **Physics** restores the full motion policy when the page leaves, because the graph outlives the page.
 
 ## Checks
 
-`Smoke.fs` opens every page and drives it through the host's mouse, wheel and frame loop, 70 checks in all. They
+`Smoke.fs` opens every page and drives it through the host's mouse, wheel and frame loop, 72 checks in all. They
 cover presence, FLIP, dragging between lanes and springing home on the board; the stream, gauges, ring, counter and
 timers on the dashboard; split, scroll progress and the extras on the story; dragging, the spring, scrubbing and the
 reduced policy in physics; zoom, wheel, inspection and the leaderboard in graphs; and routes, page loops and the
-indicator in routes. The run fails on any mount or commit error.
+indicator in routes. On Windows x64 it also requires the runtime's `presentation-d3d11` capability. The run fails
+on any mount or commit error.

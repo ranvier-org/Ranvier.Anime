@@ -82,8 +82,6 @@ type Shell =
         Route: Memo<Route>
         Theme: Memo<Theme>
         Visits: Memo<int>
-        /// <summary>The route indicator's width, measured once it is placed: 116 px, or 76 px below 640 px.</summary>
-        TabWidth: Signal<float>
     }
 
 /// <summary>A shell at <c>route</c>, in the current graph's scope.</summary>
@@ -102,7 +100,6 @@ let createShell (route: Route) : Shell =
         Route = loop.Select (fun model -> model.Route)
         Theme = loop.Select (fun model -> model.Theme)
         Visits = loop.Select (fun model -> model.Visits)
-        TabWidth = Api.createSignal 116.
     }
 
 // Home: a counter in its own loop, reset each time the page is entered.
@@ -300,17 +297,12 @@ let view (shell: Shell) : Component<unit> =
                     }
 
                 // The indicator is as wide as a tab at every breakpoint, so its offset is the route's index in widths of its own:
-                // anime's x in % of the element, here in the pixels of its width, measured once it is placed. A reactive
-                // read must not measure layout itself: on WebCore that ends the follow's effect.
+                // anime's x in % of the element, here in the pixels of its measured width.
                 span (
                     Attrs.className "indicator",
-                    Hooks.mounted (fun (s: Shell) element ->
-                        let width = Native.widthOf (box element)
-                        if width > 0. then s.TabWidth.Value <- width
-                        ignore),
                     Motion.follow "x" { ComposedAnimationOptions.Default with Duration = 420.; Ease = Native.outBack } (fun (s: Shell) ->
                         float (Array.findIndex ((=) s.Route.Value) routes)
-                        * s.TabWidth.Value)
+                        * (Native.select ".indicator" |> Option.map (box >> Native.widthOf) |> Option.defaultValue 0.))
                 ) {
                     ()
                 }

@@ -7,6 +7,7 @@ module Smoke
 open System
 open System.Diagnostics
 open System.Globalization
+open System.Runtime.InteropServices
 open Ranvier
 open Ranvier.Dom
 open Ranvier.Anime
@@ -267,7 +268,9 @@ let private graphs (d: Driver) =
     require "graphs: the wheel zooms about the pointer" (d.Until (fun () -> d.Read (fun () -> store.Window.Value.Span) <> 960.))
     d.ClickText ("button", "Reset view")
     d.ClickText ("button", "Worker comparison")
-    require "graphs: the comparison line fades out" (d.Until (fun () -> style (d.One ".comparison-line") "opacity" = "0"))
+    require "graphs: the comparison line fades out" (d.Until (fun () -> d.Count ".comparison-line" = 0))
+    d.ClickText ("button", "Worker comparison")
+    require "graphs: the comparison line returns as SVG" (d.Count "svg path.comparison-line" = 1 && (d.One ".comparison-line").namespaceURI = "http://www.w3.org/2000/svg")
     d.ClickText ("button", "Next snapshot")
     require "graphs: Next snapshot moves to 12:00" (text (d.One ".snapshot-time") = "12:00")
     let london = d.One "[data-region=\"London\"]"
@@ -298,7 +301,10 @@ let private routes (d: Driver) =
 /// <summary>Runs every check in a hidden window; 0 when all pass.</summary>
 let run () =
     try
-        use window = Window.Create ("Ranvier Motion smoke", 1180, 860, hidden = true)
+        if OperatingSystem.IsWindows () && RuntimeInformation.OSArchitecture = Architecture.X64 then
+            require "the Windows x64 runtime presents through D3D11" (WebCoreHost.Has "presentation-d3d11")
+
+        use window = Window.Create ("Ranvier Motion smoke", 1180, 860, hidden = true, ?renderer = Host.renderer)
         use running = Host.mount window.Host "kanban"
 
         let d =

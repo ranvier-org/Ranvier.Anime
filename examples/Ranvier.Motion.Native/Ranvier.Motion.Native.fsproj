@@ -37,4 +37,13 @@
         <PackageReference Include="Ranvier.Elmish$(RanvierPackageSuffix)" Version="[0.1.1-preview.1]" />
         <PackageReference Update="FSharp.Core" Version="10.1.401" />
     </ItemGroup>
+
+    <!--
+    Windows x64 presents shared D3D11 frames through the GPU runtime in place of the aggregate's Slim one; Program.fs
+    asks SDL for its direct3d11 renderer. Other platforms keep the aggregate's Slim runtimes.
+    -->
+    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">
+        <PackageReference Include="Ranvier.WebCore.Native.win-x64" Version="[$(RanvierWebCoreNativeVersion)]" ExcludeAssets="all" />
+        <PackageReference Include="Ranvier.WebCore.Native.Gpu.win-x64" Version="[$(RanvierWebCoreNativeVersion)]" />
+    </ItemGroup>
 </Project>
