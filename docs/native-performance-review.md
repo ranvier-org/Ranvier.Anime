@@ -24,10 +24,18 @@ mouse moves per frame (1, 4 or 8) no longer changes the frame time, since the dr
 | Before `496350e` | ~104 KB | — |
 | After `496350e` | ~39 KB | 29.5 MB |
 | After the second pass | ~12 KB | 16.7 MB, about half in the bridge |
-| After the third pass | ~6 KB | — (input dispatch ~0.5 KB per move, from ~1–2 KB) |
+| After the third pass | ~6.5 KB | — |
 
-The third pass's numbers come from a run where the host was paced at about 4 frames a second, so only the per-frame
-allocation compares; the stashed second-pass build measured 12.1 KB in the same conditions.
+Measured side by side after the third pass, the whole drag frame (callbacks plus input dispatch) allocates:
+
+| Mouse moves per frame | Second pass | Third pass |
+|---|---|---|
+| 1 | 13.7–13.9 KB | 7.2–7.4 KB |
+| 4 | 19.8–19.9 KB | 8.3–8.7 KB |
+| 8 | 25–33 KB | 8.8–10.6 KB |
+
+Frame time in that run was 20–25 ms for both builds, the native composite having slowed on the host since the first
+pass; the managed callbacks stayed at about 0.2 ms.
 
 What is left in Anime is one output and a few strings per sampled value, and the transform text written once per
 element per frame. The rest is Ranvier.View.WebCore: style access, `setProperty`'s pinned strings, DOM point objects
@@ -120,5 +128,3 @@ boundary stays where it is: `Motion` parts read signals with effects and drive t
   number could take it unboxed.
 - **Callback churn on drag.** Each drag frame retargets the axes with zero duration, which completes the group's
   callback animation and revives it on the next frame. It allocates little now, but does the work every frame.
-- **Frame pacing.** Measurements in this pass ran while the host paced hidden windows at about 4 frames a second;
-  frame times there are not comparable with the earlier passes.
