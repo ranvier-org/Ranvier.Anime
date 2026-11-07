@@ -4,6 +4,7 @@ open System
 open System.Text
 open System.Collections.Generic
 open System.Collections.Frozen
+open System.Globalization
 
 /// <summary>Anime.js inline transform cache parsing and canonical function serialization.</summary>
 /// <remarks>WebCore validates CSS. This adapter retains source function bodies, including nested expressions.</remarks>
@@ -12,6 +13,14 @@ type internal BuildBuffer =
     [<ThreadStatic; DefaultValue>]
     static val mutable private shared: StringBuilder
     static member Shared with get()=BuildBuffer.shared and set value=BuildBuffer.shared<-value
+
+/// <summary>The per-thread buffer scalar transform values are formatted in.</summary>
+type internal ScalarBuffer =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private chars: char array
+    static member Chars =
+        if isNull ScalarBuffer.chars then ScalarBuffer.chars <- Array.zeroCreate 64
+        ScalarBuffer.chars
 
 [<RequireQualifiedAccess>]
 module TransformCache =
@@ -73,9 +82,61 @@ module TransformCache =
             | _ when property.StartsWith("rotate",StringComparison.Ordinal) || property.StartsWith("skew",StringComparison.Ordinal) -> "0deg"
             | _ -> "0px"
 
-    /// <summary>Builds source canonical order, grouping adjacent translation/scaling axes and preserving matrices and rotate3d.</summary>
-    /// <remarks>Reuses one builder per thread: a follower writes its element's transform every frame.</remarks>
-    let build (cache:IReadOnlyDictionary<string,string>) =
+    let private noPriority = Some ""
+    let private important = Some "important"
+    /// <summary>A priority as <c>setProperty</c>'s option, shared for the two priorities a transform is written with.</summary>
+    let internal priorityOption (priority:string) =
+        if isNull priority || priority.Length=0 then noPriority
+        elif priority="important" then important
+        else Some priority
+
+    /// <summary>The cache value of a component held as a number; compared by reference, never by text.</summary>
+    let internal numeric : string = String([|'\u0000'|])
+
+    /// <summary>Appends a number as <c>ValueInterpolation.number</c> formats it, then its unit.</summary>
+    let private appendNumber (result:StringBuilder) (value:float) (unitSuffix:string) =
+        let buffer=ScalarBuffer.Chars
+        let mutable written=0
+        if value<>0. && value.TryFormat(Span<char>(buffer),&written,"R".AsSpan(),CultureInfo.InvariantCulture)
+           && ReadOnlySpan<char>(buffer,0,written).IndexOfAny('E','e')<0 then
+            result.Append(ReadOnlySpan<char>(buffer,0,written)).Append(unitSuffix) |> ignore
+        else result.Append(ValueInterpolation.number value).Append(unitSuffix) |> ignore
+
+    /// <summary>The text of a numeric component, as <c>build</c> writes it.</summary>
+    let internal numberText (value:float) (unitSuffix:string) =
+        let buffer=ScalarBuffer.Chars
+        let mutable written=0
+        if value<>0. && value.TryFormat(Span<char>(buffer),&written,"R".AsSpan(),CultureInfo.InvariantCulture)
+           && ReadOnlySpan<char>(buffer,0,written).IndexOfAny('E','e')<0 && written+unitSuffix.Length<=buffer.Length then
+            unitSuffix.CopyTo(Span<char>(buffer,written,unitSuffix.Length))
+            String(buffer,0,written+unitSuffix.Length)
+        else ValueInterpolation.number value+unitSuffix
+
+    let private appendValue (result:StringBuilder) (numbers:Dictionary<string,struct(float*string)>) (key:string) (value:string) =
+        if Object.ReferenceEquals(value,numeric) then
+            let struct(number,unitSuffix)=numbers[key]
+            appendNumber result number unitSuffix
+        else result.Append(value) |> ignore
+
+    let private append result numbers (key:string) (value:string) =
+        (result:StringBuilder).Append(key).Append('(') |> ignore
+        appendValue result numbers key value
+        result.Append(") ") |> ignore
+
+    let private appendAxes result numbers (name:string) (translate:bool) (cache:IReadOnlyDictionary<string,string>) (x:string) (withZ:bool) =
+        (result:StringBuilder).Append(name).Append('(') |> ignore
+        appendValue result numbers (if translate then "translateX" else "scaleX") x
+        result.Append(',') |> ignore
+        let yKey=if translate then "translateY" else "scaleY"
+        appendValue result numbers yKey cache[yKey]
+        if withZ then
+            let zKey=if translate then "translateZ" else "scaleZ"
+            result.Append(',') |> ignore
+            appendValue result numbers zKey cache[zKey]
+        result.Append(") ") |> ignore
+
+    /// <summary>Fills the thread's builder in source canonical order; numeric components read from <c>numbers</c>.</summary>
+    let private fill (cache:IReadOnlyDictionary<string,string>) (numbers:Dictionary<string,struct(float*string)>) =
         let result=
             match BuildBuffer.Shared with
             | null ->
@@ -83,31 +144,43 @@ module TransformCache =
                 BuildBuffer.Shared<-created
                 created
             | shared -> shared.Clear()
-        let has key=cache.ContainsKey key
-        let append (key:string) (value:string)=result.Append(key).Append('(').Append(value).Append(") ") |> ignore
-        let appendAxes (key:string) (x:string) (y:string) (z:string) =
-            result.Append(key).Append('(').Append(x).Append(',').Append(y) |> ignore
-            if not(isNull z) then result.Append(',').Append(z) |> ignore
-            result.Append(") ") |> ignore
         let mutable index=0
         while index<order.Length do
             let key=order[index]
             let mutable grouped=false
             match cache.TryGetValue key with
             | true,value ->
-                if key="translateX" && has "translateY" then
-                    if has "translateZ" then appendAxes "translate3d" value cache["translateY"] cache["translateZ"];index<-index+2
-                    else appendAxes "translate" value cache["translateY"] null;index<-index+1
+                if key="translateX" && cache.ContainsKey "translateY" then
+                    if cache.ContainsKey "translateZ" then appendAxes result numbers "translate3d" true cache value true;index<-index+2
+                    else appendAxes result numbers "translate" true cache value false;index<-index+1
                     grouped<-true
-                elif key="scaleX" && not(has "scale") && has "scaleY" then
-                    if has "scaleZ" then appendAxes "scale3d" value cache["scaleY"] cache["scaleZ"];index<-index+2
-                    else appendAxes "scale" value cache["scaleY"] null;index<-index+1
+                elif key="scaleX" && not(cache.ContainsKey "scale") && cache.ContainsKey "scaleY" then
+                    if cache.ContainsKey "scaleZ" then appendAxes result numbers "scale3d" false cache value true;index<-index+2
+                    else appendAxes result numbers "scale" false cache value false;index<-index+1
                     grouped<-true
-                else append key value
+                else append result numbers key value
             | _ -> ()
-            if not grouped && key="rotateZ" && has "rotate3d" then append "rotate3d" cache["rotate3d"]
+            if not grouped && key="rotateZ" && cache.ContainsKey "rotate3d" then append result numbers "rotate3d" cache["rotate3d"]
             index<-index+1
-        if has "matrix" then append "matrix" cache["matrix"]
-        if has "matrix3d" then append "matrix3d" cache["matrix3d"]
-        result.ToString()
+        match cache.TryGetValue "matrix" with
+        | true,value -> append result numbers "matrix" value
+        | _ -> ()
+        match cache.TryGetValue "matrix3d" with
+        | true,value -> append result numbers "matrix3d" value
+        | _ -> ()
+        result
+
+    /// <summary>Builds source canonical order, grouping adjacent translation/scaling axes and preserving matrices and rotate3d.</summary>
+    /// <remarks>Reuses one builder per thread: a follower writes its element's transform every frame.</remarks>
+    let build (cache:IReadOnlyDictionary<string,string>) = (fill cache null).ToString()
+
+    /// <summary>
+    /// <c>build</c> without its trailing space, reading components held as <c>numeric</c> from <c>numbers</c>: the text
+    /// an element's inline transform is set to.
+    /// </summary>
+    let internal buildDeclaration (cache:IReadOnlyDictionary<string,string>) (numbers:Dictionary<string,struct(float*string)>) =
+        let result=fill cache numbers
+        let mutable length=result.Length
+        while length>0 && result[length-1]=' ' do length<-length-1
+        result.ToString(0,length)
 

@@ -41,9 +41,9 @@ module private AnimatableInputs =
 type AnimatableNumber internal (track:AnimatableTrack,live:unit -> unit) =
     /// <summary>Cached first-target value with its getter modifier applied again; an interrupted getter raises InvalidOperationException.</summary>
     member _.Value =
-        match track.ScalarValue 0 with
-        | Some value -> value
-        | None -> invalidOp "The cached getter was superseded."
+        match track.TryScalarValue 0 with
+        | ValueSome value -> value
+        | ValueNone -> invalidOp "The cached getter was superseded."
     /// <summary>The property's shared playback controller, including seek, pause and stretch controls.</summary>
     member _.Playback=track.Clock
     /// <summary>Number of captured borrowed targets.</summary>

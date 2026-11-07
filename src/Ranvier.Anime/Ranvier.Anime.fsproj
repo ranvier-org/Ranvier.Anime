@@ -5,6 +5,7 @@
     <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Closures.fs" />
     <Compile Include="Ease.fs" />
     <Compile Include="Spring.fs" />
     <Compile Include="Stagger.fs" />

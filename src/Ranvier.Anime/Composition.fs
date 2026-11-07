@@ -283,7 +283,9 @@ module internal DomTargetHelpers =
         | None ->
             match kind, target with
             | TweenTargetKind.Transform, (:? Element as el) ->
-                ElementTransforms.stageComponent el canonical output.Text
+                if output.IsScalar && Double.IsFinite output.Number then
+                    ElementTransforms.stageNumber el canonical output.Number output.UnitSuffix
+                else ElementTransforms.stageComponent el canonical output.Text
                 if flushTransform then ElementTransforms.commit el priority
             | (TweenTargetKind.Css | TweenTargetKind.CssVar), (:? Element as el) ->
                 let style = (tryStyle el).Value
@@ -795,7 +797,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
     let mutable clock : Timer = Unchecked.defaultof<Timer>
     // One guard closure over a token each render saves and restores; guards are only checked while the render runs.
     let mutable renderToken = Int64.MinValue
-    let canWrite = fun () -> clock.IsCurrent renderToken
+    let canWrite = Closure.keep (fun () -> clock.IsCurrent renderToken)
     let render (sample: PlaybackSample) mode muted =
         let savedToken = renderToken
         renderToken <- clock.WriteToken

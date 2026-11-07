@@ -29,7 +29,9 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
     // Guards are only checked while their call runs, so each path keeps one closure over a snapshot it saves and
     // restores: a nested render or retarget (user code seeking this clock) still invalidates the outer one.
     let mutable renderToken=Int64.MinValue
-    let renderCurrent=fun () -> clock.IsCurrent renderToken && ownerAllowsWrite()
+    let mutable readToken=Int64.MinValue
+    let readCurrent=Closure.keep (fun () -> readToken=clock.Generation)
+    let renderCurrent=Closure.keep (fun () -> clock.IsCurrent renderToken && ownerAllowsWrite())
     let render (sample:PlaybackSample) mode muted =
         let savedToken=renderToken
         renderToken<-clock.WriteToken
@@ -63,10 +65,10 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
     let mutable pendingCommit:unit -> unit=Unchecked.defaultof<_>
     let mutable operationCurrent:unit -> bool=Unchecked.defaultof<_>
     let mutable prepareToken=Int64.MinValue
-    let prepareCurrent=fun () -> operationCurrent() && clock.IsCurrent prepareToken && ownerAllowsWrite()
+    let prepareCurrent=Closure.keep (fun () -> operationCurrent() && clock.IsCurrent prepareToken && ownerAllowsWrite())
     let mutable spare:AnimatableValue array=null
     let mutable staging=false
-    let prepareCached=fun (current:unit -> bool) ->
+    let prepareCached=Closure.keep <| fun (current:unit -> bool) ->
         let savedCurrent=operationCurrent
         let savedToken=prepareToken
         operationCurrent<-current
@@ -148,9 +150,16 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
     /// <summary>Renders the initial directional cache and property values with muted callbacks.</summary>
     member _.Initialize()=clock.Reset()
     /// <summary>Reads a cached scalar through its getter modifier; cached reads remain available after cancellation.</summary>
-    member _.ScalarValue(index)=
-        let expected=clock.Generation
-        values[index].ScalarValue(modifier,fun () -> expected=clock.Generation)
+    member this.ScalarValue(index)=
+        match this.TryScalarValue index with
+        | ValueSome value -> Some value
+        | ValueNone -> None
+    /// <summary>Reads a cached scalar without allocating; ValueNone when a getter modifier superseded the read.</summary>
+    member _.TryScalarValue(index)=
+        let savedToken=readToken
+        readToken<-clock.Generation
+        try values[index].TryScalarValue(modifier,readCurrent)
+        finally readToken<-savedToken
     /// <summary>Returns an independent snapshot of cached color or compound components.</summary>
     member _.Components(index)=values[index].ComponentValues
     /// <summary>Returns a composed cached snapshot, applying only the scalar getter modifier.</summary>

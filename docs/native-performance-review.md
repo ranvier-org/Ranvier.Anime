@@ -24,6 +24,10 @@ mouse moves per frame (1, 4 or 8) no longer changes the frame time, since the dr
 | Before `496350e` | ~104 KB | — |
 | After `496350e` | ~39 KB | 29.5 MB |
 | After the second pass | ~12 KB | 16.7 MB, about half in the bridge |
+| After the third pass | ~6 KB | — (input dispatch ~0.5 KB per move, from ~1–2 KB) |
+
+The third pass's numbers come from a run where the host was paced at about 4 frames a second, so only the per-frame
+allocation compares; the stashed second-pass build measured 12.1 KB in the same conditions.
 
 What is left in Anime is one output and a few strings per sampled value, and the transform text written once per
 element per frame. The rest is Ranvier.View.WebCore: style access, `setProperty`'s pinned strings, DOM point objects
@@ -70,6 +74,24 @@ and event wrappers.
   unchanged; scalar transform text is formatted in one allocation; the draggable's pointer reads return a struct
   option.
 
+## Third pass
+
+- **Cached closures that were methods.** An F# class `let` bound directly to a lambda compiles to a method, and each
+  use of it as a value allocates a closure over `this`. The second pass's per-object guards (`Timer.operateCurrent`,
+  `AnimatableValue`'s guard, the track's render and retarget guards, the composed render's guard) and the draggable's
+  listeners were all such methods. They are bound through `Closure.keep`, which is not inlined, so each is a field
+  holding one closure. `Timer.Pause` and `Complete` use cached actions too.
+- **Numeric transform components.** `ElementTransforms.writeScalar` and the composed render's scalar transform outputs
+  store a number and unit (`TransformCache.numeric` marks the component). The number is formatted straight into the
+  frame's single transform text, so a sample no longer allocates a string per value. Paths that read or parse the cache
+  materialize the text first. The declaration is built without the trailing space, so no second string is trimmed.
+- **Draggable pointer mapping.** The inverse ancestor matrix's affine terms are cached when it updates, and a pointer
+  move maps with arithmetic instead of a `DOMPointInit`, a bridge `DOMPoint` and its session entries.
+- **Draggable reads.** `AnimatableNumber.Value` reads through `TryScalarValue`, without an option and two closures.
+- **Draggable writes.** `DraggableTransformTarget` stages its axes during an engine frame and sets the transform once
+  when the frame ends, with `setProperty` instead of building a CSS `Declaration`; values use shortest round-trip
+  digits rather than `G17`. `setProperty`'s priority option is shared.
+
 ## Semantics
 
 Ranvier.Anime no longer tracks the JavaScript library's behaviour where a native design is better:
@@ -83,6 +105,7 @@ Ranvier.Anime no longer tracks the JavaScript library's behaviour where a native
   frame ends, before the host paints. Code that reads the element's inline style or layout directly inside the same
   frame, rather than through `ElementTransforms`, sees the frame's earlier value.
 - `Animatable.Callbacks` is created on first read when no callbacks were passed; read mid-flight, it starts playing.
+- A native draggable's transform reaches `style.transform` when the engine frame ends, as the components above do.
 
 Callbacks stay callbacks. The guards and lifecycle callbacks are internal invariants of the playback core; routing
 them through the Ranvier graph would add a notification per write without changing what the user sees. The reactive
@@ -93,5 +116,9 @@ boundary stays where it is: `Motion` parts read signals with effects and drive t
 - **The bridge.** About half of a drag frame's allocation is in Ranvier.View.WebCore, in another repository.
 - **Layer promotion.** Whether `will-change: transform` on moving elements turns their repaint into compositing
   depends on WebCore's compositing in the GPU runtime. It is unmeasured.
-- **Per-value strings.** Each sampled transform value is still formatted to a string for the transform cache, which
-  stores text.
+- **One output per sample.** Each sample still allocates a `ValueInterpolation.Output`; a writer that reads only the
+  number could take it unboxed.
+- **Callback churn on drag.** Each drag frame retargets the axes with zero duration, which completes the group's
+  callback animation and revives it on the next frame. It allocates little now, but does the work every frame.
+- **Frame pacing.** Measurements in this pass ran while the host paced hidden windows at about 4 frames a second;
+  frame times there are not comparable with the earlier passes.

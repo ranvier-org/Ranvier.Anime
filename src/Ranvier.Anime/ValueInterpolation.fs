@@ -60,6 +60,10 @@ module internal ValueInterpolation =
         member _.HasScalar=kind=ValueKind.Number
         /// <summary>The composed scalar; zero for color and compound values.</summary>
         member _.Number=number
+        /// <summary>Whether the value is a number or a number with a unit, so its text is <c>Number</c> then <c>UnitSuffix</c>.</summary>
+        member _.IsScalar=kind=ValueKind.Number || kind=ValueKind.Unit
+        /// <summary>The unit a scalar's text ends with.</summary>
+        member _.UnitSuffix=unitSuffix
         /// <summary>The scalar for unitless numbers, None otherwise.</summary>
         member _.Scalar=if kind=ValueKind.Number then Some number else None
         /// <summary>The composed CSS text, formatted on first read.</summary>

@@ -24,7 +24,7 @@ type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundN
     // while their call runs.
     let mutable guardExpected= -1L
     let mutable guardInner:unit -> bool=Unchecked.defaultof<_>
-    let guard=fun () -> guardExpected=generation && guardInner()
+    let guard=Closure.keep (fun () -> guardExpected=generation && guardInner())
     let modify (modifier:float -> float) canWrite value =
         if not(canWrite()) then None
         else
@@ -54,6 +54,21 @@ type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundN
     member _.ScalarValue(modifier,canWrite) =
         if not scalar then invalidOp "The property has component values."
         modify modifier (capture canWrite) cachedNumber
+    /// <summary>The getter's scalar without an option or a guard closure per read, as <c>ScalarValue</c>.</summary>
+    member _.TryScalarValue(modifier:float -> float,canWrite:unit -> bool) : float voption =
+        if not scalar then invalidOp "The property has component values."
+        let savedExpected=guardExpected
+        let savedInner=guardInner
+        guardExpected<-generation
+        guardInner<-canWrite
+        try
+            if not(guard()) then ValueNone
+            else
+                let result=modifier cachedNumber
+                if guard() then ValueSome result else ValueNone
+        finally
+            guardExpected<-savedExpected
+            guardInner<-savedInner
     /// <summary>Composes an independent cached snapshot.</summary>
     /// <remarks>Scalar getters apply their modifier again; component getters retain cached values.</remarks>
     member _.Snapshot(modifier,canWrite) =

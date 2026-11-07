@@ -41,7 +41,13 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
     let mutable pointerOriginY=0.
     let mutable finePointer=true
     let cursorEnabled=defaultArg cursor true
-    let mutable inverse=geometry.CreateMatrix()
+    // The inverse ancestor transform's terms for a point at z=0, w=1, which is all transformPoint reads of it.
+    let mutable inverseA=1.
+    let mutable inverseB=0.
+    let mutable inverseC=0.
+    let mutable inverseD=1.
+    let mutable inverseE=0.
+    let mutable inverseF=0.
     let mutable touchRestore: (unit -> unit) option=None
     let mutable hoverRestore: (unit -> unit) option=None
     let mutable grabRestore: (unit -> unit) option=None
@@ -71,10 +77,15 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
             if transform<>"" && transform<>"none" then
                 let parentMatrix=geometry.CreateMatrix transform
                 matrix.preMultiplySelf(DragDomStyles.matrixInit parentMatrix) |> ignore
-        inverse<-matrix.inverse()
-    let normalize x y =
-        let point=inverse.transformPoint(DOMPointInit(x=x,y=y,w=1.))
-        struct(point.x,point.y)
+        let inverse=matrix.inverse()
+        inverseA<-inverse.a
+        inverseB<-inverse.b
+        inverseC<-inverse.c
+        inverseD<-inverse.d
+        inverseE<-inverse.e
+        inverseF<-inverse.f
+    // transformPoint of (x, y, 0, 1), without a DOM point per pointer move.
+    let normalize x y = struct(inverseA*x+inverseC*y+inverseE,inverseB*x+inverseD*y+inverseF)
     let point (event:Event) =
         match event with
         | :? TouchEvent as touch when touch.changedTouches.length>0u ->
@@ -87,7 +98,7 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
         | _ -> ValueNone
     // Each listener is one function value: a class let-function becomes a method, and every use of a method as a value is a
     // new closure, which removeEventListener cannot match and addEventListener cannot deduplicate.
-    let prevent:EventListener=fun event -> if event.cancelable then event.preventDefault()
+    let prevent:EventListener=Closure.keep <| fun event -> if event.cancelable then event.preventDefault()
     let nestedScroller (event:Event) movedY =
         match event with
         | :? TouchEvent ->
@@ -112,7 +123,7 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
                  (fun () -> (trigger:>EventTarget).removeEventListener("touchstart",prevent))
                  (fun () -> (trigger:>EventTarget).removeEventListener("touchmove",prevent))
                  (fun () -> (trigger:>EventTarget).removeEventListener("touchend",prevent))]
-    let move:EventListener=fun event ->
+    let move:EventListener=Closure.keep <| fun event ->
         if not disposed && controller.Grabbed then
             match point event with
             | ValueSome(struct(x,y,_)) when nestedScroller event (y-pointerOriginY) ->
@@ -128,7 +139,7 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
                     (trigger:>EventTarget).addEventListener("touchend",prevent)
                 controller.Move(x,y)
             | ValueNone -> ()
-    let up:EventListener=fun _ ->
+    let up:EventListener=Closure.keep <| fun _ ->
         if not disposed then
             releaseStyles()
             cleanupDocument()
@@ -150,7 +161,7 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
                 for name in ["mousemove";"touchmove"] do yield fun () -> (document:>EventTarget).removeEventListener(name,move)
                 for name in ["mouseup";"touchend";"touchcancel"] do yield fun () -> (document:>EventTarget).removeEventListener(name,up)
                 yield fun () -> (document:>EventTarget).removeEventListener("selectstart",select) })
-    let down:EventListener=fun event ->
+    let down:EventListener=Closure.keep <| fun event ->
         if not disposed && enabled && not controller.Cancelled && not controller.Grabbed then
             let range=match event.target with :? HTMLInputElement as input -> input.getAttribute "type"="range" | _ -> false
             if not range then
@@ -178,7 +189,7 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
                         attachDocument()
                         scroll |> Option.iter _.Start()
                 | ValueNone -> ()
-    let hover:EventListener=fun _ ->
+    let hover:EventListener=Closure.keep <| fun _ ->
         if not disposed && enabled && not controller.Cancelled && finePointer && cursorEnabled && hoverRestore.IsNone then
             hoverRestore<-Some(DragDomStyles.snapshot trigger "cursor")
             DragDomStyles.apply trigger "cursor" (defaultArg cursorHover "grab")

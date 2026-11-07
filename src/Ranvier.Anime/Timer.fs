@@ -304,8 +304,8 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     // The guard an operation hands its action: one closure over a snapshot each operation saves and restores, so a
     // nested operation still invalidates the outer one. Actions only check it while they run.
     let mutable operateExpected = -1
-    let operateCurrent = fun () -> operateExpected = generation && not state.Cancelled
-    let reanchorLead = fun () -> reanchor 12.
+    let operateCurrent = Closure.keep (fun () -> operateExpected = generation && not state.Cancelled)
+    let reanchorLead = Closure.keep (fun () -> reanchor 12.)
     let operate action finish =
         live()
         let expected = stopFrame()
@@ -323,13 +323,16 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
 
     // A retarget without a stretch passes this cached action its prepare through a field, read before anything runs.
     let mutable retargetPrepare : (unit -> bool) -> bool = Unchecked.defaultof<_>
-    let retargetAction = fun (current: unit -> bool) ->
+    let retargetAction = Closure.keep <| fun (current: unit -> bool) ->
         let prepare = retargetPrepare
         retargetPrepare <- Unchecked.defaultof<_>
         if prepare current && current() then
             state.SoftReset()
             if current() then state.Resume()
-    let noFinish = fun () -> ()
+    let noFinish = Closure.keep (fun () -> ())
+    let pauseAction = Closure.keep (fun (_: unit -> bool) -> state.Pause())
+    let completeAction = Closure.keep (fun (_: unit -> bool) -> state.Complete false)
+    let completeMutedAction = Closure.keep (fun (_: unit -> bool) -> state.Complete true)
 
     let resume action changedDirection =
         let wasPaused = state.Paused
@@ -377,7 +380,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member _.Alternate() = operate (fun _ -> state.Alternate()) (fun () -> reanchor 0.)
     /// <summary>Stops scheduled frames and emits pause once when active.</summary>
     member _.Pause() =
-        if not state.Cancelled then operate (fun _ -> state.Pause()) noFinish
+        if not state.Cancelled then operate pauseAction noFinish
     /// <summary>Seeks in milliseconds after the initial delay; callbacks can be muted.</summary>
     member _.Seek(time: float, ?muteCallbacks: bool) =
         finite "time" time
@@ -389,7 +392,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member _.Restart() = operate (fun _ -> state.Restart()) (fun () -> reanchor 12.)
     /// <summary>Completes then cancels unless a callback supersedes the operation.</summary>
     member _.Complete(?muteCallbacks: bool) =
-        operate (fun _ -> state.Complete(defaultArg muteCallbacks false)) noFinish
+        operate (if defaultArg muteCallbacks false then completeMutedAction else completeAction) noFinish
     /// <summary>Stretches total duration and delay geometry without sampling or moving the raw playhead.</summary>
     /// <remarks>Finite nonnegative milliseconds are required. Scaled delay overflow rejects before changing active playback.</remarks>
     member _.Stretch(milliseconds:float) =

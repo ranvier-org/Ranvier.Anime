@@ -10,6 +10,8 @@ open Ranvier.Dom
 /// <summary>Per-element cached CSS transform components matching Anime.js transformsSymbol state.</summary>
 type internal ElementTransformState() =
     member val Cache = Dictionary<string, string>(StringComparer.Ordinal)
+    /// <summary>The number and unit of each component whose cache value is <c>TransformCache.numeric</c>.</summary>
+    member val Numbers = Dictionary<string, struct(float * string)>(StringComparer.Ordinal)
     member val FullTranslate : string option = None with get, set
     /// <summary>The element whose staged components await the end of the frame, or null.</summary>
     member val Pending : Element = Unchecked.defaultof<_> with get, set
@@ -22,21 +24,26 @@ type internal ElementTransformState() =
             match box element with
             | :? ElementCSSInlineStyle as styled -> styled.style :> CSSStyleDeclaration
             | _ -> invalidArg "element" "Element does not expose inline CSS style."
-        let text = (TransformCache.build this.Cache).TrimEnd()
+        let text = TransformCache.buildDeclaration this.Cache this.Numbers
         if text.Length = 0 then style.removeProperty "transform" |> ignore
-        else style.setProperty("transform", text, priority = priority)
+        else style.setProperty("transform", text, ?priority = TransformCache.priorityOption priority)
     interface IDeferredWrite with
         member this.Flush() =
             let element = this.Pending
             if not(isNull(box element)) then this.Write(element, this.PendingPriority)
-
-/// <summary>The per-thread buffer scalar transform values are formatted in.</summary>
-type internal ScalarBuffer =
-    [<ThreadStatic; DefaultValue>]
-    static val mutable private chars: char array
-    static member Chars =
-        if isNull ScalarBuffer.chars then ScalarBuffer.chars <- Array.zeroCreate 64
-        ScalarBuffer.chars
+    /// <summary>Stores a component as a number in a unit, formatted only when the transform is written.</summary>
+    member this.SetNumber(canonical: string, value: float, unitSuffix: string) =
+        this.Numbers[canonical] <- struct(value, (if isNull unitSuffix then "" else unitSuffix))
+        this.Cache[canonical] <- TransformCache.numeric
+    /// <summary>Replaces numeric components with their text, for paths that read or parse the cache.</summary>
+    member this.Materialize() =
+        if this.Numbers.Count > 0 then
+            for KeyValue(canonical, struct(value, unitSuffix)) in this.Numbers do
+                match this.Cache.TryGetValue canonical with
+                | true, cached when Object.ReferenceEquals(cached, TransformCache.numeric) ->
+                    this.Cache[canonical] <- TransformCache.numberText value unitSuffix
+                | _ -> ()
+            this.Numbers.Clear()
 
 /// <summary>Authored individual CSS transform endpoint or keyframe value.</summary>
 [<RequireQualifiedAccess; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
@@ -97,16 +104,8 @@ module ElementTransforms =
     /// <summary>Normalizes a scalar number to its canonical transform string with default unit.</summary>
     let formatScalar (canonical: string) (value: float) : string =
         if not (Double.IsFinite value) then invalidArg "value" "Expected a finite transform scalar."
-        let unitSuffix = defaultUnit canonical
         // Shortest round-trip digits and the unit in one string; exponent forms take the source formatter's expansion.
-        let buffer = ScalarBuffer.Chars
-        let mutable written = 0
-        if value <> 0. && value.TryFormat(Span<char>(buffer), &written, "R".AsSpan(), CultureInfo.InvariantCulture)
-           && ReadOnlySpan<char>(buffer, 0, written).IndexOfAny('E', 'e') < 0
-           && written + unitSuffix.Length <= buffer.Length then
-            unitSuffix.CopyTo(Span<char>(buffer, written, unitSuffix.Length))
-            String(buffer, 0, written + unitSuffix.Length)
-        else ValueInterpolation.number value + unitSuffix
+        TransformCache.numberText value (defaultUnit canonical)
 
     /// <summary>Normalizes a string transform endpoint, appending default units to bare or relative unitless numbers.</summary>
     let normalizeText (canonical: string) (raw: string) : string =
@@ -132,6 +131,7 @@ module ElementTransforms =
     /// <summary>Applies components staged during the current frame, so the inline declaration is current.</summary>
     let private settle (state: ElementTransformState) (element: Element) =
         if not(isNull(box state.Pending)) then state.Write(element, state.PendingPriority)
+        state.Materialize()
 
     /// <summary>Parses current inline style.transform into the element's transform cache and reads one component plus its inline presence.</summary>
     let internal readWithInlineOrigin (element: Element) (canonical: string) : string * string option =
@@ -169,6 +169,10 @@ module ElementTransforms =
         let state = stateFor element
         state.Cache[canonical] <- value
 
+    /// <summary>Updates a single cached transform component to a number in a unit, without flushing style.transform yet.</summary>
+    let internal stageNumber (element: Element) (canonical: string) (value: float) (unitSuffix: string) =
+        (stateFor element).SetNumber(canonical, value, unitSuffix)
+
     /// <summary>Serializes all cached transform components in canonical order and writes style.transform.</summary>
     /// <summary>Drops components staged during the current frame without writing them, before an inline restore.</summary>
     let internal discard (element: Element) =
@@ -196,8 +200,9 @@ module ElementTransforms =
     /// many of its components changed; a transform read through this module applies it first.
     /// </remarks>
     let internal writeScalar (element: Element) (canonical: string) (priority: string) (value: float) =
+        if not (Double.IsFinite value) then invalidArg "value" "Expected a finite transform scalar."
         let state = stateFor element
-        state.Cache[canonical] <- formatScalar canonical value
+        state.SetNumber(canonical, value, defaultUnit canonical)
         commitState state element priority
 
     /// <summary>Writes the cached components: at the end of the frame during an engine frame, otherwise now.</summary>
@@ -246,7 +251,7 @@ module ElementTransforms =
             match originalOpt with
             | Some v -> state.Cache[canonical] <- v
             | None -> state.Cache.Remove canonical |> ignore
-        let built = (TransformCache.build state.Cache).TrimEnd()
+        let built = TransformCache.buildDeclaration state.Cache state.Numbers
         if built.Length = 0 then
             style.removeProperty "transform" |> ignore
         else
