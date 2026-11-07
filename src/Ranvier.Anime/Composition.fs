@@ -153,7 +153,7 @@ type PropertySpec =
 module internal DomTargetHelpers =
     let private lowerCaseRgx = Regex(@"([a-z0-9])([A-Z])", RegexOptions.CultureInvariant)
     let private commonPxCss =
-        HashSet<string>(
+        System.Collections.Frozen.FrozenSet.ToFrozenSet(
             [| "width"; "height"; "min-width"; "min-height"; "max-width"; "max-height"
                "top"; "right"; "bottom"; "left"; "inset"
                "margin"; "margin-top"; "margin-right"; "margin-bottom"; "margin-left"
@@ -164,8 +164,8 @@ module internal DomTargetHelpers =
                "font-size"; "letter-spacing"; "word-spacing"; "line-height"; "outline-width"; "outline-offset"
                "perspective"; "stroke-width"; "stroke-dashoffset" |],
             StringComparer.Ordinal)
-    let private svgCssReserved = HashSet<string>([| "opacity"; "rotate"; "overflow"; "color" |], StringComparer.Ordinal)
-    let private domObjectProps = HashSet<string>([| "innerHTML"; "textContent"; "value"; "scrollTop"; "scrollLeft" |], StringComparer.Ordinal)
+    let private svgCssReserved = System.Collections.Frozen.FrozenSet.ToFrozenSet([| "opacity"; "rotate"; "overflow"; "color" |], StringComparer.Ordinal)
+    let private domObjectProps = System.Collections.Frozen.FrozenSet.ToFrozenSet([| "innerHTML"; "textContent"; "value"; "scrollTop"; "scrollLeft" |], StringComparer.Ordinal)
 
     let toKebab (name: string) =
         if String.IsNullOrEmpty name || name.StartsWith("--", StringComparison.Ordinal) then name
@@ -1340,7 +1340,9 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
 and internal CompositionManagers =
     static let table = ConditionalWeakTable<EngineFrameQueue, CompositionManager>()
     static member forQueue (queue: EngineFrameQueue) : CompositionManager =
-        table.GetValue(queue, fun q -> CompositionManager q)
+        match table.TryGetValue queue with
+        | true, manager -> manager
+        | _ -> table.GetValue(queue, fun q -> CompositionManager q)
     static member forScheduler (scheduler: FrameScheduler) : CompositionManager =
         CompositionManagers.forQueue (EngineFrames.forScheduler scheduler)
 

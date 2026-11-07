@@ -63,7 +63,8 @@ type internal EngineClock(initialTime:float) =
     member _.ComputeDelta(time:float)=delta<-time-lastTime;lastTime<-time
 
 type private EngineFrameEntry() =
-    member val Callback:(float -> unit) option=None with get,set
+    /// <summary>The pending frame callback; null when none is pending (no per-frame option allocation).</summary>
+    member val Callback:(float -> unit)=Unchecked.defaultof<_> with get,set
     member val Node:LinkedListNode<EngineFrameEntry> option=None with get,set
     member val Version=0L with get,set
     member val Closed=false with get,set
@@ -110,11 +111,11 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
                 while not(isNull cursor) do
                     let next=cursor.Next
                     let entry=cursor.Value
-                    match entry.Callback with
-                    | Some callback when not entry.Closed ->
-                        entry.Callback<-None
+                    let callback=entry.Callback
+                    if not(isNull(box callback)) && not entry.Closed then
+                        entry.Callback<-Unchecked.defaultof<_>
                         callback now
-                    | _ ->
+                    else
                         entries.Remove cursor
                         entry.Node<-None
                     cursor<-next
@@ -235,14 +236,14 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
                     live()
                     entry.Version<-entry.Version+1L
                     let expected=entry.Version
-                    entry.Callback<-Some callback
+                    entry.Callback<-callback
                     if entry.Node.IsNone then
                         let mutable previous=entries.Last
                         while not(isNull previous) && previous.Value.Priority>entry.Priority do previous<-previous.Previous
                         entry.Node<-Some(if isNull previous then entries.AddFirst entry else entries.AddAfter(previous,entry))
                     if not pumping then suspended<-false
                     schedule true false
-                    {new IDisposable with member _.Dispose()=if expected=entry.Version then entry.Callback<-None}
+                    {new IDisposable with member _.Dispose()=if expected=entry.Version then entry.Callback<-Unchecked.defaultof<_>}
                 member _.Timeout(delay,callback)=scheduleWork (fun action -> scheduler.Timeout(delay,action)) callback
                 member _.Microtask(callback)=scheduleWork scheduler.Microtask callback
                 member _.Dispose()=
@@ -250,10 +251,10 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
                     entry.Closed<-true
                     entry.ResetTime<-ignore
                     entry.Version<-entry.Version+1L
-                    entry.Callback<-None
+                    entry.Callback<-Unchecked.defaultof<_>
                     cancelWork() }
         let terminate () =
-            entry.Callback<-None
+            entry.Callback<-Unchecked.defaultof<_>
             cancelWork()
         adapter,(fun callback priority -> entry.ResetTime<-callback;entry.Priority<-priority),initialTick,terminate
 
@@ -272,7 +273,10 @@ module internal EngineFrames =
         if isNull(box scheduler) then nullArg "scheduler"
         match roots.TryGetValue scheduler with
         | true,root -> root.Queue
-        | _ -> queues.GetValue(scheduler,fun scheduler -> EngineFrameQueue scheduler)
+        | _ ->
+            match queues.TryGetValue scheduler with
+            | true,queue -> queue
+            | _ -> queues.GetValue(scheduler,fun scheduler -> EngineFrameQueue scheduler)
     /// <summary>Retains existing root identity when a factory passes its adapter into a timer.</summary>
     let createRoot scheduler =
         if isNull(box scheduler) then nullArg "scheduler"

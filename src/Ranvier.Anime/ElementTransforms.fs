@@ -39,7 +39,7 @@ module ElementTransforms =
     let private relativeNumberPattern = Regex(@"^(\+=|-=|\*=)([-+]?(?:\d*\.)?\d+(?:[eE][-+]?\d+)?)$", RegexOptions.CultureInvariant)
 
     let private validSet =
-        HashSet<string>(
+        System.Collections.Frozen.FrozenSet.ToFrozenSet(
             [| "perspective"; "translateX"; "translateY"; "translateZ"
                "rotate"; "rotateX"; "rotateY"; "rotateZ"
                "scale"; "scaleX"; "scaleY"; "scaleZ"
@@ -90,7 +90,9 @@ module ElementTransforms =
         | _ -> invalidArg "element" "Element does not expose inline CSS style."
 
     let internal stateFor (element: Element) =
-        states.GetValue(element, fun _ -> ElementTransformState())
+        match states.TryGetValue element with
+        | true, state -> state
+        | _ -> states.GetValue(element, fun _ -> ElementTransformState())
 
     /// <summary>Parses current inline style.transform into the element's transform cache and reads one component plus its inline presence.</summary>
     let internal readWithInlineOrigin (element: Element) (canonical: string) : string * string option =
@@ -134,6 +136,14 @@ module ElementTransforms =
         let text = (TransformCache.build state.Cache).TrimEnd()
         if text.Length = 0 then style.removeProperty "transform" |> ignore
         else style.setProperty("transform", text, priority = priority)
+
+    /// <summary>
+    /// Writes one canonical component as a scalar in its default unit through the element's cached transform, without
+    /// re-reading the inline declaration: the per-frame write of a retargeted follower.
+    /// </summary>
+    let internal writeScalar (element: Element) (canonical: string) (priority: string) (value: float) =
+        stageComponent element canonical (formatScalar canonical value)
+        flush element priority
 
     /// <summary>Sets one or more transform components on an element immediately and flushes style.transform.</summary>
     let set (element: Element) (values: seq<string * TransformValue>) =

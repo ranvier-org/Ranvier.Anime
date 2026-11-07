@@ -7,6 +7,12 @@ open System.Collections.Frozen
 
 /// <summary>Anime.js inline transform cache parsing and canonical function serialization.</summary>
 /// <remarks>WebCore validates CSS. This adapter retains source function bodies, including nested expressions.</remarks>
+/// <summary>The per-thread builder TransformCache.build reuses.</summary>
+type internal BuildBuffer =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private shared: StringBuilder
+    static member Shared with get()=BuildBuffer.shared and set value=BuildBuffer.shared<-value
+
 [<RequireQualifiedAccess>]
 module TransformCache =
     let private order =
@@ -68,10 +74,21 @@ module TransformCache =
             | _ -> "0px"
 
     /// <summary>Builds source canonical order, grouping adjacent translation/scaling axes and preserving matrices and rotate3d.</summary>
+    /// <remarks>Reuses one builder per thread: a follower writes its element's transform every frame.</remarks>
     let build (cache:IReadOnlyDictionary<string,string>) =
-        let result=StringBuilder()
+        let result=
+            match BuildBuffer.Shared with
+            | null ->
+                let created=StringBuilder(128)
+                BuildBuffer.Shared<-created
+                created
+            | shared -> shared.Clear()
         let has key=cache.ContainsKey key
         let append (key:string) (value:string)=result.Append(key).Append('(').Append(value).Append(") ") |> ignore
+        let appendAxes (key:string) (x:string) (y:string) (z:string) =
+            result.Append(key).Append('(').Append(x).Append(',').Append(y) |> ignore
+            if not(isNull z) then result.Append(',').Append(z) |> ignore
+            result.Append(") ") |> ignore
         let mutable index=0
         while index<order.Length do
             let key=order[index]
@@ -79,17 +96,18 @@ module TransformCache =
             match cache.TryGetValue key with
             | true,value ->
                 if key="translateX" && has "translateY" then
-                    if has "translateZ" then append "translate3d" (value+","+cache["translateY"]+","+cache["translateZ"]);index<-index+2
-                    else append "translate" (value+","+cache["translateY"]);index<-index+1
+                    if has "translateZ" then appendAxes "translate3d" value cache["translateY"] cache["translateZ"];index<-index+2
+                    else appendAxes "translate" value cache["translateY"] null;index<-index+1
                     grouped<-true
                 elif key="scaleX" && not(has "scale") && has "scaleY" then
-                    if has "scaleZ" then append "scale3d" (value+","+cache["scaleY"]+","+cache["scaleZ"]);index<-index+2
-                    else append "scale" (value+","+cache["scaleY"]);index<-index+1
+                    if has "scaleZ" then appendAxes "scale3d" value cache["scaleY"] cache["scaleZ"];index<-index+2
+                    else appendAxes "scale" value cache["scaleY"] null;index<-index+1
                     grouped<-true
                 else append key value
             | _ -> ()
             if not grouped && key="rotateZ" && has "rotate3d" then append "rotate3d" cache["rotate3d"]
             index<-index+1
-        for key in ["matrix";"matrix3d"] do if has key then append key cache[key]
+        if has "matrix" then append "matrix" cache["matrix"]
+        if has "matrix3d" then append "matrix3d" cache["matrix3d"]
         result.ToString()
 

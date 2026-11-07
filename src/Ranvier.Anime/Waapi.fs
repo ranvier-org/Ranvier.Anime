@@ -132,7 +132,7 @@ and internal WaapiHelpers private () =
     static let activeLookups = ResizeArray<WaapiLookupRecord>()
 
     static let validIndividualTransforms =
-        HashSet<string>(
+        System.Collections.Frozen.FrozenSet.ToFrozenSet(
             [| "x"; "y"; "z"
                "translateX"; "translateY"; "translateZ"
                "rotateX"; "rotateY"; "rotateZ"

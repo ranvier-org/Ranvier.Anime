@@ -124,4 +124,6 @@ module Engine =
     /// <summary>Returns the canonical <see cref="T:Ranvier.Anime.Engine"/> associated with the supplied scheduler.</summary>
     let forScheduler (scheduler: FrameScheduler) : Engine =
         let queue = EngineFrames.forScheduler scheduler
-        instances.GetValue(queue, fun q -> Engine q)
+        match instances.TryGetValue queue with
+        | true, engine -> engine
+        | _ -> instances.GetValue(queue, fun q -> Engine q)

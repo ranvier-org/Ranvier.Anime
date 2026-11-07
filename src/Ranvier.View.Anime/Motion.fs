@@ -884,7 +884,7 @@ module Motion =
 
     // The layout properties Motion parts animate themselves; a pass leaves them to the parts while one runs under the root.
     let private visual =
-        HashSet<string>(LayoutOptions.Default.Properties, StringComparer.Ordinal)
+        System.Collections.Frozen.FrozenSet.ToFrozenSet(LayoutOptions.Default.Properties, StringComparer.Ordinal)
 
     let private childElements (root: Element) : Element array =
         let children = (unbox<ParentNode> (box root)).children
@@ -982,7 +982,7 @@ module Motion =
         created
 
     let private transformNames =
-        HashSet<string>(
+        System.Collections.Frozen.FrozenSet.ToFrozenSet(
             [| "x"; "y"; "z"; "translateX"; "translateY"; "translateZ"; "rotate"; "rotateX"; "rotateY"; "rotateZ"
                "scale"; "scaleX"; "scaleY"; "scaleZ"; "skew"; "skewX"; "skewY"; "perspective" |],
             StringComparer.Ordinal
@@ -1006,15 +1006,8 @@ module Motion =
     let private withComputed (services: MotionServices) (parameters: ComposedAnimationOptions) =
         Some { parameters with Computed = parameters.Computed |> Option.orElse (Some services.Computed) }
 
-    /// <summary>
-    /// Animates the element's <c>property</c> to <c>read</c>'s value whenever it changes, from wherever the property is;
-    /// the first value is set at once.
-    /// </summary>
-    /// <remarks>
-    /// <c>parameters</c> give each retarget's timing; Replace composition takes over the running tween. The cleanup restores
-    /// the property's inline declaration from before the first value.
-    /// </remarks>
-    let follow (property: string) (parameters: ComposedAnimationOptions) (read: 'inst -> float) : Part<'native, 'inst> =
+    // follow for any property: a new composed animation per value, Replace composition taking over the running tween.
+    let private followComposed (property: string) (parameters: ComposedAnimationOptions) (read: 'inst -> float) : Part<'native, 'inst> =
         Hooks.motion (
             Func<_, _, _, _>(fun inst native context ->
                 let element = elementOf native
@@ -1037,6 +1030,66 @@ module Motion =
                         current |> Option.iter (fun animation -> animation.Cancel())
                         restore ()))
         )
+
+    // follow for a transform component: one retargetable track per part, written through the element's transform cache.
+    let private followTransform (canonical: string) (property: string) (parameters: ComposedAnimationOptions) (read: 'inst -> float) : Part<'native, 'inst> =
+        Hooks.motion (
+            Func<_, _, _, _>(fun inst native context ->
+                let element = elementOf native
+                let services = MotionHost.Current
+                let restore = keepInline element property
+                let priority = (styleOf element).getPropertyPriority "transform"
+                let mutable held: struct (Animatable * AnimatableNumber) voption = ValueNone
+
+                Api.createEffectOn (fun () -> read inst) (fun value ->
+                    match held with
+                    | ValueSome (struct (_, track)) -> track.ToPrecise(value, parameters.Duration, parameters.Ease)
+                    | ValueNone ->
+                        ElementTransforms.writeScalar element canonical priority value
+                        let created = new Animatable(services.Scheduler)
+
+                        let options =
+                            { AnimatablePropertyOptions.Default with
+                                Playback = parameters.Playback
+                                Ease = parameters.Ease
+                                Modifier = parameters.Modifier
+                                Precision = parameters.Precision |> Option.orElse AnimatablePropertyOptions.Default.Precision }
+
+                        let handle =
+                            NumericProperty((fun () -> value), ElementTransforms.writeScalar element canonical priority)
+
+                        held <- ValueSome (struct (created, created.NumericPrecise(handle, parameters.Duration, options))))
+
+                owning (nodeOf native) (fun () ->
+                    if context.ExitPending() then
+                        match held with
+                        | ValueSome (struct (_, track)) -> track.Playback.Pause() |> ignore
+                        | ValueNone -> ()
+                    else
+                        match held with
+                        | ValueSome (struct (group, _)) -> group.Cancel()
+                        | ValueNone -> ()
+
+                        restore ()))
+        )
+
+    /// <summary>
+    /// Animates the element's <c>property</c> to <c>read</c>'s value whenever it changes, from wherever the property is;
+    /// the first value is set at once.
+    /// </summary>
+    /// <remarks>
+    /// <c>parameters</c> give each retarget's duration, delay, ease, modifier and precision. A transform component
+    /// (<c>x</c>, <c>scaleX</c>, <c>rotate</c> and the rest), in its default unit, keeps one retargetable
+    /// track for the part's life, so a value that changes every frame costs a retarget, not a new animation; it owns its
+    /// component, so other animations of that component on the element do not take it over. Other properties start a
+    /// composed animation per value, whose Replace composition takes over the running tween. The cleanup restores the
+    /// property's inline declaration from before the first value.
+    /// </remarks>
+    let follow (property: string) (parameters: ComposedAnimationOptions) (read: 'inst -> float) : Part<'native, 'inst> =
+        match ElementTransforms.canonicalName property with
+        | Some canonical when canonical <> "translate3d" && canonical <> "rotate3d" && canonical <> "matrix" && canonical <> "matrix3d" ->
+            followTransform canonical property parameters read
+        | _ -> followComposed property parameters read
 
     /// <summary>
     /// Replays <c>play</c> with <c>read</c>'s value whenever it changes; Replace composition takes over the running

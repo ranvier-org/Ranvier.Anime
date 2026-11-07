@@ -461,7 +461,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Forced-render gap in the engine's current time unit.</summary>
     member internal _.TickThreshold=engine.TickThreshold
     /// <summary>Both scheduler and state generations for guarding property writes across user code.</summary>
-    member internal _.Generation = generation, state.Generation
+    member internal _.Generation = (int64 generation <<< 32) ||| int64 (uint32 state.Generation)
     /// <summary>Captures clock/state generations and current inherited guards before an easing or modifier callback.</summary>
     member internal _.CaptureWriteGuard() =
         let expected = generation
