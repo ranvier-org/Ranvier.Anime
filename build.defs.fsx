@@ -116,6 +116,15 @@ let nativeRun = input {
     }
 }
 
+/// The browser Motion example pages as one native app; `smoke` drives every page in a hidden window.
+let motionExample = input {
+    let! config = configuration
+    return stage "native Motion example smoke" {
+        workingDir root'
+        run (rtk ["proxy"; "dotnet"; "run"; "--project"; "examples/Ranvier.Motion.Native/Ranvier.Motion.Native.fsproj"; "-c"; config; "--"; "smoke"])
+    }
+}
+
 let cssAotProbe = input {
     let! config = configuration
     let log = Path.Combine(nativeRoot, $"css-probe-{config}.log")
@@ -183,6 +192,7 @@ let root = Command.root {
     command "native-build" { description "Restore and build the win-x64 native smoke host"; nativeRestore false; nativeBuild }
     command "native-run" { description "Run the built (or, with --aot, published) native smoke host"; nativeRun }
     command "native-publish" { description "Strict NativeAOT publish of the native smoke host"; nativeRestore true; nativePublish }
+    command "motion-example" { description "Build the native Motion example app and run its page checks in a hidden window"; motionExample }
     command "browser" { description "Compile the Motion parts with Fable and run the browser checks under jsdom"; browser }
     command "css-aot-probe" { description "Strict NativeAOT publish of the isolated typed CSS probe"; nativeRestore true; cssAotProbe }
     command "css-metadata" {
