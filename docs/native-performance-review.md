@@ -100,6 +100,33 @@ and event wrappers.
   when the frame ends, with `setProperty` instead of building a CSS `Declaration`; values use shortest round-trip
   digits rather than `G17`. `setProperty`'s priority option is shared.
 
+## Fourth pass: the native paint, and input rate
+
+Measured in a visible window on a 164 Hz display, with SDL motion events pushed from another thread at 1 kHz:
+
+| Page | Frame, rc.3 | Frame, rc.4 | Without blurred shadows |
+|---|---|---|---|
+| Dashboard | 20 ms | p50 6.2 ms, p95 19 ms | 6.1 ms |
+| Graphs, mouse moving | 26 ms | p50 6.2 ms, p95 29 ms | 7 ms |
+| Story | 6.1 ms | — | — |
+
+- **Blurred box-shadows are the cost.** WebCore composites layers on the GPU but rasterizes their contents on the
+  CPU, and re-blurs a `box-shadow` whenever the repainted area touches it. The pages' cards and tiles carry
+  `0 6px 18px -8px` and `0 18px 36px -14px` shadows. Hiding a static header or changing the static body gradient also
+  sped up a frame on rc.3, because rc.3 repainted the whole root layer each frame. rc.4 (Ranvier.WebCore#348) repaints
+  only the dirty rectangle, which brings the median frame to the display's refresh. The GPU runtime will rasterize on
+  the GPU by default, which removes the remaining blur cost; the app takes rc.4 directly until then.
+- **Input rate.** The SDL window dispatches every motion event; a gaming mouse sends about 1,000 a second where a
+  browser sends one `mousemove` per frame. A move costs 0.02 ms on a page without handlers and 0.22 ms and 14 KB on
+  the graphs page, whose handler reads layout. Collapsing queued motion cut dispatched moves from 993 to 45 a second on
+  the dashboard, but did not change frame time, which the paint dominates. Ranvier.View.WebCore.Sdl will make the
+  rate of motion, wheel and resize dispatch a window setting, one per frame by default. Wheel scrolling shows the
+  same pattern: the story page's frame grows from 14 ms at one wheel event per frame to 33 ms at sixteen.
+- **Managed work stays small.** Kanban card drag, route switches (3 ms and 190 KB a click, a view mount), resize and
+  scroll all spend under 1.5 ms a frame in managed code.
+- **Budgets.** The Motion smoke run checks allocation per window turn for a four-move drag (under 36 KB, 8 KB
+  measured), a live dashboard (under 24 KB) and sixteen hover moves (under 8 KB), so a return to the earlier costs fails.
+
 ## Semantics
 
 Ranvier.Anime no longer tracks the JavaScript library's behaviour where a native design is better:
@@ -122,8 +149,9 @@ boundary stays where it is: `Motion` parts read signals with effects and drive t
 ## Left
 
 - **The bridge.** About half of a drag frame's allocation is in Ranvier.View.WebCore, in another repository.
-- **Layer promotion.** Whether `will-change: transform` on moving elements turns their repaint into compositing
-  depends on WebCore's compositing in the GPU runtime. It is unmeasured.
+- **Layer promotion.** On rc.3, `will-change: transform` on the dashboard's animated elements brought the median
+  frame from 20 ms to 6.6 ms, but the 95th percentile stayed at 21 ms. Putting each shadow on a promoted `::before` fixed
+  the dashboard fully, but not a tooltip moving over shadowed cards. GPU rasterization makes both unnecessary.
 - **One output per sample.** Each sample still allocates a `ValueInterpolation.Output`; a writer that reads only the
   number could take it unboxed.
 - **Callback churn on drag.** Each drag frame retargets the axes with zero duration, which completes the group's

@@ -41,8 +41,16 @@
     <!--
     Windows x64 presents shared D3D11 frames through the GPU runtime in place of the aggregate's Slim one; Program.fs
     asks SDL for its direct3d11 renderer. Other platforms keep the aggregate's Slim runtimes.
+
+    Ranvier.View.WebCore 0.1.0-rc.2 pins the native aggregate to 0.1.1-rc.3. The app takes rc.4 directly for its partial
+    root-layer repaint (Ranvier.WebCore#348), which halves a frame on shadowed pages; drop the direct aggregate reference
+    and NU1608 once a View.WebCore release depends on rc.4.
     -->
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">
+        <NoWarn>$(NoWarn);NU1608</NoWarn>
+    </PropertyGroup>
     <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">
+        <PackageReference Include="Ranvier.WebCore.Native" Version="[$(RanvierWebCoreNativeVersion)]" />
         <PackageReference Include="Ranvier.WebCore.Native.win-x64" Version="[$(RanvierWebCoreNativeVersion)]" ExcludeAssets="all" />
         <PackageReference Include="Ranvier.WebCore.Native.Gpu.win-x64" Version="[$(RanvierWebCoreNativeVersion)]" />
     </ItemGroup>

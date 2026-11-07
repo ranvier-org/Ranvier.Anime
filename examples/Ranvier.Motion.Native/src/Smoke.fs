@@ -145,7 +145,7 @@ let private kanban (d: Driver) =
     require "kanban: five cards over three lanes" (d.Count "li.card-slot" = 5 && counts () = [| "2"; "2"; "1" |])
     d.ClickText ("button", "Add card")
     require "kanban: Add card places a sixth card" (has 6 && text (d.One ".toolbar .meta") = "6 cards")
-    require "kanban: the new card enters with presence" (number (style (card 6) "opacity") < 1.)
+    require "kanban: the new card enters with presence" (d.Until (fun () -> number (style (card 6) "opacity") < 1.))
     require "kanban: the entering card settles opaque" (d.Until (fun () -> style (card 6) "opacity" = "1"))
     d.Click (query (card 6) ".delete")
     require "kanban: a deleted card stays while it leaves" (has 6 && d.Read (fun () -> board.Total.Value) = 5)
@@ -301,6 +301,55 @@ let private routes (d: Driver) =
     require "routes: home starts a new loop on every visit" (d.Until (fun () -> route () = [| "home" |]) && text (d.One ".count") = "0")
     require "routes: the footer counts route changes" (text (d.One ".shell-foot") = "Home · 3 route changes")
 
+/// <summary>
+/// Managed allocation per window turn while <c>each</c> drives the page, over <c>turns</c> turns. Allocation is the
+/// measure because it is stable across hosts, where frame time depends on the display and the native composite.
+/// </summary>
+let private bytesPerTurn (d: Driver) (turns: int) (each: int -> unit) =
+    let before = GC.GetAllocatedBytesForCurrentThread ()
+
+    for i in 0 .. turns - 1 do
+        each i
+        Host.step d.Window |> ignore
+
+    float (GC.GetAllocatedBytesForCurrentThread () - before) / float turns
+
+/// <summary>
+/// Allocation budgets for the interactions the native performance passes cut (docs/native-performance-review.md):
+/// about four times what each measured, so a return to the old per-move or per-frame costs fails.
+/// </summary>
+let private budgets (d: Driver) =
+    d.Open "physics"
+    d.Pump 300.
+    let x, y = d.Center (d.One ".puck")
+    d.Mouse (0, x, y)
+    d.Mouse (1, x, y)
+    d.Pump 20.
+
+    let drag =
+        bytesPerTurn d 120 (fun i ->
+            for k in 1..4 do
+                let t = float (i * 4 + k) * 0.05
+                d.Mouse (0, x + 150. * Math.Sin t, y + 60. * Math.Cos t))
+
+    d.Mouse (2, x, y)
+    d.Pump 600.
+    require (sprintf "budget: a drag frame with four moves allocates under 36 KB (%.1f KB)" (drag / 1024.)) (drag < 36. * 1024.)
+    d.Open "dashboard"
+    d.Pump 1500.
+    let live = bytesPerTurn d 120 ignore
+    require (sprintf "budget: a live dashboard turn allocates under 24 KB (%.1f KB)" (live / 1024.)) (live < 24. * 1024.)
+    d.Open "kanban"
+    d.Pump 300.
+
+    let hover =
+        bytesPerTurn d 60 (fun i ->
+            for k in 1..16 do
+                let t = float (i * 16 + k) * 0.08
+                d.Mouse (0, 590. + 450. * Math.Sin t, 430. + 300. * Math.Cos (t * 1.3)))
+
+    require (sprintf "budget: sixteen hover moves allocate under 8 KB (%.1f KB)" (hover / 1024.)) (hover < 8. * 1024.)
+
 /// <summary>Runs every check in a hidden window; 0 when all pass.</summary>
 let run () =
     try
@@ -325,6 +374,7 @@ let run () =
         physics d
         graphs d
         routes d
+        budgets d
         require "no mount or commit failures" (running.Errors.Count = 0)
         Console.WriteLine ("Ranvier Motion smoke passed: " + string passed + " checks")
         0
