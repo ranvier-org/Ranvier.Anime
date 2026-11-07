@@ -108,6 +108,24 @@ let tests =
                               options = { ComposedAnimationOptions.Default with Duration = 30.; Ease = id }, position = TimelinePosition.At 0.) |> ignore
             Expect.isFalse tlPartial.Cancelled "partially overridden timeline stays active"
 
+        testCase "composition Replace orders the tweens of timelines started at different times on the engine clock" <| fun _ ->
+            // anime's absolute offsets: a tween of a later timeline replaces an earlier timeline's tween of the same
+            // property even when its own position is smaller, and plays to its end.
+            use host = new ManualFrameScheduler()
+            let frames count = for _ in 1 .. count do host.Advance 10.; host.RunFrame()
+            let target = AnimatedObject [ "x", AdaptedValue.Scalar 0. ]
+            let options = { ComposedAnimationOptions.Default with Duration = 100.; Ease = id }
+            use earlier = Composed.createTimeline host None (Some true)
+            earlier.Add([| box target |], [| PropertySpec.Scalar("x", 100.) |], options = options, position = TimelinePosition.At 60.) |> ignore
+            earlier.Seek earlier.Duration |> ignore
+            close (target.GetNumber "x") 100. "the earlier timeline completes at once"
+            frames 10
+            use later = Composed.createTimeline host None (Some true)
+            later.Add([| box target |], [| PropertySpec.Scalar("x", 0.) |], options = options, position = TimelinePosition.At 30.) |> ignore
+            frames 40
+            close (target.GetNumber "x") 0. "the later timeline's tween plays to its end"
+            Expect.isTrue later.Completed "the later timeline completes"
+
         testCase "composition Blend matches upstream additive scalar and color traces" <| fun _ ->
             use doc = fixture()
             let scalarTrace = findCase doc "blend_scalar_two"

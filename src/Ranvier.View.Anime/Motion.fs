@@ -1076,13 +1076,34 @@ module Motion =
                 | ScrollCommand.Restart -> animation.Restart() |> ignore
                 | ScrollCommand.Reset -> animation.Reset() |> ignore
                 | ScrollCommand.Complete -> animation.Complete() |> ignore }
-        | _ -> invalidArg "play" "Motion.scroll links a Timer, Timeline or ComposedAnimation."
+        | :? ComposedTimeline as timeline ->
+            let rewind () = timeline.Seek(0., muteCallbacks = true) |> ignore
+            { Duration = (fun () -> timeline.Duration)
+              CurrentTime = (fun () -> timeline.CurrentTime)
+              Progress = (fun () -> if timeline.Duration > 0. then timeline.CurrentTime / timeline.Duration else 1.)
+              Completed = (fun () -> timeline.Completed)
+              Seek = (fun time muted -> timeline.Seek(time, muteCallbacks = muted) |> ignore)
+              Command =
+                function
+                | ScrollCommand.Play -> timeline.Play() |> ignore
+                | ScrollCommand.Pause -> timeline.Pause() |> ignore
+                | ScrollCommand.Resume -> timeline.Resume() |> ignore
+                | ScrollCommand.Reverse
+                | ScrollCommand.Alternate -> timeline.Reverse() |> ignore
+                | ScrollCommand.Restart ->
+                    rewind ()
+                    timeline.Play() |> ignore
+                | ScrollCommand.Reset ->
+                    rewind ()
+                    timeline.Pause() |> ignore
+                | ScrollCommand.Complete -> timeline.Seek(timeline.Duration) |> ignore }
+        | _ -> invalidArg "play" "Motion.scroll links a Timer, Timeline, ComposedAnimation or ComposedTimeline."
 
     /// <summary>
     /// Links <c>play</c>'s animation to a scroll observer of the element, or of <c>parameters</c>' target, and writes the
     /// observer's progress and in-view state into the signals <c>bind</c> returns.
     /// </summary>
-    /// <remarks>Needs <c>MotionHost.Install</c> with interaction services. <c>play</c> returns a <c>Timer</c>, <c>Timeline</c> or <c>ComposedAnimation</c>.</remarks>
+    /// <remarks>Needs <c>MotionHost.Install</c> with interaction services. <c>play</c> returns a <c>Timer</c>, <c>Timeline</c>, <c>ComposedAnimation</c> or <c>ComposedTimeline</c>.</remarks>
     let scroll (parameters: ScrollParams) (bind: 'inst -> ScrollBinding) (play: 'inst -> Element -> #ITickable) : Part<'native, 'inst> =
         Hooks.motion (
             Func<_, _, _, _>(fun inst native context ->

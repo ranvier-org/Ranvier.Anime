@@ -43,6 +43,13 @@ type internal DraggableTransformTarget(element:HTMLElement) =
             let mutable current=initialValue
             let write (value:float) =
                 live()
+                // The element's other transform components belong to whoever wrote them last, such as an animation
+                // started after this target; anime's draggable shares the element's transform cache with them.
+                let struct(inlineNow,_)=TransformCache.parse(style.getPropertyValue "transform")
+                let owned=[| for KeyValue(key,text) in cache do if properties.ContainsKey key then struct(key,text) |]
+                cache.Clear()
+                for KeyValue(key,text) in inlineNow do cache[key]<-text
+                for struct(key,text) in owned do cache[key]<-text
                 cache[name]<-value.ToString("G17",CultureInfo.InvariantCulture)+unit
                 let declaration=Declaration.create "transform" (TransformCache.build cache)
                 live()

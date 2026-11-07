@@ -629,7 +629,12 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
     let mutable siblingsAttached = false
     let mutable cancelled = false
     let mutable parentTimelineRef = parentTimeline
-    let mutable offset = timelineOffset
+    // anime's absolute offset: a top-level animation starts at the engine's last tick and a timeline child at its
+    // timeline's, so Replace orders the tweens of separate animations and timelines on one clock.
+    let mutable offset =
+        match parentTimeline with
+        | Some timeline -> timeline.AbsoluteOffset + timelineOffset
+        | None -> queue.OffsetTick() * timeScale + timelineOffset
 
     let assignRenderTransforms () =
         let lastByTarget = Dictionary<obj, ComposedTween>(HashIdentity.Reference)
@@ -1034,7 +1039,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         clock.Cancel()
 
     member internal this.RevertValues(inlineStylesOnly: bool) =
-        clock.Pause()
+        if not clock.Cancelled then clock.Pause() |> ignore
         let transformRestores = Dictionary<Element, ResizeArray<string * string option> * string>(HashIdentity.Reference)
         let domElements = HashSet<Element>(HashIdentity.Reference)
         for tw in tweens do
@@ -1100,9 +1105,10 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
             if el.getAttribute "style" = "" then el.removeAttribute "style"
 
     /// <summary>Rewinds, restores pre-animation inline/object/adapted values and cancels playback.</summary>
+    /// <remarks>A completed animation, whose clock <c>Complete</c> cancelled, still restores its values, as anime's revert does.</remarks>
     member this.Revert() =
         if not cancelled then
-            clock.Seek(0., muteCallbacks = true)
+            if not clock.Cancelled then clock.Seek(0., muteCallbacks = true)
             this.RevertValues false
             this.Cancel()
         this
@@ -1148,6 +1154,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     (scheduler: FrameScheduler, ?options: PlaybackOptions, ?autoplay: bool, ?onComplete: ComposedTimeline -> unit) as this =
     let queue = EngineFrames.forScheduler scheduler
     let manager = CompositionManagers.forQueue queue
+    let absoluteOffset = queue.OffsetTick() * (if queue.Seconds then 0.001 else 1.)
     let entries = ResizeArray<float * ComposedAnimation>()
     let labels = Dictionary<string, float>(StringComparer.Ordinal)
     let mutable iterDuration = 0.
@@ -1234,6 +1241,8 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
         this
 
     /// <summary>Total duration across iterations.</summary>
+    /// <summary>The engine time this timeline started at, which its children's absolute tween times count from.</summary>
+    member internal _.AbsoluteOffset = absoluteOffset
     member _.Duration = if entries.Count = 0 then 0. else clock.Duration
     /// <summary>Single-iteration duration.</summary>
     member _.IterationDuration = iterDuration

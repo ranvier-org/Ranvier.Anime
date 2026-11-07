@@ -164,7 +164,7 @@ The board above, on .NET, keeps its template and changes its play functions:
 ```
 
 `Reactive.policy ()` is a per-graph signal seeded `Full` on .NET, where no media query exists. `scroll` links a
-`ComposedAnimation`, `Timer` or `Timeline`; an interrupted native FLIP pass restarts from the rows' laid-out boxes.
+`ComposedAnimation`, `ComposedTimeline`, `Timer` or `Timeline`; an interrupted native FLIP pass restarts from the rows' laid-out boxes.
 
 Coverage: the browser parts run under jsdom (`tests/Ranvier.View.Anime.Browser`, `npm test`); the native parts run
 on a WebCore page in the native smoke host (`MotionViewProbe.fs`, `MotionPartsProbe.fs`), whose templates mirror the

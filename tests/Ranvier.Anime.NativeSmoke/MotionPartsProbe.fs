@@ -213,6 +213,19 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
         dispose ()
         require "animateOn reverts on disposal" (value element "opacity" <> "0.8")
 
+    // animateOn disposed while its first, completed animation is still the latest.
+    do
+        let view =
+            Component.define
+                (fun _ (level: Signal<float>) -> level)
+                (fun t -> t.div [| Motion.animateOn (fun (level: Signal<float>) -> level.Value) (fun _ element target -> fadeTo target () element) |] [||])
+
+        let graph, container, _, dispose = mountOf view (fun _ -> Api.createSignal 0.3)
+        let element = first container "div"
+        require "animateOn holds its completed first value" (value element "opacity" = "0.3")
+        dispose ()
+        require "animateOn reverts a completed first value on disposal" (value element "opacity" <> "0.3")
+
     // draw and morph on SVG geometry.
     do
         let view =

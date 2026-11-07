@@ -146,6 +146,13 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
     member _.Update()=update()
     /// <summary>Source engine clock settings and last admitted phase.</summary>
     member _.Clock=clock
+    /// <summary>
+    /// The engine's last tick, first brought to the host's time when no frame is requested: the origin of a new root's
+    /// offset, as anime ticks an idle engine before reading <c>_lastTickTime</c>.
+    /// </summary>
+    member _.OffsetTick()=
+        if not logicalRequest then clock.Request(scheduler.Now()) |> ignore
+        clock.LastTick
     /// <summary>Effective multiplier, including seconds mode's 0.001 scale.</summary>
     member _.EffectiveSpeed=speed
     /// <summary>The engine speed captured before the current cached-next traversal.</summary>

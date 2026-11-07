@@ -113,6 +113,21 @@ let private interactive =
                           Motion.drag
                               NativeDraggableOptions.Default
                               (fun state -> { Position = state.Position; Dragging = ValueSome state.Dragging; Slot = ValueNone }) |]
+                       [||]
+                   // anime's scroll-linked timeline(): a ComposedTimeline child scrubbed like the animation above.
+                   t.div
+                       [| t.Attrs.attribute ("style", "position:absolute;top:600px;left:60px;width:50px;height:50px")
+                          Motion.scroll
+                              ScrollParams.Default
+                              (fun _ -> { Progress = ValueNone; InView = ValueNone })
+                              (fun _ element ->
+                                  let services = MotionHost.Current
+                                  let timeline = Composed.createTimeline services.Scheduler None (Some false)
+                                  timeline.Add(
+                                      [| box element |],
+                                      [| PropertySpec.Scalar("opacity", 1., fromValue = 0.) |],
+                                      { ComposedAnimationOptions.Default with Duration = 1000.; Computed = Some services.Computed }
+                                  )) |]
                        [||] |])
 
 /// <summary>Mounts Motion.scroll and Motion.drag on the native host and drives real scroll and mouse input.</summary>
@@ -176,9 +191,17 @@ let runInteraction () =
         require "scroll scrubs the linked animation" (pump scrubbed)
         require "scroll writes progress" (let progress = read state.Progress in progress > 0.2 && progress < 0.8)
         require "scroll writes in-view" (read state.InView)
+        let linked = (container.querySelectorAll "div").item 3u |> unbox<Element>
+        let timelineOpacity () = (unbox<ElementCSSInlineStyle> (box linked)).style.getPropertyValue "opacity"
+        require "scroll scrubs a linked composed timeline" (pump (fun () ->
+            match Double.TryParse(timelineOpacity (), Globalization.NumberStyles.Float, Globalization.CultureInfo.InvariantCulture) with
+            | true, value -> value > 0.2 && value < 0.8
+            | _ -> false))
 
         windowScroll.ScrollTo { Left = None; Top = Some 0.; Behavior = ScrollBehavior.Instant }
         host.Frame()
+        // Another animation writes the handle's transform after its draggable was created, as presence does to a card.
+        (unbox<ElementCSSInlineStyle> (box handle)).style.setProperty("transform", "rotate(5deg)")
         let rect = handle.getBoundingClientRect()
         let x, y = rect.left + 5., rect.top + 5.
         mouse 1 x y
@@ -187,6 +210,7 @@ let runInteraction () =
         let transform () = (unbox<ElementCSSInlineStyle> (box handle)).style.getPropertyValue "transform"
         require "drag writes position" (pump (fun () -> read state.Position = struct (30., 10.)))
         require "drag moves the element" (transform().StartsWith("translate(30px, 10px)", StringComparison.Ordinal))
+        require "drag keeps transform components other animations wrote" (transform().Contains "rotate(5deg)")
         require "drag writes dragging" (read state.Dragging)
         mouse 2 (x + 30.) (y + 10.)
         require "release clears dragging" (not (read state.Dragging))
