@@ -104,11 +104,7 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
             snapped[index]<-DragPhysics.snap snapRule target
             axis |> Option.iter(fun axis -> axis.To(target,duration=0u))
             manual<-false
-    // Source's angle runs from the previous pointer event to the latest. A native host delivers every event, so the
-    // last two can share a pixel, where atan2 would point right; that pair keeps the previous angle.
-    let pointerAngle () =
-        let x,y=pointer[0]-pointer[2],pointer[1]-pointer[3]
-        if x<>0. || y<>0. then angle<-Math.Atan2(y,x)
+    let pointerAngle ()=angle<-Math.Atan2(pointer[1]-pointer[3],pointer[0]-pointer[2])
     let sampleVelocity dx dy=velocity.Sample(scheduler.Now(),dx,dy,config.VelocityMultiplier,config.MinVelocity,config.MaxVelocity)
     let update () =
         if not disposed && ownerAllowsWrite() then
@@ -255,7 +251,9 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
     /// <summary>Updates normalized pointer coordinates; drag callbacks run on every eligible input event.</summary>
     member _.Move(x,y) =
         live()
-        if grabbed && (dragged || DragPhysics.threshold (not config.XEnabled) (not config.YEnabled) threshold (x-pointer[6]) (y-pointer[7])) then
+        // A native host also delivers moves that stay on the last pixel, which a browser never fires; one would make the
+        // last two points equal and turn the release angle to zero, pointing right.
+        if grabbed && (x<>pointer[0] || y<>pointer[1]) && (dragged || DragPhysics.threshold (not config.XEnabled) (not config.YEnabled) threshold (x-pointer[6]) (y-pointer[7])) then
             pointer[2]<-pointer[0];pointer[3]<-pointer[1]
             pointer[0]<-x;pointer[1]<-y
             dragged<-true

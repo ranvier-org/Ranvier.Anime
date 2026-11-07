@@ -53,6 +53,10 @@ module DraggableNativeProbe =
             require (nativeLeft="20px") ("Native computed left: "+nativeLeft)
             dispatchInput "mouseup" (startX+20.) (startY+10.)
             require (callbacks.Contains "release") "Native release callback did not run."
+            let selection=document.createEvent "Event"
+            selection.initEvent("selectstart",true,true)
+            document.dispatchEvent selection |> ignore
+            require (not selection.defaultPrevented) "Release left the gesture's document listeners attached."
             StyleDeclaration.apply style (Declaration.create "opacity" "0.6")
             binding.Revert()
             horizontal.Revert();vertical.Revert()

@@ -52,11 +52,10 @@ module DraggableControllerTests =
                 let mutable y=0.
                 use controller=new Draggable(frames.Scheduler,NumericProperty((fun()->x),(fun value->x<-value)),NumericProperty((fun()->y),(fun value->y<-value)))
                 controller.Grab(100.,0.)
-                controller.Move(90.,0.)
-                frames.Step 17.
-                controller.Move(80.,0.)
-                controller.Move(80.,0.)
-                frames.Step 17.
+                for target in [90.;80.;70.] do
+                    controller.Move(target,0.)
+                    controller.Move(target,0.)
+                    frames.Step 17.
                 Expect.floatClose Accuracy.high controller.Angle Math.PI "Leftward movement points left"
                 let atRelease=x
                 controller.Release()

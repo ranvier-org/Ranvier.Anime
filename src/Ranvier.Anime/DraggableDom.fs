@@ -85,7 +85,9 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
             let struct(x,y)=normalize mouse.clientX mouse.clientY
             Some(struct(x,y,false))
         | _ -> None
-    let prevent (event:Event)=if event.cancelable then event.preventDefault()
+    // Each listener is one function value: a class let-function becomes a method, and every use of a method as a value is a
+    // new closure, which removeEventListener cannot match and addEventListener cannot deduplicate.
+    let prevent:EventListener=fun event -> if event.cancelable then event.preventDefault()
     let nestedScroller (event:Event) movedY =
         match event with
         | :? TouchEvent ->
@@ -110,7 +112,7 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
                  (fun () -> (trigger:>EventTarget).removeEventListener("touchstart",prevent))
                  (fun () -> (trigger:>EventTarget).removeEventListener("touchmove",prevent))
                  (fun () -> (trigger:>EventTarget).removeEventListener("touchend",prevent))]
-    let move (event:Event) =
+    let move:EventListener=fun event ->
         if not disposed && controller.Grabbed then
             match point event with
             | Some(struct(x,y,_)) when nestedScroller event (y-pointerOriginY) ->
@@ -121,12 +123,12 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
                 if pointerRestore.IsNone then
                     pointerRestore<-Some(DragDomStyles.snapshot trigger "pointer-events")
                     DragDomStyles.apply trigger "pointer-events" "none"
-                (trigger:>EventTarget).addEventListener("touchstart",prevent,AddEventListenerOptions(passive=Some false))
-                (trigger:>EventTarget).addEventListener("touchmove",prevent,AddEventListenerOptions(passive=Some false))
-                (trigger:>EventTarget).addEventListener("touchend",prevent)
+                    (trigger:>EventTarget).addEventListener("touchstart",prevent,AddEventListenerOptions(passive=Some false))
+                    (trigger:>EventTarget).addEventListener("touchmove",prevent,AddEventListenerOptions(passive=Some false))
+                    (trigger:>EventTarget).addEventListener("touchend",prevent)
                 controller.Move(x,y)
             | None -> ()
-    let up (_:Event) =
+    let up:EventListener=fun _ ->
         if not disposed then
             releaseStyles()
             cleanupDocument()
@@ -134,7 +136,7 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
             if not controller.Cancelled then
                 controller.Release()
                 if not controller.Cancelled then scroll |> Option.iter(fun scroll -> scroll.ScrollInViewPrecise(controller.ReleaseDuration,gap=scroll.Settings.Threshold,ease=controller.ReleaseEase))
-    let select (event:Event)=prevent event
+    let select:EventListener=prevent
     let attachDocument () =
         if not listening then
             listening<-true
@@ -148,7 +150,7 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
                 for name in ["mousemove";"touchmove"] do yield fun () -> (document:>EventTarget).removeEventListener(name,move)
                 for name in ["mouseup";"touchend";"touchcancel"] do yield fun () -> (document:>EventTarget).removeEventListener(name,up)
                 yield fun () -> (document:>EventTarget).removeEventListener("selectstart",select) })
-    let down (event:Event) =
+    let down:EventListener=fun event ->
         if not disposed && enabled && not controller.Cancelled && not controller.Grabbed then
             let range=match event.target with :? HTMLInputElement as input -> input.getAttribute "type"="range" | _ -> false
             if not range then
@@ -176,7 +178,7 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
                         attachDocument()
                         scroll |> Option.iter _.Start()
                 | None -> ()
-    let hover (_:Event) =
+    let hover:EventListener=fun _ ->
         if not disposed && enabled && not controller.Cancelled && finePointer && cursorEnabled && hoverRestore.IsNone then
             hoverRestore<-Some(DragDomStyles.snapshot trigger "cursor")
             DragDomStyles.apply trigger "cursor" (defaultArg cursorHover "grab")
