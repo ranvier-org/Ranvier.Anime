@@ -48,7 +48,7 @@ module internal TimelineKeyframeBinding =
                     authored[frame].Resolve(KeyframeContext(targets[target],uint target,uint targets.Length,
                         previous |> Option.bind(fun tween -> tween.CachedEnd.Scalar)),number,current)
                 let original index=Number(targets[index].Value)
-                let write target _ (output:Output)=targets[target].Value<-output.Scalar.Value
+                let write target _ (output:Output)=targets[target].Value<-output.Number
                 install(context,animation,defaults,properties,targets |> Array.map(fun target -> struct(box target,"value")),
                         resolve,original,write,false,precision,options,current)),
             ?position=position,zeroDuration=(duration<=1e-11))

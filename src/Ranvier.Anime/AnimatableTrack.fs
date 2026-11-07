@@ -26,58 +26,121 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
     let clock=ScopeRegistration.run ignore (fun () ->
         new Timer(scheduler,iterationDuration,options=options,?onBegin=onBegin,?onPause=onPause,?onComplete=onComplete))
     let live () = if clock.Cancelled || not(ownerAllowsWrite()) then raise(ObjectDisposedException(nameof AnimatableTrack))
+    // Guards are only checked while their call runs, so each path keeps one closure over a snapshot it saves and
+    // restores: a nested render or retarget (user code seeking this clock) still invalidates the outer one.
+    let mutable renderToken=Int64.MinValue
+    let renderCurrent=fun () -> clock.IsCurrent renderToken && ownerAllowsWrite()
     let render (sample:PlaybackSample) mode muted =
-        let timerCurrent=clock.CaptureWriteGuard()
-        let current()=timerCurrent() && ownerAllowsWrite()
-        let iteration=clock.IterationDuration
-        let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
-        let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=clock.TickThreshold
-        let absolute=PropertyNumbers.round 1e12 (clock.Delay+sample.IterationTime)
-        let start=PropertyNumbers.round 1e12 clock.Delay
-        let eligible=force || ((tweenTime<>iteration || absolute<=start+iteration) && (tweenTime<>0. || absolute>=start))
-        if eligible && current() then
-            tweenTime<-Math.Clamp(sample.IterationTime,0.,iteration)
-            let progress=ease(tweenTime/iteration)
-            let mutable alive=current()
-            for index in 0..values.Length-1 do
-                if alive then
-                    match values[index].Sample(progress,precision,modifier,current) with
-                    | Some output when current() ->
-                        if not clock.InternalRender then write index output
-                        alive<-current()
-                    | _ -> alive<-false
+        let savedToken=renderToken
+        renderToken<-clock.WriteToken
+        try
+            let iteration=clock.IterationDuration
+            let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
+            let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=clock.TickThreshold
+            let absolute=PropertyNumbers.round 1e12 (clock.Delay+sample.IterationTime)
+            let start=PropertyNumbers.round 1e12 clock.Delay
+            let eligible=force || ((tweenTime<>iteration || absolute<=start+iteration) && (tweenTime<>0. || absolute>=start))
+            if eligible && renderCurrent() then
+                tweenTime<-Math.Clamp(sample.IterationTime,0.,iteration)
+                let progress=ease(tweenTime/iteration)
+                let mutable alive=renderCurrent()
+                for index in 0..values.Length-1 do
+                    if alive then
+                        let output=values[index].TrySample(progress,precision,modifier,renderCurrent)
+                        if not(isNull output) && renderCurrent() then
+                            if not clock.InternalRender then write index output
+                            alive<-renderCurrent()
+                        else alive<-false
+        finally renderToken<-savedToken
     do clock.ConfigureRenderer(render,?totalDuration=(if iterationDuration=1e-11 then Some 1e-11 else None),
                                onStretch=(fun scale -> tweenTime<-tweenTime*scale))
-    let retarget (scalars:float array option) (components:float array option) newDuration newEase commit =
-        live()
-        newEase |> Option.iter(fun callback -> if isNull(box callback) then invalidArg "newEase" "An easing callback is required.")
-        scalars |> Option.iter(fun targets ->
-            if targets.Length<>values.Length then invalidArg "targets" "Expected one scalar destination per captured target."
-            for target in targets do finite "value" target)
-        components |> Option.iter(fun values -> for value in values do finite "components" value)
-        for value in values do
-            let componentTrack=value.Kind=ValueKind.Color || value.Kind=ValueKind.Complex
-            if componentTrack<>components.IsSome then invalidArg "value" "Destination shape must match every captured property."
-        let prepare operationCurrent =
-            let inherited=clock.CaptureWriteGuard()
-            let current () = operationCurrent() && inherited() && ownerAllowsWrite()
-            let staged=values |> Array.map(fun value -> value.Fork())
-            let mutable alive=current()
+    // A retarget's arguments, read by the cached prepare closure: mode 0 is one scalar for every target, 1 one scalar
+    // per target, 2 components.
+    let mutable pendingMode=0
+    let mutable pendingScalar=0.
+    let mutable pendingTargets:float array=null
+    let mutable pendingEase:float -> float=Unchecked.defaultof<_>
+    let mutable pendingCommit:unit -> unit=Unchecked.defaultof<_>
+    let mutable operationCurrent:unit -> bool=Unchecked.defaultof<_>
+    let mutable prepareToken=Int64.MinValue
+    let prepareCurrent=fun () -> operationCurrent() && clock.IsCurrent prepareToken && ownerAllowsWrite()
+    let mutable spare:AnimatableValue array=null
+    let mutable staging=false
+    let prepareCached=fun (current:unit -> bool) ->
+        let savedCurrent=operationCurrent
+        let savedToken=prepareToken
+        operationCurrent<-current
+        prepareToken<-clock.WriteToken
+        // A nested retarget stages into fresh forks; the outermost reuses the spare array.
+        let nested=staging
+        let staged=
+            if nested || isNull spare then values |> Array.map(fun value -> value.Fork())
+            else
+                for index in 0..values.Length-1 do spare[index].CopyFrom values[index]
+                spare
+        staging<-true
+        try
+            let mutable alive=prepareCurrent()
             for index in 0..staged.Length-1 do
                 if alive then
                     alive <-
-                        match scalars,components with
-                        | Some targets,_ -> staged[index].RetargetScalar(targets[index],modifier,current)
-                        | _,Some targets -> staged[index].RetargetComponents(targets,modifier,current)
-                        | _ -> false
-            if alive && current() then
+                        match pendingMode with
+                        | 0 -> staged[index].RetargetScalar(pendingScalar,modifier,prepareCurrent)
+                        | 1 -> staged[index].RetargetScalar(pendingTargets[index],modifier,prepareCurrent)
+                        | _ -> staged[index].RetargetComponents(pendingTargets,modifier,prepareCurrent)
+            if alive && prepareCurrent() then
+                let previous=values
                 values<-staged
-                newEase |> Option.iter(fun callback -> ease<-callback)
+                if not nested then spare<-previous
+                if not(isNull(box pendingEase)) then ease<-pendingEase
                 tweenTime<-0.
-                commit |> Option.iter(fun action -> action())
+                if not(isNull(box pendingCommit)) then pendingCommit()
                 true
             else false
-        clock.Retarget(prepare,?newDuration=newDuration)
+        finally
+            staging<-nested
+            operationCurrent<-savedCurrent
+            prepareToken<-savedToken
+    let retarget mode scalar (targets:float array) (newDuration:float) (newEase:float -> float) (commit:unit -> unit) =
+        live()
+        if mode=0 then finite "value" scalar
+        elif mode=1 then
+            if targets.Length<>values.Length then invalidArg "targets" "Expected one scalar destination per captured target."
+            for target in targets do finite "value" target
+        else for value in targets do finite "components" value
+        let components=mode=2
+        for value in values do
+            let componentTrack=value.Kind=ValueKind.Color || value.Kind=ValueKind.Complex
+            if componentTrack<>components then invalidArg "value" "Destination shape must match every captured property."
+        let savedMode=pendingMode
+        let savedScalar=pendingScalar
+        let savedTargets=pendingTargets
+        let savedEase=pendingEase
+        let savedCommit=pendingCommit
+        pendingMode<-mode
+        pendingScalar<-scalar
+        pendingTargets<-targets
+        pendingEase<-newEase
+        pendingCommit<-commit
+        try clock.RetargetPrecise(prepareCached,newDuration)
+        finally
+            pendingMode<-savedMode
+            pendingScalar<-savedScalar
+            pendingTargets<-savedTargets
+            pendingEase<-savedEase
+            pendingCommit<-savedCommit
+    let easeOrNull (newEase:(float -> float) option) =
+        match newEase with
+        | Some callback ->
+            if isNull(box callback) then invalidArg "newEase" "An easing callback is required."
+            callback
+        | None -> Unchecked.defaultof<_>
+    let durationOrNaN (newDuration:float option) =
+        match newDuration with
+        | Some value ->
+            if Double.IsNaN value then invalidArg "newDuration" "Expected finite nonnegative milliseconds."
+            value
+        | None -> nan
     /// <summary>The property's shared playback controller.</summary>
     member _.Clock=clock
     /// <summary>Number of captured targets.</summary>
@@ -98,15 +161,21 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
     member _.Kind(index)=values[index].Kind
     /// <summary>Retargets a finite scalar, retaining omitted duration and easing.</summary>
     member _.RetargetScalar(value,?newDuration:float,?newEase:float -> float)=
-        retarget (Some(Array.create values.Length value)) None newDuration newEase None
+        let newEase=easeOrNull newEase
+        retarget 0 value null (durationOrNaN newDuration) newEase Unchecked.defaultof<_>
+    /// <summary>Retargets a finite scalar with a duration (NaN keeps it) and an ease (null keeps it), without option wrappers.</summary>
+    member _.RetargetScalarPrecise(value,newDuration:float,newEase:float -> float)=
+        retarget 0 value null newDuration newEase Unchecked.defaultof<_>
     /// <summary>Atomically retargets one finite scalar per captured target and commits adapter metadata with accepted endpoints.</summary>
     member _.RetargetScalars(targets:float array,?newDuration:float,?newEase:float -> float,?onCommit:unit -> unit)=
         if isNull targets then nullArg "targets"
-        retarget (Some(Array.copy targets)) None newDuration newEase onCommit
+        let newEase=easeOrNull newEase
+        retarget 1 0. (Array.copy targets) (durationOrNaN newDuration) newEase (defaultArg onCommit Unchecked.defaultof<_>)
     /// <summary>Retargets supplied finite components, retaining omitted endpoints, duration and easing.</summary>
     member _.RetargetComponents(components:float array,?newDuration:float,?newEase:float -> float,?onCommit:unit -> unit)=
         if isNull components then nullArg "components"
-        retarget None (Some(Array.copy components)) newDuration newEase onCommit
+        let newEase=easeOrNull newEase
+        retarget 2 0. (Array.copy components) (durationOrNaN newDuration) newEase (defaultArg onCommit Unchecked.defaultof<_>)
     /// <summary>Stops future dispatch; repeated cancellation is harmless.</summary>
     member _.Cancel()=clock.Cancel()
     interface IDisposable with member _.Dispose()=clock.Cancel()

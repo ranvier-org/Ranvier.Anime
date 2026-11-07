@@ -52,6 +52,7 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         generation <- generation + 1
         generation
 
+    let childFlag = Some true
     let render time mode mute soft =
         let previousInternal = internalRender
         internalRender <- soft
@@ -61,7 +62,8 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             let wasCompleted = completed
             previousAbsoluteTime <- sample.AbsoluteTime
             let next = timing.Sample(previousAbsoluteTime, time, reversed, alternate, wasCompleted, mode,
-                                     ?parentBackwards=(parentContext |> Option.map(fun (backwards,_,_) -> backwards)), child=parentContext.IsSome)
+                                     ?parentBackwards=(match parentContext with Some(backwards,_,_) -> Some backwards | None -> None),
+                                     ?child=(if parentContext.IsSome then childFlag else None))
             sample <- next
             let current () = expected = generation && not cancelled && writeGuard() &&
                              (parentContext |> Option.forall(fun (_,_,live) -> live()))
@@ -159,10 +161,6 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
                 began <- false
                 completed <- false
 
-    let run action =
-        live()
-        action (change())
-
     let cancel () =
         if not cancelled then
             change() |> ignore
@@ -195,6 +193,13 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         let inherited = writeGuard
         let parent = parentContext
         fun () -> expected = generation && not cancelled && inherited() && (parent |> Option.forall(fun (_,_,live) -> live()))
+    /// <summary>The non-generation half of <c>CaptureWriteGuard</c>, checked now: live, with live inherited and parent guards.</summary>
+    /// <remarks>Inherited guards are scoped around synchronous calls, so checking them during a call matches capturing them.</remarks>
+    member _.WriteCurrent() =
+        not cancelled && writeGuard() &&
+        (match parentContext with
+         | Some(_,_,live) -> live()
+         | None -> true)
     /// <summary>Scopes a borrowed setter's complete ancestor guard across rendering and lifecycle callbacks.</summary>
     member _.WithWriteGuard(guard: unit -> bool, action: unit -> unit) =
         let previous = writeGuard
@@ -247,7 +252,9 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             speed <- System.Math.Max(1e-11, value)
     /// <summary>Samples controller callbacks and any configured child phase using a source tick mode.</summary>
     member _.Tick(time: float, mode: PlaybackTickMode, mute: bool) =
-        run (fun _ -> render time mode mute false)
+        live()
+        change() |> ignore
+        render time mode mute false
     /// <summary>Samples an owned child with inherited direction, lifecycle filtering and ancestor interruption;
     /// rendering can refresh caches without target dispatch.</summary>
     /// <remarks>Initialization clears lifecycle flags only while this sample's generation and inherited guards remain current.</remarks>
@@ -255,12 +262,13 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         let previous = parentContext
         parentContext <- Some(backwards, parentBegan, canWrite)
         try
-            run (fun expected ->
-                render time mode mute (defaultArg internalRender false)
-                if defaultArg initialize false && current expected && writeGuard() && canWrite() then
-                    paused<-true
-                    began<-false
-                    completed<-false)
+            live()
+            let expected = change()
+            render time mode mute (defaultArg internalRender false)
+            if defaultArg initialize false && current expected && writeGuard() && canWrite() then
+                paused<-true
+                began<-false
+                completed<-false
         finally parentContext <- previous
     /// <summary>Exposes the source constructor's zero playhead before initialization applies configured reversal.</summary>
     member _.PrepareConstruction() =
@@ -278,13 +286,17 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         began <- false
         completed <- false
     /// <summary>Seeks in milliseconds after the initial delay and retains the preceding scheduling state.</summary>
-    member _.Seek(time: float, mute: bool) = run (fun expected -> seek expected time mute)
+    member _.Seek(time: float, mute: bool) =
+        live()
+        seek (change()) time mute
     /// <summary>Pauses scheduling and emits the pause callback once for an active controller.</summary>
     member _.Pause() =
         change() |> ignore
         pause()
     /// <summary>Resumes scheduling; zero-duration standalone timers complete immediately.</summary>
-    member _.Resume() = run resume
+    member _.Resume() =
+        live()
+        resume (change())
     /// <summary>Reopens an internal callback animation before resetting its retained clock history.</summary>
     member _.ReviveForReset() =
         if cancelled then
@@ -292,24 +304,38 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             cancelled<-false
             paused<-true
     /// <summary>Resets time and flags with muted render callbacks, restoring the initial direction policy.</summary>
-    member _.Reset() = run (fun expected -> reset expected false)
+    member _.Reset() =
+        live()
+        reset (change()) false
     /// <summary>Refreshes caches during reset while exposing an internal-render context to the renderer.</summary>
-    member _.SoftReset() = run (fun expected -> reset expected true)
+    member _.SoftReset() =
+        live()
+        reset (change()) true
     /// <summary>Resets and resumes scheduling.</summary>
-    member _.Restart() = run (fun expected -> reset expected false; resume expected)
+    member _.Restart() =
+        live()
+        let expected = change()
+        reset expected false
+        resume expected
     /// <summary>Mirrors time and changes direction according to repeat parity.</summary>
-    member _.Alternate() = run toggle
+    member _.Alternate() =
+        live()
+        toggle (change())
     /// <summary>Resumes forward playback, mirroring time when currently reversed.</summary>
-    member _.Play() = run play
+    member _.Play() =
+        live()
+        play (change())
     /// <summary>Resumes reversed playback, mirroring time when currently forward.</summary>
     member _.Reverse() =
-        run (fun expected ->
-            if not reversed then toggle expected
-            resume expected)
+        live()
+        let expected = change()
+        if not reversed then toggle expected
+        resume expected
     /// <summary>Ends the disposable lifetime and emits pause when previously active.</summary>
     member _.Cancel() = cancel()
     /// <summary>Seeks to completion then cancels, optionally muting render callbacks.</summary>
     member _.Complete(mute: bool) =
-        run (fun expected ->
-            seek expected timing.Duration mute
-            if current expected then cancel())
+        live()
+        let expected = change()
+        seek expected timing.Duration mute
+        if current expected then cancel()

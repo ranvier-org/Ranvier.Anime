@@ -54,7 +54,7 @@ type internal FrameSibling(definition:FrameTween,child:obj) =
         let frame=this.Definition
         FrameTween(frame.Target,frame.Name,frame.First,frame.Last,this.Start,this.Delay,this.Update,
                    this.AbsoluteStart,this.AbsoluteUpdateStart,this.AbsoluteEnd,frame.HasFrom,frame.Ease,frame.Modifier,
-                   {this.Value with Components=Array.copy this.Value.Components})
+                   this.Value.CopyComponents())
     /// <summary>Captures a publication guard that rejects intervening playback or geometry changes.</summary>
     member this.Observe() =
         let definition=this.Definition

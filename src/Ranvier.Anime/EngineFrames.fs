@@ -62,6 +62,39 @@ type internal EngineClock(initialTime:float) =
     /// <summary>Updates delta after admission; wake requests preserve delta history.</summary>
     member _.ComputeDelta(time:float)=delta<-time-lastTime;lastTime<-time
 
+/// <summary>A write staged during an engine frame and applied once when the frame ends.</summary>
+type internal IDeferredWrite =
+    /// <summary>Applies the staged write.</summary>
+    abstract Flush: unit -> unit
+
+/// <summary>Writes staged while an engine frame runs, applied when the outermost frame ends.</summary>
+/// <remarks>Several tracks of one element then write it once per frame. Per thread, as schedulers are.</remarks>
+type internal DeferredWrites =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private depth: int
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private pending: List<IDeferredWrite>
+    /// <summary>Whether an engine frame is running on this thread, so writes can be staged.</summary>
+    static member Deferring = DeferredWrites.depth > 0
+    /// <summary>Stages a write; the caller adds each target once until it flushes.</summary>
+    static member Add(write: IDeferredWrite) =
+        if isNull DeferredWrites.pending then DeferredWrites.pending <- List<IDeferredWrite>()
+        DeferredWrites.pending.Add write
+    /// <summary>Enters a frame.</summary>
+    static member Enter() = DeferredWrites.depth <- DeferredWrites.depth + 1
+    /// <summary>Leaves a frame, applying the staged writes when it is the outermost; the first failure is rethrown.</summary>
+    static member Exit() =
+        DeferredWrites.depth <- DeferredWrites.depth - 1
+        let pending = DeferredWrites.pending
+        if DeferredWrites.depth = 0 && not(isNull pending) && pending.Count > 0 then
+            let mutable failure: exn = null
+            let mutable index = 0
+            while index < pending.Count do
+                try pending[index].Flush() with error -> if isNull failure then failure <- error
+                index <- index + 1
+            pending.Clear()
+            if not(isNull failure) then System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw()
+
 type private EngineFrameEntry() =
     /// <summary>The pending frame callback; null when none is pending (no per-frame option allocation).</summary>
     member val Callback:(float -> unit)=Unchecked.defaultof<_> with get,set
@@ -101,6 +134,7 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
             cursor<-next
     let update () =
         pumping<-true
+        DeferredWrites.Enter()
         try
             let now=scheduler.Now()
             if clock.Request now then
@@ -122,6 +156,7 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
                 afterUpdate()
         finally
             pumping<-false
+            DeferredWrites.Exit()
     let rec schedule wake allowPump =
         if (not wake || useDefaultMainLoop) && entries.Count>0 && pending.IsNone && (allowPump || not pumping) && not suspended then
             if wake && not logicalRequest then clock.Request(scheduler.Now()) |> ignore
@@ -229,20 +264,25 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
                 try lease.Dispose() with error -> if failure.IsNone then failure<-Some error
             work.Clear()
             failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
+        let request (callback:float -> unit) =
+            live()
+            entry.Version<-entry.Version+1L
+            entry.Callback<-callback
+            if entry.Node.IsNone then
+                let mutable previous=entries.Last
+                while not(isNull previous) && previous.Value.Priority>entry.Priority do previous<-previous.Previous
+                entry.Node<-Some(if isNull previous then entries.AddFirst entry else entries.AddAfter(previous,entry))
+            if not pumping then suspended<-false
+            schedule true false
+        let cancelRequest () =
+            entry.Version<-entry.Version+1L
+            entry.Callback<-Unchecked.defaultof<_>
         let adapter=
             { new FrameScheduler with
                 member _.Now()=scheduler.Now()
                 member _.Frame(callback) =
-                    live()
-                    entry.Version<-entry.Version+1L
+                    request callback
                     let expected=entry.Version
-                    entry.Callback<-callback
-                    if entry.Node.IsNone then
-                        let mutable previous=entries.Last
-                        while not(isNull previous) && previous.Value.Priority>entry.Priority do previous<-previous.Previous
-                        entry.Node<-Some(if isNull previous then entries.AddFirst entry else entries.AddAfter(previous,entry))
-                    if not pumping then suspended<-false
-                    schedule true false
                     {new IDisposable with member _.Dispose()=if expected=entry.Version then entry.Callback<-Unchecked.defaultof<_>}
                 member _.Timeout(delay,callback)=scheduleWork (fun action -> scheduler.Timeout(delay,action)) callback
                 member _.Microtask(callback)=scheduleWork scheduler.Microtask callback
@@ -256,9 +296,15 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
         let terminate () =
             entry.Callback<-Unchecked.defaultof<_>
             cancelWork()
-        adapter,(fun callback priority -> entry.ResetTime<-callback;entry.Priority<-priority),initialTick,terminate
+        adapter,(fun callback priority -> entry.ResetTime<-callback;entry.Priority<-priority),initialTick,terminate,request,cancelRequest
 
-type private EngineRoot(queue:EngineFrameQueue,configure:(unit -> unit) -> float -> unit,initialTick:float,terminate:unit -> unit) =
+/// <summary>An engine root: its queue, and lease-free frame requests for the one client that owns it.</summary>
+type internal EngineRoot(queue:EngineFrameQueue,configure:(unit -> unit) -> float -> unit,initialTick:float,terminate:unit -> unit,
+                         request:(float -> unit) -> unit,cancelRequest:unit -> unit) =
+    /// <summary>Requests the next admitted frame, replacing any pending callback; the root keeps its queue position.</summary>
+    member _.Request(callback:float -> unit)=request callback
+    /// <summary>Drops the pending callback, if any.</summary>
+    member _.CancelRequest()=cancelRequest()
     member _.Queue=queue
     member _.InitialTick=initialTick
     member _.Terminate()=terminate()
@@ -284,9 +330,14 @@ module internal EngineFrames =
         | true,_ -> scheduler
         | _ ->
             let queue=forScheduler scheduler
-            let adapter,configure,initialTick,terminate=queue.CreateScheduler()
-            roots.Add(adapter,EngineRoot(queue,configure,initialTick,terminate))
+            let adapter,configure,initialTick,terminate,request,cancelRequest=queue.CreateScheduler()
+            roots.Add(adapter,EngineRoot(queue,configure,initialTick,terminate,request,cancelRequest))
             adapter
+    /// <summary>The engine root behind an adapter <c>createRoot</c> returned.</summary>
+    let rootOf scheduler =
+        match roots.TryGetValue scheduler with
+        | true,root -> root
+        | _ -> invalidArg "scheduler" "Expected an engine root adapter."
     /// <summary>Captures the source Timer clock phase before an idle-engine construction wake request.</summary>
     let initialTick scheduler =
         match roots.TryGetValue scheduler with

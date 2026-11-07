@@ -87,7 +87,7 @@ module internal KeyframeSequenceBinding =
             let program=KeyframeCompilation.compileDynamic(options.Composition=KeyframeComposition.Replace,defaults,properties,resolve,(fun index -> Number(read index)),current)
             animation.EnsureLive()
             let program=program |> Option.defaultWith(fun () -> invalidOp "Keyframe construction was superseded.")
-            let write target name (output:Output)=handles[name].[target].Value<-output.Scalar.Value
+            let write target name (output:Output)=handles[name].[target].Value<-output.Number
             install scheduler animation program write false precision options current
         with _ ->
             try animation.Cancel() with _ -> ()

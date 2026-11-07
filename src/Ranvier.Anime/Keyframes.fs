@@ -63,7 +63,7 @@ module internal KeyframeBinding =
             let program=KeyframeCompilation.compileDynamic(options.Composition=KeyframeComposition.Replace,defaults,properties,resolve,(fun index -> Number(read index)),current)
             animation.EnsureLive()
             let program=program |> Option.defaultWith(fun () -> invalidOp "Keyframe construction was superseded.")
-            let driver=new KeyframePlayback(scheduler,program,(fun target _ output -> targets[target].Value<-output.Scalar.Value),
+            let driver=new KeyframePlayback(scheduler,program,(fun target _ output -> targets[target].Value<-output.Number),
                                            options.Composition=KeyframeComposition.Replace,false,precision,options.Playback,
                                            onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onRender=options.OnRender,
                                            onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete)

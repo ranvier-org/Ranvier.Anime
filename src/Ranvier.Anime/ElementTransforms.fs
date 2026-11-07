@@ -11,6 +11,32 @@ open Ranvier.Dom
 type internal ElementTransformState() =
     member val Cache = Dictionary<string, string>(StringComparer.Ordinal)
     member val FullTranslate : string option = None with get, set
+    /// <summary>The element whose staged components await the end of the frame, or null.</summary>
+    member val Pending : Element = Unchecked.defaultof<_> with get, set
+    /// <summary>The priority the pending flush writes with.</summary>
+    member val PendingPriority = "" with get, set
+    /// <summary>Serializes the cache in canonical order into the element's inline transform.</summary>
+    member this.Write(element: Element, priority: string) =
+        this.Pending <- Unchecked.defaultof<_>
+        let style =
+            match box element with
+            | :? ElementCSSInlineStyle as styled -> styled.style :> CSSStyleDeclaration
+            | _ -> invalidArg "element" "Element does not expose inline CSS style."
+        let text = (TransformCache.build this.Cache).TrimEnd()
+        if text.Length = 0 then style.removeProperty "transform" |> ignore
+        else style.setProperty("transform", text, priority = priority)
+    interface IDeferredWrite with
+        member this.Flush() =
+            let element = this.Pending
+            if not(isNull(box element)) then this.Write(element, this.PendingPriority)
+
+/// <summary>The per-thread buffer scalar transform values are formatted in.</summary>
+type internal ScalarBuffer =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private chars: char array
+    static member Chars =
+        if isNull ScalarBuffer.chars then ScalarBuffer.chars <- Array.zeroCreate 64
+        ScalarBuffer.chars
 
 /// <summary>Authored individual CSS transform endpoint or keyframe value.</summary>
 [<RequireQualifiedAccess; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
@@ -71,7 +97,16 @@ module ElementTransforms =
     /// <summary>Normalizes a scalar number to its canonical transform string with default unit.</summary>
     let formatScalar (canonical: string) (value: float) : string =
         if not (Double.IsFinite value) then invalidArg "value" "Expected a finite transform scalar."
-        ValueInterpolation.number value + defaultUnit canonical
+        let unitSuffix = defaultUnit canonical
+        // Shortest round-trip digits and the unit in one string; exponent forms take the source formatter's expansion.
+        let buffer = ScalarBuffer.Chars
+        let mutable written = 0
+        if value <> 0. && value.TryFormat(Span<char>(buffer), &written, "R".AsSpan(), CultureInfo.InvariantCulture)
+           && ReadOnlySpan<char>(buffer, 0, written).IndexOfAny('E', 'e') < 0
+           && written + unitSuffix.Length <= buffer.Length then
+            unitSuffix.CopyTo(Span<char>(buffer, written, unitSuffix.Length))
+            String(buffer, 0, written + unitSuffix.Length)
+        else ValueInterpolation.number value + unitSuffix
 
     /// <summary>Normalizes a string transform endpoint, appending default units to bare or relative unitless numbers.</summary>
     let normalizeText (canonical: string) (raw: string) : string =
@@ -94,10 +129,15 @@ module ElementTransforms =
         | true, state -> state
         | _ -> states.GetValue(element, fun _ -> ElementTransformState())
 
+    /// <summary>Applies components staged during the current frame, so the inline declaration is current.</summary>
+    let private settle (state: ElementTransformState) (element: Element) =
+        if not(isNull(box state.Pending)) then state.Write(element, state.PendingPriority)
+
     /// <summary>Parses current inline style.transform into the element's transform cache and reads one component plus its inline presence.</summary>
     let internal readWithInlineOrigin (element: Element) (canonical: string) : string * string option =
         let style = inlineStyle element
         let state = stateFor element
+        settle state element
         let inlineTransforms = style.getPropertyValue "transform"
         if not (String.IsNullOrEmpty inlineTransforms) then
             let struct(parsed, fullTranslate) = TransformCache.parse inlineTransforms
@@ -130,29 +170,48 @@ module ElementTransforms =
         state.Cache[canonical] <- value
 
     /// <summary>Serializes all cached transform components in canonical order and writes style.transform.</summary>
+    /// <summary>Drops components staged during the current frame without writing them, before an inline restore.</summary>
+    let internal discard (element: Element) =
+        match states.TryGetValue element with
+        | true, state -> state.Pending <- Unchecked.defaultof<_>
+        | _ -> ()
+
     let internal flush (element: Element) (priority: string) =
-        let style = inlineStyle element
-        let state = stateFor element
-        let text = (TransformCache.build state.Cache).TrimEnd()
-        if text.Length = 0 then style.removeProperty "transform" |> ignore
-        else style.setProperty("transform", text, priority = priority)
+        (stateFor element).Write(element, priority)
+
+    let private commitState (state: ElementTransformState) (element: Element) (priority: string) =
+        if DeferredWrites.Deferring then
+            state.PendingPriority <- priority
+            if isNull(box state.Pending) then
+                state.Pending <- element
+                DeferredWrites.Add state
+        else state.Write(element, priority)
 
     /// <summary>
     /// Writes one canonical component as a scalar in its default unit through the element's cached transform, without
     /// re-reading the inline declaration: the per-frame write of a retargeted follower.
     /// </summary>
+    /// <remarks>
+    /// During an engine frame the write is staged and the element's transform is set once when the frame ends, however
+    /// many of its components changed; a transform read through this module applies it first.
+    /// </remarks>
     let internal writeScalar (element: Element) (canonical: string) (priority: string) (value: float) =
-        stageComponent element canonical (formatScalar canonical value)
-        flush element priority
+        let state = stateFor element
+        state.Cache[canonical] <- formatScalar canonical value
+        commitState state element priority
+
+    /// <summary>Writes the cached components: at the end of the frame during an engine frame, otherwise now.</summary>
+    let internal commit (element: Element) (priority: string) = commitState (stateFor element) element priority
 
     /// <summary>Sets one or more transform components on an element immediately and flushes style.transform.</summary>
     let set (element: Element) (values: seq<string * TransformValue>) =
         if isNull (box element) then nullArg "element"
         if isNull (box values) then nullArg "values"
         let style = inlineStyle element
+        let state = stateFor element
+        settle state element
         let priority = style.getPropertyPriority "transform"
         let inlineTransforms = style.getPropertyValue "transform"
-        let state = stateFor element
         if not (String.IsNullOrEmpty inlineTransforms) then
             let struct(parsed, fullTranslate) = TransformCache.parse inlineTransforms
             for KeyValue(k, v) in parsed do state.Cache[k] <- v
@@ -176,6 +235,7 @@ module ElementTransforms =
     let internal revertComponents (element: Element) (originals: (string * string option) array) (originalPriority: string) =
         let style = inlineStyle element
         let state = stateFor element
+        settle state element
         let currentInline = style.getPropertyValue "transform"
         if not (String.IsNullOrEmpty currentInline) then
             let struct(parsed, fullTranslate) = TransformCache.parse currentInline

@@ -284,7 +284,7 @@ module internal DomTargetHelpers =
             match kind, target with
             | TweenTargetKind.Transform, (:? Element as el) ->
                 ElementTransforms.stageComponent el canonical output.Text
-                if flushTransform then ElementTransforms.flush el priority
+                if flushTransform then ElementTransforms.commit el priority
             | (TweenTargetKind.Css | TweenTargetKind.CssVar), (:? Element as el) ->
                 let style = (tryStyle el).Value
                 let valueText =
@@ -793,65 +793,71 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
             for tw in tweens do manager.RemoveTweenSiblings tw
 
     let mutable clock : Timer = Unchecked.defaultof<Timer>
+    // One guard closure over a token each render saves and restores; guards are only checked while the render runs.
+    let mutable renderToken = Int64.MinValue
+    let canWrite = fun () -> clock.IsCurrent renderToken
     let render (sample: PlaybackSample) mode muted =
-        let canWrite = clock.CaptureWriteGuard()
-        let delta = sample.AbsoluteTime - clock.PreviousAbsoluteTime
-        let forced = mode = PlaybackTickMode.Force || (if sample.Backwards then -delta else delta) >= clock.TickThreshold
-        let absolute = PropertyNumbers.round 1e12 (offset + clock.Delay + sample.IterationTime)
-        let precision = match options.Precision with Some p -> int p | None -> -1
-        let mutable rendered = false
-        let mutable hasBlend = false
-        for i in 0 .. tweens.Count - 1 do
-            let tw = tweens[i]
-            if not tw.Removed && canWrite() then
-                let prev = tw.PrevRep
-                let next = tw.NextRep
-                let prevCross = not (isNull prev) && not (Object.ReferenceEquals(prev.Parent, tw.Parent))
-                let nextSame = not (isNull next) && Object.ReferenceEquals(next.Parent, tw.Parent)
-                let prevEnd = if isNull prev then 0. else prev.AbsoluteStart + prev.ChangeDuration
-                let ending = tw.AbsoluteStart + tw.ChangeDuration
-                let takeover =
-                    if isNull next || next.Overridden then ending
-                    elif nextSame then ending + next.Delay
-                    elif next.AbsoluteStart < next.AbsoluteUpdateStart then next.AbsoluteStart
-                    else next.AbsoluteUpdateStart
-                let history =
-                    (tw.TweenTime <> tw.ChangeDuration || absolute <= takeover ||
-                     (not (isNull prev) && not prevCross && (isNull next || not nextSame))) &&
-                    (tw.TweenTime <> 0. || absolute >= tw.AbsoluteStart ||
-                     (prevCross && not tw.HasFrom && not prev.Overridden && absolute >= prevEnd) ||
-                     (nextSame && not next.Overridden && next.TweenTime <> 0. && sample.IterationTime < next.Start))
-                let isReplace = tw.Composition = KeyframeComposition.Replace
-                let eligible =
-                    (forced || history) &&
-                    (isNull prev || prevCross || sample.IterationTime >= tw.Start) &&
-                    (not isReplace ||
-                     (not tw.Overridden && (not tw.Overlapped || absolute <= ending) &&
-                      (isNull next || next.Overridden || absolute <= takeover) &&
-                      (isNull prev || prev.Overridden ||
-                       (if not prevCross then absolute >= prevEnd + tw.Delay
-                        else absolute >= tw.AbsoluteStart || (not tw.HasFrom && absolute >= prevEnd)))))
-                if eligible then
-                    tw.TweenTime <- Math.Clamp(sample.IterationTime - tw.Start, 0., tw.ChangeDuration)
-                    let progress = tw.Ease (tw.TweenTime / tw.UpdateDuration)
-                    let roundNumbers = tw.Kind <> TweenTargetKind.Object
-                    match ValueInterpolation.sample(roundNumbers, tw.First, tw.Last, progress, precision, tw.Modifier, canWrite) with
-                    | Some struct(scalar, output) when canWrite() ->
-                        tw.CurrentNumber <- scalar
-                        if output.Components.Length > 0 then tw.CurrentNumbers <- Array.copy output.Components
-                        if not clock.InternalRender then
-                            if tw.Composition = KeyframeComposition.Blend then
-                                hasBlend <- true
-                                rendered <- true
-                            else
-                                DomTargetHelpers.writeOutput tw.Target tw.Kind tw.Property tw.Adapter scalar output tw.RenderTransforms tw.Priority
-                                rendered <- true
-                    | _ -> ()
-                elif tw.TweenTime <> 0. && not (isNull prev) && not prevCross && sample.IterationTime < tw.Start then
-                    tw.TweenTime <- 0.
-        if hasBlend && not clock.InternalRender then manager.FlushAdditive()
-        if rendered && sample.AboveZero && not muted && canWrite() then
-            options.OnRender this
+        let savedToken = renderToken
+        renderToken <- clock.WriteToken
+        try
+            let delta = sample.AbsoluteTime - clock.PreviousAbsoluteTime
+            let forced = mode = PlaybackTickMode.Force || (if sample.Backwards then -delta else delta) >= clock.TickThreshold
+            let absolute = PropertyNumbers.round 1e12 (offset + clock.Delay + sample.IterationTime)
+            let precision = match options.Precision with Some p -> int p | None -> -1
+            let mutable rendered = false
+            let mutable hasBlend = false
+            for i in 0 .. tweens.Count - 1 do
+                let tw = tweens[i]
+                if not tw.Removed && canWrite() then
+                    let prev = tw.PrevRep
+                    let next = tw.NextRep
+                    let prevCross = not (isNull prev) && not (Object.ReferenceEquals(prev.Parent, tw.Parent))
+                    let nextSame = not (isNull next) && Object.ReferenceEquals(next.Parent, tw.Parent)
+                    let prevEnd = if isNull prev then 0. else prev.AbsoluteStart + prev.ChangeDuration
+                    let ending = tw.AbsoluteStart + tw.ChangeDuration
+                    let takeover =
+                        if isNull next || next.Overridden then ending
+                        elif nextSame then ending + next.Delay
+                        elif next.AbsoluteStart < next.AbsoluteUpdateStart then next.AbsoluteStart
+                        else next.AbsoluteUpdateStart
+                    let history =
+                        (tw.TweenTime <> tw.ChangeDuration || absolute <= takeover ||
+                         (not (isNull prev) && not prevCross && (isNull next || not nextSame))) &&
+                        (tw.TweenTime <> 0. || absolute >= tw.AbsoluteStart ||
+                         (prevCross && not tw.HasFrom && not prev.Overridden && absolute >= prevEnd) ||
+                         (nextSame && not next.Overridden && next.TweenTime <> 0. && sample.IterationTime < next.Start))
+                    let isReplace = tw.Composition = KeyframeComposition.Replace
+                    let eligible =
+                        (forced || history) &&
+                        (isNull prev || prevCross || sample.IterationTime >= tw.Start) &&
+                        (not isReplace ||
+                         (not tw.Overridden && (not tw.Overlapped || absolute <= ending) &&
+                          (isNull next || next.Overridden || absolute <= takeover) &&
+                          (isNull prev || prev.Overridden ||
+                           (if not prevCross then absolute >= prevEnd + tw.Delay
+                            else absolute >= tw.AbsoluteStart || (not tw.HasFrom && absolute >= prevEnd)))))
+                    if eligible then
+                        tw.TweenTime <- Math.Clamp(sample.IterationTime - tw.Start, 0., tw.ChangeDuration)
+                        let progress = tw.Ease (tw.TweenTime / tw.UpdateDuration)
+                        let roundNumbers = tw.Kind <> TweenTargetKind.Object
+                        let output = ValueInterpolation.sampleOutput(roundNumbers, tw.First, tw.Last, progress, precision, tw.Modifier, canWrite)
+                        if not (isNull output) && canWrite() then
+                            let scalar = output.Number
+                            tw.CurrentNumber <- scalar
+                            if output.Components.Length > 0 then tw.CurrentNumbers <- Array.copy output.Components
+                            if not clock.InternalRender then
+                                if tw.Composition = KeyframeComposition.Blend then
+                                    hasBlend <- true
+                                    rendered <- true
+                                else
+                                    DomTargetHelpers.writeOutput tw.Target tw.Kind tw.Property tw.Adapter scalar output tw.RenderTransforms tw.Priority
+                                    rendered <- true
+                    elif tw.TweenTime <> 0. && not (isNull prev) && not prevCross && sample.IterationTime < tw.Start then
+                        tw.TweenTime <- 0.
+            if hasBlend && not clock.InternalRender then manager.FlushAdditive()
+            if rendered && sample.AboveZero && not muted && canWrite() then
+                options.OnRender this
+        finally renderToken <- savedToken
 
     do
         clock <- ScopeRegistration.run ignore (fun () ->

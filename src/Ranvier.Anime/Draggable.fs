@@ -55,7 +55,7 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
     let mutable axisY:AnimatableNumber option=None
     let notify callback=if not disposed && ownerAllowsWrite() then callback |> Option.iter(fun callback -> callback this)
     let value (axis:AnimatableNumber option)=
-        let value=axis |> Option.map _.Value |> Option.defaultValue 0.
+        let value=match axis with Some axis -> axis.Value | None -> 0.
         Math.Floor(value*1e4+0.5)/1e4
     let render () =
         if not disposed then

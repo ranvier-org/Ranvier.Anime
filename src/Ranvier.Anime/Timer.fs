@@ -239,7 +239,12 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let mutable lastTick = EngineFrames.initialTick scheduler
     let mutable anchor = lastTick
     let mutable generation = 0
-    let mutable pending : IDisposable option = None
+    let root = EngineFrames.rootOf scheduler
+    // Whether a frame is requested from the engine root, and the generation that requested it; the request has no
+    // lease, so a retarget every frame re-requests without allocating.
+    let mutable pending = false
+    let mutable queued = 0
+    let mutable frameCallback : float -> unit = ignore
     do state.Speed <- options.Speed
     let mutable stretchRenderer : float -> unit = ignore
     let mutable renderingEnabled = true
@@ -252,9 +257,9 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
 
     let stopFrame () =
         generation <- generation + 1
-        let previous = pending
-        pending <- None
-        previous |> Option.iter(fun frame -> frame.Dispose())
+        if pending then
+            pending <- false
+            root.CancelRequest()
         generation
 
     let reanchor lead =
@@ -277,31 +282,54 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         try onFault() with _ -> ()
 
     let rec queue () =
-        if not parented && not state.Paused && not state.Cancelled && pending.IsNone then
-            let expected = generation
-            pending <- Some(scheduler.Frame(fun now ->
-                if expected = generation && not state.Paused && not state.Cancelled then
-                    pending <- None
-                    try
-                        state.Tick((now - anchor) * state.Speed * engine.FrameSpeed, (if fps < engine.FrameFps then requestTick now else PlaybackTickMode.Auto), false)
-                        if expected = generation && not state.Cancelled then
-                            if Double.IsPositiveInfinity iterations && state.Sample.AboveZero && state.Sample.AtEnd then
-                                anchor <- anchor + state.Duration
-                            queue()
-                    with _ ->
-                        abandon()
-                        reraise()))
+        if not parented && not state.Paused && not state.Cancelled && not pending then
+            queued <- generation
+            pending <- true
+            root.Request frameCallback
+    and onFrame now =
+        let expected = queued
+        if pending && expected = generation && not state.Paused && not state.Cancelled then
+            pending <- false
+            try
+                state.Tick((now - anchor) * state.Speed * engine.FrameSpeed, (if fps < engine.FrameFps then requestTick now else PlaybackTickMode.Auto), false)
+                if expected = generation && not state.Cancelled then
+                    if Double.IsPositiveInfinity iterations && state.Sample.AboveZero && state.Sample.AtEnd then
+                        anchor <- anchor + state.Duration
+                    queue()
+            with _ ->
+                abandon()
+                reraise()
+    do frameCallback <- onFrame
 
+    // The guard an operation hands its action: one closure over a snapshot each operation saves and restores, so a
+    // nested operation still invalidates the outer one. Actions only check it while they run.
+    let mutable operateExpected = -1
+    let operateCurrent = fun () -> operateExpected = generation && not state.Cancelled
+    let reanchorLead = fun () -> reanchor 12.
     let operate action finish =
         live()
         let expected = stopFrame()
+        let saved = operateExpected
+        operateExpected <- expected
         try
-            action (fun () -> expected = generation && not state.Cancelled)
-            if expected = generation && not state.Cancelled then finish()
-            queue()
-        with _ ->
-            abandon()
-            reraise()
+            try
+                action operateCurrent
+                if expected = generation && not state.Cancelled then finish()
+                queue()
+            with _ ->
+                abandon()
+                reraise()
+        finally operateExpected <- saved
+
+    // A retarget without a stretch passes this cached action its prepare through a field, read before anything runs.
+    let mutable retargetPrepare : (unit -> bool) -> bool = Unchecked.defaultof<_>
+    let retargetAction = fun (current: unit -> bool) ->
+        let prepare = retargetPrepare
+        retargetPrepare <- Unchecked.defaultof<_>
+        if prepare current && current() then
+            state.SoftReset()
+            if current() then state.Resume()
+    let noFinish = fun () -> ()
 
     let resume action changedDirection =
         let wasPaused = state.Paused
@@ -349,7 +377,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member _.Alternate() = operate (fun _ -> state.Alternate()) (fun () -> reanchor 0.)
     /// <summary>Stops scheduled frames and emits pause once when active.</summary>
     member _.Pause() =
-        if not state.Cancelled then operate (fun _ -> state.Pause()) ignore
+        if not state.Cancelled then operate (fun _ -> state.Pause()) noFinish
     /// <summary>Seeks in milliseconds after the initial delay; callbacks can be muted.</summary>
     member _.Seek(time: float, ?muteCallbacks: bool) =
         finite "time" time
@@ -361,7 +389,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member _.Restart() = operate (fun _ -> state.Restart()) (fun () -> reanchor 12.)
     /// <summary>Completes then cancels unless a callback supersedes the operation.</summary>
     member _.Complete(?muteCallbacks: bool) =
-        operate (fun _ -> state.Complete(defaultArg muteCallbacks false)) ignore
+        operate (fun _ -> state.Complete(defaultArg muteCallbacks false)) noFinish
     /// <summary>Stretches total duration and delay geometry without sampling or moving the raw playhead.</summary>
     /// <remarks>Finite nonnegative milliseconds are required. Scaled delay overflow rejects before changing active playback.</remarks>
     member _.Stretch(milliseconds:float) =
@@ -467,6 +495,10 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         let expected = generation
         let inherited = state.CaptureWriteGuard()
         fun () -> expected = generation && inherited()
+    /// <summary>The generations a write guard captures, for <c>IsCurrent</c> checks without a closure.</summary>
+    member internal this.WriteToken = this.Generation
+    /// <summary>Whether a token from <c>WriteToken</c> is still current, as the guard <c>CaptureWriteGuard</c> returns.</summary>
+    member internal this.IsCurrent(token:int64) = token = this.Generation && state.WriteCurrent()
     /// <summary>Raw time immediately before the current sample.</summary>
     member internal _.PreviousAbsoluteTime = state.PreviousAbsoluteTime
     /// <summary>Installs an animation renderer and an optional source setter-duration override before sampling.</summary>
@@ -543,21 +575,26 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Whether the current renderer invocation refreshes caches without target dispatch.</summary>
     member internal _.InternalRender = state.InternalRender
     /// <summary>Prepares endpoints, optional stretch, cache-only reset and resume under one interruption guard.</summary>
-    member internal _.Retarget(prepare: (unit -> bool) -> bool, ?newDuration:float) =
+    member internal this.Retarget(prepare: (unit -> bool) -> bool, ?newDuration:float) =
+        this.RetargetPrecise(prepare, defaultArg newDuration nan)
+    /// <summary>Retarget with a duration that NaN leaves unchanged; an unchanged duration allocates no stretch.</summary>
+    member internal _.RetargetPrecise(prepare: (unit -> bool) -> bool, newDuration:float) =
         live()
-        let next=newDuration |> Option.bind state.PrepareStretch
-        let scale=newDuration |> Option.map(fun value -> value/state.Duration)
-        operate (fun current ->
-            if prepare current && current() then
-                match next,scale with
-                | Some geometry,Some scale ->
+        let next = if Double.IsNaN newDuration then None else state.PrepareStretch newDuration
+        match next with
+        | None ->
+            retargetPrepare <- prepare
+            operate retargetAction reanchorLead
+        | Some geometry ->
+            let scale = newDuration/state.Duration
+            operate (fun current ->
+                if prepare current && current() then
                     stretchRenderer scale
                     if current() then
                         state.ApplyStretch geometry
                         duration <- geometry.IterationDuration
-                | _ -> ()
-                if current() then state.SoftReset()
-                if current() then state.Resume()) (fun () -> reanchor 12.)
+                    if current() then state.SoftReset()
+                    if current() then state.Resume()) reanchorLead
     /// <summary>Resets retargeted endpoints without dispatching a reset write, then resumes under one interruption guard.</summary>
     member internal _.Rebase(prepare: unit -> unit) =
         operate (fun current ->

@@ -419,7 +419,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
             let options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=defaults.Ease;Modifier=defaults.Modifier;Precision=None}
             let original _=ValueInterpolation.Number(captureOriginal())
             let prepared=TimelineKeyframeInstallation.scalar(context,animation,defaults,properties,[|struct(box property,"value")|],
-                (fun _ _ _ -> if current() then Some frame else None),original,(fun _ _ output -> property.Value<-output.Scalar.Value),
+                (fun _ _ _ -> if current() then Some frame else None),original,(fun _ _ output -> property.Value<-output.Number),
                 false,-1,options,current)
             if prepared.IsSome then capture<-(fun () -> animation.Playback.CaptureWriteGuard())
             prepared),position=TimelinePosition.At position,zeroDuration=(milliseconds<=1e-11)) |> ignore

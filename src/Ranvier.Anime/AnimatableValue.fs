@@ -10,12 +10,21 @@ type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundN
     let mutable last=initialLast
     let mutable cachedNumber=number
     let mutable cachedComponents=components
+    // Scalar endpoints, kept out of the Data records so a retarget copies no record.
+    let mutable firstNumber=initialFirst.Number
+    let mutable lastNumber=initialLast.Number
     let mutable generation=0L
     let scalar=first.Kind=ValueKind.Number || first.Kind=ValueKind.Unit
     let finite name value = if not(Double.IsFinite value) then invalidArg name "Expected finite input."
     let capture canWrite =
         let expected=generation
         fun () -> expected=generation && canWrite()
+    // The hot paths' guard: one closure for the value's life over a snapshot that each call saves and restores, so a
+    // nested call (a modifier that retargets this value) still invalidates the outer one. Guards are only checked
+    // while their call runs.
+    let mutable guardExpected= -1L
+    let mutable guardInner:unit -> bool=Unchecked.defaultof<_>
+    let guard=fun () -> guardExpected=generation && guardInner()
     let modify (modifier:float -> float) canWrite value =
         if not(canWrite()) then None
         else
@@ -26,11 +35,17 @@ type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundN
         let first,last=normalize convertUnit original original (Text("+=0"+defaultArg unit ""))
         AnimatableValue(first,last,roundNumbers,first.Number,Array.copy first.Components)
     /// <summary>Copies endpoints and cached values for atomic multi-target preparation without repeating context conversion.</summary>
-    member _.Fork() = AnimatableValue(first,last,roundNumbers,cachedNumber,Array.copy cachedComponents)
+    member _.Fork() =
+        let fork=AnimatableValue(first,last,roundNumbers,cachedNumber,Array.copy cachedComponents)
+        fork.SetNumbers(firstNumber,lastNumber)
+        fork
+    member internal _.SetNumbers(fromNumber,toNumber) =
+        firstNumber<-fromNumber
+        lastNumber<-toNumber
     /// <summary>The normalized endpoint category retained across retargets.</summary>
     member _.Kind=first.Kind
     /// <summary>Copies captured unit and component-template metadata for typed adapter validation.</summary>
-    member _.Metadata={first with Components=Array.copy first.Components;Strings=Array.copy first.Strings}
+    member _.Metadata={first with Number=firstNumber;Components=Array.copy first.Components;Strings=Array.copy first.Strings}
     /// <summary>The cached modified scalar before the getter applies its modifier.</summary>
     member _.CachedScalar=cachedNumber
     /// <summary>An independent copy of cached color or compound components.</summary>
@@ -47,28 +62,64 @@ type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundN
             modify modifier current cachedNumber |> Option.map(fun value -> compose(first,value,[||]))
         elif current() then Some(compose(last,0.,Array.copy cachedComponents))
         else None
+    /// <summary>Samples cached endpoints into an output, or null when superseded; superseded modifiers discard the cache update.</summary>
+    member _.TrySample(progress,precision,modifier,canWrite:unit -> bool) : Output =
+        let savedExpected=guardExpected
+        let savedInner=guardInner
+        guardExpected<-generation
+        guardInner<-canWrite
+        try
+            let sampled=
+                if scalar then sampleScalar(roundNumbers,first,firstNumber,lastNumber,progress,precision,modifier,guard)
+                else sampleOutput(roundNumbers,first,last,progress,precision,modifier,guard)
+            if not(isNull sampled) && guard() then
+                cachedNumber<-sampled.Number
+                cachedComponents<-(if sampled.Components.Length=0 then sampled.Components else Array.copy sampled.Components)
+                generation<-generation+1L
+                sampled
+            else null
+        finally
+            guardExpected<-savedExpected
+            guardInner<-savedInner
     /// <summary>Samples cached endpoints; superseded modifiers discard the whole pending cache update.</summary>
-    member _.Sample(progress,precision,modifier,canWrite) =
-        let current=capture canWrite
-        match sample(roundNumbers,first,last,progress,precision,modifier,current) with
-        | Some(struct(number,output)) when current() ->
-            cachedNumber<-number
-            cachedComponents<-Array.copy output.Components
-            generation<-generation+1L
-            Some output
-        | _ -> None
+    member this.Sample(progress,precision,modifier,canWrite) =
+        match this.TrySample(progress,precision,modifier,canWrite) with
+        | null -> None
+        | output -> Some output
     /// <summary>Stages a finite scalar destination from the modified cache; sampling remains explicit.</summary>
-    member _.RetargetScalar(value,modifier,canWrite) =
+    member _.RetargetScalar(value,modifier,canWrite:unit -> bool) =
         finite "value" value
         if not scalar then invalidArg "value" "The property requires component destinations."
-        let current=capture canWrite
-        match modify modifier current cachedNumber with
-        | Some valueFrom when current() ->
-            first<-{first with Number=valueFrom}
-            last<-{last with Number=value}
-            generation<-generation+1L
-            true
-        | _ -> false
+        let savedExpected=guardExpected
+        let savedInner=guardInner
+        guardExpected<-generation
+        guardInner<-canWrite
+        try
+            if guard() then
+                let valueFrom=modifier cachedNumber
+                if guard() then
+                    firstNumber<-valueFrom
+                    lastNumber<-value
+                    generation<-generation+1L
+                    true
+                else false
+            else false
+        finally
+            guardExpected<-savedExpected
+            guardInner<-savedInner
+    member internal _.State:struct(Data*Data*float*float array)=struct(first,last,cachedNumber,cachedComponents)
+    member internal _.Numbers=struct(firstNumber,lastNumber)
+    /// <summary>Copies another value's endpoints and caches into this one, reusing it as a staging fork.</summary>
+    member internal _.CopyFrom(source:AnimatableValue) =
+        let struct(sourceFirst,sourceLast,sourceNumber,sourceComponents)=source.State
+        first<-sourceFirst
+        last<-sourceLast
+        cachedNumber<-sourceNumber
+        cachedComponents<-(if sourceComponents.Length=0 then sourceComponents else Array.copy sourceComponents)
+        let struct(sourceFrom,sourceTo)=source.Numbers
+        firstNumber<-sourceFrom
+        lastNumber<-sourceTo
+        generation<-generation+1L
     /// <summary>Updates supplied finite component destinations; omitted endpoints persist and surplus values are ignored.</summary>
     member _.RetargetComponents(values:float array,modifier,canWrite) =
         if isNull values then nullArg "values"

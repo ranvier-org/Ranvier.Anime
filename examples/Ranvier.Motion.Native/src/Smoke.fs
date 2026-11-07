@@ -178,7 +178,10 @@ let private dashboard (d: Driver) =
     require "dashboard: the first sample reveals the metrics" (d.Count ".metrics" = 1 && d.Count ".skeleton" = 0)
     require "dashboard: gauges follow the reading" (d.Until (fun () -> (style (d.One ".gauge-fill") "transform").Contains "scaleX("))
     require "dashboard: the ring draws the CPU load" (not (isNull ((d.One ".ring-value").getAttribute "stroke-dasharray")))
+    let gauge () = style (d.One ".gauge-fill") "transform"
     pump.Push Dashboard.sampleAt
+    let tween = [ for _ in 1 .. 12 -> d.Pump 50.; gauge () ] |> List.distinct
+    require "dashboard: a gauge tweens through frames to the next reading" (tween.Length >= 3)
     let second = Dashboard.sampleAt 2
     require "dashboard: the counter counts up to the latest requests" (d.Until (fun () -> text (d.One ".counter") = sprintf "%.0f" second.Requests))
     require "dashboard: the chart holds both samples" (text (d.One ".chart-head .note") = "2 of 24")

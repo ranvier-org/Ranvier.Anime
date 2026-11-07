@@ -1043,7 +1043,7 @@ module Motion =
 
                 Api.createEffectOn (fun () -> read inst) (fun value ->
                     match held with
-                    | ValueSome (struct (_, track)) -> track.ToPrecise(value, parameters.Duration, parameters.Ease)
+                    | ValueSome (struct (_, track)) -> track.RetargetPrecise(value, parameters.Duration, parameters.Ease)
                     | ValueNone ->
                         ElementTransforms.writeScalar element canonical priority value
                         let created = new Animatable(services.Scheduler)
@@ -1070,6 +1070,7 @@ module Motion =
                         | ValueSome (struct (group, _)) -> group.Cancel()
                         | ValueNone -> ()
 
+                        ElementTransforms.discard element
                         restore ()))
         )
 

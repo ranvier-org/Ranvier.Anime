@@ -56,6 +56,10 @@ type AnimatableNumber internal (track:AnimatableTrack,live:unit -> unit) =
     member _.ToPrecise(value:float,?duration:float,?ease:float -> float) =
         live()
         track.RetargetScalar(value,?newDuration=duration,?newEase=ease)
+    /// <summary>ToPrecise without option wrappers, for a per-frame retarget: NaN keeps the duration, null keeps the ease.</summary>
+    member internal _.RetargetPrecise(value:float,duration:float,ease:float -> float) =
+        live()
+        track.RetargetScalarPrecise(value,duration,ease)
 
 type private AnimatableRegistration(restore:(unit -> bool) -> unit) =
     member val Track:AnimatableTrack option=None with get,set
@@ -123,7 +127,7 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
         let restore current =
             cleanupAll (seq {for index in 0..properties.Length-1 do
                                 yield fun () -> if current() then properties[index].Value<-originals[index]})
-        let track=this.Register(kernels,(fun index output -> properties[index].Value<-output.Scalar.Value),restore,duration,options,precision)
+        let track=this.Register(kernels,(fun index output -> properties[index].Value<-output.Number),restore,duration,options,precision)
         AnimatableNumber(track,live)
     /// <summary>Captures one borrowed numeric target with precise milliseconds and optional property settings.</summary>
     member _.NumericPrecise(property:NumericProperty,duration:float,?options:AnimatablePropertyOptions) =
@@ -152,7 +156,7 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
                 for registration in captured do
                     yield fun () -> if current() then registration.Track |> Option.iter(fun track -> track.Clock.RewindForRevert())
                     yield fun () -> if current() then registration.Restore current
-                yield fun () -> if current() then group.Callbacks.PlaybackClock.RewindForRevert()
+                yield fun () -> if current() then group.CreatedCallbacks |> ValueOption.iter(fun callbacks -> callbacks.PlaybackClock.RewindForRevert())
                 yield this.Cancel })
     interface IDisposable with member _.Dispose()=this.Cancel()
 

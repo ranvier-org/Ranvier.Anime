@@ -68,7 +68,7 @@ module internal TimelineKeyframeSequenceBinding =
                 let original index=
                     let _,_,_,handle,_=cells[index]
                     Number handle.Value
-                let write target name (output:Output)=handles[name].[target].Value<-output.Scalar.Value
+                let write target name (output:Output)=handles[name].[target].Value<-output.Number
                 let keys=cells |> Array.map(fun (_,_,_,handle,_) -> struct(box handle,"value"))
                 TimelineKeyframeBinding.install(context,animation,defaults,properties,keys,resolve,original,write,false,precision,options,current)),
             ?position=position,zeroDuration=(duration<=1e-11))

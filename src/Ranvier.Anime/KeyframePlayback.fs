@@ -120,7 +120,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
     /// <summary>Advances after each target write; cache-only and skipped samples leave it unchanged.</summary>
     member _.RenderVersion=renderVersion
     /// <summary>Independent snapshots of each tween's most recently sampled scalar/color/compound cache.</summary>
-    member _.CurrentValues=frames |> Array.map(fun frame -> {frame.Value with Components=Array.copy frame.Value.Components})
+    member _.CurrentValues=frames |> Array.map(fun frame -> frame.Value.CopyComponents())
     /// <summary>Notifies standalone explicit-from construction once, then resets; owned child initialization only refreshes caches.</summary>
     member _.Initialize(?notifyConstruction:bool,?timelineChild:bool,?canWrite:unit -> bool)=
         if defaultArg timelineChild false && not initialized && not clock.Cancelled then

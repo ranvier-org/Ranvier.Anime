@@ -25,13 +25,6 @@ module internal ValueInterpolation =
         /// <summary>An invariant value-kind/scalar diagnostic.</summary>
         override this.ToString() =
             "ValueData("+this.Kind.ToString()+", "+this.Number.ToString("R",CultureInfo.InvariantCulture)+")"
-    /// <summary>A composed scalar or string with the sampled component values.</summary>
-    [<System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
-    type Output =
-        { Scalar:float option; Text:string; Components:float array }
-        /// <summary>The invariant scalar or composed text.</summary>
-        override this.ToString() =
-            match this.Scalar with Some value -> value.ToString("R",CultureInfo.InvariantCulture) | None -> this.Text
     let private finite name value = if not(Double.IsFinite value) then invalidArg name "Expected finite input."
     /// <summary>Formats source-style shortest numbers and exponent thresholds, including IEEE values.</summary>
     let number (value:float) =
@@ -41,9 +34,9 @@ module internal ValueInterpolation =
         elif Double.IsNegativeInfinity value then "-Infinity"
         else
             let raw=value.ToString("R",CultureInfo.InvariantCulture)
-            let split=raw.Split('E','e')
-            if split.Length=1 then raw
+            if raw.IndexOf('E')<0 && raw.IndexOf('e')<0 then raw
             else
+                let split=raw.Split('E','e')
                 let exponent=Int32.Parse(split[1],CultureInfo.InvariantCulture)
                 if abs value>=1e-6 && abs value<1e21 then
                     let negative=split[0].StartsWith "-"
@@ -57,6 +50,29 @@ module internal ValueInterpolation =
                         else digits.Insert(position,".")
                     (if negative then "-" else "")+result
                 else split[0]+"e"+(if exponent>=0 then "+" else "-")+string(abs exponent)
+    let private numberText value=number value
+    /// <summary>A composed scalar or string with the sampled component values.</summary>
+    /// <remarks>Text is composed on first read: a numeric writer reads <c>Number</c> and never formats.</remarks>
+    [<Sealed; AllowNullLiteral; System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
+    type Output internal (kind:ValueKind, number:float, unitSuffix:string, components:float array, text:string) =
+        let mutable text=text
+        /// <summary>Whether the value is a unitless number, so <c>Number</c> is its scalar.</summary>
+        member _.HasScalar=kind=ValueKind.Number
+        /// <summary>The composed scalar; zero for color and compound values.</summary>
+        member _.Number=number
+        /// <summary>The scalar for unitless numbers, None otherwise.</summary>
+        member _.Scalar=if kind=ValueKind.Number then Some number else None
+        /// <summary>The composed CSS text, formatted on first read.</summary>
+        member _.Text=
+            if isNull text then text<-(numberText number)+unitSuffix
+            text
+        /// <summary>The sampled component values.</summary>
+        member _.Components=components
+        /// <summary>A copy with independent components.</summary>
+        member _.CopyComponents()=Output(kind,number,unitSuffix,Array.copy components,text)
+        /// <summary>The invariant scalar or composed text.</summary>
+        override this.ToString() =
+            if kind=ValueKind.Number then number.ToString("R",CultureInfo.InvariantCulture) else this.Text
     let private regex pattern = Regex(pattern,RegexOptions.CultureInvariant ||| RegexOptions.IgnoreCase)
     let private unitPattern=regex @"^([-+]?[0-9]*\.?[0-9]+(?:e[-+]?[0-9]+)?)([a-z]+|%)$"
     let private colorTailPattern=regex @"\)\s*[-.0-9]"
@@ -196,9 +212,7 @@ module internal ValueInterpolation =
     /// <remarks>The output retains the supplied component array.</remarks>
     let compose (template:Data, scalar:float, values:float array) : Output =
         if template.Kind=ValueKind.Number || template.Kind=ValueKind.Unit then
-            { Scalar=(if template.Kind=ValueKind.Number then Some scalar else None)
-              Text=number scalar+(if template.Kind=ValueKind.Unit then template.Unit else "")
-              Components=[||] }
+            Output(template.Kind,scalar,(if template.Kind=ValueKind.Unit then template.Unit else ""),Array.Empty<float>(),null)
         else
             let text=
                 if template.Kind=ValueKind.Color then
@@ -207,43 +221,62 @@ module internal ValueInterpolation =
                     let result=System.Text.StringBuilder(template.Strings[0])
                     for index in 0..values.Length-1 do result.Append(number values[index]).Append(template.Strings[index+1]) |> ignore
                     result.ToString()
-            {Scalar=None;Text=text;Components=values}
+            Output(template.Kind,0.,null,values,text)
+
+    /// <summary>Samples scalar endpoints held outside their template into an output, or null when the guard fails.</summary>
+    /// <remarks>Allocates only the output; <c>template</c> supplies the kind and unit.</remarks>
+    let sampleScalar (roundNumbers:bool, template:Data, fromNumber:float, toNumber:float, progress:float, precision:int,
+                      modifier:float -> float, canWrite:unit -> bool) : Output =
+        finite "progress" progress
+        let precision=if progress=0. || progress=1. || (template.Kind=ValueKind.Number && not roundNumbers) then -1 else precision
+        let value=if progress=1. then toNumber elif progress=0. then fromNumber else fromNumber+(toNumber-fromNumber)*progress
+        let value=if precision<0 then value else PropertyNumbers.round (Math.Pow(10.,float precision)) value
+        if not(canWrite()) || not(canWrite()) then null
+        else
+            let result=modifier value
+            if canWrite() then compose(template,result,Array.Empty<float>()) else null
+
+    /// <summary>Samples normalized endpoints into a composed output, or null when the guard fails around a modifier.</summary>
+    /// <remarks>The unwrapped core of <c>sample</c>.</remarks>
+    let sampleOutput (roundNumbers:bool, first:Data, last:Data, progress:float, precision:int, modifier:float -> float, canWrite:unit -> bool) : Output =
+        if first.Kind=ValueKind.Number || first.Kind=ValueKind.Unit then
+            sampleScalar(roundNumbers,first,first.Number,last.Number,progress,precision,modifier,canWrite)
+        else
+            finite "progress" progress
+            let precision=if progress=0. || progress=1. || (first.Kind=ValueKind.Number && not roundNumbers) then -1 else precision
+            let scale=if precision<0 then 0. else Math.Pow(10.,float precision)
+            let inline round value=if precision<0 then value else PropertyNumbers.round scale value
+            let inline lerp a b = if progress=1. then b elif progress=0. then a else a+(b-a)*progress
+            if not(canWrite()) then null
+            else
+                let values=Array.zeroCreate last.Components.Length
+                let mutable alive=true
+                for index in 0..values.Length-1 do
+                    if alive then
+                        let value=
+                            if first.Kind=ValueKind.Color && index<3 then
+                                Math.Sqrt(first.Components[index]*first.Components[index]*(1.-progress)+last.Components[index]*last.Components[index]*progress)
+                            elif first.Kind=ValueKind.Color then lerp first.Components[index] last.Components[index]
+                            else round(lerp first.Components[index] last.Components[index])
+                        if not(canWrite()) then alive<-false
+                        else
+                            let result=modifier value
+                            if canWrite() then values[index]<-result else alive<-false
+                if not alive || not(canWrite()) then null
+                else compose(last,0.,values)
 
     /// <summary>Samples normalized endpoints and returns the modified scalar cache with the composed output.</summary>
     let sample (roundNumbers:bool, first:Data, last:Data, progress:float, precision:int, modifier:float -> float, canWrite:unit -> bool) =
-        finite "progress" progress
-        let precision=if progress=0. || progress=1. || (first.Kind=ValueKind.Number && not roundNumbers) then -1 else precision
-        let round value=if precision<0 then value else PropertyNumbers.round (Math.Pow(10.,float precision)) value
-        let lerp first last = if progress=1. then last elif progress=0. then first else first+(last-first)*progress
-        let modify value =
-            if not(canWrite()) then None
-            else
-                let result=modifier value
-                if canWrite() then Some result else None
-        if not(canWrite()) then None
-        elif first.Kind=ValueKind.Number || first.Kind=ValueKind.Unit then
-            modify(round(lerp first.Number last.Number)) |> Option.map(fun value ->
-                struct(value,compose(first,value,[||])))
-        else
-            let values=Array.zeroCreate last.Components.Length
-            let mutable alive=true
-            for index in 0..values.Length-1 do
-                if alive then
-                    let value=
-                        if first.Kind=ValueKind.Color && index<3 then
-                            Math.Sqrt(first.Components[index]*first.Components[index]*(1.-progress)+last.Components[index]*last.Components[index]*progress)
-                        elif first.Kind=ValueKind.Color then lerp first.Components[index] last.Components[index]
-                        else round(lerp first.Components[index] last.Components[index])
-                    match modify value with Some value -> values[index]<-value | None -> alive<-false
-            if not alive || not(canWrite()) then None
-            else
-                Some(struct(0.,compose(last,0.,values)))
+        match sampleOutput(roundNumbers,first,last,progress,precision,modifier,canWrite) with
+        | null -> None
+        | output -> Some(struct(output.Number,output))
 
     let private prepareWith roundNumbers convertUnit original first last =
         let first,last=normalize convertUnit original first last
         fun progress precision modifier canWrite ->
-            sample(roundNumbers,first,last,progress,precision,modifier,canWrite)
-            |> Option.map(fun struct(_,output) -> output)
+            match sampleOutput(roundNumbers,first,last,progress,precision,modifier,canWrite) with
+            | null -> None
+            | output -> Some output
 
     /// <summary>Captures object endpoints and returns a guarded sampler; differing units require native conversion.</summary>
     let prepare original first last = prepareWith false None original first last

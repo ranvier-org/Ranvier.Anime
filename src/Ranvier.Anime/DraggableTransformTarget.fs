@@ -35,6 +35,7 @@ type internal DraggableTransformTarget(element:HTMLElement) =
     let struct(initial,full)=TransformCache.parse(style.getPropertyValue "transform")
     let cache=Dictionary<string,string>(initial)
     let properties=Dictionary<string,NumericProperty>(StringComparer.Ordinal)
+    let mutable written:string=null
     let property name =
         match properties.TryGetValue name with
         | true,value -> value
@@ -45,15 +46,20 @@ type internal DraggableTransformTarget(element:HTMLElement) =
                 live()
                 // The element's other transform components belong to whoever wrote them last, such as an animation
                 // started after this target; anime's draggable shares the element's transform cache with them.
-                let struct(inlineNow,_)=TransformCache.parse(style.getPropertyValue "transform")
-                let owned=[| for KeyValue(key,text) in cache do if properties.ContainsKey key then struct(key,text) |]
-                cache.Clear()
-                for KeyValue(key,text) in inlineNow do cache[key]<-text
-                for struct(key,text) in owned do cache[key]<-text
+                // An unchanged declaration is the one this target wrote last, so the cache already matches it.
+                let inlineText=style.getPropertyValue "transform"
+                if not(String.Equals(inlineText,written,StringComparison.Ordinal)) then
+                    let struct(inlineNow,_)=TransformCache.parse inlineText
+                    let owned=[| for KeyValue(key,text) in cache do if properties.ContainsKey key then struct(key,text) |]
+                    cache.Clear()
+                    for KeyValue(key,text) in inlineNow do cache[key]<-text
+                    for struct(key,text) in owned do cache[key]<-text
                 cache[name]<-value.ToString("G17",CultureInfo.InvariantCulture)+unit
-                let declaration=Declaration.create "transform" (TransformCache.build cache)
+                let text=TransformCache.build cache
+                let declaration=Declaration.create "transform" text
                 live()
                 StyleDeclaration.apply style (if snapshot.Important then Declaration.important declaration else declaration)
+                written<-style.getPropertyValue "transform"
                 current<-value
             let value=NumericProperty((fun()->current),write)
             properties.Add(name,value)
