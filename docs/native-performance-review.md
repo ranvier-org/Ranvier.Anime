@@ -114,18 +114,39 @@ Measured in a visible window on a 164 Hz display, with SDL motion events pushed 
   CPU, and re-blurs a `box-shadow` whenever the repainted area touches it. The pages' cards and tiles carry
   `0 6px 18px -8px` and `0 18px 36px -14px` shadows. Hiding a static header or changing the static body gradient also
   sped up a frame on rc.3, because rc.3 repainted the whole root layer each frame. rc.4 (Ranvier.WebCore#348) repaints
-  only the dirty rectangle, which brings the median frame to the display's refresh. The GPU runtime will rasterize on
-  the GPU by default, which removes the remaining blur cost; the app takes rc.4 directly until then.
+  only the dirty rectangle, which brings the median frame to the display's refresh. The fifth pass below removes the
+  remaining blur cost.
 - **Input rate.** The SDL window dispatches every motion event; a gaming mouse sends about 1,000 a second where a
   browser sends one `mousemove` per frame. A move costs 0.02 ms on a page without handlers and 0.22 ms and 14 KB on
   the graphs page, whose handler reads layout. Collapsing queued motion cut dispatched moves from 993 to 45 a second on
-  the dashboard, but did not change frame time, which the paint dominates. Ranvier.View.WebCore.Sdl will make the
-  rate of motion, wheel and resize dispatch a window setting, one per frame by default. Wheel scrolling shows the
-  same pattern: the story page's frame grows from 14 ms at one wheel event per frame to 33 ms at sixteen.
+  the dashboard, but did not change frame time, which the paint dominates. Wheel scrolling shows the same pattern:
+  the story page's frame grows from 14 ms at one wheel event per frame to 33 ms at sixteen.
 - **Managed work stays small.** Kanban card drag, route switches (3 ms and 190 KB a click, a view mount), resize and
   scroll all spend under 1.5 ms a frame in managed code.
 - **Budgets.** The Motion smoke run checks allocation per window turn for a four-move drag (under 36 KB, 8 KB
   measured), a live dashboard (under 24 KB) and sixteen hover moves (under 8 KB), so a return to the earlier costs fails.
+
+## Fifth pass: the GPU-default runtime, against the browser
+
+The app moved to Ranvier.WebCore.Native 0.1.1-rc.5, Ranvier.View.WebCore 0.1.0-rc.3 and Ranvier.View.WebCore.Sdl
+0.1.0-rc.4. The default native package is now the GPU build, so the app no longer overrides its runtime.
+
+Measured with the pointer moving, in a visible 1180x860 window on a 164 Hz display. The native run pushed SDL motion
+at 1 kHz; the browser run was Ranvier.View's Motion example in Chromium, with one injected move per frame on the same
+ellipse, at twice the speed:
+
+| Page | Native frame p50 | Native p95 | Native worst | Chromium p50 | Chromium p95 | Chromium worst |
+|---|---|---|---|---|---|---|
+| Dashboard | 6.06 ms | 6.6–6.9 ms | 7–13 ms | 6.10 ms | 6.20 ms | 6.40 ms |
+| Graphs | 6.0–6.1 ms | 6.9–7.5 ms | 29–63 ms | 6.10 ms | 6.20 ms | 12.1 ms |
+
+- **Blur.** Removing every `box-shadow` no longer changes the graphs page's frame times.
+- **Input rate.** The window dispatched 149–165 `mousemove`s a second from 1 kHz of motion, with no coalescing in the
+  app.
+- **Gaps that are not stalls.** The graphs page shows two gaps of about 420 ms per run, at fixed points of the path;
+  halving the push rate stretches them to about 1,090 ms. The loop keeps turning at about 1 ms a step through them, and
+  the page requests no frame. This is the pointer off the chart, and it inflates the native "worst" only if read from
+  frame gaps, so the table takes the worst from single steps and gaps under 100 ms.
 
 ## Semantics
 
@@ -148,10 +169,15 @@ boundary stays where it is: `Motion` parts read signals with effects and drive t
 
 ## Left
 
+- **First hover on a mounted graphs page.** One window step takes 29–63 ms, once per mount in most runs, where
+  Chromium's worst frame is 12.1 ms. The page's frame callbacks take 0.1 ms of it, the step allocates 16–76 KB, and no
+  GC runs. Hiding the tooltip, removing shadows, promoting the tooltip and lowering the host's idle wait do not change
+  it. That leaves native work or the page's mouse handler reading layout; which one is not measured.
+- **Frame consistency.** The native p95 is 0.4–1.3 ms above Chromium's on both pages, though the medians match.
 - **The bridge.** About half of a drag frame's allocation is in Ranvier.View.WebCore, in another repository.
 - **Layer promotion.** On rc.3, `will-change: transform` on the dashboard's animated elements brought the median
   frame from 20 ms to 6.6 ms, but the 95th percentile stayed at 21 ms. Putting each shadow on a promoted `::before` fixed
-  the dashboard fully, but not a tooltip moving over shadowed cards. GPU rasterization makes both unnecessary.
+  the dashboard fully, but not a tooltip moving over shadowed cards. The rc.5 runtime makes both unnecessary.
 - **One output per sample.** Each sample still allocates a `ValueInterpolation.Output`; a writer that reads only the
   number could take it unboxed.
 - **Callback churn on drag.** Each drag frame retargets the axes with zero duration, which completes the group's
