@@ -32,10 +32,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="Ranvier.View.Anime" />
-    </ItemGroup>
-
-    <ItemGroup>
         <!-- Temporary: Xantham.Fable.Core.TS 0.2.x restores from the xantham Cloudsmith feed (nuget.config) until it is
              published to nuget.org. -->
         <PackageReference Include="Xantham.Fable.Core.TS" Version="0.2.1" />
