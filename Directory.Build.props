@@ -1,0 +1,57 @@
+<Project>
+    <Import Project="$(MSBuildThisFileDirectory)Local.Build.props" Condition="Exists('$(MSBuildThisFileDirectory)Local.Build.props')" />
+
+    <PropertyGroup>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <RepositoryUrl>https://github.com/ranvier-org/Ranvier.Anime</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Authors>shayanhabibi</Authors>
+        <Copyright>Copyright (c) 2026 Shayan Habibi</Copyright>
+        <PackageIcon>ranvier-icon.png</PackageIcon>
+        <PackageProjectUrl>https://ranvier-org.github.io/Ranvier.Anime/</PackageProjectUrl>
+        <PackageReleaseNotes>Alpha release. The API may change before 1.0.</PackageReleaseNotes>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <!-- Fable.Package.SDK sets DebugType=embedded: the PDB (with SourceLink) lives in each dll, so no .snupkg is produced. nuget.org rejects an empty one. -->
+        <IncludeSymbols>false</IncludeSymbols>
+    </PropertyGroup>
+
+    <!--
+    Core Ranvier packages (ranvier-org/Ranvier) and CSS packages (ranvier-org/Ranvier.Css). `UseLocalRanvier=true`
+    turns the core package references into project references into $(RanvierRoot); `UseLocalRanvierCss=true` does the
+    same for the CSS packages and $(RanvierCssRoot). The `dev local` command of build.fsx writes both
+    to Local.Build.props.
+    -->
+    <PropertyGroup>
+        <UseLocalRanvier Condition="'$(UseLocalRanvier)' == ''">false</UseLocalRanvier>
+        <RanvierRoot Condition="'$(RanvierRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../Ranvier'))</RanvierRoot>
+        <UseLocalRanvierCss Condition="'$(UseLocalRanvierCss)' == ''">false</UseLocalRanvierCss>
+        <RanvierCssRoot Condition="'$(RanvierCssRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../Ranvier.Css'))</RanvierCssRoot>
+        <RanvierVersion>0.1.1-preview.2</RanvierVersion>
+        <RanvierCssVersion>0.1.1-alpha.2</RanvierCssVersion>
+        <RanvierCssAddonsVersion>0.1.1-alpha.1</RanvierCssAddonsVersion>
+        <RanvierTrace Condition="'$(RanvierTrace)' == '' and '$(Configuration)' == 'Debug'">true</RanvierTrace>
+        <RanvierPackageSuffix Condition="'$(RanvierTrace)' == 'true'">.Traced</RanvierPackageSuffix>
+    </PropertyGroup>
+
+    <!-- A solution build passes its configuration to the sibling-checkout projects outside the solution, which would
+         otherwise build as Debug, and so traced, under a Release solution build. -->
+    <PropertyGroup Condition="'$(UseLocalRanvier)' == 'true' or '$(UseLocalRanvierCss)' == 'true'">
+        <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' and $(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src'))">
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+
+    <!--
+    Projects opting out of the root build set IsExcludedFromRootBuild, which
+    Directory.Build.targets turns into a no-op Build. Used for Fable projects,
+    which are compiled by the fable tool rather than by MSBuild.
+    -->
+    <PropertyGroup Condition="'$(IsExcludedFromRootBuild)' == 'true'">
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+</Project>

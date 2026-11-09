@@ -1,0 +1,32 @@
+<Project>
+    <PropertyGroup Condition="'$(IsExcludedFromRootBuild)' == 'true'">
+        <BuildDependsOn>BeforeBuild;AfterBuild</BuildDependsOn>
+        <CompileDependsOn />
+    </PropertyGroup>
+
+    <!--
+    `RanvierTrace=true` compiles in the per-graph event log (`RANVIER_TRACE`) and selects the `.Traced` core packages.
+    Debug defaults to traced; any other configuration defaults to untraced. An explicit value, global or set in a
+    project file, wins over the default.
+    -->
+    <PropertyGroup Condition="'$(RanvierTrace)' == 'true'">
+        <DefineConstants>$(DefineConstants);RANVIER_TRACE</DefineConstants>
+    </PropertyGroup>
+
+    <Target Name="ValidateLocalRanvier" BeforeTargets="PrepareForBuild" Condition="'$(UseLocalRanvier)' == 'true'">
+        <Error Condition="!Exists('$(RanvierRoot)/src/Ranvier/Ranvier.fsproj')" Text="RanvierRoot must point to a Ranvier checkout. Run dotnet fsi build.fsx -- dev local." />
+    </Target>
+    <Target Name="ValidateLocalRanvierCss" BeforeTargets="PrepareForBuild" Condition="'$(UseLocalRanvierCss)' == 'true'">
+        <Error Condition="!Exists('$(RanvierCssRoot)/src/Ranvier.Css/Ranvier.Css.fsproj')" Text="RanvierCssRoot must point to a Ranvier.Css checkout. Run dotnet fsi build.fsx -- dev local --with-css." />
+    </Target>
+
+    <!--
+    A traced build packs only under a `.Traced` package id, which a project
+    selects on an explicit `-p:RanvierTrace=true`. The traced and untraced
+    packages hold the same assembly names, namespaces and version.
+    -->
+    <Target Name="RefuseTracedPack" BeforeTargets="GenerateNuspec"
+            Condition="'$(RanvierTrace)' == 'true' and !$(PackageId.EndsWith('.Traced'))">
+        <Error Text="$(PackageId) is built with RanvierTrace=true, the Debug default. Pack with -c Release, or pass -p:RanvierTrace=true to pack $(PackageId).Traced." />
+    </Target>
+</Project>

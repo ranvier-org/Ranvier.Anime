@@ -1,0 +1,13 @@
+{
+  "bindings": {
+    "raw": 32274,
+    "gzip": 12219
+  },
+  "handWritten": {
+    "raw": 32274,
+    "gzip": 12219
+  },
+  "deltaGzip": 0,
+  "budgetGzip": 64,
+  "withinBudget": true
+}

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj" />
+    <Compile Include="SugarChecks.fs" />
+  </ItemGroup>
+    <ItemGroup Condition="'$(UseLocalRanvierCss)' == 'true'">
+        <ProjectReference Include="$(RanvierCssRoot)/src/Ranvier.Css.Bindings/Ranvier.Css.Bindings.fsproj" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(UseLocalRanvierCss)' != 'true'">
+        <PackageReference Include="Ranvier.Css.Bindings" Version="$(RanvierCssAddonsVersion)" />
+    </ItemGroup>
+</Project>

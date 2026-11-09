@@ -1,0 +1,13 @@
+{
+  "name": "ranvier.anime",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "build": "dotnet fsi build.fsx -- build",
+    "test": "dotnet fsi build.fsx -- test",
+    "check": "dotnet fsi build.fsx -- ci"
+  }
+}

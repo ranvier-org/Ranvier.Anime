@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
+        <RootNamespace>Ranvier.Anime</RootNamespace>
+        <AssemblyName>Fable.Ranvier.Anime</AssemblyName>
+        <PackageId>Fable.Ranvier.Anime</PackageId>
+        <!-- The traced build packs as Fable.Ranvier.Anime.Traced and depends on Ranvier.Traced. -->
+        <PackageId Condition="'$(RanvierTrace)' == 'true'">Fable.Ranvier.Anime.Traced</PackageId>
+        <Title>Fable.Ranvier.Anime</Title>
+        <Description>Typed anime.js 4.5 bindings for Fable, with Ranvier integration: parameters as constructors with named optional arguments, and per-feature imports.</Description>
+        <Description Condition="'$(RanvierTrace)' == 'true'">The traced build of Fable.Ranvier.Anime: typed anime.js 4.5 bindings for Fable. Depends on Ranvier.Traced.</Description>
+        <PackageTags>animation;animejs;bindings;fable;reactive;signals;fsharp</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageReleaseNotes>Alpha release. The API may change before 1.0.</PackageReleaseNotes>
+        <!-- Set by ShipIt from CHANGELOG.md. -->
+        <Version>0.1.44</Version>
+        <AssemblyVersion>0.0.0.0</AssemblyVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Values.fs" />
+        <Compile Include="Tickables.fs" />
+        <Compile Include="Params.fs" />
+        <Compile Include="Anime.fs" />
+        <Compile Include="Css.fs" />
+        <Compile Include="Reactive.fs" />
+        <Compile Include="Testing.fs" />
+        <None Include="README.md" Pack="true" PackagePath="\" />
+        <None Include="../../brand/icon/ranvier-icon.png" Pack="true" PackagePath="\" Visible="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Ranvier.View.Anime" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Temporary: Xantham.Fable.Core.TS 0.2.x restores from the xantham Cloudsmith feed (nuget.config) until it is
+             published to nuget.org. -->
+        <PackageReference Include="Xantham.Fable.Core.TS" Version="0.2.1" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RanvierTrace)' == 'true'">
+        <AssemblyMetadata Include="RanvierTrace" Value="true" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(UseLocalRanvier)' == 'true'">
+        <ProjectReference Include="$(RanvierRoot)/src/Ranvier/Ranvier.fsproj" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(UseLocalRanvier)' != 'true'">
+        <PackageReference Include="Ranvier$(RanvierPackageSuffix)" Version="$(RanvierVersion)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(UseLocalRanvierCss)' == 'true'">
+        <ProjectReference Include="$(RanvierCssRoot)/src/Ranvier.Css/Ranvier.Css.fsproj" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(UseLocalRanvierCss)' != 'true'">
+        <PackageReference Include="Ranvier.Css" Version="$(RanvierCssVersion)" />
+    </ItemGroup>
+</Project>

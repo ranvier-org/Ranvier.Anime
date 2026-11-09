@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Ranvier.Anime.Tests/Ranvier.Anime.Tests.fsproj" />
+  </Folder>
+</Solution>

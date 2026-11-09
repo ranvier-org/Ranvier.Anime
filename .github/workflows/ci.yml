@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Each group is a `test --group` shard of build.fsx: the same checks as local development.
+  tests:
+    name: Tests (${{ matrix.group }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [bindings, workflows]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # global.json pins the SDK; the packages' second target is net8.0.
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+      # The bindings suites require Node 26 or newer.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+      - name: Run the same checks as local development
+        run: dotnet fsi build.fsx -- test --group ${{ matrix.group }}
+
+  packages:
+    name: Packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+      - name: Build and pack Fable.Ranvier.Anime untraced and traced, with Fable sources
+        run: dotnet fsi build.fsx -- pack
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages
+          path: bin/*.nupkg
+          if-no-files-found: error
+
+  format:
+    name: Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: dotnet fsi build.fsx -- tools
+      - run: dotnet fsi build.fsx -- format --dry-format --quick
+
+  versioning:
+    name: Version ownership
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Test the version ownership check
+        run: python3 -I tests/test_versioning.py
+      - name: Check that ShipIt owns every package version
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            python3 -I .github/scripts/check_versioning.py --base HEAD^1 --head-ref "$HEAD_REF" --author "$AUTHOR" --title "$TITLE"
+          else
+            python3 -I .github/scripts/check_versioning.py
+          fi
+
+  result:
+    name: CI result
+    needs: [tests, packages, format, versioning]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for result in $RESULTS; do
+            case "$result" in success) ;; *) exit 1 ;; esac
+          done
