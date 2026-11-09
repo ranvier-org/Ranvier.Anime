@@ -161,6 +161,19 @@ let private reactive (clock: float -> unit) =
     Testing.step ()
     equal "7px" (styleOf el "--gap")
 
+/// The runtime checks as another package's Motion parts use them.
+let private runtime _ =
+    equal "px" (CssAnimationRuntime.unitOf (px 3.))
+    CssAnimationRuntime.requireUnit "px" (px 5.)
+    rejects (fun () -> CssAnimationRuntime.requireUnit "em" (px 5.))
+    let el = element ()
+    setStyle el "--gap" "7px" "important"
+    let restore = CssAnimationRuntime.capture el "--gap"
+    setStyle el "--gap" "9px" ""
+    restore ()
+    equal "7px" (styleOf el "--gap")
+    equal "important" (priorityOf el "--gap")
+
 [<Emit("getComputedStyle($0, $1).width")>]
 let private computedWidth (element: Element) (pseudo: string) : string = jsNative
 
@@ -221,4 +234,5 @@ let cases: (string * ((float -> unit) -> unit)) array =
         "typed custom properties retain angle, number and percentage units", numericFamilies
         "incompatible CSS endpoints fail before mutating parameters", validation
         "reactive CSS retargets from the current value and restores the original style", reactive
+        "the public CSS animation runtime checks units and restores captured values", runtime
     |]

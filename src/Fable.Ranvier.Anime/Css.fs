@@ -4,7 +4,8 @@ open Fable.Core
 open Ranvier.Css
 
 /// <summary>Numeric-token checks shared by typed animation parameters and reactive retargeting.</summary>
-module internal CssAnimationRuntime =
+/// <remarks>Packages that animate typed custom properties, such as the Motion parts of Ranvier.View.Anime, use these checks.</remarks>
+module CssAnimationRuntime =
     /// <summary>Requires a finite numeric token carrying generated metadata and returns its unit suffix.</summary>
     let unitOf (value: Ranvier.Css.Value<'syntax>) =
         match RuntimeApi.tryNumericValue value with
