@@ -3,7 +3,7 @@ module SugarChecks
 
 open Fable.Core
 open Fable.Core.TS.Dom
-open Ranvier.Anime
+open Fable.Ranvier.Anime
 open Ranvier.Css
 
 [<Global>]

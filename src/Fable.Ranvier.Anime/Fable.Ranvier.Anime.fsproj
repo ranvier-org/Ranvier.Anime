@@ -3,7 +3,7 @@
     <PropertyGroup>
         <OutputType>Library</OutputType>
         <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
-        <RootNamespace>Ranvier.Anime</RootNamespace>
+        <RootNamespace>Fable.Ranvier.Anime</RootNamespace>
         <AssemblyName>Fable.Ranvier.Anime</AssemblyName>
         <PackageId>Fable.Ranvier.Anime</PackageId>
         <!-- The traced build packs as Fable.Ranvier.Anime.Traced and depends on Ranvier.Traced. -->
@@ -20,6 +20,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- The portable contracts come first: the binding types inherit them. -->
+        <Compile Include="Portable/Contracts.fs" />
+        <Compile Include="Portable/Reactive.fs" />
         <Compile Include="Values.fs" />
         <Compile Include="Tickables.fs" />
         <Compile Include="Params.fs" />
@@ -27,6 +30,8 @@
         <Compile Include="Css.fs" />
         <Compile Include="Reactive.fs" />
         <Compile Include="Testing.fs" />
+        <Compile Include="Portable/Anime.fs" />
+        <Compile Include="Portable/Motion.fs" />
         <None Include="README.md" Pack="true" PackagePath="\" />
         <None Include="../../brand/icon/ranvier-icon.png" Pack="true" PackagePath="\" Visible="false" />
     </ItemGroup>

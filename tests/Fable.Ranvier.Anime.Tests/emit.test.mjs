@@ -6,6 +6,7 @@ import { readFileSync, readdirSync } from "node:fs";
 
 const generated = new URL("./generated/", import.meta.url);
 const bindings = new URL("src/Fable.Ranvier.Anime/", generated);
+const bindingModules = ["Css.js", "Params.js", "Reactive.js", "Testing.js"];
 const helpers = /\b(curry\d*|uncurry\d*|partialApply|createObj)\b/g;
 const read = url => readFileSync(url, "utf8");
 const compact = text => text.replace(/\s+/g, "");
@@ -14,11 +15,12 @@ const surface = read(new URL("Surface.js", generated));
 const body = name => compact(new RegExp(`export function ${name}\\([^)]*\\) \\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(fixtures)[1]);
 
 test("the erased binding files emit no module and the others are emitted", () => {
-  assert.deepEqual(readdirSync(bindings).sort(), ["Css.js", "Params.js", "Reactive.js", "Testing.js"]);
+  assert.deepEqual(readdirSync(bindings).sort(), [...bindingModules, "Portable"].sort());
+  assert.deepEqual(readdirSync(new URL("Portable/", bindings)).sort(), ["Anime.js", "Contracts.js", "Motion.js", "Reactive.js"]);
 });
 
 test("no bindings module or fixture holds a currying or object-construction helper", () => {
-  for (const file of readdirSync(bindings)) assert.deepEqual(read(new URL(file, bindings)).match(helpers), null, file);
+  for (const file of bindingModules) assert.deepEqual(read(new URL(file, bindings)).match(helpers), null, file);
   assert.deepEqual(fixtures.match(helpers), null, "Fixtures.js");
   assert.deepEqual(surface.match(helpers), null, "Surface.js");
 });

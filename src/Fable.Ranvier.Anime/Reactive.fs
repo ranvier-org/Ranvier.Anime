@@ -1,5 +1,5 @@
 /// <summary>Ownership and signals for anime objects: reverting with an owner, playback as memos, signal-driven seeking.</summary>
-module Ranvier.Anime.Reactive
+module Fable.Ranvier.Anime.Reactive
 
 open Fable.Core
 open global.Ranvier
@@ -117,41 +117,18 @@ let driveCss
 
             active.set (Ranvier.Css.RuntimeApi.customPropertyName property, number))
 
-/// <summary>Whether animations run in full or reduced to their end states.</summary>
-type MotionPolicy =
-    | Full
-    | Reduced
+/// <summary>Whether animations run in full or reduced to their end states: the portable <c>Ranvier.Anime.Reactive.MotionPolicy</c>.</summary>
+type MotionPolicy = global.Ranvier.Anime.Reactive.MotionPolicy
 
-[<AllowNullLiteral>]
-type private MediaQuery =
-    abstract matches: bool
-    abstract addEventListener: string * (MediaQuery -> unit) -> unit
-    abstract removeEventListener: string * (MediaQuery -> unit) -> unit
+/// <summary>Animations run in full.</summary>
+let Full = MotionPolicy.Full
 
-[<Emit("(typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia($0) : null)")>]
-let private matchMedia (query: string) : MediaQuery = jsNative
-
-let private policyOf (matches: bool) =
-    if matches then Reduced else Full
-
-#if FABLE_COMPILER
-[<AllowNullLiteral>]
-type private PolicyCache =
-    abstract get: Graph -> Signal<MotionPolicy>
-    abstract set: Graph * Signal<MotionPolicy> -> unit
-
-[<Emit("new WeakMap()")>]
-let private policyCache () : PolicyCache = jsNative
-
-let private policies = policyCache ()
-#else
-let private policies =
-    System.Runtime.CompilerServices.ConditionalWeakTable<Graph, Signal<MotionPolicy>>()
-#endif
+/// <summary>Animations are reduced to their end states.</summary>
+let Reduced = MotionPolicy.Reduced
 
 /// <summary>
 /// The motion policy of the current graph: a signal seeded from <c>(prefers-reduced-motion: reduce)</c> on first read and
-/// written on each change of the media query.
+/// written on each change of the media query. The same signal as the portable <c>Ranvier.Anime.Reactive.policy</c>.
 /// </summary>
 /// <remarks>
 /// Every call on a graph returns the same signal. A write overrides the media query until its next change; disposing the
@@ -159,32 +136,4 @@ let private policies =
 /// call on a graph runs outside pure derivations, as <c>onCleanup</c> does.
 /// </remarks>
 let policy () : Signal<MotionPolicy> =
-    let graph = Graph.Current
-#if FABLE_COMPILER
-    let cached = policies.get graph
-
-    if not (isNull (box cached)) then
-        cached
-    else
-        let query = matchMedia "(prefers-reduced-motion: reduce)"
-
-        let signal =
-            Api.createSignal (if isNull query then Full else policyOf query.matches)
-
-        if not (isNull query) then
-            let follow (change: MediaQuery) =
-                signal.Value <- policyOf change.matches
-
-            query.addEventListener ("change", follow)
-            Api.runWithOwner graph.Root (fun () -> Api.onCleanup (fun () -> query.removeEventListener ("change", follow)))
-
-        policies.set (graph, signal)
-        signal
-#else
-    match policies.TryGetValue graph with
-    | true, signal -> signal
-    | _ ->
-        let signal = Api.createSignal Full
-        policies.Add (graph, signal)
-        signal
-#endif
+    global.Ranvier.Anime.Reactive.policy ()

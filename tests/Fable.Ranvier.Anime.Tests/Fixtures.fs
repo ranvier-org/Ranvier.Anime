@@ -2,7 +2,7 @@
 module Fixtures
 
 open Fable.Core.TS.Dom
-open Ranvier.Anime
+open Fable.Ranvier.Anime
 
 /// <summary>The bundle-size entry: one animation, matched by <c>size.mjs</c>'s hand-written twin.</summary>
 let sized (el: Element) =

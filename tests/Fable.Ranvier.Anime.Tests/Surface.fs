@@ -2,7 +2,7 @@
 module Surface
 
 open Fable.Core.TS.Dom
-open Ranvier.Anime
+open Fable.Ranvier.Anime
 
 let waapi (el: Element) =
     Waapi.animate (el, WaapiParams (opacity = Value.fromTo (0, 1), duration = 200, ease = Ease.named "ease-out"))

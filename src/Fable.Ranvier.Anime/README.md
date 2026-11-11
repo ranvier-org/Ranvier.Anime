@@ -12,21 +12,21 @@ the arguments given, and every function is imported from `animejs` on its own, s
 only the anime features it calls.
 
 ```fsharp
-open Ranvier.Anime
+open Fable.Ranvier.Anime
 
 let card (el: Fable.Core.TS.Dom.Element) =
     Anime.animate (el, Anim(x = 100, opacity = Value.fromTo (0, 1), duration = 400, ease = Ease.outQuart))
 // animate(el, { x: 100, opacity: [0, 1], duration: 400, ease: "outQuart" })
 ```
 
-`Ranvier.Anime.Reactive` ties anime objects to Ranvier's ownership tree and signals:
+`Fable.Ranvier.Anime.Reactive` ties anime objects to Ranvier's ownership tree and signals:
 
 - `own` reverts an animation, timeline, draggable or layout when the current owner is disposed.
 - `track` publishes a tickable's progress, running and completed state as memos.
 - `scrub` seeks a tickable to a signal's progress; `drive` animates an animatable property to a signal's value.
 - `policy` is a signal of the reduced-motion preference.
 
-`Ranvier.Anime.Testing` steps anime's engine by hand: mock `Date` before `animejs` is imported, call
+`Fable.Ranvier.Anime.Testing` steps anime's engine by hand: mock `Date` before `animejs` is imported, call
 `Testing.manual ()`, then advance the mocked time and call `Testing.step ()`.
 
 The assembly also compiles on .NET, so portable code can reference it; the bindings run only under Fable.
@@ -42,7 +42,7 @@ values retain the same grammar marker through Anime parameters:
 
 ```fsharp
 open Ranvier.Css
-open Ranvier.Anime
+open Fable.Ranvier.Anime
 
 let gap = Css.lengthVariable "--gap"
 

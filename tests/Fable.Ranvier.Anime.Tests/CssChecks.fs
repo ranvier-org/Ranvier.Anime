@@ -4,7 +4,7 @@ module CssChecks
 open Fable.Core
 open Fable.Core.TS.Dom
 open global.Ranvier
-open Ranvier.Anime
+open Fable.Ranvier.Anime
 open Ranvier.Css
 
 type private Length = class end

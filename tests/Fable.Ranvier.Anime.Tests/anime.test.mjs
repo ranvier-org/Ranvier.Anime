@@ -16,5 +16,7 @@ const clock = ms => mock.timers.tick(ms);
 for (const [name, check] of cases) test(name, () => check(clock));
 const { cases: cssCases } = await import("./generated/CssChecks.js");
 for (const [name, check] of cssCases) test(name, () => check(clock));
+const { cases: portableCases } = await import("./generated/PortableChecks.js");
+for (const [name, check] of portableCases) test(name, () => check(clock));
 const sugar = await import("./generated/sugar/SugarChecks.js");
 test("generated CSS sugars retain numeric metadata and typed Anime endpoints under Fable", () => sugar.run());

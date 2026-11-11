@@ -10,7 +10,7 @@ See [installation and the dependency feed](../guide/introduction.md#installation
 :::
 
 `Fable.Ranvier.Anime` is typed F# over [anime.js](https://animejs.com) 4.5.0, with ownership and
-signals from the Ranvier core. The namespace is `Ranvier.Anime`. Install the JavaScript engine:
+signals from the Ranvier core. The namespace is `Fable.Ranvier.Anime`. Install the JavaScript engine:
 
 ```shell
 npm install animejs@4.5.0
@@ -25,7 +25,7 @@ npm install animejs@4.5.0
 
 ```fsharp
 open Fable.Core
-open Ranvier.Anime
+open Fable.Ranvier.Anime
 
 let reveal (card: TS.Dom.Element) =
     Anime.animate (card, Anim (x = 100, opacity = Value.fromTo (0, 1), duration = 400, ease = Ease.outQuart))

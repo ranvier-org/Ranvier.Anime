@@ -29,7 +29,7 @@ Each F# check advances mocked time, ticks the engine and asserts the resulting s
 
 ```fsharp
 open Fable.Core
-open Ranvier.Anime
+open Fable.Ranvier.Anime
 
 [<Emit("document.body.appendChild(document.createElement($0))")>]
 let createElement (tag: string) : TS.Dom.Element = jsNative

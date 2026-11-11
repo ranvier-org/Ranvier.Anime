@@ -4,7 +4,7 @@ module AnimeChecks
 open Fable.Core
 open Fable.Core.TS.Dom
 open global.Ranvier
-open Ranvier.Anime
+open Fable.Ranvier.Anime
 
 [<Global>]
 let private document: Document = jsNative

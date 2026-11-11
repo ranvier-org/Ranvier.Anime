@@ -1,4 +1,4 @@
-namespace Ranvier.Anime
+namespace Fable.Ranvier.Anime
 
 open Fable.Core
 

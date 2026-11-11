@@ -15,6 +15,9 @@
         <Compile Include="Surface.fs" />
         <Compile Include="AnimeChecks.fs" />
         <Compile Include="CssChecks.fs" />
+        <!-- The portable contract, shared with tests/Ranvier.Anime.Tests. -->
+        <Compile Include="../Portable/Surface.fs" Link="Portable/Surface.fs" />
+        <Compile Include="PortableChecks.fs" />
     </ItemGroup>
 
     <ItemGroup>
