@@ -12,7 +12,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IsAotCompatible>true</IsAotCompatible>
     <!-- Set by ShipIt from CHANGELOG.md. -->
-    <Version>0.1.0-rc.0</Version>
+    <Version>0.1.0-rc.1</Version>
     <AssemblyVersion>0.0.0.0</AssemblyVersion>
     <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
   </PropertyGroup>
