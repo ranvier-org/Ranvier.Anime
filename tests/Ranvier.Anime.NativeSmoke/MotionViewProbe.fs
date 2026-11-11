@@ -37,7 +37,7 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
             host.Frame()
         condition ()
 
-    use motion = MotionHost.Install { Scheduler = scheduler; Computed = ComputedStyles.forHost host }
+    use motion = AnimeHost.Install { Scheduler = scheduler; Computed = ComputedStyles.forHost host }
     let graph = new Graph()
     let container = host.Document.createElement "div"
     host.Document.body.appendChild container |> ignore
@@ -104,9 +104,8 @@ let private interactive =
                               ScrollParams.Default
                               (fun state -> { Progress = ValueSome state.Progress; InView = ValueSome state.InView })
                               (fun _ element ->
-                                  let services = MotionHost.Current
-                                  Composed.animate services.Scheduler (box element) [| PropertySpec.Scalar("opacity", 1., fromValue = 0.) |]
-                                      (Some { ComposedAnimationOptions.Default with Duration = 1000.; Computed = Some services.Computed })) |]
+                                  Anime.animate (box element) [| PropertySpec.Scalar("opacity", 1., fromValue = 0.) |]
+                                      { ComposedAnimationOptions.Default with Duration = 1000. }) |]
                        [||]
                    t.div
                        [| t.Attrs.attribute ("style", "position:absolute;top:20px;left:20px;width:40px;height:40px;background:red")
@@ -121,7 +120,7 @@ let private interactive =
                               ScrollParams.Default
                               (fun _ -> { Progress = ValueNone; InView = ValueNone })
                               (fun _ element ->
-                                  let services = MotionHost.Current
+                                  let services = AnimeHost.Current
                                   let timeline = Composed.createTimeline services.Scheduler None (Some false)
                                   timeline.Add(
                                       [| box element |],
@@ -158,7 +157,7 @@ let runInteraction () =
               WindowScroll = windowScroll }
           Viewport = Viewport.provider host }
 
-    use motion = MotionHost.Install({ Scheduler = scheduler; Computed = computed }, interaction)
+    use motion = AnimeHost.Install({ Scheduler = scheduler; Computed = computed }, interaction)
     (unbox<ElementCSSInlineStyle> (box host.Document.body)).style.setProperty("height", "2000px")
     (unbox<ElementCSSInlineStyle> (box host.Document.body)).style.setProperty("margin", "0")
     let graph = new Graph()

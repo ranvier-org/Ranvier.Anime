@@ -1,6 +1,6 @@
 /// <summary>
 /// The host interop the native pages share, in place of the browser pages' <c>Page</c> module: Ranvier.Anime calls on
-/// the installed <c>MotionHost</c>, element queries, timers on the window loop, tweened points and seeded numbers.
+/// the installed <c>AnimeHost</c>, element queries, timers on the window loop, tweened points and seeded numbers.
 /// </summary>
 module Native
 
@@ -27,7 +27,7 @@ let timing (duration: float) (easing: float -> float) =
     { ComposedAnimationOptions.Default with
         Duration = duration
         Ease = easing
-        Computed = Some MotionHost.Current.Computed }
+        Computed = Some AnimeHost.Current.Computed }
 
 /// <summary>Plays <c>forever</c> back and forth.</summary>
 let alternating (options: ComposedAnimationOptions) =
@@ -43,7 +43,7 @@ let delayed (delay: float) (options: ComposedAnimationOptions) =
 
 /// <summary>Animates <c>targets</c> on the installed host's frames.</summary>
 let animateAll (targets: obj array) (options: ComposedAnimationOptions) (properties: PropertySpec array) =
-    Composed.animateTargets MotionHost.Current.Scheduler targets properties (Some options)
+    Anime.animateTargets targets properties options
 
 /// <summary>Animates the element on the installed host's frames.</summary>
 let animate (element: Element) (options: ComposedAnimationOptions) (properties: PropertySpec array) =
@@ -57,7 +57,7 @@ let toward (name: string) (last: float) = PropertySpec.Scalar(name, last)
 
 /// <summary>A paused timeline on the installed host's frames, for children added with <c>Add</c>.</summary>
 let timeline (autoplay: bool) =
-    Composed.createTimeline MotionHost.Current.Scheduler None (Some autoplay)
+    Composed.createTimeline AnimeHost.Current.Scheduler None (Some autoplay)
 
 /// <summary>A child placed at the start of the previous one, anime's <c>"&lt;"</c>.</summary>
 let withPrevious = TimelinePosition.Expression "<"
@@ -90,7 +90,7 @@ let springPoint (stiffness: float) (damping: float) (struct (x: float, y: float)
             Ease = easing
             OnUpdate = fun _ -> write (struct (point.GetNumber "x", point.GetNumber "y")) }
 
-    Composed.animate MotionHost.Current.Scheduler (box point) [| toward "x" 0.; toward "y" 0. |] (Some options)
+    Anime.animate (box point) [| toward "x" 0.; toward "y" 0. |] options
 
 /// <summary>
 /// A signal of the progress, 0 to 1, of a linear clock of <c>duration</c> milliseconds started now and cancelled with
@@ -107,7 +107,7 @@ let clock (duration: float) : Signal<float> =
             Ease = linear
             OnUpdate = fun _ -> graph.Batch(fun () -> progress.Value <- tick.GetNumber "x") }
 
-    let animation = Composed.animate MotionHost.Current.Scheduler (box tick) [| toward "x" 1. |] (Some options)
+    let animation = Anime.animate (box tick) [| toward "x" 1. |] options
     Api.onCleanup (fun () -> animation.Cancel())
     progress
 

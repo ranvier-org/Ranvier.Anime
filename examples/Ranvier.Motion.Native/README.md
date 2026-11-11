@@ -25,7 +25,7 @@ calls are rewritten:
 | `setInterval` / `setTimeout` | `Native.timers`, run by the window loop |
 | the parameter records (`LayoutParams`, `AnimatableParams`, ...) | the shared records (`LayoutOptions`, `ComposedAnimationOptions`, ...) |
 
-`Host.fs` installs `MotionHost` with the host's frames, computed styles and the drag and scroll services before it
+`Host.fs` installs `AnimeHost` with the host's frames, computed styles and the drag and scroll services before it
 mounts. `Shell.fs` replaces the separate documents with one frame: the site header switches pages, each page mounts
 in an arm that owns its state and timers, and opening a page loads its stylesheets (`styles/`, copied unchanged) and
 scrolls to the top, as a page load does.

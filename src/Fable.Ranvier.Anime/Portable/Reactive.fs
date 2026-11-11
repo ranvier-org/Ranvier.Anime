@@ -80,4 +80,4 @@ module Reactive =
 
     /// <summary>Reverts the object when the current owner is disposed.</summary>
     let own (revertible: #IRevertible) : unit =
-        Api.onCleanup (fun () -> (revertible :> IRevertible).Revert ())
+        Api.onCleanup (fun () -> (revertible :> IRevertible).Revert())

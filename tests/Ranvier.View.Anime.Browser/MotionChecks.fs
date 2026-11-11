@@ -4,6 +4,7 @@ module MotionChecks
 open Fable.Core
 open Fable.Core.TS.Dom
 open global.Ranvier
+open Fable.Ranvier.Anime
 open Ranvier.Anime
 open Ranvier.View
 open Ranvier.View.Dom
@@ -120,10 +121,10 @@ let private rows (items: int array) =
     { Items = Api.createSignal items }
 
 let private fadeIn (_: unit -> int) (node: Element) =
-    Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 1000, ease = Ease.linear))
+    Anime.animate node [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |] { ComposedAnimationOptions.Default with Duration = 1000.; Ease = Ease.named "linear" }
 
 let private fadeOut (_: unit -> int) (node: Element) =
-    Anime.animate (node, Anim (opacity = 0, duration = 1000, ease = Ease.linear))
+    Anime.animate node [| PropertySpec.Scalar ("opacity", 0.) |] { ComposedAnimationOptions.Default with Duration = 1000.; Ease = Ease.named "linear" }
 
 let private entering =
     Component.template
@@ -202,7 +203,7 @@ let private onRevertsOnDisposal (clock: Clock) =
     let view =
         Component.template
             (fun _ () -> ())
-            (div (Motion.on (fun _ node -> Anime.animate (node, Anim (opacity = 0.5, duration = 1000, ease = Ease.linear)))) { "on" })
+            (div (Motion.on (fun _ node -> Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = 0.5, duration = 1000, ease = Ease.linear)))) { "on" })
 
     let mounted = mountIn false graph target (Component.render view ())
     let element = find target "div"
@@ -227,7 +228,7 @@ let private typedCssOnReverts queued (clock: Clock) =
             (fun _ () -> ())
             (div (
                 Attrs.className "user-class",
-                Motion.on (fun _ node -> Anime.animate (node, Anim(duration = 1000, ease = Ease.linear).With(gap, px 0., px 100.)))
+                Motion.on (fun _ node -> Fable.Ranvier.Anime.Anime.animate (node, Anim(duration = 1000, ease = Ease.linear).With(gap, px 0., px 100.)))
             ) {
                 "typed"
             })
@@ -313,8 +314,8 @@ let private toggled =
                 (fun (s: Toggle) -> s.Shown.Value)
                 (p (
                     Motion.presence
-                        (fun _ node -> Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 1000, ease = Ease.linear)))
-                        (fun _ node -> Anime.animate (node, Anim (opacity = 0, duration = 1000, ease = Ease.linear)))
+                        (fun _ node -> Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 1000, ease = Ease.linear)))
+                        (fun _ node -> Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = 0, duration = 1000, ease = Ease.linear)))
                 ) {
                     "panel"
                 })
@@ -449,7 +450,7 @@ let private replayed =
         (fun _ (s: Level) -> s)
         (div (
             Motion.animateOn (fun (s: Level) -> s.Level.Value) (fun _ node level ->
-                Anime.animate (node, Anim (opacity = level, duration = 1000, ease = Ease.linear)))
+                Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = level, duration = 1000, ease = Ease.linear)))
         ) {
             "level"
         })
@@ -672,7 +673,7 @@ let private scrolled =
                         Progress = ValueSome s.Progress
                         InView = ValueSome s.InView
                     })
-                (fun _ node -> Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 1000, ease = Ease.linear)))
+                (fun _ node -> Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 1000, ease = Ease.linear)))
         ) {
             "story"
         })
@@ -702,7 +703,7 @@ let private splitted =
         (fun _ () -> ())
         (h1 (
             Motion.split { TextSplitterOptions.Default with Chars = SplitMode.Enabled } (fun _ splitter ->
-                Anime.animate (splitter.chars, Anim (opacity = Value.fromTo (0, 1), duration = 100)))
+                Anime.animateTargets (Array.map box splitter.Chars) [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |] { ComposedAnimationOptions.Default with Duration = 100. })
         ) {
             "Hi"
         })
@@ -720,7 +721,7 @@ let private splitReverts (clock: Clock) =
 let private appeared =
     Component.template
         (fun _ () -> ())
-        (p (Motion.appear (fun _ node -> Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 1000)))) { "served" })
+        (p (Motion.appear (fun _ node -> Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 1000)))) { "served" })
 
 let private appearSkipsHydrated (clock: Clock) =
     use graph = new Graph ()
@@ -763,7 +764,7 @@ let private livelyRows =
                 ) {
                     span (
                         Motion.split { TextSplitterOptions.Default with Chars = SplitMode.Enabled } (fun _ split ->
-                            Anime.animate (split.chars, Anim (opacity = Value.fromTo (0, 1), duration = 100)))
+                            Anime.animateTargets (Array.map box split.Chars) [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |] { ComposedAnimationOptions.Default with Duration = 100. })
                     ) {
                         "ab"
                     }
@@ -811,11 +812,11 @@ let private guardedRows =
                     (fun (s: Panel) -> s.Rows.Value)
                     (li (Motion.presence fadeIn fadeOut) {
                         b (Motion.follow "opacity" { ComposedAnimationOptions.Default with Duration = 1000. } (fun (_: unit -> int) -> 0.3)) { "f" }
-                        i (Motion.on (fun _ el -> Anime.animate (el, Anim (opacity = 0.5, duration = 1000, ease = Ease.linear)))) { "o" }
+                        i (Motion.on (fun _ el -> Fable.Ranvier.Anime.Anime.animate (el, Anim (opacity = 0.5, duration = 1000, ease = Ease.linear)))) { "o" }
 
                         em (
                             Motion.animateOn (fun (_: unit -> int) -> 0.7) (fun _ el value ->
-                                Anime.animate (el, Anim (opacity = value, duration = 100)))
+                                Fable.Ranvier.Anime.Anime.animate (el, Anim (opacity = value, duration = 100)))
                         ) {
                             "a"
                         }
@@ -1021,7 +1022,7 @@ let private enteringUnderFlip (enter: Part<Ranvier.Dom.HTMLLIElement, unit -> in
         })
 
 let private opacityEnter (_: unit -> int) (node: Element) =
-    Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 100, ease = Ease.linear))
+    Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 100, ease = Ease.linear))
 
 let private flippedEnter = enteringUnderFlip (Motion.enter opacityEnter)
 
@@ -1054,6 +1055,9 @@ let private flipKeepsEnters queued (clock: Clock) =
 [<Emit("$0.animate[$0.xProp]($1, $2)")>]
 let private releaseTo (draggable: Draggable) (x: float) (duration: float) : unit = jsNative
 
+[<Emit("$0.onGrab($0)")>]
+let private fireGrab (draggable: Draggable) : unit = jsNative
+
 [<Emit("$0.onSettle($0)")>]
 let private fireSettle (draggable: Draggable) : unit = jsNative
 
@@ -1071,6 +1075,7 @@ let private dragWritesSettle (clock: Clock) =
     let mounted = mountIn false graph target (Component.render dragged puck)
     let draggable = lastDraggable ()
     // anime reports the settle while the release animation still runs, then moves the element with no callback.
+    fireGrab draggable
     releaseTo draggable 42. 100.
     advance clock 0.
     advance clock 48.
@@ -1096,7 +1101,7 @@ let private layoutFieldsPinned (clock: Clock) =
     root.appendChild (document.createElement "p")
     |> ignore
 
-    let layout = Anime.layout root
+    let layout = Fable.Ranvier.Anime.Anime.layout root
     layout.animate () |> ignore
     let shaped = layoutShape layout
     layout.revert ()
@@ -1244,9 +1249,6 @@ let private tweened () : obj = jsNative
 [<Emit("$0.x")>]
 let private xOf (target: obj) : float = jsNative
 
-[<Emit("$0.onGrab($0)")>]
-let private fireGrab (draggable: Draggable) : unit = jsNative
-
 let private thrown =
     Component.template
         (fun _ (publish: Thrown -> unit) ->
@@ -1283,7 +1285,7 @@ let private slotOwnsAnimations (clock: Clock) =
     let play (target: obj) =
         spring.Play (fun () ->
             starts.Value <- starts.Value + 1
-            Anime.animate (Targets.object target, Anim (x = 100, duration = 1000, ease = Ease.linear)))
+            Fable.Ranvier.Anime.Anime.animate (Targets.object target, Anim (x = 100, duration = 1000, ease = Ease.linear)))
 
     let first = tweened ()
     play first

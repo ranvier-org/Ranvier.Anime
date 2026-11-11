@@ -122,28 +122,14 @@ module internal Js =
 type PropertySpec private () =
     /// <summary>A numeric property animated to <c>toValue</c>, from <c>fromValue</c> or the current value.</summary>
     static member Scalar
-        (
-            name: string,
-            toValue: float,
-            ?fromValue: float,
-            ?duration: float,
-            ?delay: float,
-            ?ease: float -> float,
-            ?modifier: float -> float
-        ) : PropertySpec =
+        (name: string, toValue: float, ?fromValue: float, ?duration: float, ?delay: float, ?ease: float -> float, ?modifier: float -> float)
+        : PropertySpec =
         unbox (Js.spec name (box toValue) (fromValue |> Option.map box) duration delay ease modifier)
 
     /// <summary>A text property (a CSS value, a unit value or a colour) animated to <c>toValue</c>.</summary>
     static member Text
-        (
-            name: string,
-            toValue: string,
-            ?fromValue: string,
-            ?duration: float,
-            ?delay: float,
-            ?ease: float -> float,
-            ?modifier: float -> float
-        ) : PropertySpec =
+        (name: string, toValue: string, ?fromValue: string, ?duration: float, ?delay: float, ?ease: float -> float, ?modifier: float -> float)
+        : PropertySpec =
         unbox (Js.spec name (box toValue) (fromValue |> Option.map box) duration delay ease modifier)
 
 /// <summary>The default curves and captured layout properties, matching the native ones.</summary>
@@ -152,10 +138,23 @@ module internal BrowserEase =
     let outQuad: float -> float = fun t -> 1. - (1. - t) * (1. - t)
 
     let inOutPower (power: float) : float -> float =
-        fun t -> if t < 0.5 then (2. * t) ** power / 2. else 1. - (2. - 2. * t) ** power / 2.
+        fun t ->
+            if t < 0.5 then
+                (2. * t) ** power / 2.
+            else
+                1. - (2. - 2. * t) ** power / 2.
 
     let layoutProperties =
-        [| "opacity"; "font-size"; "color"; "background-color"; "border-radius"; "border"; "filter"; "clip-path" |]
+        [|
+            "opacity"
+            "font-size"
+            "color"
+            "background-color"
+            "border-radius"
+            "border"
+            "filter"
+            "clip-path"
+        |]
 
 /// <summary>Timing for an animation: duration in milliseconds, easing and value modifier.</summary>
 [<NoEquality; NoComparison>]
@@ -221,9 +220,16 @@ type LayoutOptions =
         }
 
     /// <summary>Replaces duration with unsigned whole milliseconds.</summary>
-    member this.WithDuration(duration: uint) = { this with Duration = fun _ -> float duration }
+    member this.WithDuration(duration: uint) =
+        { this with
+            Duration = fun _ -> float duration
+        }
+
     /// <summary>Replaces delay with unsigned whole milliseconds.</summary>
-    member this.WithDelay(delay: uint) = { this with Delay = fun _ -> float delay }
+    member this.WithDelay(delay: uint) =
+        { this with
+            Delay = fun _ -> float delay
+        }
 
 /// <summary>Where a scroll observer's threshold sits on the container and on the target.</summary>
 type ScrollThreshold =
@@ -509,7 +515,12 @@ type SplitTemplateOptions =
     }
 
     /// <summary>No extra class, wrapper or clone.</summary>
-    static member Default = { Class = None; Wrap = SplitWrap.None; Clone = SplitClone.None }
+    static member Default =
+        {
+            Class = None
+            Wrap = SplitWrap.None
+            Clone = SplitClone.None
+        }
 
 /// <summary>Whether and how one granularity is split.</summary>
 [<RequireQualifiedAccess>]
@@ -644,7 +655,15 @@ module internal BrowserParams =
             | ScrollSync.Ease ease -> box ease
             | ScrollSync.Methods (enter, leave) -> box (command enter + " " + command leave)
             | ScrollSync.DirectionalMethods (enterForward, leaveForward, enterBackward, leaveBackward) ->
-                box (command enterForward + " " + command leaveForward + " " + command enterBackward + " " + command leaveBackward)
+                box (
+                    command enterForward
+                    + " "
+                    + command leaveForward
+                    + " "
+                    + command enterBackward
+                    + " "
+                    + command leaveBackward
+                )
 
         let parameters = fresh ()
 
@@ -750,10 +769,6 @@ module ComposedTimelineExtensions =
 
         /// <summary>Adds an animation of the targets at the position, the end of the timeline by default.</summary>
         member this.Add
-            (
-                targets: obj array,
-                specs: PropertySpec array,
-                ?options: ComposedAnimationOptions,
-                ?position: TimelinePosition
-            ) : ComposedTimeline =
+            (targets: obj array, specs: PropertySpec array, ?options: ComposedAnimationOptions, ?position: TimelinePosition)
+            : ComposedTimeline =
             addChild this targets (BrowserParams.animation specs (defaultArg options ComposedAnimationOptions.Default) true) position

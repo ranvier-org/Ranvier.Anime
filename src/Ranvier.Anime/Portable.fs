@@ -70,6 +70,12 @@ module Anime =
         created.DefaultComputed <- Some services.Computed
         created
 
+    /// <summary>Pauses the object at its current values when it is a tickable; any other revertible is left as it is.</summary>
+    let pause (revertible: IRevertible) : unit =
+        match revertible with
+        | :? ITickable as tickable -> tickable.Pause()
+        | _ -> ()
+
 /// <summary>
 /// One property of one element that follows a value. Later values animate from wherever the property is, and
 /// <c>Revert</c> restores what the property was before the first.
@@ -356,6 +362,9 @@ type FlipLayout =
     /// animated by something else, so the default visual properties are left alone for this pass.
     /// </summary>
     abstract Record: children: Element array * owned: bool -> unit
+    /// <summary>Gives <c>owned</c> as it stands once the change is made, for the <c>Animate</c> that follows.</summary>
+    /// <remarks>The native layout fixes the properties of a pass when it records, so the value recorded stays in force.</remarks>
+    abstract SetOwned: owned: bool -> unit
     /// <summary>Animates the children last recorded to their new boxes.</summary>
     abstract Animate: unit -> unit
     /// <summary>Cancels the running pass and restores the declarations it owns.</summary>
@@ -417,6 +426,8 @@ module Flip =
                     | ValueNone -> ()
 
                 layout <- ValueSome created
+
+            member _.SetOwned(_: bool) = ()
 
             member _.Animate() = layout |> ValueOption.iter (fun current -> current.Animate() |> ignore)
 

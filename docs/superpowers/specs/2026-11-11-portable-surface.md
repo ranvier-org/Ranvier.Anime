@@ -73,6 +73,7 @@ module Anime =
     val animate:        target: obj -> specs: PropertySpec array -> options: ComposedAnimationOptions -> ComposedAnimation
     val animateTargets: targets: obj array -> specs: PropertySpec array -> options: ComposedAnimationOptions -> ComposedAnimation
     val timeline:       unit -> ComposedTimeline
+    val pause:          revertible: IRevertible -> unit     // pauses a tickable; other revertibles are left as they are
 ```
 
 Native: `Anime.*` call `Composed.*` with `AnimeHost.Current`'s scheduler and, when the options carry no `Computed`, its
@@ -127,6 +128,9 @@ type FlipLayout =
     /// Measures `children` before the change. `owned`: an element under the root is animated by something else, so the
     /// default visual properties are left alone for this pass.
     abstract Record: children: Element array * owned: bool -> unit
+    /// `owned` as it stands once the change is made, for the Animate that follows. Native: the properties of a pass are
+    /// fixed at Record, so this changes nothing.
+    abstract SetOwned: owned: bool -> unit
     /// Animates the children last recorded to their new boxes.
     abstract Animate: unit -> unit
     abstract Revert: unit -> unit

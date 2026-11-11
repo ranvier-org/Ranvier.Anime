@@ -22,14 +22,10 @@ let private number (text: string) =
     | _ -> ValueNone
 
 let private fadeTo (target: float) (_: 'inst) (element: Element) =
-    let services = MotionHost.Current
-    Composed.animate services.Scheduler (box element) [| PropertySpec.Scalar("opacity", target) |]
-        (Some { ComposedAnimationOptions.Default with Duration = 120.; Computed = Some services.Computed })
+    Anime.animate (box element) [| PropertySpec.Scalar("opacity", target) |] { ComposedAnimationOptions.Default with Duration = 120. }
 
 let private fadeIn (_: 'inst) (element: Element) =
-    let services = MotionHost.Current
-    Composed.animate services.Scheduler (box element) [| PropertySpec.Scalar("opacity", 1., fromValue = 0.) |]
-        (Some { ComposedAnimationOptions.Default with Duration = 120.; Computed = Some services.Computed })
+    Anime.animate (box element) [| PropertySpec.Scalar("opacity", 1., fromValue = 0.) |] { ComposedAnimationOptions.Default with Duration = 120. }
 
 let private rowsWith (part: Part<HTMLLIElement, unit -> int>) =
     let row =
@@ -52,7 +48,7 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
             host.Frame()
         condition ()
 
-    use motion = MotionHost.Install { Scheduler = scheduler; Computed = ComputedStyles.forHost host }
+    use motion = AnimeHost.Install { Scheduler = scheduler; Computed = ComputedStyles.forHost host }
 
     // Mounts `view` with `props` in its own graph and container; the result disposes the mount.
     let mountOf (view: Component<'props>) (props: Graph -> 'props) =
@@ -283,9 +279,8 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
                 (fun t ->
                     t.p
                         [| Motion.split TextSplitterOptions.Default (fun _ splitter ->
-                               let services = MotionHost.Current
-                               Composed.animateTargets services.Scheduler (splitter.Words |> Array.map box) [| PropertySpec.Scalar("opacity", 1., fromValue = 0.) |]
-                                   (Some { ComposedAnimationOptions.Default with Duration = 100.; Computed = Some services.Computed })) |]
+                               Anime.animateTargets (splitter.Words |> Array.map box) [| PropertySpec.Scalar("opacity", 1., fromValue = 0.) |]
+                                   { ComposedAnimationOptions.Default with Duration = 100. }) |]
                         [| t.text (fun () -> "Hello motion world") |])
 
         let _, container, _, dispose = mountOf view (fun _ -> ())

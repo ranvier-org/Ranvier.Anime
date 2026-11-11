@@ -64,7 +64,8 @@ let animation (target: obj) (targets: obj array) : ComposedAnimation =
     let complete: ComposedAnimation = animation.Complete()
     let cancel: unit = animation.Cancel()
     let revert: ComposedAnimation = animation.Revert()
-    ignore (several, tickable, duration, paused, completed, cancelled, play, pause, resume, reverse, restart, seek, complete, cancel, revert)
+    let pausedRevertible: unit = Anime.pause (animation :> IRevertible)
+    ignore (several, tickable, duration, paused, pausedRevertible, completed, cancelled, play, pause, resume, reverse, restart, seek, complete, cancel, revert)
     animation
 
 let timeline (targets: obj array) : ComposedTimeline =
@@ -134,9 +135,10 @@ let flip (root: Element) (element: Element) (leaving: NodeSet) (entering: NodeSe
     let children: Element array = Flip.children root leaving entering
     let kept: unit = Flip.keepBox element
     let recorded: unit = layout.Record(children, false)
+    let owned: unit = layout.SetOwned true
     let animated: unit = layout.Animate()
     let reverted: unit = layout.Revert()
-    ignore (kept, recorded, animated, reverted)
+    ignore (kept, recorded, owned, animated, reverted)
 
 let scrollOptions () : ScrollOptions =
     let enter: ScrollThreshold = { Container = "end"; Target = "start" }

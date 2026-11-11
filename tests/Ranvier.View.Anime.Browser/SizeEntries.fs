@@ -7,6 +7,7 @@ module SizeEntries
 open Fable.Core
 open Fable.Core.TS.Dom
 open global.Ranvier
+open Fable.Ranvier.Anime
 open Ranvier.Anime
 open Ranvier.View
 open Ranvier.View.Dom
@@ -44,13 +45,13 @@ let private listOf (row: Part<Ranvier.Dom.HTMLLIElement, unit -> int>) (parent: 
         (ul parent { forEach id (fun (b: Board) -> b.Items.Value) (li row { fun (item: unit -> int) -> string (item ()) }) })
 
 let private rowEnter (_: unit -> int) (node: Element) =
-    Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 240))
+    Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = Value.fromTo (0, 1), duration = 240))
 
 let private rowExit (_: unit -> int) (node: Element) =
-    Anime.animate (node, Anim (opacity = 0, duration = 180))
+    Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = 0, duration = 180))
 
 let private rowOn (_: unit -> int) (node: Element) =
-    Anime.animate (node, Anim (opacity = 0.5, duration = 240))
+    Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = 0.5, duration = 240))
 
 let private still: Part<Ranvier.Dom.HTMLUListElement, Board> =
     Attrs.className "rows"
@@ -100,7 +101,7 @@ let flip (target: HTMLElement) =
 let flipTwin (target: HTMLElement) =
     let reflow =
         Hooks.reflow (fun (_: Board) (node: Ranvier.Dom.HTMLUListElement) ->
-            let layout = Anime.layout (unbox<Element> node, flipParameters ())
+            let layout = Fable.Ranvier.Anime.Anime.layout (unbox<Element> node, flipParameters ())
             Api.onCleanup (fun () -> layout.revert ())
 
             {
@@ -138,7 +139,7 @@ let follow (target: HTMLElement) =
 let animateOn (target: HTMLElement) =
     mountRows
         target
-        (listOf (Attrs.className "row") (Motion.animateOn (fun b -> b.Level.Value) (fun _ node level -> Anime.animate (node, Anim (opacity = level)))))
+        (listOf (Attrs.className "row") (Motion.animateOn (fun b -> b.Level.Value) (fun _ node level -> Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = level)))))
 
 let draw (target: HTMLElement) =
     mountRows target (listOf (Attrs.className "row") (Motion.draw { ComposedAnimationOptions.Default with Duration = 400. } (fun b -> b.Level.Value)))
@@ -158,7 +159,7 @@ let scroll (target: HTMLElement) =
                         Progress = ValueNone
                         InView = ValueNone
                     })
-                (fun _ node -> Anime.animate (node, Anim (opacity = 1)))))
+                (fun _ node -> Fable.Ranvier.Anime.Anime.animate (node, Anim (opacity = 1)))))
 
 let drag (target: HTMLElement) =
     mountRows
@@ -177,4 +178,4 @@ let split (target: HTMLElement) =
         target
         (listOf
             (Attrs.className "row")
-            (Motion.split { TextSplitterOptions.Default with Chars = SplitMode.Enabled } (fun _ splitter -> Anime.animate (splitter.chars, Anim (opacity = 1)))))
+            (Motion.split { TextSplitterOptions.Default with Chars = SplitMode.Enabled } (fun _ splitter -> Anime.animateTargets (Array.map box splitter.Chars) [| PropertySpec.Scalar ("opacity", 1.) |] ComposedAnimationOptions.Default)))

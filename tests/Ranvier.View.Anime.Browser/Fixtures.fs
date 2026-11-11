@@ -2,6 +2,7 @@
 module Fixtures
 
 open global.Ranvier
+open Fable.Ranvier.Anime
 open Ranvier.Anime
 open Ranvier.View
 open Ranvier.View.Sugar
@@ -29,8 +30,8 @@ let board =
                     (fun b -> b.Cards.Value)
                     (li (
                         Motion.presence
-                            (fun _ el -> Anime.animate (el, Anim (opacity = Value.fromTo (0, 1), y = Value.fromTo (12, 0), duration = 240)))
-                            (fun _ el -> Anime.animate (el, Anim (opacity = 0, scale = 0.9, duration = 180)))
+                            (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.); PropertySpec.Scalar ("y", 0., fromValue = 12.) |] { ComposedAnimationOptions.Default with Duration = 240. })
+                            (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("opacity", 0.); PropertySpec.Scalar ("scale", 0.9) |] { ComposedAnimationOptions.Default with Duration = 180. })
                     ) {
                         fun current -> (current ()).Title
                     })
@@ -45,9 +46,9 @@ let banner =
     Component.template
         (fun _ (text: string) -> { Text = text })
         (header () {
-            h1 (Motion.appear (fun _ el -> Anime.animate (el, Anim (opacity = Value.fromTo (0, 1), duration = 400)))) { fun b -> b.Text }
+            h1 (Motion.appear (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |] { ComposedAnimationOptions.Default with Duration = 400. })) { fun b -> b.Text }
 
-            span (Motion.on (fun _ el -> Anime.animate (el, Anim (rotate = 360, duration = 1200, loop = Loop.forever, ease = Ease.linear)))) { "*" }
+            span (Motion.on (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("rotate", 360.) |] { ComposedAnimationOptions.Default with Duration = 1200.; Ease = Ease.named "linear" })) { "*" }
         })
 
 type Toast = { Messages: Signal<string array> }
@@ -60,11 +61,23 @@ let toasts =
                 id
                 (fun (t: Toast) -> t.Messages.Value)
                 (li (
-                    Motion.enter (fun _ el -> Anime.animate (el, Anim (x = Value.fromTo (40, 0), duration = 200))),
-                    Motion.exit (fun _ el -> Anime.animate (el, Anim (x = 40, opacity = 0, duration = 200)))
+                    Motion.enter (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("x", 0., fromValue = 40.) |] { ComposedAnimationOptions.Default with Duration = 200. }),
+                    Motion.exit (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("x", 40.); PropertySpec.Scalar ("opacity", 0.) |] { ComposedAnimationOptions.Default with Duration = 200. })
                 ) {
                     fun message -> message ()
                 })
+        })
+
+type Spinner = { Glyph: string }
+
+let spinner =
+    Component.template
+        (fun _ (glyph: string) -> { Glyph = glyph })
+        (span (
+            Motion.on (fun _ el ->
+                Fable.Ranvier.Anime.Anime.animate (el, Anim (rotate = 360, duration = 1200, loop = Loop.forever, ease = Ease.linear)))
+        ) {
+            fun s -> s.Glyph
         })
 
 type Gauge =
@@ -85,7 +98,7 @@ let gauge =
                 ()
             }
 
-            span (Motion.animateOn (fun g -> g.Label.Value) (fun _ el _ -> Anime.animate (el, Anim (opacity = Value.fromTo (0, 1), duration = 200)))) {
+            span (Motion.animateOn (fun g -> g.Label.Value) (fun _ el _ -> Anime.animate el [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |] { ComposedAnimationOptions.Default with Duration = 200. })) {
                 fun g -> g.Label.Value
             }
         })
@@ -108,7 +121,7 @@ let story =
         (article () {
             h2 (
                 Motion.split { TextSplitterOptions.Default with Chars = SplitMode.Enabled } (fun _ split ->
-                    Anime.animate (split.chars, Anim (y = Value.fromTo ("100%", "0%"), delay = Value.stagger 20)))
+                    Anime.animateTargets (Array.map box split.Chars) [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |] { ComposedAnimationOptions.Default with Duration = 400. })
             ) {
                 "Ranvier"
             }
@@ -121,14 +134,14 @@ let story =
                             Progress = ValueSome s.Progress
                             InView = ValueSome s.Seen
                         })
-                    (fun _ el -> Anime.animate (el, Anim (opacity = Value.fromTo (0.2, 1), autoplay = false)))
+                    (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.2) |] { ComposedAnimationOptions.Default with Autoplay = false })
             ) {
-                fun s -> sprintf "%.0f %%" (s.Progress.Value * 100.)
+                fun s -> string (round (s.Progress.Value * 100.)) + " %"
             }
 
             div (
                 Attrs.className "puck",
-                Motion.drag { NativeDraggableOptions.Default with Extra = DraggableParams (container = "article") } (fun s ->
+                Motion.drag NativeDraggableOptions.Default (fun s ->
                     {
                         Position = s.Puck
                         Dragging = ValueNone
@@ -172,7 +185,7 @@ let springHome (tile: Tile) =
     let point = { x = x; y = y }
 
     tile.Spring.Play (fun () ->
-        Anime.animate (
+        Fable.Ranvier.Anime.Anime.animate (
             Targets.object point,
             Anim (
                 x = 0,

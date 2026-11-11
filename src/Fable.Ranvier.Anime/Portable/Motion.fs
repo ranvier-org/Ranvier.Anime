@@ -113,9 +113,10 @@ module Follow =
                         first.Value <- false
                         Raw.completeProperty animatable property
 
-            member _.Pause () = Raw.pauseAnimatable animatable
+            member _.Pause() =
+                Raw.pauseAnimatable animatable
 
-            member _.Revert () =
+            member _.Revert() =
                 if not reverted.Value then
                     reverted.Value <- true
                     animatable.revert ()
@@ -125,6 +126,7 @@ module Follow =
     /// A follower of a typed numeric custom property. <c>initial</c> fixes the unit suffix every value keeps; it is not
     /// written.
     /// </summary>
+    /// <remarks>The first value replaces the inline declaration, so a declaration that is an expression is not animated from.</remarks>
     /// <exception cref="T:System.ArgumentException">A value lacks numeric token metadata or changes the unit suffix.</exception>
     let css
         (element: Element)
@@ -139,10 +141,9 @@ module Follow =
         let settings =
             Fable.Ranvier.Anime.CssAnimationRuntime.withUnit (unbox (BrowserParams.composed options)) suffix
 
-        let animatable =
-            Raw.Anime.animatable (Raw.Targets.op_Implicit element, Raw.AnimatableParams().With(name, settings))
-
-        let first = ref true
+        let targets = Raw.Targets.op_Implicit element
+        let seed: Raw.JSAnimation ref = ref null
+        let animatable: Raw.Animatable ref = ref null
         let reverted = ref false
 
         { new Follower<Ranvier.Css.Value<'s>> with
@@ -150,20 +151,33 @@ module Follow =
                 if not reverted.Value then
                     Fable.Ranvier.Anime.CssAnimationRuntime.requireUnit suffix value
 
-                    let number, _ = Ranvier.Css.RuntimeApi.tryNumericValue value |> Option.get
+                    let number, _ =
+                        Ranvier.Css.RuntimeApi.tryNumericValue value
+                        |> Option.get
 
-                    animatable.set (name, number)
+                    if isNull animatable.Value then
+                        let rendered =
+                            Fable.Ranvier.Anime.Value.op_Implicit (Ranvier.Css.RuntimeApi.renderValue value)
 
-                    if first.Value then
-                        first.Value <- false
-                        Raw.completeProperty animatable name
+                        seed.Value <- Fable.Ranvier.Anime.Utils.set (targets, Raw.Anim().With(name, rendered))
+                        animatable.Value <- Raw.Anime.animatable (targets, Raw.AnimatableParams().With(name, settings))
+                        animatable.Value.set (name, number)
+                        Raw.completeProperty animatable.Value name
+                    else
+                        animatable.Value.set (name, number)
 
-            member _.Pause () = Raw.pauseAnimatable animatable
+            member _.Pause() =
+                if not (isNull animatable.Value) then
+                    Raw.pauseAnimatable animatable.Value
 
-            member _.Revert () =
+            member _.Revert() =
                 if not reverted.Value then
                     reverted.Value <- true
-                    animatable.revert ()
+
+                    if not (isNull animatable.Value) then
+                        animatable.Value.revert ()
+                        seed.Value.revert ()
+
                     restore ()
         }
 
@@ -190,9 +204,10 @@ module Follow =
                 if not reverted.Value then
                     animatable.set ("draw", fraction)
 
-            member _.Pause () = Raw.pauseAnimatable animatable
+            member _.Pause() =
+                Raw.pauseAnimatable animatable
 
-            member _.Revert () =
+            member _.Revert() =
                 if not reverted.Value then
                     reverted.Value <- true
                     animatable.revert ()
@@ -216,7 +231,8 @@ module Follow =
                     first.Value <- false
                     Raw.setShape element attribute shape
                 else
-                    let target = Raw.Svg.morphTo (Raw.Targets.op_Implicit (Raw.shapeLike element attribute shape))
+                    let target =
+                        Raw.Svg.morphTo (Raw.Targets.op_Implicit (Raw.shapeLike element attribute shape))
 
                     let morphing =
                         Raw.Anime.animate (Raw.Targets.op_Implicit element, Raw.withKey converted attribute target)
@@ -224,11 +240,11 @@ module Follow =
                     Js.chain morphing "onComplete" (fun _ -> Raw.setShape element attribute shape)
                     current.Value <- morphing
 
-            member _.Pause () =
+            member _.Pause() =
                 if not (isNull current.Value) then
                     current.Value.pause ()
 
-            member _.Revert () =
+            member _.Revert() =
                 if not reverted.Value then
                     reverted.Value <- true
 
@@ -272,6 +288,8 @@ type FlipLayout =
     /// so the default visual properties are left alone for this pass.
     /// </summary>
     abstract Record: children: Element array * owned: bool -> unit
+    /// <summary>Gives <c>owned</c> as it stands once the change is made, for the <c>Animate</c> that follows.</summary>
+    abstract SetOwned: owned: bool -> unit
     /// <summary>Animates the children last recorded to their new boxes.</summary>
     /// <remarks>
     /// Children from <c>Flip.children</c> are queried again, so an element that began leaving during the change stays out
@@ -292,7 +310,7 @@ module Flip =
         let visualsOwned = ref false
 
         { new FlipLayout with
-            member _.Record (children, owned) =
+            member _.Record(children, owned) =
                 recorded.Value <- children
                 visualsOwned.Value <- owned
 
@@ -305,13 +323,16 @@ module Flip =
 
                 Raw.startFrom layout.Value children
 
-            member _.Animate () =
+            member _.SetOwned owned =
+                visualsOwned.Value <- owned
+
+            member _.Animate() =
                 if not (isNull layout.Value) then
                     Raw.measureChildren layout.Value (Raw.childrenNow recorded.Value root)
                     Raw.leaveVisuals layout.Value converted visualsOwned.Value
                     layout.Value.animate () |> ignore
 
-            member _.Revert () =
+            member _.Revert() =
                 if not (isNull layout.Value) then
                     layout.Value.revert ()
                     layout.Value <- null

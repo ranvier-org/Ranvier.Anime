@@ -53,7 +53,8 @@ let private rejects action =
 let private linear =
     { ComposedAnimationOptions.Default with
         Duration = 1000.
-        Ease = Ease.named "linear" }
+        Ease = Ease.named "linear"
+    }
 
 let private animateScalar (clock: Clock) =
     let el = element ()
@@ -85,10 +86,15 @@ let private animateOptions (clock: Clock) =
     equal "" (styleOf el "width")
 
 let private specEntries (_: Clock) =
-    let double (value: float) = value * 2.
+    let double (value: float) =
+        value * 2.
 
     equal """["opacity",{"to":1}]""" (json (PropertySpec.Scalar ("opacity", 1.)))
-    equal """["x",{"from":0,"to":100,"duration":200,"delay":20}]""" (json (PropertySpec.Scalar ("x", 100., fromValue = 0., duration = 200., delay = 20.)))
+
+    equal
+        """["x",{"from":0,"to":100,"duration":200,"delay":20}]"""
+        (json (PropertySpec.Scalar ("x", 100., fromValue = 0., duration = 200., delay = 20.)))
+
     equal """["color",{"from":"#000","to":"#fff"}]""" (json (PropertySpec.Text ("color", "#fff", fromValue = "#000")))
 
     let eased = PropertySpec.Scalar ("y", 5., ease = double, modifier = double)
@@ -100,7 +106,7 @@ let private specEntries (_: Clock) =
 
 let private whenCompleted (clock: Clock) =
     let el = element ()
-    let log = ResizeArray<string> ()
+    let log = ResizeArray<string>()
 
     let animation =
         Anime.animate (box el) [| PropertySpec.Scalar ("opacity", 1.) |] { linear with Duration = 100. }
@@ -119,7 +125,7 @@ let private whenCompleted (clock: Clock) =
     let dropped =
         Anime.animate (box el) [| PropertySpec.Scalar ("opacity", 0.) |] { linear with Duration = 100. }
 
-    (dropped :> ITickable).WhenCompleted (fun () -> log.Add "cancelled")
+    (dropped :> ITickable).WhenCompleted(fun () -> log.Add "cancelled")
     dropped.Cancel ()
     equal true dropped.Cancelled
     advance clock 200.
@@ -133,7 +139,12 @@ let private timelineAdds (_: Clock) =
     timeline
         .Add([| box el |], [| PropertySpec.Text ("width", "100px", fromValue = "0px") |], options = linear)
         .Label("half", position = TimelinePosition.At 500.)
-        .Add([| box el |], [| PropertySpec.Text ("height", "10px", fromValue = "0px") |], options = linear, position = TimelinePosition.Expression "half")
+        .Add(
+            [| box el |],
+            [| PropertySpec.Text ("height", "10px", fromValue = "0px") |],
+            options = linear,
+            position = TimelinePosition.Expression "half"
+        )
     |> ignore
 
     equal 1500. timeline.Duration
@@ -162,11 +173,15 @@ let private followProperty (clock: Clock) =
 
 type private Length = class end
 
-let private px n : Ranvier.Css.Value<Length> = Ranvier.Css.Generated.number n "px"
+let private px n : Ranvier.Css.Value<Length> =
+    Ranvier.Css.Generated.number n "px"
 
 let private followCss (clock: Clock) =
     let el = element ()
-    let gap: Ranvier.Css.CustomProperty<Length> = Ranvier.Css.CustomProperty.create "--gap"
+
+    let gap: Ranvier.Css.CustomProperty<Length> =
+        Ranvier.Css.CustomProperty.create "--gap"
+
     setStyle el "--gap" "7px"
     let follower = Follow.css el gap linear (px 0.)
     equal "7px" (styleOf el "--gap")
@@ -202,10 +217,12 @@ let private flipChildren (_: Clock) =
     let root = element ()
 
     let children =
-        [| for _ in 1..3 ->
-               let child: Element = document.createElement "span"
-               root.appendChild child |> ignore
-               child |]
+        [|
+            for _ in 1..3 ->
+                let child: Element = document.createElement "span"
+                root.appendChild child |> ignore
+                child
+        |]
 
     let leaving = NodeSet ()
     let entering = NodeSet ()
@@ -233,11 +250,14 @@ let private easing (_: Clock) =
 
 // A part's play function, typed on the portable contract.
 let private settle (tickable: #ITickable) : unit =
-    (tickable :> ITickable).Complete ()
+    (tickable :> ITickable).Complete()
 
 let private bindingsArePortable (_: Clock) =
     let el = element ()
-    let binding = Fable.Ranvier.Anime.Anime.animate (el, Fable.Ranvier.Anime.Anim (opacity = 0.5, duration = 100))
+
+    let binding =
+        Fable.Ranvier.Anime.Anime.animate (el, Fable.Ranvier.Anime.Anim (opacity = 0.5, duration = 100))
+
     settle binding
     equal true binding.completed
     equal "0.5" (styleOf el "opacity")

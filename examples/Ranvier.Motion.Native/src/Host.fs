@@ -35,7 +35,7 @@ let mount (host: WebCoreHost) (start: string) : Running =
     let windowScroll = ViewportScroll.forHost host
 
     let motion =
-        MotionHost.Install (
+        AnimeHost.Install (
             { Scheduler = scheduler; Computed = computed },
             {
                 Draggable =

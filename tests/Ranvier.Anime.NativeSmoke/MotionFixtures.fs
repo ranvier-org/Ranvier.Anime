@@ -1,6 +1,6 @@
 /// <summary>
-/// The .NET samples of src/Ranvier.View.Anime/README.md, and the browser samples' templates with Ranvier.Anime play
-/// functions. MotionServerProbe renders each against its twin without Motion parts.
+/// The samples of src/Ranvier.View.Anime/README.md on .NET: the portable ones as the browser fixtures have them, and the
+/// host installation. MotionServerProbe renders each against its twin without Motion parts.
 /// </summary>
 module Ranvier.Anime.NativeSmoke.MotionFixtures
 
@@ -13,13 +13,7 @@ open Ranvier.View.Anime
 open Ranvier.View.WebCore
 
 let installMotion (host: WebCoreHost) =
-    MotionHost.Install { Scheduler = Frames.forHost host; Computed = ComputedStyles.forHost host }
-
-/// <summary>Animates the element's properties on the installed host's frames.</summary>
-let animate (el: Element) (duration: float) (properties: PropertySpec array) =
-    let motion = MotionHost.Current
-    let options = { ComposedAnimationOptions.Default with Duration = duration; Computed = Some motion.Computed }
-    Composed.animate motion.Scheduler (box el) properties (Some options)
+    AnimeHost.Install { Scheduler = Frames.forHost host; Computed = ComputedStyles.forHost host }
 
 type Card = { Id: int; Title: string }
 
@@ -43,8 +37,8 @@ let board =
                     (fun b -> b.Cards.Value)
                     (li (
                         Motion.presence
-                            (fun _ el -> animate el 240. [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.); PropertySpec.Scalar ("y", 0., fromValue = 12.) |])
-                            (fun _ el -> animate el 180. [| PropertySpec.Scalar ("opacity", 0.); PropertySpec.Scalar ("scale", 0.9) |])
+                            (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.); PropertySpec.Scalar ("y", 0., fromValue = 12.) |] { ComposedAnimationOptions.Default with Duration = 240. })
+                            (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("opacity", 0.); PropertySpec.Scalar ("scale", 0.9) |] { ComposedAnimationOptions.Default with Duration = 180. })
                     ) {
                         fun current -> (current ()).Title
                     })
@@ -59,8 +53,9 @@ let banner =
     Component.template
         (fun _ (text: string) -> { Text = text })
         (header () {
-            h1 (Motion.appear (fun _ el -> animate el 400. [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |])) { fun b -> b.Text }
-            span (Motion.on (fun _ el -> animate el 1200. [| PropertySpec.Scalar ("rotate", 360.) |])) { "*" }
+            h1 (Motion.appear (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |] { ComposedAnimationOptions.Default with Duration = 400. })) { fun b -> b.Text }
+
+            span (Motion.on (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("rotate", 360.) |] { ComposedAnimationOptions.Default with Duration = 1200.; Ease = Ease.named "linear" })) { "*" }
         })
 
 type Toast = { Messages: Signal<string array> }
@@ -73,8 +68,8 @@ let toasts =
                 id
                 (fun (t: Toast) -> t.Messages.Value)
                 (li (
-                    Motion.enter (fun _ el -> animate el 200. [| PropertySpec.Scalar ("x", 0., fromValue = 40.) |]),
-                    Motion.exit (fun _ el -> animate el 200. [| PropertySpec.Scalar ("x", 40.); PropertySpec.Scalar ("opacity", 0.) |])
+                    Motion.enter (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("x", 0., fromValue = 40.) |] { ComposedAnimationOptions.Default with Duration = 200. }),
+                    Motion.exit (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("x", 40.); PropertySpec.Scalar ("opacity", 0.) |] { ComposedAnimationOptions.Default with Duration = 200. })
                 ) {
                     fun message -> message ()
                 })
@@ -90,8 +85,8 @@ let notes =
                 id
                 (fun (n: Notes) -> n.Notes)
                 (li (
-                    Motion.enter (fun _ el -> animate el 200. [| PropertySpec.Scalar ("x", 0., fromValue = 40.) |]),
-                    Motion.exit (fun _ el -> animate el 200. [| PropertySpec.Scalar ("x", 40.) |])
+                    Motion.enter (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("x", 0., fromValue = 40.) |] { ComposedAnimationOptions.Default with Duration = 200. }),
+                    Motion.exit (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("x", 40.) |] { ComposedAnimationOptions.Default with Duration = 200. })
                 ) {
                     fun (note: string) -> note
                 })
@@ -115,7 +110,7 @@ let gauge =
                 ()
             }
 
-            span (Motion.animateOn (fun g -> g.Label.Value) (fun _ el _ -> animate el 200. [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |])) {
+            span (Motion.animateOn (fun g -> g.Label.Value) (fun _ el _ -> Anime.animate el [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |] { ComposedAnimationOptions.Default with Duration = 200. })) {
                 fun g -> g.Label.Value
             }
         })
@@ -138,9 +133,7 @@ let story =
         (article () {
             h2 (
                 Motion.split { TextSplitterOptions.Default with Chars = SplitMode.Enabled } (fun _ split ->
-                    let motion = MotionHost.Current
-                    let options = { ComposedAnimationOptions.Default with Duration = 400.; Computed = Some motion.Computed }
-                    Composed.animateTargets motion.Scheduler (Array.map box split.Chars) [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |] (Some options))
+                    Anime.animateTargets (Array.map box split.Chars) [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.) |] { ComposedAnimationOptions.Default with Duration = 400. })
             ) {
                 "Ranvier"
             }
@@ -153,7 +146,7 @@ let story =
                             Progress = ValueSome s.Progress
                             InView = ValueSome s.Seen
                         })
-                    (fun _ el -> animate el 1000. [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.2) |])
+                    (fun _ el -> Anime.animate el [| PropertySpec.Scalar ("opacity", 1., fromValue = 0.2) |] { ComposedAnimationOptions.Default with Autoplay = false })
             ) {
                 fun s -> string (round (s.Progress.Value * 100.)) + " %"
             }

@@ -233,9 +233,7 @@ module Stage =
             let! config = Baked.Dotnet.configOrRelease
 
             return
-                stage "native tests" {
-                    run (cmd $"dotnet run --project tests/Ranvier.Anime.Tests -c {config} --no-build -- --summary --sequenced")
-                }
+                stage "native tests" { run (cmd $"dotnet run --project tests/Ranvier.Anime.Tests -c {config} --no-build -- --summary --sequenced") }
         }
 
     /// The contribution and version ownership checks the workflows run.
