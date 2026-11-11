@@ -22,13 +22,14 @@ commit subject.
 ## Before opening a pull request
 
 Restore the pinned tools with `dotnet fsi build.fsx -- tools`, then run `dotnet fsi build.fsx -- test` for every
-check, or `test --group bindings` or `workflows` for one CI shard. `dotnet fsi build.fsx -- ci` runs every CI gate
+check, or `test --group native`, `bindings` or `workflows` for one CI shard. `dotnet fsi build.fsx -- ci` runs every CI gate
 and packs the libraries. `--quick` skips npm installs, Chromium installation and restores after the first run.
 
 Use .NET 10 (pinned by `global.json`), the .NET 8 runtime, Node.js 26 or later and Python 3.
 
 | Group | Checks |
 | --- | --- |
+| `native` | `tests/Ranvier.Anime.Tests`: the native port's Expecto suite, including the portable surface contract |
 | `bindings` | `tests/Fable.Ranvier.Anime.Tests`: the bindings compiled with Fable under jsdom and a mocked clock, their emitted JavaScript, the CSS grammar type errors, the bundle budget and typed CSS animation in Chromium |
 | `workflows` | the contribution check's tests and the version ownership check with its tests |
 

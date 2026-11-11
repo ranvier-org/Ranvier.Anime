@@ -12,9 +12,27 @@ module Spec =
     let root = __SOURCE_DIRECTORY__
 
     /// The packed libraries in dependency order. Each packs untraced and again as its `.Traced` package.
-    let sources = [ "src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj" ]
+    let sources =
+        [
+            "src/Ranvier.Anime/Ranvier.Anime.fsproj"
+            "src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj"
+        ]
 
-    let groups = [ "all"; "bindings"; "workflows" ]
+    let groups = [ "all"; "native"; "bindings"; "workflows" ]
+
+    /// The native port's sources keep the port's own layout; Fantomas formats the rest.
+    let unformatted =
+        [
+            "src/Ranvier.Anime/"
+            "src/Ranvier.View.Anime/"
+            "tests/Ranvier.Anime."
+            "tests/Ranvier.View.Anime.Browser/"
+            "tests/Portable/"
+            "examples/"
+            ".SageFs/"
+            "build.defs.fsx"
+            "build.native.fsx"
+        ]
 
     let localTools =
         use manifest =
@@ -152,6 +170,7 @@ module Stage =
                                     ||| StringSplitOptions.TrimEntries
                                 )
                             |> Array.toList
+                            |> List.filter (fun file -> not (Spec.unformatted |> List.exists file.StartsWith))
 
                         for batch in files |> List.chunkBySize 150 do
                             let arguments =
@@ -208,6 +227,17 @@ module Stage =
                 }
         }
 
+    /// The native port's Expecto suite, against the build the solution stage produced.
+    let native =
+        input {
+            let! config = Baked.Dotnet.configOrRelease
+
+            return
+                stage "native tests" {
+                    run (cmd $"dotnet run --project tests/Ranvier.Anime.Tests -c {config} --no-build -- --summary --sequenced")
+                }
+        }
+
     /// The contribution and version ownership checks the workflows run.
     let workflows =
         stage "workflows" {
@@ -221,6 +251,7 @@ module Stage =
             let! group = group
             and! skip = Baked.Common.skipTests
             and! bindings = bindings
+            and! native = native
 
             let chosen name =
                 group = "all" || group = name
@@ -228,6 +259,11 @@ module Stage =
             return
                 stage "checks" {
                     when' (not skip)
+
+                    stage "native group" {
+                        when' (chosen "native")
+                        native
+                    }
 
                     stage "bindings group" {
                         when' (chosen "bindings")

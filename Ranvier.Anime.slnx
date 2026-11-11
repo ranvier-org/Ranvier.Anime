@@ -2,7 +2,6 @@
   <Folder Name="/src/">
     <Project Path="src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj" />
     <Project Path="src/Ranvier.Anime/Ranvier.Anime.fsproj" />
-    <Project Path="src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Fable.Ranvier.Anime.Tests/Fable.Ranvier.Anime.Tests.fsproj" />
