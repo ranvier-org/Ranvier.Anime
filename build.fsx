@@ -192,8 +192,8 @@ module Stage =
     /// animation in Chromium.
     let bindings =
         input {
-            let! npm = npm "tests/Ranvier.Anime.Tests"
-            and! chromium = chromium "tests/Ranvier.Anime.Tests"
+            let! npm = npm "tests/Fable.Ranvier.Anime.Tests"
+            and! chromium = chromium "tests/Fable.Ranvier.Anime.Tests"
 
             return
                 stage "bindings" {
@@ -201,7 +201,7 @@ module Stage =
                     chromium
 
                     stage "bindings tests" {
-                        workingDir (Path.Combine (Spec.root, "tests/Ranvier.Anime.Tests"))
+                        workingDir (Path.Combine (Spec.root, "tests/Fable.Ranvier.Anime.Tests"))
                         run "npm test"
                         run "npm run test:browser"
                     }

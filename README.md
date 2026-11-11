@@ -14,7 +14,7 @@ Documentation: <https://ranvier-org.github.io/Ranvier.Anime/>
 ## Layout
 
 - `src/Fable.Ranvier.Anime`: the bindings, `Reactive` and `Testing`.
-- `tests/Ranvier.Anime.Tests`: the bindings compiled with Fable and run under jsdom and Chromium.
+- `tests/Fable.Ranvier.Anime.Tests`: the bindings compiled with Fable and run under jsdom and Chromium.
 - `docs`: the documentation site.
 
 ## Development

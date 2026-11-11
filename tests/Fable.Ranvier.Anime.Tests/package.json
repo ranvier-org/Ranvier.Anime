@@ -6,7 +6,7 @@
     "node": ">=26.0.0"
   },
   "scripts": {
-    "compile": "dotnet fickl Ranvier.Anime.Tests.fsproj --outDir generated --configuration Release && dotnet fickl Sugar/Sugar.fsproj --outDir generated/sugar --configuration Release",
+    "compile": "dotnet fickl Fable.Ranvier.Anime.Tests.fsproj --outDir generated --configuration Release && dotnet fickl Sugar/Sugar.fsproj --outDir generated/sugar --configuration Release",
     "test": "npm run compile && node --test anime.test.mjs emit.test.mjs && node typecheck.mjs && node size.mjs",
     "test:browser": "node browser.mjs"
   },

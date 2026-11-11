@@ -71,7 +71,7 @@ jsdom has no layout and no Web Animations. `animate`, `Utils.set`, `revert`, ani
 and a layout's `record ()` run as in a browser. `splitText`, `onScroll` and `createDraggable` need
 stubs of `ResizeObserver`, `DOMPoint` and `DOMMatrix`, and a FLIP layout's transforms, which run
 through the Web Animations API, do not move.
-The [bindings suite](https://github.com/ranvier-org/Ranvier.Anime/blob/main/tests/Ranvier.Anime.Tests/anime.test.mjs)
+The [bindings suite](https://github.com/ranvier-org/Ranvier.Anime/blob/main/tests/Fable.Ranvier.Anime.Tests/anime.test.mjs)
 holds a complete set of globals for these checks.
 
 ## Playwright

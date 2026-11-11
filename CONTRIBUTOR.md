@@ -29,7 +29,7 @@ Use .NET 10 (pinned by `global.json`), the .NET 8 runtime, Node.js 26 or later a
 
 | Group | Checks |
 | --- | --- |
-| `bindings` | `tests/Ranvier.Anime.Tests`: the bindings compiled with Fable under jsdom and a mocked clock, their emitted JavaScript, the CSS grammar type errors, the bundle budget and typed CSS animation in Chromium |
+| `bindings` | `tests/Fable.Ranvier.Anime.Tests`: the bindings compiled with Fable under jsdom and a mocked clock, their emitted JavaScript, the CSS grammar type errors, the bundle budget and typed CSS animation in Chromium |
 | `workflows` | the contribution check's tests and the version ownership check with its tests |
 
 For changes spanning this repository and Ranvier, use
