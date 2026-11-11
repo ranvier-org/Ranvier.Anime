@@ -1,0 +1,2532 @@
+{
+  "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "scope": "Actual unmodified Draggable constructor, methods, Timer, Animatable, Spring and engine. Fixed synthetic DOM/CSS and identity ancestor geometry isolate pixel physics/callbacks; no native DOM proof.",
+  "fixtures": [
+    {
+      "name": "scalarLengthUnits",
+      "initial": {
+        "inline": "translate(3em,4%) ",
+        "xFinite": true,
+        "yFinite": true,
+        "x": 3,
+        "y": 4,
+        "destX": 3,
+        "destY": 4,
+        "deltaX": 0,
+        "deltaY": 0,
+        "velocity": 0,
+        "angle": 0,
+        "grabbed": false,
+        "dragged": false,
+        "released": false,
+        "manual": false
+      },
+      "initialText": "translate(3em,4%)",
+      "bounds": [
+        -500,
+        500,
+        500,
+        -500
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "x": 12,
+          "y": 7
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "down"
+        },
+        {
+          "op": "move",
+          "x": 20,
+          "y": 10
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "up"
+        },
+        {
+          "op": "frame",
+          "after": 85
+        },
+        {
+          "op": "frame",
+          "after": 85
+        }
+      ],
+      "initialCoordinates": [
+        0,
+        0
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "set",
+            "x": 12,
+            "y": 7
+          },
+          "clock": 0,
+          "state": {
+            "inline": "translate(12em,7%) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 3,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 12,
+                "y": 4,
+                "velocity": 0,
+                "grabbed": false,
+                "dragged": false,
+                "released": false
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "x": 12,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": false,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(12em,7%) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 3,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": []
+        },
+        {
+          "step": {
+            "op": "down"
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(12em,7%) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Grab",
+              "state": {
+                "x": 12,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "move",
+            "x": 20,
+            "y": 10
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(12em,7%) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Drag",
+              "state": {
+                "x": 12,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translate(32em,17%) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 32,
+            "y": 17,
+            "destX": 32,
+            "destY": 17,
+            "deltaX": 0,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 32,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "x": 32,
+                "y": 17,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "up"
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translate(32em,17%) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 32,
+            "y": 17,
+            "destX": 120.23569,
+            "destY": 61.11784,
+            "deltaX": 0,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Release",
+              "state": {
+                "x": 32,
+                "y": 17,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 119,
+          "state": {
+            "inline": "translate(57.6667em,29.8333%) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 57.6667,
+            "y": 29.8333,
+            "destX": 120.23569,
+            "destY": 61.11784,
+            "deltaX": 25.6667,
+            "deltaY": 12.833300000000001,
+            "velocity": 0.65767,
+            "angle": 0.4636460505600573,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 57.6667,
+                "y": 29.8333,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 204,
+          "state": {
+            "inline": "translate(74.8902em,38.4451%) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 74.8902,
+            "y": 38.4451,
+            "destX": 120.23569,
+            "destY": 61.11784,
+            "deltaX": 17.223499999999994,
+            "deltaY": 8.611799999999995,
+            "velocity": 0.65767,
+            "angle": 0.4636499314064467,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 74.8902,
+                "y": 38.4451,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "scalarAngleUnit",
+      "initial": {
+        "inline": "translateY(0px) rotate(0.5turn) ",
+        "xFinite": true,
+        "yFinite": true,
+        "x": 0.5,
+        "y": 0,
+        "destX": 0.5,
+        "destY": 0,
+        "deltaX": 0,
+        "deltaY": 0,
+        "velocity": 0,
+        "angle": 0,
+        "grabbed": false,
+        "dragged": false,
+        "released": false,
+        "manual": false
+      },
+      "initialText": "rotate(0.5turn)",
+      "mapX": "rotate",
+      "bounds": [
+        -500,
+        500,
+        500,
+        -500
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "x": 12,
+          "y": 7
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "down"
+        },
+        {
+          "op": "move",
+          "x": 20,
+          "y": 10
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "up"
+        },
+        {
+          "op": "frame",
+          "after": 85
+        },
+        {
+          "op": "frame",
+          "after": 85
+        }
+      ],
+      "initialCoordinates": [
+        0,
+        0
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "set",
+            "x": 12,
+            "y": 7
+          },
+          "clock": 0,
+          "state": {
+            "inline": "translateY(7px) rotate(12turn) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 12,
+                "y": 0,
+                "velocity": 0,
+                "grabbed": false,
+                "dragged": false,
+                "released": false
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "x": 12,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": false,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translateY(7px) rotate(12turn) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": []
+        },
+        {
+          "step": {
+            "op": "down"
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translateY(7px) rotate(12turn) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Grab",
+              "state": {
+                "x": 12,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "move",
+            "x": 20,
+            "y": 10
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translateY(7px) rotate(12turn) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Drag",
+              "state": {
+                "x": 12,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translateY(17px) rotate(32turn) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 32,
+            "y": 17,
+            "destX": 32,
+            "destY": 17,
+            "deltaX": 0,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 32,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "x": 32,
+                "y": 17,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "up"
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translateY(17px) rotate(32turn) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 32,
+            "y": 17,
+            "destX": 120.23569,
+            "destY": 61.11784,
+            "deltaX": 0,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Release",
+              "state": {
+                "x": 32,
+                "y": 17,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 119,
+          "state": {
+            "inline": "translateY(29.8333px) rotate(57.6667turn) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 57.6667,
+            "y": 29.8333,
+            "destX": 120.23569,
+            "destY": 61.11784,
+            "deltaX": 25.6667,
+            "deltaY": 12.833300000000001,
+            "velocity": 0.65767,
+            "angle": 0.4636460505600573,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 57.6667,
+                "y": 29.8333,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 204,
+          "state": {
+            "inline": "translateY(38.4451px) rotate(74.8902turn) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 74.8902,
+            "y": 38.4451,
+            "destX": 120.23569,
+            "destY": 61.11784,
+            "deltaX": 17.223499999999994,
+            "deltaY": 8.611799999999995,
+            "velocity": 0.65767,
+            "angle": 0.4636499314064467,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 74.8902,
+                "y": 38.4451,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "singleNumberCalc",
+      "initial": {
+        "inline": "translate(calc(0px),0px) ",
+        "xFinite": true,
+        "yFinite": true,
+        "x": 0,
+        "y": 0,
+        "destX": 10,
+        "destY": 0,
+        "deltaX": 0,
+        "deltaY": 0,
+        "velocity": 0,
+        "angle": 0,
+        "grabbed": false,
+        "dragged": false,
+        "released": false,
+        "manual": false
+      },
+      "initialText": "translateX(calc(10px))",
+      "bounds": [
+        -500,
+        500,
+        500,
+        -500
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "x": 12,
+          "y": 7
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "down"
+        },
+        {
+          "op": "move",
+          "x": 20,
+          "y": 10
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "up"
+        },
+        {
+          "op": "frame",
+          "after": 85
+        },
+        {
+          "op": "frame",
+          "after": 85
+        }
+      ],
+      "initialCoordinates": [
+        0,
+        0
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "set",
+            "x": 12,
+            "y": 7
+          },
+          "clock": 0,
+          "state": {
+            "inline": "translate(calc(0px),7px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 0,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 0,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": false,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(calc(0px),7px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 0,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": []
+        },
+        {
+          "step": {
+            "op": "down"
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(calc(0px),7px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 0,
+            "y": 7,
+            "destX": 0,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Grab",
+              "state": {
+                "x": 0,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "move",
+            "x": 20,
+            "y": 10
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(calc(0px),7px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 0,
+            "y": 7,
+            "destX": 0,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Drag",
+              "state": {
+                "x": 0,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translate(calc(0px),17px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 0,
+            "y": 17,
+            "destX": 20,
+            "destY": 17,
+            "deltaX": 0,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 0,
+                "y": 17,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "up"
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translate(calc(0px),17px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 10,
+            "y": 17,
+            "destX": 88.23569,
+            "destY": 61.11784,
+            "deltaX": 0,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Release",
+              "state": {
+                "x": 10,
+                "y": 17,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 119,
+          "state": {
+            "inline": "translate(calc(7.0911px),29.8333px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 7.0911,
+            "y": 29.8333,
+            "destX": 88.23569,
+            "destY": 61.11784,
+            "deltaX": 7.0911,
+            "deltaY": 12.833300000000001,
+            "velocity": 0.65767,
+            "angle": 1.0659938638170354,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 7.0911,
+                "y": 29.8333,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 204,
+          "state": {
+            "inline": "translate(calc(5.1391px),38.4451px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 5.1391,
+            "y": 38.4451,
+            "destX": 88.23569,
+            "destY": 61.11784,
+            "deltaX": -1.952,
+            "deltaY": 8.611799999999995,
+            "velocity": 0.65767,
+            "angle": 1.7936956755606301,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 5.1391,
+                "y": 38.4451,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "multipleNumberCalc",
+      "initial": {
+        "inline": "translate(calc(0px + 0%),0px) ",
+        "xFinite": false,
+        "yFinite": true,
+        "x": null,
+        "y": 0,
+        "destX": null,
+        "destY": 0,
+        "deltaX": null,
+        "deltaY": 0,
+        "velocity": 0,
+        "angle": 0,
+        "grabbed": false,
+        "dragged": false,
+        "released": false,
+        "manual": false
+      },
+      "initialText": "translateX(calc(10px + 2%))",
+      "bounds": [
+        -500,
+        500,
+        500,
+        -500
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "x": 12,
+          "y": 7
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "down"
+        },
+        {
+          "op": "move",
+          "x": 20,
+          "y": 10
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "up"
+        },
+        {
+          "op": "frame",
+          "after": 85
+        },
+        {
+          "op": "frame",
+          "after": 85
+        }
+      ],
+      "initialCoordinates": [
+        0,
+        0
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "set",
+            "x": 12,
+            "y": 7
+          },
+          "clock": 0,
+          "state": {
+            "inline": "translate(calc(0px + 0%),7px) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": null,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": null,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": false,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(calc(0px + 0%),7px) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": null,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": []
+        },
+        {
+          "step": {
+            "op": "down"
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(calc(0px + 0%),7px) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 7,
+            "destX": null,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Grab",
+              "state": {
+                "x": null,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "move",
+            "x": 20,
+            "y": 10
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(calc(0px + 0%),7px) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 7,
+            "destX": null,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Drag",
+              "state": {
+                "x": null,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translate(calc(0px + 0%),17px) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 17,
+            "destX": null,
+            "destY": 17,
+            "deltaX": null,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": null,
+                "y": 17,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "up"
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translate(calc(0px + 0%),17px) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 17,
+            "destX": null,
+            "destY": 61.11784,
+            "deltaX": null,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Release",
+              "state": {
+                "x": null,
+                "y": 17,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 119,
+          "state": {
+            "inline": "translate(calc(7.0911px + 1.4182%),29.8333px) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 29.8333,
+            "destX": null,
+            "destY": 61.11784,
+            "deltaX": null,
+            "deltaY": 12.833300000000001,
+            "velocity": null,
+            "angle": null,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": null,
+                "y": 29.8333,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 204,
+          "state": {
+            "inline": "translate(calc(5.1391px + 1.0278%),38.4451px) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 38.4451,
+            "destX": null,
+            "destY": 61.11784,
+            "deltaX": null,
+            "deltaY": 8.611799999999995,
+            "velocity": null,
+            "angle": null,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": null,
+                "y": 38.4451,
+                "velocity": null,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "variableFallback",
+      "initial": {
+        "inline": "translate(var(--n, 0px),0px) ",
+        "xFinite": true,
+        "yFinite": true,
+        "x": 0,
+        "y": 0,
+        "destX": 2,
+        "destY": 0,
+        "deltaX": 0,
+        "deltaY": 0,
+        "velocity": 0,
+        "angle": 0,
+        "grabbed": false,
+        "dragged": false,
+        "released": false,
+        "manual": false
+      },
+      "initialText": "translateX(var(--n, 2px))",
+      "bounds": [
+        -500,
+        500,
+        500,
+        -500
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "x": 12,
+          "y": 7
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "down"
+        },
+        {
+          "op": "move",
+          "x": 20,
+          "y": 10
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "up"
+        },
+        {
+          "op": "frame",
+          "after": 85
+        },
+        {
+          "op": "frame",
+          "after": 85
+        }
+      ],
+      "initialCoordinates": [
+        0,
+        0
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "set",
+            "x": 12,
+            "y": 7
+          },
+          "clock": 0,
+          "state": {
+            "inline": "translate(var(--n, 0px),7px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 0,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 0,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": false,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(var(--n, 0px),7px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 0,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": []
+        },
+        {
+          "step": {
+            "op": "down"
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(var(--n, 0px),7px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 0,
+            "y": 7,
+            "destX": 0,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Grab",
+              "state": {
+                "x": 0,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "move",
+            "x": 20,
+            "y": 10
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translate(var(--n, 0px),7px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 0,
+            "y": 7,
+            "destX": 0,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Drag",
+              "state": {
+                "x": 0,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translate(var(--n, 0px),17px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 0,
+            "y": 17,
+            "destX": 20,
+            "destY": 17,
+            "deltaX": 0,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 0,
+                "y": 17,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "up"
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translate(var(--n, 0px),17px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 2,
+            "y": 17,
+            "destX": 88.23569,
+            "destY": 61.11784,
+            "deltaX": 0,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Release",
+              "state": {
+                "x": 2,
+                "y": 17,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 119,
+          "state": {
+            "inline": "translate(var(--n, 1.4182px),29.8333px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 1.4182,
+            "y": 29.8333,
+            "destX": 88.23569,
+            "destY": 61.11784,
+            "deltaX": 1.4182,
+            "deltaY": 12.833300000000001,
+            "velocity": 0.65767,
+            "angle": 1.46073353976508,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 1.4182,
+                "y": 29.8333,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 204,
+          "state": {
+            "inline": "translate(var(--n, 1.0278px),38.4451px) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 1.0278,
+            "y": 38.4451,
+            "destX": 88.23569,
+            "destY": 61.11784,
+            "deltaX": -0.39039999999999986,
+            "deltaY": 8.611799999999995,
+            "velocity": 0.65767,
+            "angle": 1.6160984579421125,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 1.0278,
+                "y": 38.4451,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "multipleNumberSkew",
+      "initial": {
+        "inline": "translateY(0px) skew(0deg,0deg) ",
+        "xFinite": false,
+        "yFinite": true,
+        "x": null,
+        "y": 0,
+        "destX": null,
+        "destY": 0,
+        "deltaX": null,
+        "deltaY": 0,
+        "velocity": 0,
+        "angle": 0,
+        "grabbed": false,
+        "dragged": false,
+        "released": false,
+        "manual": false
+      },
+      "initialText": "skew(4deg,5deg)",
+      "mapX": "skew",
+      "bounds": [
+        -500,
+        500,
+        500,
+        -500
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "x": 12,
+          "y": 7
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "down"
+        },
+        {
+          "op": "move",
+          "x": 20,
+          "y": 10
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "up"
+        },
+        {
+          "op": "frame",
+          "after": 85
+        },
+        {
+          "op": "frame",
+          "after": 85
+        }
+      ],
+      "initialCoordinates": [
+        0,
+        0
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "set",
+            "x": 12,
+            "y": 7
+          },
+          "clock": 0,
+          "state": {
+            "inline": "translateY(7px) skew(0deg,0deg) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": null,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": null,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": false,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translateY(7px) skew(0deg,0deg) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": null,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": []
+        },
+        {
+          "step": {
+            "op": "down"
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translateY(7px) skew(0deg,0deg) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 7,
+            "destX": null,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Grab",
+              "state": {
+                "x": null,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "move",
+            "x": 20,
+            "y": 10
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translateY(7px) skew(0deg,0deg) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 7,
+            "destX": null,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Drag",
+              "state": {
+                "x": null,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translateY(17px) skew(0deg,0deg) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 17,
+            "destX": null,
+            "destY": 17,
+            "deltaX": null,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": null,
+                "y": 17,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "up"
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translateY(17px) skew(0deg,0deg) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 17,
+            "destX": null,
+            "destY": 61.11784,
+            "deltaX": null,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Release",
+              "state": {
+                "x": null,
+                "y": 17,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 119,
+          "state": {
+            "inline": "translateY(29.8333px) skew(2.8364deg,3.5456deg) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 29.8333,
+            "destX": null,
+            "destY": 61.11784,
+            "deltaX": null,
+            "deltaY": 12.833300000000001,
+            "velocity": null,
+            "angle": null,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": null,
+                "y": 29.8333,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 204,
+          "state": {
+            "inline": "translateY(38.4451px) skew(2.0557deg,2.5696deg) ",
+            "xFinite": false,
+            "yFinite": true,
+            "x": null,
+            "y": 38.4451,
+            "destX": null,
+            "destY": 61.11784,
+            "deltaX": null,
+            "deltaY": 8.611799999999995,
+            "velocity": null,
+            "angle": null,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": null,
+                "y": 38.4451,
+                "velocity": null,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "scalarScale",
+      "initial": {
+        "inline": "translateY(0px) scale(2) ",
+        "xFinite": true,
+        "yFinite": true,
+        "x": 2,
+        "y": 0,
+        "destX": 2,
+        "destY": 0,
+        "deltaX": 0,
+        "deltaY": 0,
+        "velocity": 0,
+        "angle": 0,
+        "grabbed": false,
+        "dragged": false,
+        "released": false,
+        "manual": false
+      },
+      "initialText": "scale(2)",
+      "mapX": "scale",
+      "bounds": [
+        -500,
+        500,
+        500,
+        -500
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "x": 12,
+          "y": 7
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "down"
+        },
+        {
+          "op": "move",
+          "x": 20,
+          "y": 10
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "up"
+        },
+        {
+          "op": "frame",
+          "after": 85
+        },
+        {
+          "op": "frame",
+          "after": 85
+        }
+      ],
+      "initialCoordinates": [
+        0,
+        0
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "set",
+            "x": 12,
+            "y": 7
+          },
+          "clock": 0,
+          "state": {
+            "inline": "translateY(7px) scale(12) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 12,
+                "y": 0,
+                "velocity": 0,
+                "grabbed": false,
+                "dragged": false,
+                "released": false
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "x": 12,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": false,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translateY(7px) scale(12) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 7,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": false,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": []
+        },
+        {
+          "step": {
+            "op": "down"
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translateY(7px) scale(12) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": false,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Grab",
+              "state": {
+                "x": 12,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": false,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "move",
+            "x": 20,
+            "y": 10
+          },
+          "clock": 17,
+          "state": {
+            "inline": "translateY(7px) scale(12) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 12,
+            "y": 7,
+            "destX": 12,
+            "destY": 7,
+            "deltaX": 0,
+            "deltaY": 0,
+            "velocity": 0,
+            "angle": 0,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Drag",
+              "state": {
+                "x": 12,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translateY(17px) scale(32) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 32,
+            "y": 17,
+            "destX": 32,
+            "destY": 17,
+            "deltaX": 0,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": true,
+            "dragged": true,
+            "released": false,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 32,
+                "y": 7,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            },
+            {
+              "event": "Update",
+              "state": {
+                "x": 32,
+                "y": 17,
+                "velocity": 0,
+                "grabbed": true,
+                "dragged": true,
+                "released": false
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "up"
+          },
+          "clock": 34,
+          "state": {
+            "inline": "translateY(17px) scale(32) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 32,
+            "y": 17,
+            "destX": 120.23569,
+            "destY": 61.11784,
+            "deltaX": 0,
+            "deltaY": 10,
+            "velocity": 0.65767,
+            "angle": 0.4636476090008061,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Release",
+              "state": {
+                "x": 32,
+                "y": 17,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 119,
+          "state": {
+            "inline": "translateY(29.8333px) scale(57.6667) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 57.6667,
+            "y": 29.8333,
+            "destX": 120.23569,
+            "destY": 61.11784,
+            "deltaX": 25.6667,
+            "deltaY": 12.833300000000001,
+            "velocity": 0.65767,
+            "angle": 0.4636460505600573,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 57.6667,
+                "y": 29.8333,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 85
+          },
+          "clock": 204,
+          "state": {
+            "inline": "translateY(38.4451px) scale(74.8902) ",
+            "xFinite": true,
+            "yFinite": true,
+            "x": 74.8902,
+            "y": 38.4451,
+            "destX": 120.23569,
+            "destY": 61.11784,
+            "deltaX": 17.223499999999994,
+            "deltaY": 8.611799999999995,
+            "velocity": 0.65767,
+            "angle": 0.4636499314064467,
+            "grabbed": false,
+            "dragged": false,
+            "released": true,
+            "manual": false
+          },
+          "events": [
+            {
+              "event": "Update",
+              "state": {
+                "x": 74.8902,
+                "y": 38.4451,
+                "velocity": 0.65767,
+                "grabbed": false,
+                "dragged": false,
+                "released": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

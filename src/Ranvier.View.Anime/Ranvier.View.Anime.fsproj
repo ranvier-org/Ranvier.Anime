@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Ranvier.View.Anime</AssemblyName>
+    <RootNamespace>Ranvier.View.Anime</RootNamespace>
+    <Description>Motion parts for Ranvier.View templates on .NET hosts such as native WebCore, powered by Ranvier.Anime.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BrowserOptions.fs" />
+    <Compile Include="MotionHost.fs" />
+    <Compile Include="Motion.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Ranvier.View$(RanvierPackageSuffix)" Version="[$(RanvierViewVersion)]" />
+  </ItemGroup>
+  <!-- .NET hosts run the parts on Ranvier.Anime; Fable compiles them over anime.js through Fable.Ranvier.Anime. -->
+  <ItemGroup Condition="'$(FABLE_COMPILER)' != 'true'">
+    <ProjectReference Include="../Ranvier.Anime/Ranvier.Anime.fsproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FABLE_COMPILER)' == 'true'">
+    <PackageReference Include="Fable.Ranvier.Anime$(RanvierPackageSuffix)" Version="[$(FableRanvierAnimeVersion)]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ranvier.Anime.Tests" />
+    <InternalsVisibleTo Include="Ranvier.View.Anime.Browser" />
+  </ItemGroup>
+</Project>

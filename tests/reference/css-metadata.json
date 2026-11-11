@@ -1,0 +1,11 @@
+{
+  "webkitCommit": "b95c91b1c0ee43cc86d25ff7af73038f67a88e04",
+  "metadataPath": "Source/WebCore/css/CSSProperties.json",
+  "metadataSha256": "17fcf24a2b1d4e7aee132768a7cc04c99a3de428b15e6bbff5f04f0747b81b74",
+  "generatedSha256": "3693e6445f4843b9ce9b94329b74d3afbe3a49534bf590324c33b21b5735658b",
+  "propertyCount": 593,
+  "shorthandCount": 110,
+  "aliasCount": 136,
+  "expansionCount": 246,
+  "logicalGroupCount": 16
+}

@@ -45,6 +45,10 @@
         <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     </PropertyGroup>
 
+    <!-- The native port and its consumers (every project named Ranvier.*) take their framework, FSharp.Core floor,
+         warning policy and package cohort from Directory.Native.props. The Fable packages are named Fable.*. -->
+    <Import Project="$(MSBuildThisFileDirectory)Directory.Native.props" Condition="$(MSBuildProjectName.StartsWith('Ranvier.'))" />
+
     <!--
     Projects opting out of the root build set IsExcludedFromRootBuild, which
     Directory.Build.targets turns into a no-op Build. Used for Fable projects,

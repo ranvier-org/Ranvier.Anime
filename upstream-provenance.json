@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/juliangarnier/anime",
+  "tag": "v4.5.0",
+  "commit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "localPath": "C:/wk/ranvier-anime/upstream/anime",
+  "workingTree": "clean at initial inspection",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2025 Julian Garnier",
+  "licenseFile": "upstream/anime/LICENSE.md",
+  "licenseSha256": "99f145c242f84001e26ad6eccf943c92f7730cbd07e413b795ad8ca99fe98ac4",
+  "packageJsonSha256": "4eb19855f42874b2419a884f24c078f15d530526492e37f5c653d3165eaa1df5",
+  "noticeRequirement": "Retain the upstream copyright and permission notice in derived or substantially copied source and distributions."
+}

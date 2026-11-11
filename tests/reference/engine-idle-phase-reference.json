@@ -1,0 +1,182 @@
+{
+  "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "scope": "Actual browser RAF engine: cancel sole root, deliver three idle host RAF frames, construct30FPS successor and deliver dense frames.",
+  "samples": [
+    {
+      "stage": "first",
+      "now": 5,
+      "phase": 4.166666666666667,
+      "pending": 1,
+      "time": null,
+      "paused": null,
+      "cancelled": null,
+      "events": []
+    },
+    {
+      "stage": "cancel",
+      "now": 5,
+      "phase": 4.166666666666667,
+      "pending": 1,
+      "time": null,
+      "paused": null,
+      "cancelled": null,
+      "events": []
+    },
+    {
+      "stage": "idleFrame0",
+      "now": 25,
+      "phase": 20.833333333333336,
+      "pending": 1,
+      "time": null,
+      "paused": null,
+      "cancelled": null,
+      "events": []
+    },
+    {
+      "stage": "idleFrame1",
+      "now": 45,
+      "phase": 20.833333333333336,
+      "pending": 0,
+      "time": null,
+      "paused": null,
+      "cancelled": null,
+      "events": []
+    },
+    {
+      "stage": "idleFrame2",
+      "now": 65,
+      "phase": 20.833333333333336,
+      "pending": 0,
+      "time": null,
+      "paused": null,
+      "cancelled": null,
+      "events": []
+    },
+    {
+      "stage": "constructed",
+      "now": 65,
+      "phase": 62.50000000000001,
+      "pending": 0,
+      "time": 0,
+      "paused": true,
+      "cancelled": false,
+      "events": []
+    },
+    {
+      "stage": "resumed",
+      "now": 65,
+      "phase": 62.50000000000001,
+      "pending": 1,
+      "time": 0,
+      "paused": false,
+      "cancelled": false,
+      "events": []
+    },
+    {
+      "stage": "dense1",
+      "now": 66,
+      "phase": 66,
+      "pending": 1,
+      "time": 13,
+      "paused": false,
+      "cancelled": false,
+      "events": [
+        13
+      ]
+    },
+    {
+      "stage": "dense1",
+      "now": 67,
+      "phase": 66,
+      "pending": 1,
+      "time": 13,
+      "paused": false,
+      "cancelled": false,
+      "events": []
+    },
+    {
+      "stage": "dense2",
+      "now": 69,
+      "phase": 66,
+      "pending": 1,
+      "time": 13,
+      "paused": false,
+      "cancelled": false,
+      "events": []
+    },
+    {
+      "stage": "dense17",
+      "now": 86,
+      "phase": 82.66666666666667,
+      "pending": 1,
+      "time": 33,
+      "paused": false,
+      "cancelled": false,
+      "events": [
+        33
+      ]
+    },
+    {
+      "stage": "dense17",
+      "now": 103,
+      "phase": 99.33333333333334,
+      "pending": 1,
+      "time": 50,
+      "paused": false,
+      "cancelled": false,
+      "events": []
+    },
+    {
+      "stage": "dense1",
+      "now": 104,
+      "phase": 103.50000000000001,
+      "pending": 1,
+      "time": 51,
+      "paused": false,
+      "cancelled": false,
+      "events": []
+    },
+    {
+      "stage": "dense1",
+      "now": 105,
+      "phase": 103.50000000000001,
+      "pending": 1,
+      "time": 51,
+      "paused": false,
+      "cancelled": false,
+      "events": []
+    },
+    {
+      "stage": "dense2",
+      "now": 107,
+      "phase": 107,
+      "pending": 1,
+      "time": 54,
+      "paused": false,
+      "cancelled": false,
+      "events": []
+    },
+    {
+      "stage": "dense17",
+      "now": 124,
+      "phase": 123.66666666666667,
+      "pending": 1,
+      "time": 71,
+      "paused": false,
+      "cancelled": false,
+      "events": [
+        71
+      ]
+    },
+    {
+      "stage": "dense17",
+      "now": 141,
+      "phase": 140.33333333333334,
+      "pending": 1,
+      "time": 88,
+      "paused": false,
+      "cancelled": false,
+      "events": []
+    }
+  ]
+}

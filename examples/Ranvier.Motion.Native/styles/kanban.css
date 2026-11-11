@@ -1,0 +1,149 @@
+.kanban .toolbar {
+  margin-bottom: 14px;
+}
+
+.board-frame {
+  position: relative;
+  min-height: 420px;
+}
+
+.lanes {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  pointer-events: none;
+}
+
+.lane {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+
+.lane-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 10px 0 16px;
+  pointer-events: auto;
+}
+
+.lane-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lane:nth-child(1) h2 { color: var(--sky); }
+.lane:nth-child(2) h2 { color: var(--amber); }
+.lane:nth-child(3) h2 { color: var(--mint); }
+
+.lane-head .count {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font: 600 12px var(--mono);
+}
+
+.lane-head .add-to {
+  margin-left: auto;
+}
+
+.board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: min-content;
+  /* A card's lane picks its column; dense placement stacks a lane's cards in board order. */
+  grid-auto-flow: dense;
+  gap: 10px 14px;
+  min-height: 420px;
+  margin: 0;
+  padding: 52px 0 14px;
+  list-style: none;
+}
+
+.card-slot[data-lane="0"] { grid-column: 1; }
+.card-slot[data-lane="1"] { grid-column: 2; }
+.card-slot[data-lane="2"] { grid-column: 3; }
+
+.card-slot {
+  margin: 0 10px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.card {
+  padding: 10px 12px 8px 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--sky);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.card-slot[data-lane="1"] .card { border-left-color: var(--amber); }
+.card-slot[data-lane="2"] .card { border-left-color: var(--mint); }
+
+.card-slot.dragging {
+  z-index: 5;
+  cursor: grabbing;
+}
+
+.card-slot.dragging .card {
+  box-shadow: var(--shadow-lift);
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-id {
+  color: var(--muted);
+  font: 600 11.5px var(--mono);
+}
+
+.card-title {
+  margin: 2px 0 6px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+}
+
+.card-moves {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.empty {
+  position: absolute;
+  top: 46%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .card-slot {
+    margin: 0 4px;
+  }
+
+  .card {
+    padding: 8px;
+  }
+
+  .card-title {
+    font-size: 13px;
+  }
+}

@@ -1,0 +1,572 @@
+{
+  "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "scope": "recorded DOM measurements and source conversion, not a browser layout oracle",
+  "cases": [
+    {
+      "name": "unit0",
+      "value": 180,
+      "from": "deg",
+      "to": "rad",
+      "widths": [
+        0,
+        0
+      ],
+      "result": 3.141592653589793,
+      "unit": "rad",
+      "events": []
+    },
+    {
+      "name": "unit1",
+      "value": 3.141592653589793,
+      "from": "rad",
+      "to": "turn",
+      "widths": [
+        0,
+        0
+      ],
+      "result": 0.5,
+      "unit": "turn",
+      "events": []
+    },
+    {
+      "name": "unit2",
+      "value": 0.25,
+      "from": "turn",
+      "to": "deg",
+      "widths": [
+        0,
+        0
+      ],
+      "result": 90,
+      "unit": "deg",
+      "events": []
+    },
+    {
+      "name": "unit3",
+      "value": 5,
+      "from": "px",
+      "to": "px",
+      "widths": [
+        100,
+        100
+      ],
+      "result": 5,
+      "unit": "px",
+      "events": []
+    },
+    {
+      "name": "unit4",
+      "value": 2,
+      "from": "em",
+      "to": "px",
+      "widths": [
+        1600,
+        100
+      ],
+      "result": 32,
+      "unit": "px",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100em",
+        "measure:100em",
+        "width:100px",
+        "measure:100px",
+        "remove:parent"
+      ]
+    },
+    {
+      "name": "unit5",
+      "value": 48,
+      "from": "px",
+      "to": "rem",
+      "widths": [
+        100,
+        2400
+      ],
+      "result": 2,
+      "unit": "rem",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100px",
+        "measure:100px",
+        "width:100rem",
+        "measure:100rem",
+        "remove:parent"
+      ]
+    },
+    {
+      "name": "unit6",
+      "value": 50,
+      "from": "%",
+      "to": "px",
+      "widths": [
+        400,
+        100
+      ],
+      "result": 200,
+      "unit": "px",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100%",
+        "measure:100%",
+        "width:100px",
+        "measure:100px",
+        "remove:parent"
+      ]
+    },
+    {
+      "name": "unit7",
+      "value": 50,
+      "from": "px",
+      "to": "%",
+      "widths": [
+        100,
+        400
+      ],
+      "result": 12.5,
+      "unit": "%",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100px",
+        "measure:100px",
+        "width:100%",
+        "measure:100%",
+        "remove:parent"
+      ]
+    },
+    {
+      "name": "unit8",
+      "value": -2.5,
+      "from": "vw",
+      "to": "px",
+      "widths": [
+        1920,
+        100
+      ],
+      "result": -48,
+      "unit": "px",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100vw",
+        "measure:100vw",
+        "width:100px",
+        "measure:100px",
+        "remove:parent"
+      ]
+    },
+    {
+      "name": "unit9",
+      "value": 3.125,
+      "from": "em",
+      "to": "rem",
+      "widths": [
+        1563,
+        2000
+      ],
+      "result": 2.4421874999999997,
+      "unit": "rem",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100em",
+        "measure:100em",
+        "width:100rem",
+        "measure:100rem",
+        "remove:parent"
+      ]
+    },
+    {
+      "name": "unit10",
+      "value": 2,
+      "from": "em",
+      "to": "px",
+      "widths": [
+        0,
+        100
+      ],
+      "result": 2,
+      "unit": "px",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100em",
+        "measure:100em",
+        "width:100px",
+        "measure:100px",
+        "remove:parent"
+      ]
+    },
+    {
+      "name": "unit11",
+      "value": 2,
+      "from": "em",
+      "to": "px",
+      "widths": [
+        150,
+        0
+      ],
+      "result": 3,
+      "unit": "px",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100em",
+        "measure:100em",
+        "width:100px",
+        "measure:100px",
+        "remove:parent"
+      ]
+    },
+    {
+      "name": "unit12",
+      "value": 2,
+      "from": "em",
+      "to": "px",
+      "widths": [
+        0,
+        0
+      ],
+      "result": 2,
+      "unit": "px",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100em",
+        "measure:100em",
+        "width:100px",
+        "measure:100px",
+        "remove:parent"
+      ]
+    },
+    {
+      "name": "unit13",
+      "value": 1,
+      "from": "cm",
+      "to": "mm",
+      "widths": [
+        3780,
+        378
+      ],
+      "result": 10,
+      "unit": "mm",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100cm",
+        "measure:100cm",
+        "width:100mm",
+        "measure:100mm",
+        "remove:parent"
+      ]
+    },
+    {
+      "name": "unit14",
+      "value": 2,
+      "from": "em",
+      "to": "px",
+      "widths": [
+        3200,
+        100
+      ],
+      "parent": "document",
+      "result": 64,
+      "unit": "px",
+      "events": [
+        "clone",
+        "append:body",
+        "width:100em",
+        "measure:100em",
+        "width:100px",
+        "measure:100px",
+        "remove:body"
+      ]
+    },
+    {
+      "name": "unit15",
+      "value": 2,
+      "from": "em",
+      "to": "px",
+      "widths": [
+        3200,
+        100
+      ],
+      "parent": "none",
+      "result": 64,
+      "unit": "px",
+      "events": [
+        "clone",
+        "append:body",
+        "width:100em",
+        "measure:100em",
+        "width:100px",
+        "measure:100px",
+        "remove:body"
+      ]
+    }
+  ],
+  "cacheReplay": [
+    {
+      "value": 17,
+      "from": "em",
+      "to": "px",
+      "widths": [
+        1600,
+        100
+      ],
+      "result": 272,
+      "unit": "px",
+      "events": [
+        "clone",
+        "append:parent",
+        "width:100em",
+        "measure:100em",
+        "width:100px",
+        "measure:100px",
+        "remove:parent"
+      ]
+    },
+    {
+      "value": 17,
+      "from": "em",
+      "to": "px",
+      "widths": [
+        3200,
+        100
+      ],
+      "result": 272,
+      "unit": "px",
+      "events": []
+    }
+  ],
+  "animationCases": [
+    {
+      "name": "em-to-px",
+      "base": "20px",
+      "first": "1em",
+      "last": "100px",
+      "samples": [
+        {
+          "time": 0,
+          "value": "16px"
+        },
+        {
+          "time": 25,
+          "value": "37px"
+        },
+        {
+          "time": 50,
+          "value": "58px"
+        },
+        {
+          "time": 75,
+          "value": "79px"
+        },
+        {
+          "time": 100,
+          "value": "100px"
+        },
+        {
+          "time": 25,
+          "value": "37px"
+        }
+      ]
+    },
+    {
+      "name": "relative-from-before-conversion",
+      "base": "20px",
+      "first": "+=1em",
+      "last": "100px",
+      "samples": [
+        {
+          "time": 0,
+          "value": "336px"
+        },
+        {
+          "time": 25,
+          "value": "277px"
+        },
+        {
+          "time": 50,
+          "value": "218px"
+        },
+        {
+          "time": 75,
+          "value": "159px"
+        },
+        {
+          "time": 100,
+          "value": "100px"
+        },
+        {
+          "time": 25,
+          "value": "277px"
+        }
+      ]
+    },
+    {
+      "name": "relative-target-before-conversion",
+      "base": "20px",
+      "first": "1em",
+      "last": "+=10px",
+      "samples": [
+        {
+          "time": 0,
+          "value": "16px"
+        },
+        {
+          "time": 25,
+          "value": "14.75px"
+        },
+        {
+          "time": 50,
+          "value": "13.5px"
+        },
+        {
+          "time": 75,
+          "value": "12.25px"
+        },
+        {
+          "time": 100,
+          "value": "11px"
+        },
+        {
+          "time": 25,
+          "value": "14.75px"
+        }
+      ]
+    },
+    {
+      "name": "relative-em-operand-before-conversion",
+      "base": "16px",
+      "first": "16px",
+      "last": "+=2em",
+      "samples": [
+        {
+          "time": 0,
+          "value": "1em"
+        },
+        {
+          "time": 25,
+          "value": "5.25em"
+        },
+        {
+          "time": 50,
+          "value": "9.5em"
+        },
+        {
+          "time": 75,
+          "value": "13.75em"
+        },
+        {
+          "time": 100,
+          "value": "18em"
+        },
+        {
+          "time": 25,
+          "value": "5.25em"
+        }
+      ]
+    },
+    {
+      "name": "px-to-percent",
+      "base": "0px",
+      "first": "40px",
+      "last": "50%",
+      "samples": [
+        {
+          "time": 0,
+          "value": "10%"
+        },
+        {
+          "time": 25,
+          "value": "20%"
+        },
+        {
+          "time": 50,
+          "value": "30%"
+        },
+        {
+          "time": 75,
+          "value": "40%"
+        },
+        {
+          "time": 100,
+          "value": "50%"
+        },
+        {
+          "time": 25,
+          "value": "20%"
+        }
+      ]
+    },
+    {
+      "name": "turn-to-deg",
+      "base": "0deg",
+      "first": "0.5turn",
+      "last": "270deg",
+      "samples": [
+        {
+          "time": 0,
+          "value": "180deg"
+        },
+        {
+          "time": 25,
+          "value": "202.5deg"
+        },
+        {
+          "time": 50,
+          "value": "225deg"
+        },
+        {
+          "time": 75,
+          "value": "247.5deg"
+        },
+        {
+          "time": 100,
+          "value": "270deg"
+        },
+        {
+          "time": 25,
+          "value": "202.5deg"
+        }
+      ]
+    },
+    {
+      "name": "unit-to-compound",
+      "base": "20px",
+      "first": "10px",
+      "last": "calc(50% + 20px)",
+      "samples": [
+        {
+          "time": 0,
+          "value": "calc(10% + 10px)"
+        },
+        {
+          "time": 25,
+          "value": "calc(20% + 12.5px)"
+        },
+        {
+          "time": 50,
+          "value": "calc(30% + 15px)"
+        },
+        {
+          "time": 75,
+          "value": "calc(40% + 17.5px)"
+        },
+        {
+          "time": 100,
+          "value": "calc(50% + 20px)"
+        },
+        {
+          "time": 25,
+          "value": "calc(20% + 12.5px)"
+        }
+      ]
+    }
+  ]
+}

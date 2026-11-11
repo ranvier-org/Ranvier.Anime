@@ -1,6 +1,6 @@
 <Project>
     <Import Project="../Directory.Build.targets" />
-    <PropertyGroup Condition="'$(FablePackageType)' != 'none'">
+    <PropertyGroup Condition="'$(FablePackageType)' != '' and '$(FablePackageType)' != 'none'">
         <PackageTags>$(PackageTags);fable-javascript;fable-dotnet</PackageTags>
     </PropertyGroup>
     <!--

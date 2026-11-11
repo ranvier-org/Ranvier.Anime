@@ -1,0 +1,134 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="RunnerTests.fs" />
+    <Compile Include="ReactiveTests.fs" />
+    <Compile Include="CssTests.fs" />
+    <Compile Include="EaseTests.fs" />
+    <Compile Include="CurveTests.fs" />
+    <Compile Include="ValueInterpolationTests.fs" />
+    <Compile Include="KeyframeCompilationTests.fs" />
+    <Compile Include="FrameSiblingTests.fs" />
+    <Compile Include="KeyframePlaybackTests.fs" />
+    <Compile Include="OwnedKeyframeChildTests.fs" />
+    <Compile Include="KeyframeNumericTests.fs" />
+    <Compile Include="RelativeKeyframeTests.fs" />
+    <Compile Include="KeyframeComputedTests.fs" />
+    <Compile Include="KeyframeCssTests.fs" />
+    <Compile Include="KeyframeSequenceTests.fs" />
+    <Compile Include="KeyframeSequenceInputTests.fs" />
+    <Compile Include="KeyframeSequenceContractTests.fs" />
+    <Compile Include="CssSnapshotTests.fs" />
+    <Compile Include="AnimatableValueTests.fs" />
+    <Compile Include="AnimatableTrackTests.fs" />
+    <Compile Include="AnimatableNumberTests.fs" />
+    <Compile Include="AnimatableCssTests.fs" />
+    <Compile Include="DeclarationTests.fs" />
+    <Compile Include="UnitConversionTests.fs" />
+    <Compile Include="SpringTests.fs" />
+    <Compile Include="StaggerTests.fs" />
+    <Compile Include="TimelineTests.fs" />
+    <Compile Include="PlaybackTimingTests.fs" />
+    <Compile Include="PlaybackStateTests.fs" />
+    <Compile Include="TimerTests.fs" />
+    <Compile Include="AnimationPlaybackTests.fs" />
+    <Compile Include="TimelineClockTests.fs" />
+    <Compile Include="TimelinePlaybackTests.fs" />
+    <Compile Include="TimelineKeyframeTests.fs" />
+    <Compile Include="TimelineOwnedFactoryTests.fs" />
+    <Compile Include="TimelineNumericKeyframeTests.fs" />
+    <Compile Include="TimelineCssKeyframeTests.fs" />
+    <Compile Include="TimelineCssSequenceTests.fs" />
+    <Compile Include="TimelineCssSequenceSourceTests.fs" />
+    <Compile Include="TimelineSequenceContractTests.fs" />
+    <Compile Include="TimelineNumericKeyframeSourceTests.fs" />
+    <Compile Include="TimelineMixedKeyframeSourceTests.fs" />
+    <Compile Include="TimelineMixedContractTests.fs" />
+    <Compile Include="TimelineRevertTests.fs" />
+    <Compile Include="ScopeTests.fs" />
+    <Compile Include="ScopeReferenceTests.fs" />
+    <Compile Include="ScopeTimerReferenceTests.fs" />
+    <Compile Include="ScopeResourceHookTests.fs" />
+    <Compile Include="NumericScopeTests.fs" />
+    <Compile Include="ScopeFacadeClockTests.fs" />
+    <Compile Include="NumericCompleteFaultTests.fs" />
+    <Compile Include="ScopeAutomaticTests.fs" />
+    <Compile Include="CssScopeRestorationTests.fs" />
+    <Compile Include="CssDirectRevertTests.fs" />
+    <Compile Include="ScopeClockDefaultsTests.fs" />
+    <Compile Include="ScopeClockReferenceTests.fs" />
+    <Compile Include="ScopeConstructorAdmissionTests.fs" />
+    <Compile Include="ScopeAnimationDefaultsTests.fs" />
+    <Compile Include="EngineTests.fs" />
+    <Compile Include="EngineRootTests.fs" />
+    <Compile Include="EngineQuiescenceTests.fs" />
+    <Compile Include="SourceCleanupTests.fs" />
+    <Compile Include="SvgTests.fs" />
+    <Compile Include="SvgReentryTests.fs" />
+    <Compile Include="SvgLifetimeGuardTests.fs" />
+    <Compile Include="ScrollTests.fs" />
+    <Compile Include="ScrollDomTests.fs" />
+    <Compile Include="ScrollDebugTests.fs" />
+    <Compile Include="DragPhysicsTests.fs" />
+    <Compile Include="DraggableControllerTests.fs" />
+    <Compile Include="DraggableReleaseTests.fs" />
+    <Compile Include="TransformCacheTests.fs" />
+    <Compile Include="DraggableTransformValueTests.fs" />
+    <Compile Include="NativeDraggableLifetimeTests.fs" />
+    <Compile Include="DraggableInlineSourceTests.fs" />
+    <Compile Include="DraggableVelocityRangeTests.fs" />
+    <Compile Include="TimelinePlaybackEaseTests.fs" />
+    <Compile Include="LayoutSnapshotTests.fs" />
+    <Compile Include="LayoutTests.fs" />
+    <Compile Include="EngineAndPromiseTests.fs" />
+    <Compile Include="UtilsTests.fs" />
+    <Compile Include="CompositionAndTransformTests.fs" />
+    <Compile Include="AdapterTests.fs" />
+    <Compile Include="TextTests.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
+    <PackageReference Include="Expecto" Version="10.2.3" />
+    <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssBindingsVersion)]" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../reference/pure.json" Link="reference/pure.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/easing-curves.json" Link="reference/easing-curves.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/value-interpolation.json" Link="reference/value-interpolation.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/animatable.json" Link="reference/animatable.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/keyframes.json" Link="reference/keyframes.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/keyframe-playback.json" Link="reference/keyframe-playback.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/keyframe-inputs.json" Link="reference/keyframe-inputs.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/keyframe-computed.json" Link="reference/keyframe-computed.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/keyframe-css.json" Link="reference/keyframe-css.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/keyframe-sequences.json" Link="reference/keyframe-sequences.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/unit-conversion.json" Link="reference/unit-conversion.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timer-controls.json" Link="reference/timer-controls.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/animation-playback.json" Link="reference/animation-playback.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-playback.json" Link="reference/timeline-playback.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-keyframes.json" Link="reference/timeline-keyframes.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-css-keyframes.json" Link="reference/timeline-css-keyframes.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-mixed-keyframes.json" Link="reference/timeline-mixed-keyframes.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-revert.json" Link="reference/timeline-revert.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/scope-reference.json" Link="reference/scope-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/scope-clock-defaults-reference.json" Link="reference/scope-clock-defaults-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/scope-animation-defaults-reference.json" Link="reference/scope-animation-defaults-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/engine-reference.json" Link="reference/engine-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/engine-roots-reference.json" Link="reference/engine-roots-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/engine-quiescence-reference.json" Link="reference/engine-quiescence-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/engine-idle-phase-reference.json" Link="reference/engine-idle-phase-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/svg-reference.json" Link="reference/svg-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/scroll-reference.json" Link="reference/scroll-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/scroll-debug-reference.json" Link="reference/scroll-debug-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/draggable-reference.json" Link="reference/draggable-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/release-reference.json" Link="reference/release-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/transform-reference.json" Link="reference/transform-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/inline-reference.json" Link="reference/inline-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/timeline-playback-ease.json" Link="reference/timeline-playback-ease.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/layout.json" Link="reference/layout.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/utils-reference.json" Link="reference/utils-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/composition-reference.json" Link="reference/composition-reference.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../reference/text-reference.json" Link="reference/text-reference.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

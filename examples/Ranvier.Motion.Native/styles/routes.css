@@ -1,0 +1,162 @@
+.shell {
+  --shell-bg: var(--surface);
+  --shell-ink: var(--ink);
+  --shell-accent: var(--accent);
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 6px);
+  background: var(--shell-bg);
+  box-shadow: var(--shadow);
+  color: var(--shell-ink);
+  transition: background 0.35s, color 0.35s;
+}
+
+.shell[data-theme="dusk"] {
+  --shell-bg: #1c1a2b;
+  --shell-ink: #efeaff;
+  --shell-accent: #a99dff;
+  --muted: #a49cbd;
+  --line: #34304a;
+  --surface: #26233a;
+  --surface-2: #2e2a45;
+}
+
+.tabs {
+  position: relative;
+  display: flex;
+  gap: 0;
+  width: fit-content;
+  margin-bottom: 18px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.tab {
+  position: relative;
+  z-index: 1;
+  width: 116px;
+  padding: 8px 0;
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.tab.active {
+  color: var(--shell-bg);
+}
+
+.indicator {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 116px;
+  height: calc(100% - 8px);
+  border-radius: 999px;
+  background: var(--shell-accent);
+  box-shadow: var(--shadow);
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  gap: 14px;
+}
+
+.page {
+  padding: 26px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+}
+
+.page h2 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+
+.page p {
+  max-width: 60ch;
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.page .note {
+  font: 500 13px var(--mono);
+}
+
+.counter-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.count {
+  min-width: 2ch;
+  font-size: 44px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.filters,
+.themes {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+
+.chip.active {
+  border-color: var(--shell-accent);
+  background: var(--shell-accent);
+  color: var(--shell-bg);
+}
+
+.swatches {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.swatch {
+  display: flex;
+  align-items: flex-end;
+  height: 110px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  color: white;
+  font-weight: 650;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+
+.swatch.coral { background: linear-gradient(160deg, #ff9a7a, var(--coral)); }
+.swatch.indigo { background: linear-gradient(160deg, #8f88ff, #4338ca); }
+.swatch.amber { background: linear-gradient(160deg, #ffd27a, var(--amber)); }
+.swatch.mint { background: linear-gradient(160deg, #7fe0bd, var(--mint)); }
+.swatch.rose { background: linear-gradient(160deg, #ff9fc0, #e0457b); }
+.swatch.sky { background: linear-gradient(160deg, #8cc8ff, var(--sky)); }
+
+.shell-foot {
+  padding: 4px 6px;
+  color: var(--muted);
+  font: 500 12.5px var(--mono);
+}
+
+@media (max-width: 640px) {
+  .tab,
+  .indicator {
+    width: 76px;
+  }
+
+  .tab {
+    font-size: 13px;
+  }
+}

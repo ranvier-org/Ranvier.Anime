@@ -1,0 +1,390 @@
+{
+  "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "harness": "Unmodified ScrollObserver.prototype.debug/removeDebug with explicit DOM structure capture; native CSS parsing and position-set animation excluded by preexisting relative container.",
+  "cases": [
+    {
+      "horizontal": false,
+      "width": 320,
+      "offset": 0,
+      "overlayCSS": "position:absolute;left:10px;top:0px;width:260px;height:2400px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: row;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "585px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "100px"
+        }
+      ]
+    },
+    {
+      "horizontal": false,
+      "width": 320,
+      "offset": 800,
+      "overlayCSS": "position:absolute;left:10px;top:0px;width:260px;height:2400px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: row;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "585px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "787px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "900px"
+        }
+      ]
+    },
+    {
+      "horizontal": false,
+      "width": 320,
+      "offset": 2300,
+      "overlayCSS": "position:absolute;left:10px;top:0px;width:260px;height:2400px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: row;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "585px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "2287px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:130px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "2387px"
+        }
+      ]
+    },
+    {
+      "horizontal": false,
+      "width": 600,
+      "offset": 0,
+      "overlayCSS": "position:absolute;left:10px;top:0px;width:320px;height:2400px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: row;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "585px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "100px"
+        }
+      ]
+    },
+    {
+      "horizontal": false,
+      "width": 600,
+      "offset": 800,
+      "overlayCSS": "position:absolute;left:10px;top:0px;width:320px;height:2400px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: row;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "585px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "787px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "900px"
+        }
+      ]
+    },
+    {
+      "horizontal": false,
+      "width": 600,
+      "offset": 2300,
+      "overlayCSS": "position:absolute;left:10px;top:0px;width:320px;height:2400px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: row;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "585px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-top: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "2287px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:160px;height:15px;\n        display: flex;\n        flex-direction: row;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-bottom: 2px solid #FF4B4B;\n      ",
+          "position": "2387px"
+        }
+      ]
+    },
+    {
+      "horizontal": true,
+      "width": 320,
+      "offset": 0,
+      "overlayCSS": "position:absolute;left:0px;top:10px;width:2400px;height:260px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: column;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "542px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "100px"
+        }
+      ]
+    },
+    {
+      "horizontal": true,
+      "width": 320,
+      "offset": 800,
+      "overlayCSS": "position:absolute;left:0px;top:10px;width:2400px;height:260px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: column;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "542px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "742px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "900px"
+        }
+      ]
+    },
+    {
+      "horizontal": true,
+      "width": 320,
+      "offset": 2300,
+      "overlayCSS": "position:absolute;left:0px;top:10px;width:2400px;height:260px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: column;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "542px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "2242px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "2342px"
+        }
+      ]
+    },
+    {
+      "horizontal": true,
+      "width": 600,
+      "offset": 0,
+      "overlayCSS": "position:absolute;left:0px;top:10px;width:2400px;height:320px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: column;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "542px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "100px"
+        }
+      ]
+    },
+    {
+      "horizontal": true,
+      "width": 600,
+      "offset": 800,
+      "overlayCSS": "position:absolute;left:0px;top:10px;width:2400px;height:320px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: column;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "542px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "742px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "900px"
+        }
+      ]
+    },
+    {
+      "horizontal": true,
+      "width": 600,
+      "offset": 2300,
+      "overlayCSS": "position:absolute;left:0px;top:10px;width:2400px;height:320px;\n      pointer-events: none;\n      z-index: 0;\n      display: flex;\n      flex-direction: column;\n      filter: drop-shadow(0px 1px 0px rgba(0,0,0,.75));\n    ",
+      "labels": [
+        {
+          "view": true,
+          "text": "probe enter: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "542px"
+        },
+        {
+          "view": true,
+          "text": "probe leave: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-start;\n        align-items: flex-start;\n        border-left: 2px solid #FF4B4B;\n      ",
+          "position": "0px"
+        },
+        {
+          "view": false,
+          "text": "probe enter: start",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "2242px"
+        },
+        {
+          "view": false,
+          "text": "probe leave: end",
+          "css": "position:absolute;left:0px;top:0px;width:60px;height:24px;\n        display: flex;\n        flex-direction: column;\n        justify-content: flex-end;\n        align-items: flex-end;\n        border-right: 2px solid #FF4B4B;\n      ",
+          "position": "2342px"
+        }
+      ]
+    }
+  ]
+}

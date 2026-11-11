@@ -1,0 +1,3919 @@
+{
+  "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "scrambleFixtures": [
+    {
+      "name": "default_seed1",
+      "initial": "Hello World!",
+      "params": {
+        "seed": 1
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 483,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "PRl!q 8thFAn"
+        },
+        {
+          "p": 0,
+          "text": "PRl!q 8thFAn"
+        },
+        {
+          "p": 0.01,
+          "text": "1chJV uT8P52"
+        },
+        {
+          "p": 0.05,
+          "text": "1chJV uT8P52"
+        },
+        {
+          "p": 0.1,
+          "text": "Sp5Na FP4yjt"
+        },
+        {
+          "p": 0.125,
+          "text": "Sp5Na FP4yjt"
+        },
+        {
+          "p": 0.2,
+          "text": "v7je0 rxSS8N"
+        },
+        {
+          "p": 0.25,
+          "text": "fNw!Q Ik!o4Q"
+        },
+        {
+          "p": 0.33,
+          "text": "ukni# K9jTq#"
+        },
+        {
+          "p": 0.4,
+          "text": "4tuVs xmiXD#"
+        },
+        {
+          "p": 0.5,
+          "text": "mNMqV KG0gwx"
+        },
+        {
+          "p": 0.6,
+          "text": "UETFU C1ADLH"
+        },
+        {
+          "p": 0.67,
+          "text": "HI8TM l1Id4V"
+        },
+        {
+          "p": 0.75,
+          "text": "Helq3 VVHYVJ"
+        },
+        {
+          "p": 0.8,
+          "text": "Hello _LQIho"
+        },
+        {
+          "p": 0.875,
+          "text": "Hello W2yA9Z"
+        },
+        {
+          "p": 0.9,
+          "text": "Hello WorqQ4"
+        },
+        {
+          "p": 0.95,
+          "text": "Hello WorqQ4"
+        },
+        {
+          "p": 0.99,
+          "text": "Hello WorldU"
+        },
+        {
+          "p": 1,
+          "text": "Hello World!"
+        },
+        {
+          "p": 1.1,
+          "text": "Hello World!"
+        }
+      ],
+      "changes": [
+        {
+          "str": "1chJV uT8P52",
+          "t": 0.01
+        },
+        {
+          "str": "Sp5Na FP4yjt",
+          "t": 0.1
+        },
+        {
+          "str": "v7je0 rxSS8N",
+          "t": 0.2
+        },
+        {
+          "str": "fNw!Q Ik!o4Q",
+          "t": 0.25
+        },
+        {
+          "str": "ukni# K9jTq#",
+          "t": 0.33
+        },
+        {
+          "str": "4tuVs xmiXD#",
+          "t": 0.4
+        },
+        {
+          "str": "mNMqV KG0gwx",
+          "t": 0.5
+        },
+        {
+          "str": "UETFU C1ADLH",
+          "t": 0.6
+        },
+        {
+          "str": "HI8TM l1Id4V",
+          "t": 0.67
+        },
+        {
+          "str": "Helq3 VVHYVJ",
+          "t": 0.75
+        },
+        {
+          "str": "Hello _LQIho",
+          "t": 0.8
+        },
+        {
+          "str": "Hello W2yA9Z",
+          "t": 0.875
+        },
+        {
+          "str": "Hello WorqQ4",
+          "t": 0.9
+        },
+        {
+          "str": "Hello WorldU",
+          "t": 0.99
+        },
+        {
+          "str": "i3%Zz OVuYOx",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "override_false",
+      "initial": "Hello World!",
+      "params": {
+        "seed": 2,
+        "override": false
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 483,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "Hello World!"
+        },
+        {
+          "p": 0,
+          "text": "Hello World!"
+        },
+        {
+          "p": 0.01,
+          "text": "Cello World!"
+        },
+        {
+          "p": 0.05,
+          "text": "C7llo World!"
+        },
+        {
+          "p": 0.1,
+          "text": "3mmSo World!"
+        },
+        {
+          "p": 0.125,
+          "text": "3mmSo World!"
+        },
+        {
+          "p": 0.2,
+          "text": "AjVfz sorld!"
+        },
+        {
+          "p": 0.25,
+          "text": "ZiLxi yxrld!"
+        },
+        {
+          "p": 0.33,
+          "text": "pGzW9 rEz#a!"
+        },
+        {
+          "p": 0.4,
+          "text": "O6q0X sgftEz"
+        },
+        {
+          "p": 0.5,
+          "text": "z3InI hlkveX"
+        },
+        {
+          "p": 0.6,
+          "text": "Bq!mK 72439g"
+        },
+        {
+          "p": 0.67,
+          "text": "Hv__F xS8q5b"
+        },
+        {
+          "p": 0.75,
+          "text": "Hel_m rfnlls"
+        },
+        {
+          "p": 0.8,
+          "text": "Hello updR1i"
+        },
+        {
+          "p": 0.875,
+          "text": "Hello WD#U1r"
+        },
+        {
+          "p": 0.9,
+          "text": "Hello Wordwg"
+        },
+        {
+          "p": 0.95,
+          "text": "Hello Wordwg"
+        },
+        {
+          "p": 0.99,
+          "text": "Hello Worldl"
+        },
+        {
+          "p": 1,
+          "text": "Hello World!"
+        },
+        {
+          "p": 1.1,
+          "text": "Hello World!"
+        }
+      ],
+      "changes": [
+        {
+          "str": "Cello World!",
+          "t": 0.01
+        },
+        {
+          "str": "3mmSo World!",
+          "t": 0.1
+        },
+        {
+          "str": "AjVfz sorld!",
+          "t": 0.2
+        },
+        {
+          "str": "ZiLxi yxrld!",
+          "t": 0.25
+        },
+        {
+          "str": "pGzW9 rEz#a!",
+          "t": 0.33
+        },
+        {
+          "str": "O6q0X sgftEz",
+          "t": 0.4
+        },
+        {
+          "str": "z3InI hlkveX",
+          "t": 0.5
+        },
+        {
+          "str": "Bq!mK 72439g",
+          "t": 0.6
+        },
+        {
+          "str": "Hv__F xS8q5b",
+          "t": 0.67
+        },
+        {
+          "str": "Hel_m rfnlls",
+          "t": 0.75
+        },
+        {
+          "str": "Hello updR1i",
+          "t": 0.8
+        },
+        {
+          "str": "Hello WD#U1r",
+          "t": 0.875
+        },
+        {
+          "str": "Hello Wordwg",
+          "t": 0.9
+        },
+        {
+          "str": "Hello Worldl",
+          "t": 0.99
+        },
+        {
+          "str": "rw!RB HOrld!",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "override_blank",
+      "initial": "Hello World!",
+      "params": {
+        "seed": 3,
+        "override": ""
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 483,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": ""
+        },
+        {
+          "p": 0,
+          "text": ""
+        },
+        {
+          "p": 0.01,
+          "text": "a"
+        },
+        {
+          "p": 0.05,
+          "text": "a2"
+        },
+        {
+          "p": 0.1,
+          "text": "!pFe"
+        },
+        {
+          "p": 0.125,
+          "text": "!pFe"
+        },
+        {
+          "p": 0.2,
+          "text": "Yxp!n R"
+        },
+        {
+          "p": 0.25,
+          "text": "W!thl k4"
+        },
+        {
+          "p": 0.33,
+          "text": "oARXv #ly88"
+        },
+        {
+          "p": 0.4,
+          "text": "akE_E 1CR3QA"
+        },
+        {
+          "p": 0.5,
+          "text": "fX%XV 4ZYJSk"
+        },
+        {
+          "p": 0.6,
+          "text": "ljIy7 %Pm%N3"
+        },
+        {
+          "p": 0.67,
+          "text": "HTwLO B_t_WH"
+        },
+        {
+          "p": 0.75,
+          "text": "Helz2 8aUwT4"
+        },
+        {
+          "p": 0.8,
+          "text": "Hello 6fka#E"
+        },
+        {
+          "p": 0.875,
+          "text": "Hello WrdMxa"
+        },
+        {
+          "p": 0.9,
+          "text": "Hello Wor2oE"
+        },
+        {
+          "p": 0.95,
+          "text": "Hello Wor2oE"
+        },
+        {
+          "p": 0.99,
+          "text": "Hello World1"
+        },
+        {
+          "p": 1,
+          "text": "Hello World!"
+        },
+        {
+          "p": 1.1,
+          "text": "Hello World!"
+        }
+      ],
+      "changes": [
+        {
+          "str": "a",
+          "t": 0.01
+        },
+        {
+          "str": "!pFe",
+          "t": 0.1
+        },
+        {
+          "str": "Yxp!n R",
+          "t": 0.2
+        },
+        {
+          "str": "W!thl k4",
+          "t": 0.25
+        },
+        {
+          "str": "oARXv #ly88",
+          "t": 0.33
+        },
+        {
+          "str": "akE_E 1CR3QA",
+          "t": 0.4
+        },
+        {
+          "str": "fX%XV 4ZYJSk",
+          "t": 0.5
+        },
+        {
+          "str": "ljIy7 %Pm%N3",
+          "t": 0.6
+        },
+        {
+          "str": "HTwLO B_t_WH",
+          "t": 0.67
+        },
+        {
+          "str": "Helz2 8aUwT4",
+          "t": 0.75
+        },
+        {
+          "str": "Hello 6fka#E",
+          "t": 0.8
+        },
+        {
+          "str": "Hello WrdMxa",
+          "t": 0.875
+        },
+        {
+          "str": "Hello Wor2oE",
+          "t": 0.9
+        },
+        {
+          "str": "Hello World1",
+          "t": 0.99
+        },
+        {
+          "str": "!CY0X oa",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "override_space",
+      "initial": "Hello World!",
+      "params": {
+        "seed": 4,
+        "override": " "
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 483,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "            "
+        },
+        {
+          "p": 0,
+          "text": "            "
+        },
+        {
+          "p": 0.01,
+          "text": "r           "
+        },
+        {
+          "p": 0.05,
+          "text": "rQ          "
+        },
+        {
+          "p": 0.1,
+          "text": "qxeV        "
+        },
+        {
+          "p": 0.125,
+          "text": "qxeV        "
+        },
+        {
+          "p": 0.2,
+          "text": "OU#Oy H     "
+        },
+        {
+          "p": 0.25,
+          "text": "q50D_ 0L    "
+        },
+        {
+          "p": 0.33,
+          "text": "mad6a uIdB3 "
+        },
+        {
+          "p": 0.4,
+          "text": "mAW1F YCudR7"
+        },
+        {
+          "p": 0.5,
+          "text": "p2cCj 9wWQrO"
+        },
+        {
+          "p": 0.6,
+          "text": "O8PzS i43PhX"
+        },
+        {
+          "p": 0.67,
+          "text": "Hauoq 38WsdD"
+        },
+        {
+          "p": 0.75,
+          "text": "Helzj oYs1IT"
+        },
+        {
+          "p": 0.8,
+          "text": "Hello xF96W1"
+        },
+        {
+          "p": 0.875,
+          "text": "Hello WbSkVd"
+        },
+        {
+          "p": 0.9,
+          "text": "Hello WorX!N"
+        },
+        {
+          "p": 0.95,
+          "text": "Hello WorX!N"
+        },
+        {
+          "p": 0.99,
+          "text": "Hello World_"
+        },
+        {
+          "p": 1,
+          "text": "Hello World!"
+        },
+        {
+          "p": 1.1,
+          "text": "Hello World!"
+        }
+      ],
+      "changes": [
+        {
+          "str": "r           ",
+          "t": 0.01
+        },
+        {
+          "str": "qxeV        ",
+          "t": 0.1
+        },
+        {
+          "str": "OU#Oy H     ",
+          "t": 0.2
+        },
+        {
+          "str": "q50D_ 0L    ",
+          "t": 0.25
+        },
+        {
+          "str": "mad6a uIdB3 ",
+          "t": 0.33
+        },
+        {
+          "str": "mAW1F YCudR7",
+          "t": 0.4
+        },
+        {
+          "str": "p2cCj 9wWQrO",
+          "t": 0.5
+        },
+        {
+          "str": "O8PzS i43PhX",
+          "t": 0.6
+        },
+        {
+          "str": "Hauoq 38WsdD",
+          "t": 0.67
+        },
+        {
+          "str": "Helzj oYs1IT",
+          "t": 0.75
+        },
+        {
+          "str": "Hello xF96W1",
+          "t": 0.8
+        },
+        {
+          "str": "Hello WbSkVd",
+          "t": 0.875
+        },
+        {
+          "str": "Hello WorX!N",
+          "t": 0.9
+        },
+        {
+          "str": "Hello World_",
+          "t": 0.99
+        },
+        {
+          "str": "pWN3q Km    ",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "override_custom_charset",
+      "initial": "Hello World!",
+      "params": {
+        "seed": 5,
+        "override": "0-9",
+        "chars": "uppercase"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 483,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "67861 404409"
+        },
+        {
+          "p": 0,
+          "text": "67861 404409"
+        },
+        {
+          "p": 0.01,
+          "text": "T9314 258799"
+        },
+        {
+          "p": 0.05,
+          "text": "TP314 258799"
+        },
+        {
+          "p": 0.1,
+          "text": "OMHX9 425265"
+        },
+        {
+          "p": 0.125,
+          "text": "OMHX9 425265"
+        },
+        {
+          "p": 0.2,
+          "text": "VIRMV U42442"
+        },
+        {
+          "p": 0.25,
+          "text": "CEQWG UY6907"
+        },
+        {
+          "p": 0.33,
+          "text": "PTTRG WSWVG1"
+        },
+        {
+          "p": 0.4,
+          "text": "SMXGN NDTJBU"
+        },
+        {
+          "p": 0.5,
+          "text": "NNIFX QXBNQD"
+        },
+        {
+          "p": 0.6,
+          "text": "LSXXV UOKTMP"
+        },
+        {
+          "p": 0.67,
+          "text": "HALKF DKDKLG"
+        },
+        {
+          "p": 0.75,
+          "text": "HelEU MKOEGT"
+        },
+        {
+          "p": 0.8,
+          "text": "Hello USRHYG"
+        },
+        {
+          "p": 0.875,
+          "text": "Hello WHGQIV"
+        },
+        {
+          "p": 0.9,
+          "text": "Hello WorMXX"
+        },
+        {
+          "p": 0.95,
+          "text": "Hello WorMXX"
+        },
+        {
+          "p": 0.99,
+          "text": "Hello WorldR"
+        },
+        {
+          "p": 1,
+          "text": "Hello World!"
+        },
+        {
+          "p": 1.1,
+          "text": "Hello World!"
+        }
+      ],
+      "changes": [
+        {
+          "str": "T9314 258799",
+          "t": 0.01
+        },
+        {
+          "str": "OMHX9 425265",
+          "t": 0.1
+        },
+        {
+          "str": "VIRMV U42442",
+          "t": 0.2
+        },
+        {
+          "str": "CEQWG UY6907",
+          "t": 0.25
+        },
+        {
+          "str": "PTTRG WSWVG1",
+          "t": 0.33
+        },
+        {
+          "str": "SMXGN NDTJBU",
+          "t": 0.4
+        },
+        {
+          "str": "NNIFX QXBNQD",
+          "t": 0.5
+        },
+        {
+          "str": "LSXXV UOKTMP",
+          "t": 0.6
+        },
+        {
+          "str": "HALKF DKDKLG",
+          "t": 0.67
+        },
+        {
+          "str": "HelEU MKOEGT",
+          "t": 0.75
+        },
+        {
+          "str": "Hello USRHYG",
+          "t": 0.8
+        },
+        {
+          "str": "Hello WHGQIV",
+          "t": 0.875
+        },
+        {
+          "str": "Hello WorMXX",
+          "t": 0.9
+        },
+        {
+          "str": "Hello WorldR",
+          "t": 0.99
+        },
+        {
+          "str": "QSOVR VF6168",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "chars_lowercase",
+      "initial": "Testing 123",
+      "params": {
+        "seed": 6,
+        "chars": "lowercase"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 467,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "ncwmdyw tki"
+        },
+        {
+          "p": 0,
+          "text": "ncwmdyw tki"
+        },
+        {
+          "p": 0.01,
+          "text": "pzkmoaq sek"
+        },
+        {
+          "p": 0.05,
+          "text": "pzkmoaq sek"
+        },
+        {
+          "p": 0.1,
+          "text": "vxdibkj guj"
+        },
+        {
+          "p": 0.125,
+          "text": "vxdibkj guj"
+        },
+        {
+          "p": 0.2,
+          "text": "pniruvz ipn"
+        },
+        {
+          "p": 0.25,
+          "text": "tfbqmwn tik"
+        },
+        {
+          "p": 0.33,
+          "text": "wakrbti tww"
+        },
+        {
+          "p": 0.4,
+          "text": "nmmwizb eph"
+        },
+        {
+          "p": 0.5,
+          "text": "nvfznpj eak"
+        },
+        {
+          "p": 0.6,
+          "text": "jlfoepa yhk"
+        },
+        {
+          "p": 0.67,
+          "text": "kyrzgcp sra"
+        },
+        {
+          "p": 0.75,
+          "text": "Tesyqzi kyk"
+        },
+        {
+          "p": 0.8,
+          "text": "Testiai ybb"
+        },
+        {
+          "p": 0.875,
+          "text": "Testing ggq"
+        },
+        {
+          "p": 0.9,
+          "text": "Testing ggq"
+        },
+        {
+          "p": 0.95,
+          "text": "Testing 1na"
+        },
+        {
+          "p": 0.99,
+          "text": "Testing 1na"
+        },
+        {
+          "p": 1,
+          "text": "Testing 123"
+        },
+        {
+          "p": 1.1,
+          "text": "Testing 123"
+        }
+      ],
+      "changes": [
+        {
+          "str": "pzkmoaq sek",
+          "t": 0.01
+        },
+        {
+          "str": "vxdibkj guj",
+          "t": 0.1
+        },
+        {
+          "str": "pniruvz ipn",
+          "t": 0.2
+        },
+        {
+          "str": "tfbqmwn tik",
+          "t": 0.25
+        },
+        {
+          "str": "wakrbti tww",
+          "t": 0.33
+        },
+        {
+          "str": "nmmwizb eph",
+          "t": 0.4
+        },
+        {
+          "str": "nvfznpj eak",
+          "t": 0.5
+        },
+        {
+          "str": "jlfoepa yhk",
+          "t": 0.6
+        },
+        {
+          "str": "kyrzgcp sra",
+          "t": 0.67
+        },
+        {
+          "str": "Tesyqzi kyk",
+          "t": 0.75
+        },
+        {
+          "str": "Testiai ybb",
+          "t": 0.8
+        },
+        {
+          "str": "Testing ggq",
+          "t": 0.875
+        },
+        {
+          "str": "Testing 1na",
+          "t": 0.95
+        },
+        {
+          "str": "wljahyu dwc",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "chars_symbols",
+      "initial": "Testing 123",
+      "params": {
+        "seed": 7,
+        "chars": "symbols"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 467,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "!_+!||! |=|"
+        },
+        {
+          "p": 0,
+          "text": "!_+!||! |=|"
+        },
+        {
+          "p": 0.01,
+          "text": "+%!_##= ==!"
+        },
+        {
+          "p": 0.05,
+          "text": "+%!_##= ==!"
+        },
+        {
+          "p": 0.1,
+          "text": "*!**++| %*+"
+        },
+        {
+          "p": 0.125,
+          "text": "*!**++| %*+"
+        },
+        {
+          "p": 0.2,
+          "text": "!|!!%%| %+_"
+        },
+        {
+          "p": 0.25,
+          "text": "=*#!+|| *%%"
+        },
+        {
+          "p": 0.33,
+          "text": "%!*=+%= #|%"
+        },
+        {
+          "p": 0.4,
+          "text": "#**%=== +|#"
+        },
+        {
+          "p": 0.5,
+          "text": "##=+_*= %%#"
+        },
+        {
+          "p": 0.6,
+          "text": "=#|=_=* #%|"
+        },
+        {
+          "p": 0.67,
+          "text": "*%!=_+* !+="
+        },
+        {
+          "p": 0.75,
+          "text": "Tes_%*_ #!#"
+        },
+        {
+          "p": 0.8,
+          "text": "Testi=* *!|"
+        },
+        {
+          "p": 0.875,
+          "text": "Testing _|#"
+        },
+        {
+          "p": 0.9,
+          "text": "Testing _|#"
+        },
+        {
+          "p": 0.95,
+          "text": "Testing 1%+"
+        },
+        {
+          "p": 0.99,
+          "text": "Testing 1%+"
+        },
+        {
+          "p": 1,
+          "text": "Testing 123"
+        },
+        {
+          "p": 1.1,
+          "text": "Testing 123"
+        }
+      ],
+      "changes": [
+        {
+          "str": "+%!_##= ==!",
+          "t": 0.01
+        },
+        {
+          "str": "*!**++| %*+",
+          "t": 0.1
+        },
+        {
+          "str": "!|!!%%| %+_",
+          "t": 0.2
+        },
+        {
+          "str": "=*#!+|| *%%",
+          "t": 0.25
+        },
+        {
+          "str": "%!*=+%= #|%",
+          "t": 0.33
+        },
+        {
+          "str": "#**%=== +|#",
+          "t": 0.4
+        },
+        {
+          "str": "##=+_*= %%#",
+          "t": 0.5
+        },
+        {
+          "str": "=#|=_=* #%|",
+          "t": 0.6
+        },
+        {
+          "str": "*%!=_+* !+=",
+          "t": 0.67
+        },
+        {
+          "str": "Tes_%*_ #!#",
+          "t": 0.75
+        },
+        {
+          "str": "Testi=* *!|",
+          "t": 0.8
+        },
+        {
+          "str": "Testing _|#",
+          "t": 0.875
+        },
+        {
+          "str": "Testing 1%+",
+          "t": 0.95
+        },
+        {
+          "str": "%#|_|*| !%*",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "chars_braille",
+      "initial": "Braille!",
+      "params": {
+        "seed": 8,
+        "chars": "braille"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 417,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "⠨⠨⠩⢹⣉⠶⠜⢪"
+        },
+        {
+          "p": 0,
+          "text": "⠨⠨⠩⢹⣉⠶⠜⢪"
+        },
+        {
+          "p": 0.01,
+          "text": "⣸⢊⠥⡟⡖⠽⢫⢂"
+        },
+        {
+          "p": 0.05,
+          "text": "⣸⢊⠥⡟⡖⠽⢫⢂"
+        },
+        {
+          "p": 0.1,
+          "text": "⠐⠋⣇⢙⡼⢵⡅⡺"
+        },
+        {
+          "p": 0.125,
+          "text": "⠐⠋⣇⢙⡼⢵⡅⡺"
+        },
+        {
+          "p": 0.2,
+          "text": "⢚⢀⡥⣖⠭⢤⡅⡲"
+        },
+        {
+          "p": 0.25,
+          "text": "⣺⣳⣙⢃⢲⣀⢯⢅"
+        },
+        {
+          "p": 0.33,
+          "text": "⣫⡔⡊⢿⠀⣕⡊⢇"
+        },
+        {
+          "p": 0.4,
+          "text": "⢾⢉⡓⡊⣓⣶⡌⢾"
+        },
+        {
+          "p": 0.5,
+          "text": "⢸⣋⡬⢋⣆⣜⣸⡹"
+        },
+        {
+          "p": 0.6,
+          "text": "⢔⡣⢻⡲⣻⢹⡹⡽"
+        },
+        {
+          "p": 0.67,
+          "text": "⢊⢿⡞⣬⠉⠯⡚⣤"
+        },
+        {
+          "p": 0.75,
+          "text": "⢈⣖⠍⡦⠇⠣⠁⣚"
+        },
+        {
+          "p": 0.8,
+          "text": "Bra⠸⢊⡹⢔⣇"
+        },
+        {
+          "p": 0.875,
+          "text": "Bra⠸⢊⡹⢔⣇"
+        },
+        {
+          "p": 0.9,
+          "text": "Brail⣅⠡⣔"
+        },
+        {
+          "p": 0.95,
+          "text": "Brail⣅⠡⣔"
+        },
+        {
+          "p": 0.99,
+          "text": "Braille⣦"
+        },
+        {
+          "p": 1,
+          "text": "Braille!"
+        },
+        {
+          "p": 1.1,
+          "text": "Braille!"
+        }
+      ],
+      "changes": [
+        {
+          "str": "⣸⢊⠥⡟⡖⠽⢫⢂",
+          "t": 0.01
+        },
+        {
+          "str": "⠐⠋⣇⢙⡼⢵⡅⡺",
+          "t": 0.1
+        },
+        {
+          "str": "⢚⢀⡥⣖⠭⢤⡅⡲",
+          "t": 0.2
+        },
+        {
+          "str": "⣺⣳⣙⢃⢲⣀⢯⢅",
+          "t": 0.25
+        },
+        {
+          "str": "⣫⡔⡊⢿⠀⣕⡊⢇",
+          "t": 0.33
+        },
+        {
+          "str": "⢾⢉⡓⡊⣓⣶⡌⢾",
+          "t": 0.4
+        },
+        {
+          "str": "⢸⣋⡬⢋⣆⣜⣸⡹",
+          "t": 0.5
+        },
+        {
+          "str": "⢔⡣⢻⡲⣻⢹⡹⡽",
+          "t": 0.6
+        },
+        {
+          "str": "⢊⢿⡞⣬⠉⠯⡚⣤",
+          "t": 0.67
+        },
+        {
+          "str": "⢈⣖⠍⡦⠇⠣⠁⣚",
+          "t": 0.75
+        },
+        {
+          "str": "Bra⠸⢊⡹⢔⣇",
+          "t": 0.8
+        },
+        {
+          "str": "Brail⣅⠡⣔",
+          "t": 0.9
+        },
+        {
+          "str": "Braille⣦",
+          "t": 0.99
+        },
+        {
+          "str": "⣄⡫⢴⢴⢅⣐⠒⣌",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "chars_blocks",
+      "initial": "Blocks!",
+      "params": {
+        "seed": 9,
+        "chars": "blocks"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 400,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "▆▉▚▞▌▄▁"
+        },
+        {
+          "p": 0,
+          "text": "▆▉▚▞▌▄▁"
+        },
+        {
+          "p": 0.01,
+          "text": "▉▇▔▌▄▉▄"
+        },
+        {
+          "p": 0.05,
+          "text": "▉▇▔▌▄▉▄"
+        },
+        {
+          "p": 0.1,
+          "text": "▃▚▎▄▚▁█"
+        },
+        {
+          "p": 0.125,
+          "text": "▃▚▎▄▚▁█"
+        },
+        {
+          "p": 0.2,
+          "text": "▎▝▓▗▘▘▇"
+        },
+        {
+          "p": 0.25,
+          "text": "▓▜▘░▅▒▁"
+        },
+        {
+          "p": 0.33,
+          "text": "▓▜▘░▅▒▁"
+        },
+        {
+          "p": 0.4,
+          "text": "▀▛▋▗▘▕▆"
+        },
+        {
+          "p": 0.5,
+          "text": "▗▐▂▀▝▉▚"
+        },
+        {
+          "p": 0.6,
+          "text": "▚▗▂▆▍▀▍"
+        },
+        {
+          "p": 0.67,
+          "text": "▟▞▁▙▌▘▌"
+        },
+        {
+          "p": 0.75,
+          "text": "▁▔▕▖▛▍▗"
+        },
+        {
+          "p": 0.8,
+          "text": "▁▔▕▖▛▍▗"
+        },
+        {
+          "p": 0.875,
+          "text": "Blo▃▚▆▃"
+        },
+        {
+          "p": 0.9,
+          "text": "Blo▃▚▆▃"
+        },
+        {
+          "p": 0.95,
+          "text": "Block▁▆"
+        },
+        {
+          "p": 0.99,
+          "text": "Block▁▆"
+        },
+        {
+          "p": 1,
+          "text": "Blocks!"
+        },
+        {
+          "p": 1.1,
+          "text": "Blocks!"
+        }
+      ],
+      "changes": [
+        {
+          "str": "▉▇▔▌▄▉▄",
+          "t": 0.01
+        },
+        {
+          "str": "▃▚▎▄▚▁█",
+          "t": 0.1
+        },
+        {
+          "str": "▎▝▓▗▘▘▇",
+          "t": 0.2
+        },
+        {
+          "str": "▓▜▘░▅▒▁",
+          "t": 0.25
+        },
+        {
+          "str": "▀▛▋▗▘▕▆",
+          "t": 0.4
+        },
+        {
+          "str": "▗▐▂▀▝▉▚",
+          "t": 0.5
+        },
+        {
+          "str": "▚▗▂▆▍▀▍",
+          "t": 0.6
+        },
+        {
+          "str": "▟▞▁▙▌▘▌",
+          "t": 0.67
+        },
+        {
+          "str": "▁▔▕▖▛▍▗",
+          "t": 0.75
+        },
+        {
+          "str": "Blo▃▚▆▃",
+          "t": 0.875
+        },
+        {
+          "str": "Block▁▆",
+          "t": 0.95
+        },
+        {
+          "str": "░▆█▖▆▔▖",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "chars_shades",
+      "initial": "Shades!",
+      "params": {
+        "seed": 10,
+        "chars": "shades"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 400,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "▒▒▒░▒▒▓"
+        },
+        {
+          "p": 0,
+          "text": "▒▒▒░▒▒▓"
+        },
+        {
+          "p": 0.01,
+          "text": "▓▓░▒░▒▒"
+        },
+        {
+          "p": 0.05,
+          "text": "▓▓░▒░▒▒"
+        },
+        {
+          "p": 0.1,
+          "text": "░░▓▒░░░"
+        },
+        {
+          "p": 0.125,
+          "text": "░░▓▒░░░"
+        },
+        {
+          "p": 0.2,
+          "text": "▓▓░▓▓▓▒"
+        },
+        {
+          "p": 0.25,
+          "text": "▓▓▒░▒▓▓"
+        },
+        {
+          "p": 0.33,
+          "text": "▓▓▒░▒▓▓"
+        },
+        {
+          "p": 0.4,
+          "text": "░▒▓▓░▒▒"
+        },
+        {
+          "p": 0.5,
+          "text": "░░▒▒▓▓▓"
+        },
+        {
+          "p": 0.6,
+          "text": "▒▓░▓▒▓▓"
+        },
+        {
+          "p": 0.67,
+          "text": "▓▓▒▓▓░░"
+        },
+        {
+          "p": 0.75,
+          "text": "▒▒░▒▒░▓"
+        },
+        {
+          "p": 0.8,
+          "text": "▒▒░▒▒░▓"
+        },
+        {
+          "p": 0.875,
+          "text": "Sha▒░▒░"
+        },
+        {
+          "p": 0.9,
+          "text": "Sha▒░▒░"
+        },
+        {
+          "p": 0.95,
+          "text": "Shade░░"
+        },
+        {
+          "p": 0.99,
+          "text": "Shade░░"
+        },
+        {
+          "p": 1,
+          "text": "Shades!"
+        },
+        {
+          "p": 1.1,
+          "text": "Shades!"
+        }
+      ],
+      "changes": [
+        {
+          "str": "▓▓░▒░▒▒",
+          "t": 0.01
+        },
+        {
+          "str": "░░▓▒░░░",
+          "t": 0.1
+        },
+        {
+          "str": "▓▓░▓▓▓▒",
+          "t": 0.2
+        },
+        {
+          "str": "▓▓▒░▒▓▓",
+          "t": 0.25
+        },
+        {
+          "str": "░▒▓▓░▒▒",
+          "t": 0.4
+        },
+        {
+          "str": "░░▒▒▓▓▓",
+          "t": 0.5
+        },
+        {
+          "str": "▒▓░▓▒▓▓",
+          "t": 0.6
+        },
+        {
+          "str": "▓▓▒▓▓░░",
+          "t": 0.67
+        },
+        {
+          "str": "▒▒░▒▒░▓",
+          "t": 0.75
+        },
+        {
+          "str": "Sha▒░▒░",
+          "t": 0.875
+        },
+        {
+          "str": "Shade░░",
+          "t": 0.95
+        },
+        {
+          "str": "▒░▓▓▒▒░",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "chars_literal_dash",
+      "initial": "Dash Test",
+      "params": {
+        "seed": 11,
+        "chars": "-XY-"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 433,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "YY-- -Y--"
+        },
+        {
+          "p": 0,
+          "text": "YY-- -Y--"
+        },
+        {
+          "p": 0.01,
+          "text": "-Y-X -Y-X"
+        },
+        {
+          "p": 0.05,
+          "text": "-Y-X -Y-X"
+        },
+        {
+          "p": 0.1,
+          "text": "Y--Y -XXX"
+        },
+        {
+          "p": 0.125,
+          "text": "Y--Y -XXX"
+        },
+        {
+          "p": 0.2,
+          "text": "-X-Y --XY"
+        },
+        {
+          "p": 0.25,
+          "text": "--XY Y-Y-"
+        },
+        {
+          "p": 0.33,
+          "text": "Y--- -YY-"
+        },
+        {
+          "p": 0.4,
+          "text": "-X-- --XY"
+        },
+        {
+          "p": 0.5,
+          "text": "--XX --YX"
+        },
+        {
+          "p": 0.6,
+          "text": "X--X -Y--"
+        },
+        {
+          "p": 0.67,
+          "text": "-YY- XYY-"
+        },
+        {
+          "p": 0.75,
+          "text": "DYY- Y-XY"
+        },
+        {
+          "p": 0.8,
+          "text": "Das- Y-XY"
+        },
+        {
+          "p": 0.875,
+          "text": "Dash X-X-"
+        },
+        {
+          "p": 0.9,
+          "text": "Dash X-X-"
+        },
+        {
+          "p": 0.95,
+          "text": "Dash TeXY"
+        },
+        {
+          "p": 0.99,
+          "text": "Dash TeXY"
+        },
+        {
+          "p": 1,
+          "text": "Dash Test"
+        },
+        {
+          "p": 1.1,
+          "text": "Dash Test"
+        }
+      ],
+      "changes": [
+        {
+          "str": "-Y-X -Y-X",
+          "t": 0.01
+        },
+        {
+          "str": "Y--Y -XXX",
+          "t": 0.1
+        },
+        {
+          "str": "-X-Y --XY",
+          "t": 0.2
+        },
+        {
+          "str": "--XY Y-Y-",
+          "t": 0.25
+        },
+        {
+          "str": "Y--- -YY-",
+          "t": 0.33
+        },
+        {
+          "str": "-X-- --XY",
+          "t": 0.4
+        },
+        {
+          "str": "--XX --YX",
+          "t": 0.5
+        },
+        {
+          "str": "X--X -Y--",
+          "t": 0.6
+        },
+        {
+          "str": "-YY- XYY-",
+          "t": 0.67
+        },
+        {
+          "str": "DYY- Y-XY",
+          "t": 0.75
+        },
+        {
+          "str": "Das- Y-XY",
+          "t": 0.8
+        },
+        {
+          "str": "Dash X-X-",
+          "t": 0.875
+        },
+        {
+          "str": "Dash TeXY",
+          "t": 0.95
+        },
+        {
+          "str": "-X-X -YY-",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "from_right",
+      "initial": "Reveal Right",
+      "params": {
+        "seed": 12,
+        "from": "right"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 483,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "tLk2QI KbtpE"
+        },
+        {
+          "p": 0,
+          "text": "tLk2QI KbtpE"
+        },
+        {
+          "p": 0.01,
+          "text": "QHPZCx eq0rN"
+        },
+        {
+          "p": 0.05,
+          "text": "QHPZCx eq0rN"
+        },
+        {
+          "p": 0.1,
+          "text": "u2P7la FVUrY"
+        },
+        {
+          "p": 0.125,
+          "text": "u2P7la FVUrY"
+        },
+        {
+          "p": 0.2,
+          "text": "%2dLC8 3E#ZS"
+        },
+        {
+          "p": 0.25,
+          "text": "Nut5DL fxhSf"
+        },
+        {
+          "p": 0.33,
+          "text": "0IdIfZ b4gKF"
+        },
+        {
+          "p": 0.4,
+          "text": "qvgwla cpt!C"
+        },
+        {
+          "p": 0.5,
+          "text": "c10JB0 3zzYS"
+        },
+        {
+          "p": 0.6,
+          "text": "SqC1UP otMab"
+        },
+        {
+          "p": 0.67,
+          "text": "ukT!sG 3ZNEt"
+        },
+        {
+          "p": 0.75,
+          "text": "qGwJ2L gdght"
+        },
+        {
+          "p": 0.8,
+          "text": "h1ALLd Right"
+        },
+        {
+          "p": 0.875,
+          "text": "FSM0nl Right"
+        },
+        {
+          "p": 0.9,
+          "text": "iCXeal Right"
+        },
+        {
+          "p": 0.95,
+          "text": "iCXeal Right"
+        },
+        {
+          "p": 0.99,
+          "text": "Qeveal Right"
+        },
+        {
+          "p": 1,
+          "text": "Reveal Right"
+        },
+        {
+          "p": 1.1,
+          "text": "Reveal Right"
+        }
+      ],
+      "changes": [
+        {
+          "str": "QHPZCx eq0rN",
+          "t": 0.01
+        },
+        {
+          "str": "u2P7la FVUrY",
+          "t": 0.1
+        },
+        {
+          "str": "%2dLC8 3E#ZS",
+          "t": 0.2
+        },
+        {
+          "str": "Nut5DL fxhSf",
+          "t": 0.25
+        },
+        {
+          "str": "0IdIfZ b4gKF",
+          "t": 0.33
+        },
+        {
+          "str": "qvgwla cpt!C",
+          "t": 0.4
+        },
+        {
+          "str": "c10JB0 3zzYS",
+          "t": 0.5
+        },
+        {
+          "str": "SqC1UP otMab",
+          "t": 0.6
+        },
+        {
+          "str": "ukT!sG 3ZNEt",
+          "t": 0.67
+        },
+        {
+          "str": "qGwJ2L gdght",
+          "t": 0.75
+        },
+        {
+          "str": "h1ALLd Right",
+          "t": 0.8
+        },
+        {
+          "str": "FSM0nl Right",
+          "t": 0.875
+        },
+        {
+          "str": "iCXeal Right",
+          "t": 0.9
+        },
+        {
+          "str": "Qeveal Right",
+          "t": 0.99
+        },
+        {
+          "str": "C8cFnI zg55M",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "from_center",
+      "initial": "Reveal Center",
+      "params": {
+        "seed": 13,
+        "from": "center"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 500,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "LI83KI QWyBS8"
+        },
+        {
+          "p": 0,
+          "text": "LI83KI QWyBS8"
+        },
+        {
+          "p": 0.01,
+          "text": "O#R%k% 7YhuiG"
+        },
+        {
+          "p": 0.05,
+          "text": "O#R%k% 7YhuiG"
+        },
+        {
+          "p": 0.1,
+          "text": "fVYnOv uUSHjd"
+        },
+        {
+          "p": 0.125,
+          "text": "fVYnOv uUSHjd"
+        },
+        {
+          "p": 0.2,
+          "text": "XnUszn QAIZtf"
+        },
+        {
+          "p": 0.25,
+          "text": "4AEG0r lJ_XPP"
+        },
+        {
+          "p": 0.33,
+          "text": "99sx9M 2nBnE_"
+        },
+        {
+          "p": 0.4,
+          "text": "SEA6%o T5kB1v"
+        },
+        {
+          "p": 0.5,
+          "text": "NLTWUM mQopT9"
+        },
+        {
+          "p": 0.6,
+          "text": "1PJ_57 hrdHcj"
+        },
+        {
+          "p": 0.67,
+          "text": "7ngvQl Ckcm39"
+        },
+        {
+          "p": 0.75,
+          "text": "d7m5al CeWhgv"
+        },
+        {
+          "p": 0.8,
+          "text": "d7m5al CeWhgv"
+        },
+        {
+          "p": 0.875,
+          "text": "Ceveal CentMz"
+        },
+        {
+          "p": 0.9,
+          "text": "Ceveal CentMz"
+        },
+        {
+          "p": 0.95,
+          "text": "Yeveal CenteU"
+        },
+        {
+          "p": 0.99,
+          "text": "Yeveal CenteU"
+        },
+        {
+          "p": 1,
+          "text": "Reveal Center"
+        },
+        {
+          "p": 1.1,
+          "text": "Reveal Center"
+        }
+      ],
+      "changes": [
+        {
+          "str": "O#R%k% 7YhuiG",
+          "t": 0.01
+        },
+        {
+          "str": "fVYnOv uUSHjd",
+          "t": 0.1
+        },
+        {
+          "str": "XnUszn QAIZtf",
+          "t": 0.2
+        },
+        {
+          "str": "4AEG0r lJ_XPP",
+          "t": 0.25
+        },
+        {
+          "str": "99sx9M 2nBnE_",
+          "t": 0.33
+        },
+        {
+          "str": "SEA6%o T5kB1v",
+          "t": 0.4
+        },
+        {
+          "str": "NLTWUM mQopT9",
+          "t": 0.5
+        },
+        {
+          "str": "1PJ_57 hrdHcj",
+          "t": 0.6
+        },
+        {
+          "str": "7ngvQl Ckcm39",
+          "t": 0.67
+        },
+        {
+          "str": "d7m5al CeWhgv",
+          "t": 0.75
+        },
+        {
+          "str": "Ceveal CentMz",
+          "t": 0.875
+        },
+        {
+          "str": "Yeveal CenteU",
+          "t": 0.95
+        },
+        {
+          "str": "xvnol4 ii5Ijz",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "from_random",
+      "initial": "Reveal Random!",
+      "params": {
+        "seed": 14,
+        "from": "random"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 517,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "1WJzT1 o2uPAkT"
+        },
+        {
+          "p": 0,
+          "text": "1WJzT1 o2uPAkT"
+        },
+        {
+          "p": 0.01,
+          "text": "abNSIU yW5mlNW"
+        },
+        {
+          "p": 0.05,
+          "text": "abNSIU yW5mlNW"
+        },
+        {
+          "p": 0.1,
+          "text": "h6oL0g 7DR0z0M"
+        },
+        {
+          "p": 0.125,
+          "text": "h6oL0g 7DR0z0M"
+        },
+        {
+          "p": 0.2,
+          "text": "u0oeit qCG2JYa"
+        },
+        {
+          "p": 0.25,
+          "text": "u0oeit qCG2JYa"
+        },
+        {
+          "p": 0.33,
+          "text": "5mBCxW PnLAttz"
+        },
+        {
+          "p": 0.4,
+          "text": "J9#MH4 I!EBC0p"
+        },
+        {
+          "p": 0.5,
+          "text": "E2eDJ9 WSlXvn7"
+        },
+        {
+          "p": 0.6,
+          "text": "eRnSzl _#LDeN9"
+        },
+        {
+          "p": 0.67,
+          "text": "RlNCaW Ruavo_g"
+        },
+        {
+          "p": 0.75,
+          "text": "ReDQ0k RXldoaF"
+        },
+        {
+          "p": 0.8,
+          "text": "ReXxwG RaLdo1!"
+        },
+        {
+          "p": 0.875,
+          "text": "Reafil RandoQ!"
+        },
+        {
+          "p": 0.9,
+          "text": "Reafil RandoQ!"
+        },
+        {
+          "p": 0.95,
+          "text": "RezeRl Random!"
+        },
+        {
+          "p": 0.99,
+          "text": "Reveal Random!"
+        },
+        {
+          "p": 1,
+          "text": "Reveal Random!"
+        },
+        {
+          "p": 1.1,
+          "text": "Reveal Random!"
+        }
+      ],
+      "changes": [
+        {
+          "str": "abNSIU yW5mlNW",
+          "t": 0.01
+        },
+        {
+          "str": "h6oL0g 7DR0z0M",
+          "t": 0.1
+        },
+        {
+          "str": "u0oeit qCG2JYa",
+          "t": 0.2
+        },
+        {
+          "str": "5mBCxW PnLAttz",
+          "t": 0.33
+        },
+        {
+          "str": "J9#MH4 I!EBC0p",
+          "t": 0.4
+        },
+        {
+          "str": "E2eDJ9 WSlXvn7",
+          "t": 0.5
+        },
+        {
+          "str": "eRnSzl _#LDeN9",
+          "t": 0.6
+        },
+        {
+          "str": "RlNCaW Ruavo_g",
+          "t": 0.67
+        },
+        {
+          "str": "ReDQ0k RXldoaF",
+          "t": 0.75
+        },
+        {
+          "str": "ReXxwG RaLdo1!",
+          "t": 0.8
+        },
+        {
+          "str": "Reafil RandoQ!",
+          "t": 0.875
+        },
+        {
+          "str": "RezeRl Random!",
+          "t": 0.95
+        },
+        {
+          "str": "Reveal Random!",
+          "t": 0.99
+        },
+        {
+          "str": "Ihk8ql eDwlrQv",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "from_index_3_reversed",
+      "initial": "Index Reversed",
+      "params": {
+        "seed": 15,
+        "from": 3,
+        "reversed": true
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 517,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "pHTDg BwGt0C0X"
+        },
+        {
+          "p": 0,
+          "text": "pHTDg BwGt0C0X"
+        },
+        {
+          "p": 0.01,
+          "text": "nwkKr 9kPX4yTz"
+        },
+        {
+          "p": 0.05,
+          "text": "nwkKr 9kPX4yTz"
+        },
+        {
+          "p": 0.1,
+          "text": "9eBw3 Rm#4cIa0"
+        },
+        {
+          "p": 0.125,
+          "text": "9eBw3 Rm#4cIa0"
+        },
+        {
+          "p": 0.2,
+          "text": "Dbcbk P#c1_qJ7"
+        },
+        {
+          "p": 0.25,
+          "text": "Dbcbk P#c1_qJ7"
+        },
+        {
+          "p": 0.33,
+          "text": "tv_AV SWHogmHP"
+        },
+        {
+          "p": 0.4,
+          "text": "L3%lr m1%epm7w"
+        },
+        {
+          "p": 0.5,
+          "text": "UC69Z iIGkYiC5"
+        },
+        {
+          "p": 0.6,
+          "text": "FyL9J ggqPVAqf"
+        },
+        {
+          "p": 0.67,
+          "text": "7dqhb StXO8sed"
+        },
+        {
+          "p": 0.75,
+          "text": "4sTKo %4gersed"
+        },
+        {
+          "p": 0.8,
+          "text": "_I0RN Aeversed"
+        },
+        {
+          "p": 0.875,
+          "text": "IJiAI Reversed"
+        },
+        {
+          "p": 0.9,
+          "text": "IJiAI Reversed"
+        },
+        {
+          "p": 0.95,
+          "text": "In7zv Reversed"
+        },
+        {
+          "p": 0.99,
+          "text": "Indxx Reversed"
+        },
+        {
+          "p": 1,
+          "text": "Index Reversed"
+        },
+        {
+          "p": 1.1,
+          "text": "Index Reversed"
+        }
+      ],
+      "changes": [
+        {
+          "str": "nwkKr 9kPX4yTz",
+          "t": 0.01
+        },
+        {
+          "str": "9eBw3 Rm#4cIa0",
+          "t": 0.1
+        },
+        {
+          "str": "Dbcbk P#c1_qJ7",
+          "t": 0.2
+        },
+        {
+          "str": "tv_AV SWHogmHP",
+          "t": 0.33
+        },
+        {
+          "str": "L3%lr m1%epm7w",
+          "t": 0.4
+        },
+        {
+          "str": "UC69Z iIGkYiC5",
+          "t": 0.5
+        },
+        {
+          "str": "FyL9J ggqPVAqf",
+          "t": 0.6
+        },
+        {
+          "str": "7dqhb StXO8sed",
+          "t": 0.67
+        },
+        {
+          "str": "4sTKo %4gersed",
+          "t": 0.75
+        },
+        {
+          "str": "_I0RN Aeversed",
+          "t": 0.8
+        },
+        {
+          "str": "IJiAI Reversed",
+          "t": 0.875
+        },
+        {
+          "str": "In7zv Reversed",
+          "t": 0.95
+        },
+        {
+          "str": "Indxx Reversed",
+          "t": 0.99
+        },
+        {
+          "str": "C80lI 18hP!93I",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "shrinking_auto",
+      "initial": "Very Long Starting Text",
+      "params": {
+        "seed": 16,
+        "text": "Short"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 667,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "PdgR N5Th i__1jiJp tkbN"
+        },
+        {
+          "p": 0,
+          "text": "PdgR N5Th i__1jiJp tkbN"
+        },
+        {
+          "p": 0.01,
+          "text": "vYFT ZeSs T9oUGPQr ORAU"
+        },
+        {
+          "p": 0.05,
+          "text": "pzj6 JUsc BrKP1Wwl YE3x"
+        },
+        {
+          "p": 0.1,
+          "text": "6uSU _fKh dIdWSPsx q#LC"
+        },
+        {
+          "p": 0.125,
+          "text": "6uSU _fKh dIdWSPsx q#LC"
+        },
+        {
+          "p": 0.2,
+          "text": "Qqe! XHL7 L4OGhU#V fiQc"
+        },
+        {
+          "p": 0.25,
+          "text": "NVXJ Jtec !tC9hZrx EGAI"
+        },
+        {
+          "p": 0.33,
+          "text": "wEGi FHB7 o!6%Et0a PZ8B"
+        },
+        {
+          "p": 0.4,
+          "text": "OhPi 277D OGUZS_cn GIOx"
+        },
+        {
+          "p": 0.5,
+          "text": "xqw# U2DY ezVFacUt _"
+        },
+        {
+          "p": 0.6,
+          "text": "bNw5 !7OL 8h9O8z"
+        },
+        {
+          "p": 0.67,
+          "text": "Ixu7 Lcah h7Qk"
+        },
+        {
+          "p": 0.75,
+          "text": "OCRD N!LC "
+        },
+        {
+          "p": 0.8,
+          "text": "Ku!q !7p"
+        },
+        {
+          "p": 0.875,
+          "text": "jKAR a"
+        },
+        {
+          "p": 0.9,
+          "text": "upC%t"
+        },
+        {
+          "p": 0.95,
+          "text": "Fvort"
+        },
+        {
+          "p": 0.99,
+          "text": "Fvort"
+        },
+        {
+          "p": 1,
+          "text": "Short"
+        },
+        {
+          "p": 1.1,
+          "text": "Short"
+        }
+      ],
+      "changes": [
+        {
+          "str": "vYFT ZeSs T9oUGPQr ORAU",
+          "t": 0.01
+        },
+        {
+          "str": "pzj6 JUsc BrKP1Wwl YE3x",
+          "t": 0.05
+        },
+        {
+          "str": "6uSU _fKh dIdWSPsx q#LC",
+          "t": 0.1
+        },
+        {
+          "str": "Qqe! XHL7 L4OGhU#V fiQc",
+          "t": 0.2
+        },
+        {
+          "str": "NVXJ Jtec !tC9hZrx EGAI",
+          "t": 0.25
+        },
+        {
+          "str": "wEGi FHB7 o!6%Et0a PZ8B",
+          "t": 0.33
+        },
+        {
+          "str": "OhPi 277D OGUZS_cn GIOx",
+          "t": 0.4
+        },
+        {
+          "str": "xqw# U2DY ezVFacUt _",
+          "t": 0.5
+        },
+        {
+          "str": "bNw5 !7OL 8h9O8z",
+          "t": 0.6
+        },
+        {
+          "str": "Ixu7 Lcah h7Qk",
+          "t": 0.67
+        },
+        {
+          "str": "OCRD N!LC ",
+          "t": 0.75
+        },
+        {
+          "str": "Ku!q !7p",
+          "t": 0.8
+        },
+        {
+          "str": "jKAR a",
+          "t": 0.875
+        },
+        {
+          "str": "upC%t",
+          "t": 0.9
+        },
+        {
+          "str": "Fvort",
+          "t": 0.95
+        },
+        {
+          "str": "xDhA Iys9 j46WRpyw ZzW8",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "shrinking_center",
+      "initial": "Very Long Starting Text",
+      "params": {
+        "seed": 17,
+        "text": "Mid",
+        "from": "center"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 667,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "SQKn #e5E uYy_tuIB 4p6l"
+        },
+        {
+          "p": 0,
+          "text": "SQKn #e5E uYy_tuIB 4p6l"
+        },
+        {
+          "p": 0.01,
+          "text": "%rtw oEY% bn0DRbd8 NvkI"
+        },
+        {
+          "p": 0.05,
+          "text": "%8c2 9WhB Q7eG5Bpt OcwZ"
+        },
+        {
+          "p": 0.1,
+          "text": "IjXs kvel ap7VWvAu vPiS"
+        },
+        {
+          "p": 0.125,
+          "text": "IjXs kvel ap7VWvAu vPiS"
+        },
+        {
+          "p": 0.2,
+          "text": "%HMC PWEV 7WvRtCGp IR%c"
+        },
+        {
+          "p": 0.25,
+          "text": "0AQe sNqh gcO2mINC gsEN"
+        },
+        {
+          "p": 0.33,
+          "text": "zRrf saYI jdisTWQX Cn7b"
+        },
+        {
+          "p": 0.4,
+          "text": "wjNQ ORn1 QLjekxfs fdhJ"
+        },
+        {
+          "p": 0.5,
+          "text": "bkdy Ak0P NZbNV ku#r"
+        },
+        {
+          "p": 0.6,
+          "text": "ebD6 FdW_OU Oyci"
+        },
+        {
+          "p": 0.67,
+          "text": "WT_N v9j3 4dWP"
+        },
+        {
+          "p": 0.75,
+          "text": "ADob  tBCK"
+        },
+        {
+          "p": 0.8,
+          "text": "d#hQvv#F"
+        },
+        {
+          "p": 0.875,
+          "text": "yI!FGM"
+        },
+        {
+          "p": 0.9,
+          "text": "lOmTg"
+        },
+        {
+          "p": 0.95,
+          "text": "gsGN"
+        },
+        {
+          "p": 0.99,
+          "text": "gsGN"
+        },
+        {
+          "p": 1,
+          "text": "Mid"
+        },
+        {
+          "p": 1.1,
+          "text": "Mid"
+        }
+      ],
+      "changes": [
+        {
+          "str": "%rtw oEY% bn0DRbd8 NvkI",
+          "t": 0.01
+        },
+        {
+          "str": "%8c2 9WhB Q7eG5Bpt OcwZ",
+          "t": 0.05
+        },
+        {
+          "str": "IjXs kvel ap7VWvAu vPiS",
+          "t": 0.1
+        },
+        {
+          "str": "%HMC PWEV 7WvRtCGp IR%c",
+          "t": 0.2
+        },
+        {
+          "str": "0AQe sNqh gcO2mINC gsEN",
+          "t": 0.25
+        },
+        {
+          "str": "zRrf saYI jdisTWQX Cn7b",
+          "t": 0.33
+        },
+        {
+          "str": "wjNQ ORn1 QLjekxfs fdhJ",
+          "t": 0.4
+        },
+        {
+          "str": "bkdy Ak0P NZbNV ku#r",
+          "t": 0.5
+        },
+        {
+          "str": "ebD6 FdW_OU Oyci",
+          "t": 0.6
+        },
+        {
+          "str": "WT_N v9j3 4dWP",
+          "t": 0.67
+        },
+        {
+          "str": "ADob  tBCK",
+          "t": 0.75
+        },
+        {
+          "str": "d#hQvv#F",
+          "t": 0.8
+        },
+        {
+          "str": "yI!FGM",
+          "t": 0.875
+        },
+        {
+          "str": "lOmTg",
+          "t": 0.9
+        },
+        {
+          "str": "gsGN",
+          "t": 0.95
+        },
+        {
+          "str": "MTlF BtKI ZPCx1hh# FLCp",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "growing_text",
+      "initial": "Hi",
+      "params": {
+        "seed": 18,
+        "text": "Hello Anime Port!"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 567,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "A4"
+        },
+        {
+          "p": 0,
+          "text": "A4"
+        },
+        {
+          "p": 0.01,
+          "text": "ed"
+        },
+        {
+          "p": 0.05,
+          "text": "ed"
+        },
+        {
+          "p": 0.1,
+          "text": "lo5G"
+        },
+        {
+          "p": 0.125,
+          "text": "rQOc%"
+        },
+        {
+          "p": 0.2,
+          "text": "2DD33 YW"
+        },
+        {
+          "p": 0.25,
+          "text": "Ujyg4 1t3L"
+        },
+        {
+          "p": 0.33,
+          "text": "NfNAJ yv!DG "
+        },
+        {
+          "p": 0.4,
+          "text": "s97O7 mCat1 Au%"
+        },
+        {
+          "p": 0.5,
+          "text": "FfYm6 VhSpv 5b4jM"
+        },
+        {
+          "p": 0.6,
+          "text": "Heled #BnkY cgd!J"
+        },
+        {
+          "p": 0.67,
+          "text": "Hello VXsM8 4!Zw1"
+        },
+        {
+          "p": 0.75,
+          "text": "Hello Aq#27 matlO"
+        },
+        {
+          "p": 0.8,
+          "text": "Hello AniDX C!v19"
+        },
+        {
+          "p": 0.875,
+          "text": "Hello Anime yX4K7"
+        },
+        {
+          "p": 0.9,
+          "text": "Hello Anime PbCSY"
+        },
+        {
+          "p": 0.95,
+          "text": "Hello Anime Por3m"
+        },
+        {
+          "p": 0.99,
+          "text": "Hello Anime Por3m"
+        },
+        {
+          "p": 1,
+          "text": "Hello Anime Port!"
+        },
+        {
+          "p": 1.1,
+          "text": "Hello Anime Port!"
+        }
+      ],
+      "changes": [
+        {
+          "str": "ed",
+          "t": 0.01
+        },
+        {
+          "str": "lo5G",
+          "t": 0.1
+        },
+        {
+          "str": "rQOc%",
+          "t": 0.125
+        },
+        {
+          "str": "2DD33 YW",
+          "t": 0.2
+        },
+        {
+          "str": "Ujyg4 1t3L",
+          "t": 0.25
+        },
+        {
+          "str": "NfNAJ yv!DG ",
+          "t": 0.33
+        },
+        {
+          "str": "s97O7 mCat1 Au%",
+          "t": 0.4
+        },
+        {
+          "str": "FfYm6 VhSpv 5b4jM",
+          "t": 0.5
+        },
+        {
+          "str": "Heled #BnkY cgd!J",
+          "t": 0.6
+        },
+        {
+          "str": "Hello VXsM8 4!Zw1",
+          "t": 0.67
+        },
+        {
+          "str": "Hello Aq#27 matlO",
+          "t": 0.75
+        },
+        {
+          "str": "Hello AniDX C!v19",
+          "t": 0.8
+        },
+        {
+          "str": "Hello Anime yX4K7",
+          "t": 0.875
+        },
+        {
+          "str": "Hello Anime PbCSY",
+          "t": 0.9
+        },
+        {
+          "str": "Hello Anime Por3m",
+          "t": 0.95
+        },
+        {
+          "str": "twInV Vp7G",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "cursor_true",
+      "initial": "Cursor Default",
+      "params": {
+        "seed": 19,
+        "cursor": true
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 517,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "djf0qr yx7QF#d"
+        },
+        {
+          "p": 0,
+          "text": "djf0qr yx7QF#d"
+        },
+        {
+          "p": 0.01,
+          "text": "_yqfzX 6SxJmvo"
+        },
+        {
+          "p": 0.05,
+          "text": "d_qfzX 6SxJmvo"
+        },
+        {
+          "p": 0.1,
+          "text": "atC_Om LhhhM#2"
+        },
+        {
+          "p": 0.125,
+          "text": "atCf_m LhhhM#2"
+        },
+        {
+          "p": 0.2,
+          "text": "buxBEs %sPh!83"
+        },
+        {
+          "p": 0.25,
+          "text": "buxBEs %_Ph!83"
+        },
+        {
+          "p": 0.33,
+          "text": "IRits0 hb7G_2G"
+        },
+        {
+          "p": 0.4,
+          "text": "E6#0VA yNwLlZ_"
+        },
+        {
+          "p": 0.5,
+          "text": "mAEgOf tGbTjGO"
+        },
+        {
+          "p": 0.6,
+          "text": "CJZGmu XJieJzb"
+        },
+        {
+          "p": 0.67,
+          "text": "Cur0d! nv6FrRc"
+        },
+        {
+          "p": 0.75,
+          "text": "Curso7 !j3gJND"
+        },
+        {
+          "p": 0.8,
+          "text": "Cursor 6L8QyvD"
+        },
+        {
+          "p": 0.875,
+          "text": "Cursor DeBcLL3"
+        },
+        {
+          "p": 0.9,
+          "text": "Cursor DeBcLL3"
+        },
+        {
+          "p": 0.95,
+          "text": "Cursor Defakt!"
+        },
+        {
+          "p": 0.99,
+          "text": "Cursor DefaulJ"
+        },
+        {
+          "p": 1,
+          "text": "Cursor Default"
+        },
+        {
+          "p": 1.1,
+          "text": "Cursor Default"
+        }
+      ],
+      "changes": [
+        {
+          "str": "_yqfzX 6SxJmvo",
+          "t": 0.01
+        },
+        {
+          "str": "atC_Om LhhhM#2",
+          "t": 0.1
+        },
+        {
+          "str": "buxBEs %sPh!83",
+          "t": 0.2
+        },
+        {
+          "str": "IRits0 hb7G_2G",
+          "t": 0.33
+        },
+        {
+          "str": "E6#0VA yNwLlZ_",
+          "t": 0.4
+        },
+        {
+          "str": "mAEgOf tGbTjGO",
+          "t": 0.5
+        },
+        {
+          "str": "CJZGmu XJieJzb",
+          "t": 0.6
+        },
+        {
+          "str": "Cur0d! nv6FrRc",
+          "t": 0.67
+        },
+        {
+          "str": "Curso7 !j3gJND",
+          "t": 0.75
+        },
+        {
+          "str": "Cursor 6L8QyvD",
+          "t": 0.8
+        },
+        {
+          "str": "Cursor DeBcLL3",
+          "t": 0.875
+        },
+        {
+          "str": "Cursor Defakt!",
+          "t": 0.95
+        },
+        {
+          "str": "Cursor DefaulJ",
+          "t": 0.99
+        },
+        {
+          "str": "_v4RH3 T_NHUAE",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "cursor_multi",
+      "initial": "Cursor Multi",
+      "params": {
+        "seed": 20,
+        "cursor": ">>|"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 483,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "XVliyn #ABRv"
+        },
+        {
+          "p": 0,
+          "text": "XVliyn #ABRv"
+        },
+        {
+          "p": 0.01,
+          "text": "|55dj1 kyYoA"
+        },
+        {
+          "p": 0.05,
+          "text": ">|5dj1 kyYoA"
+        },
+        {
+          "p": 0.1,
+          "text": "4>>|YR 7%0uq"
+        },
+        {
+          "p": 0.125,
+          "text": "4>>|YR 7%0uq"
+        },
+        {
+          "p": 0.2,
+          "text": "a5rj>> f9#ok"
+        },
+        {
+          "p": 0.25,
+          "text": "1GfYp> |d8Qb"
+        },
+        {
+          "p": 0.33,
+          "text": "xAiTUx D>>|5"
+        },
+        {
+          "p": 0.4,
+          "text": "CprmRs H4B>>"
+        },
+        {
+          "p": 0.5,
+          "text": "pL9RR4 NWSaS"
+        },
+        {
+          "p": 0.6,
+          "text": "QKu!aB ag7xV"
+        },
+        {
+          "p": 0.67,
+          "text": "COSRpJ NBGce"
+        },
+        {
+          "p": 0.75,
+          "text": "CurkdW bEp0s"
+        },
+        {
+          "p": 0.8,
+          "text": "CursoP Os0ZI"
+        },
+        {
+          "p": 0.875,
+          "text": "Cursor zSyrk"
+        },
+        {
+          "p": 0.9,
+          "text": "Cursor Muab4"
+        },
+        {
+          "p": 0.95,
+          "text": "Cursor Muab4"
+        },
+        {
+          "p": 0.99,
+          "text": "Cursor Mult#"
+        },
+        {
+          "p": 1,
+          "text": "Cursor Multi"
+        },
+        {
+          "p": 1.1,
+          "text": "Cursor Multi"
+        }
+      ],
+      "changes": [
+        {
+          "str": "|55dj1 kyYoA",
+          "t": 0.01
+        },
+        {
+          "str": "4>>|YR 7%0uq",
+          "t": 0.1
+        },
+        {
+          "str": "a5rj>> f9#ok",
+          "t": 0.2
+        },
+        {
+          "str": "1GfYp> |d8Qb",
+          "t": 0.25
+        },
+        {
+          "str": "xAiTUx D>>|5",
+          "t": 0.33
+        },
+        {
+          "str": "CprmRs H4B>>",
+          "t": 0.4
+        },
+        {
+          "str": "pL9RR4 NWSaS",
+          "t": 0.5
+        },
+        {
+          "str": "QKu!aB ag7xV",
+          "t": 0.6
+        },
+        {
+          "str": "COSRpJ NBGce",
+          "t": 0.67
+        },
+        {
+          "str": "CurkdW bEp0s",
+          "t": 0.75
+        },
+        {
+          "str": "CursoP Os0ZI",
+          "t": 0.8
+        },
+        {
+          "str": "Cursor zSyrk",
+          "t": 0.875
+        },
+        {
+          "str": "Cursor Muab4",
+          "t": 0.9
+        },
+        {
+          "str": "Cursor Mult#",
+          "t": 0.99
+        },
+        {
+          "str": "U0lKG> |cvKh",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "cursor_charcode",
+      "initial": "Cursor Code",
+      "params": {
+        "seed": 21,
+        "cursor": 62
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 467,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "CZwJeU XSad"
+        },
+        {
+          "p": 0,
+          "text": "CZwJeU XSad"
+        },
+        {
+          "p": 0.01,
+          "text": ">hyImV yUwk"
+        },
+        {
+          "p": 0.05,
+          "text": "C>yImV yUwk"
+        },
+        {
+          "p": 0.1,
+          "text": "%7g>X7 c7O%"
+        },
+        {
+          "p": 0.125,
+          "text": "%7g>X7 c7O%"
+        },
+        {
+          "p": 0.2,
+          "text": "#XBA#1 UZT6"
+        },
+        {
+          "p": 0.25,
+          "text": "FhdZXd >fCs"
+        },
+        {
+          "p": 0.33,
+          "text": "1bo%mO 5ZY>"
+        },
+        {
+          "p": 0.4,
+          "text": "C8Fu#m 51z1"
+        },
+        {
+          "p": 0.5,
+          "text": "u0d7CY wYbS"
+        },
+        {
+          "p": 0.6,
+          "text": "%nOrZQ uYsi"
+        },
+        {
+          "p": 0.67,
+          "text": "%gFJSY XmcQ"
+        },
+        {
+          "p": 0.75,
+          "text": "Cur3oO GP2T"
+        },
+        {
+          "p": 0.8,
+          "text": "Curso0 a0W_"
+        },
+        {
+          "p": 0.875,
+          "text": "Cursor Dega"
+        },
+        {
+          "p": 0.9,
+          "text": "Cursor Dega"
+        },
+        {
+          "p": 0.95,
+          "text": "Cursor Co32"
+        },
+        {
+          "p": 0.99,
+          "text": "Cursor Co32"
+        },
+        {
+          "p": 1,
+          "text": "Cursor Code"
+        },
+        {
+          "p": 1.1,
+          "text": "Cursor Code"
+        }
+      ],
+      "changes": [
+        {
+          "str": ">hyImV yUwk",
+          "t": 0.01
+        },
+        {
+          "str": "%7g>X7 c7O%",
+          "t": 0.1
+        },
+        {
+          "str": "#XBA#1 UZT6",
+          "t": 0.2
+        },
+        {
+          "str": "FhdZXd >fCs",
+          "t": 0.25
+        },
+        {
+          "str": "1bo%mO 5ZY>",
+          "t": 0.33
+        },
+        {
+          "str": "C8Fu#m 51z1",
+          "t": 0.4
+        },
+        {
+          "str": "u0d7CY wYbS",
+          "t": 0.5
+        },
+        {
+          "str": "%nOrZQ uYsi",
+          "t": 0.6
+        },
+        {
+          "str": "%gFJSY XmcQ",
+          "t": 0.67
+        },
+        {
+          "str": "Cur3oO GP2T",
+          "t": 0.75
+        },
+        {
+          "str": "Curso0 a0W_",
+          "t": 0.8
+        },
+        {
+          "str": "Cursor Dega",
+          "t": 0.875
+        },
+        {
+          "str": "Cursor Co32",
+          "t": 0.95
+        },
+        {
+          "str": "rUaD1! >wd1",
+          "t": 0.25
+        }
+      ]
+    },
+    {
+      "name": "perturbation_and_delay",
+      "initial": "Perturbed Wave",
+      "params": {
+        "seed": 22,
+        "perturbation": 0.35,
+        "revealDelay": 120,
+        "delay": 50,
+        "duration": 600
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 720,
+      "delay": 50,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "Perturbed Wave"
+        },
+        {
+          "p": 0,
+          "text": "Perturbed Wave"
+        },
+        {
+          "p": 0.01,
+          "text": "u!%JKY44U Ld#L"
+        },
+        {
+          "p": 0.05,
+          "text": "DEM2XU6Ul mu8v"
+        },
+        {
+          "p": 0.1,
+          "text": "7aDaSDVxp g1p6"
+        },
+        {
+          "p": 0.125,
+          "text": "7aDaSDVxp g1p6"
+        },
+        {
+          "p": 0.2,
+          "text": "47avz%LL2 ZI7E"
+        },
+        {
+          "p": 0.25,
+          "text": "5Wzg0k%0U P6uL"
+        },
+        {
+          "p": 0.33,
+          "text": "zBCPDkyCY HfAQ"
+        },
+        {
+          "p": 0.4,
+          "text": "ighVWapuN czEX"
+        },
+        {
+          "p": 0.5,
+          "text": "oM9ruQ84s cAys"
+        },
+        {
+          "p": 0.6,
+          "text": "PeDOM%duv wqTv"
+        },
+        {
+          "p": 0.67,
+          "text": "Pew!JrxKN 13hd"
+        },
+        {
+          "p": 0.75,
+          "text": "Pe#7urbD# lnB4"
+        },
+        {
+          "p": 0.8,
+          "text": "PerturbCv ubhn"
+        },
+        {
+          "p": 0.875,
+          "text": "Perturbed DUbN"
+        },
+        {
+          "p": 0.9,
+          "text": "Perturbed CRia"
+        },
+        {
+          "p": 0.95,
+          "text": "Perturbed Pave"
+        },
+        {
+          "p": 0.99,
+          "text": "Perturbed Wave"
+        },
+        {
+          "p": 1,
+          "text": "Perturbed Wave"
+        },
+        {
+          "p": 1.1,
+          "text": "Perturbed Wave"
+        }
+      ],
+      "changes": [
+        {
+          "str": "u!%JKY44U Ld#L",
+          "t": 0
+        },
+        {
+          "str": "DEM2XU6Ul mu8v",
+          "t": 0
+        },
+        {
+          "str": "7aDaSDVxp g1p6",
+          "t": 0
+        },
+        {
+          "str": "47avz%LL2 ZI7E",
+          "t": 0.03999999999961601
+        },
+        {
+          "str": "5Wzg0k%0U P6uL",
+          "t": 0.09999999999964
+        },
+        {
+          "str": "zBCPDkyCY HfAQ",
+          "t": 0.19599999999967843
+        },
+        {
+          "str": "ighVWapuN czEX",
+          "t": 0.27999999999971203
+        },
+        {
+          "str": "oM9ruQ84s cAys",
+          "t": 0.39999999999976
+        },
+        {
+          "str": "PeDOM%duv wqTv",
+          "t": 0.519999999999808
+        },
+        {
+          "str": "Pew!JrxKN 13hd",
+          "t": 0.6039999999998417
+        },
+        {
+          "str": "Pe#7urbD# lnB4",
+          "t": 0.6999999999998799
+        },
+        {
+          "str": "PerturbCv ubhn",
+          "t": 0.7599999999999041
+        },
+        {
+          "str": "Perturbed DUbN",
+          "t": 0.84999999999994
+        },
+        {
+          "str": "Perturbed CRia",
+          "t": 0.879999999999952
+        },
+        {
+          "str": "Perturbed Pave",
+          "t": 0.939999999999976
+        },
+        {
+          "str": "Perturbed Wave",
+          "t": 0.9879999999999952
+        },
+        {
+          "str": "5Fxr5IZ!x 7Kmp",
+          "t": 0.09999999999964
+        }
+      ]
+    },
+    {
+      "name": "eased_inOutQuad",
+      "initial": "Eased Scramble",
+      "params": {
+        "seed": 23,
+        "ease": "inOutQuad",
+        "settleDuration": 200,
+        "settleRate": 20,
+        "revealRate": 45
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 489,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "gMFO7 6fMxZG7q"
+        },
+        {
+          "p": 0,
+          "text": "gMFO7 6fMxZG7q"
+        },
+        {
+          "p": 0.01,
+          "text": "5vPK_ fRr8#_Ma"
+        },
+        {
+          "p": 0.05,
+          "text": "5vPK_ fRr8#_Ma"
+        },
+        {
+          "p": 0.1,
+          "text": "5vPK_ fRr8#_Ma"
+        },
+        {
+          "p": 0.125,
+          "text": "s7xao Ih9_#E2Y"
+        },
+        {
+          "p": 0.2,
+          "text": "s7xao Ih9_#E2Y"
+        },
+        {
+          "p": 0.25,
+          "text": "3!9aS WmdYeGBr"
+        },
+        {
+          "p": 0.33,
+          "text": "64LqS N_3Py71g"
+        },
+        {
+          "p": 0.4,
+          "text": "64LqS N_3Py71g"
+        },
+        {
+          "p": 0.5,
+          "text": "INBEy tmT8S%2e"
+        },
+        {
+          "p": 0.6,
+          "text": "Eased vTpF6_N%"
+        },
+        {
+          "p": 0.67,
+          "text": "Eased Scvlf6t8"
+        },
+        {
+          "p": 0.75,
+          "text": "Eased Scra!T7m"
+        },
+        {
+          "p": 0.8,
+          "text": "Eased Scra!T7m"
+        },
+        {
+          "p": 0.875,
+          "text": "Eased Scramblu"
+        },
+        {
+          "p": 0.9,
+          "text": "Eased Scramblu"
+        },
+        {
+          "p": 0.95,
+          "text": "Eased Scrambl6"
+        },
+        {
+          "p": 0.99,
+          "text": "Eased Scrambl6"
+        },
+        {
+          "p": 1,
+          "text": "Eased Scramble"
+        },
+        {
+          "p": 1.1,
+          "text": "Eased Scramble"
+        }
+      ],
+      "changes": [
+        {
+          "str": "5vPK_ fRr8#_Ma",
+          "t": 0.0002
+        },
+        {
+          "str": "s7xao Ih9_#E2Y",
+          "t": 0.03125
+        },
+        {
+          "str": "3!9aS WmdYeGBr",
+          "t": 0.125
+        },
+        {
+          "str": "64LqS N_3Py71g",
+          "t": 0.21780000000000002
+        },
+        {
+          "str": "INBEy tmT8S%2e",
+          "t": 0.5
+        },
+        {
+          "str": "Eased vTpF6_N%",
+          "t": 0.6799999999999999
+        },
+        {
+          "str": "Eased Scvlf6t8",
+          "t": 0.7822
+        },
+        {
+          "str": "Eased Scra!T7m",
+          "t": 0.875
+        },
+        {
+          "str": "Eased Scramblu",
+          "t": 0.96875
+        },
+        {
+          "str": "Eased Scrambl6",
+          "t": 0.995
+        },
+        {
+          "str": "aE7oW BjxyybXZ",
+          "t": 0.125
+        }
+      ]
+    },
+    {
+      "name": "nbsp_target",
+      "initial": "NonEmpty",
+      "params": {
+        "seed": 24,
+        "text": "&nbsp;"
+      },
+      "from": 0,
+      "to": 1,
+      "duration": 417,
+      "delay": 0,
+      "ease": "linear",
+      "cachedRepeat": true,
+      "samples": [
+        {
+          "p": -0.1,
+          "text": "vPKm1Oem"
+        },
+        {
+          "p": 0,
+          "text": "vPKm1Oem"
+        },
+        {
+          "p": 0.01,
+          "text": "MzGt6tya"
+        },
+        {
+          "p": 0.05,
+          "text": "MzGt6tya"
+        },
+        {
+          "p": 0.1,
+          "text": "D#32DOMj"
+        },
+        {
+          "p": 0.125,
+          "text": "D#32DOMj"
+        },
+        {
+          "p": 0.2,
+          "text": "YD!TD6Fn"
+        },
+        {
+          "p": 0.25,
+          "text": "DXLTD_JF"
+        },
+        {
+          "p": 0.33,
+          "text": "qv#2Ww_P"
+        },
+        {
+          "p": 0.4,
+          "text": "aBU_MV2%"
+        },
+        {
+          "p": 0.5,
+          "text": "QOvd3vok"
+        },
+        {
+          "p": 0.6,
+          "text": "DNi%SITI"
+        },
+        {
+          "p": 0.67,
+          "text": "CZfgbD#3"
+        },
+        {
+          "p": 0.75,
+          "text": "tF%uFAbJ"
+        },
+        {
+          "p": 0.8,
+          "text": "CtIUU"
+        },
+        {
+          "p": 0.875,
+          "text": "CtIUU"
+        },
+        {
+          "p": 0.9,
+          "text": "QUT"
+        },
+        {
+          "p": 0.95,
+          "text": "QUT"
+        },
+        {
+          "p": 0.99,
+          "text": "p"
+        },
+        {
+          "p": 1,
+          "text": " "
+        },
+        {
+          "p": 1.1,
+          "text": " "
+        }
+      ],
+      "changes": [
+        {
+          "str": "MzGt6tya",
+          "t": 0.01
+        },
+        {
+          "str": "D#32DOMj",
+          "t": 0.1
+        },
+        {
+          "str": "YD!TD6Fn",
+          "t": 0.2
+        },
+        {
+          "str": "DXLTD_JF",
+          "t": 0.25
+        },
+        {
+          "str": "qv#2Ww_P",
+          "t": 0.33
+        },
+        {
+          "str": "aBU_MV2%",
+          "t": 0.4
+        },
+        {
+          "str": "QOvd3vok",
+          "t": 0.5
+        },
+        {
+          "str": "DNi%SITI",
+          "t": 0.6
+        },
+        {
+          "str": "CZfgbD#3",
+          "t": 0.67
+        },
+        {
+          "str": "tF%uFAbJ",
+          "t": 0.75
+        },
+        {
+          "str": "CtIUU",
+          "t": 0.8
+        },
+        {
+          "str": "QUT",
+          "t": 0.9
+        },
+        {
+          "str": "p",
+          "t": 0.99
+        },
+        {
+          "str": "H2sM0aMq",
+          "t": 0.25
+        }
+      ]
+    }
+  ],
+  "chainedScramble": {
+    "firstSamples": [
+      {
+        "p": 0,
+        "text": ""
+      },
+      {
+        "p": 0.5,
+        "text": "LOlPq ##7D"
+      },
+      {
+        "p": 1,
+        "text": "First Step"
+      }
+    ],
+    "secondSamples": [
+      {
+        "p": 0,
+        "text": "First Step"
+      },
+      {
+        "p": 0.5,
+        "text": "U30Kh ic_T"
+      },
+      {
+        "p": 1,
+        "text": "Second"
+      }
+    ]
+  },
+  "waapiEases": [
+    {
+      "name": "linear10",
+      "samples": 10,
+      "kind": "linear",
+      "css": "linear(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1)"
+    },
+    {
+      "name": "outQuad20",
+      "samples": 20,
+      "kind": "outQuad",
+      "css": "linear(0, 0.0975, 0.19, 0.2775, 0.36, 0.4375, 0.51, 0.5775, 0.64, 0.6975, 0.75, 0.7975, 0.84, 0.8775, 0.91, 0.9375, 0.96, 0.9775, 0.99, 0.9975, 1)"
+    },
+    {
+      "name": "inOutBack100",
+      "samples": 100,
+      "kind": "inOutBack",
+      "css": "linear(0, -0.0003, -0.0013, -0.0028, -0.0047, -0.0071, -0.0099, -0.013, -0.0162, -0.0197, -0.0232, -0.0268, -0.0303, -0.0337, -0.037, -0.04, -0.0428, -0.0452, -0.0472, -0.0487, -0.0496, -0.0499, -0.0496, -0.0485, -0.0465, -0.0437, -0.04, -0.0353, -0.0295, -0.0225, -0.0144, -0.005, 0.0057, 0.0179, 0.0314, 0.0465, 0.0632, 0.0816, 0.1017, 0.1235, 0.1472, 0.1728, 0.2004, 0.23, 0.2617, 0.2957, 0.3318, 0.3702, 0.411, 0.4543, 0.5, 0.5457, 0.589, 0.6298, 0.6682, 0.7044, 0.7383, 0.77, 0.7996, 0.8272, 0.8528, 0.8765, 0.8983, 0.9184, 0.9368, 0.9535, 0.9686, 0.9821, 0.9943, 1.005, 1.0144, 1.0225, 1.0295, 1.0353, 1.04, 1.0438, 1.0465, 1.0485, 1.0496, 1.0499, 1.0496, 1.0487, 1.0472, 1.0452, 1.0428, 1.0401, 1.037, 1.0337, 1.0303, 1.0268, 1.0232, 1.0197, 1.0162, 1.013, 1.0099, 1.0072, 1.0047, 1.0028, 1.0013, 1.0003, 1)"
+    },
+    {
+      "name": "spring50",
+      "samples": 50,
+      "kind": "spring",
+      "css": "linear(0, 0.0332, 0.117, 0.231, 0.359, 0.4889, 0.6119, 0.7224, 0.8172, 0.895, 0.9562, 1.0017, 1.0336, 1.0538, 1.0645, 1.0681, 1.0663, 1.0608, 1.0532, 1.0446, 1.0357, 1.0273, 1.0197, 1.0131, 1.0077, 1.0034, 1.0002, 0.9979, 0.9965, 0.9957, 0.9954, 0.9955, 0.9958, 0.9963, 0.9969, 0.9975, 0.9981, 0.9986, 0.9991, 0.9994, 0.9997, 1, 1.0001, 1.0002, 1.0003, 1.0003, 1.0003, 1.0003, 1.0003, 1.0002, 1)"
+    }
+  ],
+  "adapterProbes": [
+    {
+      "desc": "mapped_prop",
+      "found": true
+    },
+    {
+      "desc": "gated_unlocked",
+      "found": true
+    },
+    {
+      "desc": "gated_locked",
+      "found": false
+    },
+    {
+      "desc": "second_target_adapter_blocked_by_first",
+      "found": false
+    },
+    {
+      "desc": "resolver_fallback_after_target_miss",
+      "found": true
+    },
+    {
+      "desc": "outer_detect_blocks_unrelated",
+      "found": false
+    }
+  ]
+}

@@ -1,0 +1,290 @@
+{
+  "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "cases": {
+    "refresh": [
+      "construct",
+      "once",
+      "regular2",
+      "regular1",
+      "cleanup",
+      "construct"
+    ],
+    "final": [
+      "cleanup",
+      "regular2",
+      "regular1",
+      "onceResource",
+      "onceCleanup"
+    ],
+    "methodResult": 42,
+    "methodTrace": [
+      "methodRevert"
+    ],
+    "media": [
+      false,
+      true
+    ],
+    "mediaListenerCount": 0,
+    "keepTime": {
+      "count": 2,
+      "iteration": 2,
+      "progress": 0.37,
+      "start": 100,
+      "trace": [
+        "revert0"
+      ]
+    },
+    "scopedTimers": [
+      {
+        "spec": {
+          "name": "forward",
+          "time": 37
+        },
+        "before": {
+          "time": 37,
+          "iteration": 0,
+          "progress": 0.37,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "after": {
+          "time": 37,
+          "iteration": 0,
+          "progress": 0.37,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "events": [
+          "begin"
+        ]
+      },
+      {
+        "spec": {
+          "name": "reverse",
+          "time": 37,
+          "reversed": true
+        },
+        "before": {
+          "time": 37,
+          "iteration": 0,
+          "progress": 0.63,
+          "reversed": true,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "after": {
+          "time": 37,
+          "iteration": 0,
+          "progress": 0.63,
+          "reversed": true,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "events": [
+          "begin"
+        ]
+      },
+      {
+        "spec": {
+          "name": "alternateOdd",
+          "time": 125,
+          "alternate": true
+        },
+        "before": {
+          "time": 125,
+          "iteration": 1,
+          "progress": 0.75,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "after": {
+          "time": 125,
+          "iteration": 1,
+          "progress": 0.75,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "events": [
+          "begin"
+        ]
+      },
+      {
+        "spec": {
+          "name": "alternateEven",
+          "time": 225,
+          "alternate": true
+        },
+        "before": {
+          "time": 225,
+          "iteration": 2,
+          "progress": 0.25,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "after": {
+          "time": 225,
+          "iteration": 2,
+          "progress": 0.25,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "events": [
+          "begin"
+        ]
+      },
+      {
+        "spec": {
+          "name": "reverseAlternateOdd",
+          "time": 125,
+          "reversed": true,
+          "alternate": true
+        },
+        "before": {
+          "time": 125,
+          "iteration": 1,
+          "progress": 0.25,
+          "reversed": true,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "after": {
+          "time": 125,
+          "iteration": 1,
+          "progress": 0.25,
+          "reversed": true,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "events": [
+          "begin"
+        ]
+      },
+      {
+        "spec": {
+          "name": "loopGap",
+          "time": 112,
+          "alternate": true,
+          "loopDelay": 25
+        },
+        "before": {
+          "time": 112,
+          "iteration": 0,
+          "progress": 1,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 600
+        },
+        "after": {
+          "time": 100,
+          "iteration": 0,
+          "progress": 1,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 600
+        },
+        "events": [
+          "begin"
+        ]
+      },
+      {
+        "spec": {
+          "name": "changedDuration",
+          "time": 125,
+          "nextDuration": 200
+        },
+        "before": {
+          "time": 125,
+          "iteration": 1,
+          "progress": 0.25,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "after": {
+          "time": 250,
+          "iteration": 1,
+          "progress": 0.25,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 1000
+        },
+        "events": [
+          "begin"
+        ]
+      },
+      {
+        "spec": {
+          "name": "signedIterationOverflow",
+          "time": 429496729600,
+          "loop": 4294967295,
+          "nextLoop": 4,
+          "alternate": true
+        },
+        "before": {
+          "time": 429496729600,
+          "iteration": -1,
+          "progress": 0,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 429496729600
+        },
+        "after": {
+          "time": 100,
+          "iteration": 1,
+          "progress": 1,
+          "reversed": false,
+          "paused": true,
+          "start": 73,
+          "duration": 500
+        },
+        "events": [
+          "begin"
+        ]
+      }
+    ],
+    "numericRevert": [
+      {
+        "operation": "revert",
+        "before": 60,
+        "after": 10,
+        "events": []
+      },
+      {
+        "operation": "cancel",
+        "before": 60,
+        "after": 60,
+        "events": []
+      },
+      {
+        "operation": "completeThenRevert",
+        "before": 60,
+        "after": 10,
+        "events": [
+          "render",
+          "complete"
+        ]
+      }
+    ]
+  }
+}

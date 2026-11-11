@@ -1,0 +1,94 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Ranvier.Anime</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Closures.fs" />
+    <Compile Include="Ease.fs" />
+    <Compile Include="Spring.fs" />
+    <Compile Include="Stagger.fs" />
+    <Compile Include="CssStagger.fs" />
+    <Compile Include="NumericProperty.fs" />
+    <Compile Include="PropertyTrack.fs" />
+    <Compile Include="ValueInterpolation.fs" />
+    <Compile Include="KeyframeCompilation.fs" />
+    <Compile Include="FrameSiblings.fs" />
+    <Compile Include="Keyframe.fs" />
+    <Compile Include="KeyframeSequences.fs" />
+    <Compile Include="AnimatableValue.fs" />
+    <Compile Include="PlaybackTiming.fs" />
+    <Compile Include="PlaybackState.fs" />
+    <Compile Include="ScopeRegistration.fs" />
+    <Compile Include="EngineFrames.fs" />
+    <Compile Include="Tickable.fs" />
+    <Compile Include="Timer.fs" />
+    <Compile Include="Engine.fs" />
+    <Compile Include="Scope.fs" />
+    <Compile Include="ScopeRoots.fs" />
+    <Compile Include="ScopeTimer.fs" />
+    <Compile Include="KeyframePlayback.fs" />
+    <Compile Include="KeyframeAnimation.fs" />
+    <Compile Include="AnimatableTrack.fs" />
+    <Compile Include="NumericAnimation.fs" />
+    <Compile Include="AnimatableFrames.fs" />
+    <Compile Include="AnimatableGroup.fs" />
+    <Compile Include="Animatable.fs" />
+    <Compile Include="TimelinePosition.fs" />
+    <Compile Include="TimelineConstruction.fs" />
+    <Compile Include="Timeline.fs" />
+    <Compile Include="Scroll.fs" />
+    <Compile Include="ScopeAnimation.fs" />
+    <Compile Include="Reactive.fs" />
+    <Compile Include="CssUnits.fs" />
+    <Compile Include="ScrollDebug.fs" />
+    <Compile Include="ScrollDom.fs" />
+    <Compile Include="CssPropertyMetadata.fs" />
+    <Compile Include="CssSerialization.fs" />
+    <Compile Include="CssPropertySnapshot.fs" />
+    <Compile Include="Svg.fs" />
+    <Compile Include="SvgProperties.fs" />
+    <Compile Include="Keyframes.fs" />
+    <Compile Include="TimelineKeyframes.fs" />
+    <Compile Include="TimelineKeyframeSequences.fs" />
+    <Compile Include="TimelineCssKeyframes.fs" />
+    <Compile Include="TimelineCssKeyframeSequences.fs" />
+    <Compile Include="KeyframeSequenceBinding.fs" />
+    <Compile Include="AnimatableCss.fs" />
+    <Compile Include="Css.fs" />
+    <Compile Include="DragPhysics.fs" />
+    <Compile Include="Draggable.fs" />
+    <Compile Include="DraggableScroll.fs" />
+    <Compile Include="DraggableDom.fs" />
+    <Compile Include="DraggableCss.fs" />
+    <Compile Include="TransformCache.fs" />
+    <Compile Include="DraggableTransformTarget.fs" />
+    <Compile Include="NativeDraggable.fs" />
+    <Compile Include="LayoutStyleSnapshot.fs" />
+    <Compile Include="Layout.fs" />
+    <Compile Include="ElementTransforms.fs" />
+    <Compile Include="Adapters.fs" />
+    <Compile Include="Composition.fs" />
+    <Compile Include="Waapi.fs" />
+    <Compile Include="Utils.fs" />
+    <Compile Include="TextScramble.fs" />
+    <Compile Include="TextSplit.fs" />
+    <Compile Include="DeferredStubs.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Ranvier$(RanvierPackageSuffix)" Version="[0.1.1-preview.2]" Condition="'$(UseLocalRanvier)' != 'true'" />
+    <PackageReference Include="Ranvier.Dom$(RanvierPackageSuffix)" Version="[$(RanvierDomVersion)]" Condition="'$(UseLocalRanvier)' != 'true'" />
+    <PackageReference Include="Ranvier.Css$(RanvierPackageSuffix)" Version="[$(RanvierCssVersion)]" />
+    <PackageReference Include="Ranvier.Css.Dom$(RanvierPackageSuffix)" Version="[0.1.0-alpha.1]" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseLocalRanvier)' == 'true'">
+    <ProjectReference Include="$(RanvierRoot)/src/Ranvier/Ranvier.fsproj" />
+    <ProjectReference Include="$(RanvierRoot)/src/Ranvier.Dom/Ranvier.Dom.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ranvier.Anime.Tests" />
+    <InternalsVisibleTo Include="Ranvier.Anime.NativeSmoke" />
+    <InternalsVisibleTo Include="Ranvier.View.Anime" />
+  </ItemGroup>
+</Project>

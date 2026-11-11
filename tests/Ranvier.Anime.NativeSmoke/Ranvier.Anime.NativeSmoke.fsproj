@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <!-- A global PublishAot would also reach Ranvier.Anime and its implicit ILCompiler; this opt-in stays local. -->
+    <NativeSmokeAot Condition="'$(NativeSmokeAot)' == ''">false</NativeSmokeAot>
+    <PublishAot Condition="'$(PublishAot)' == ''">$(NativeSmokeAot)</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <ILLinkTreatWarningsAsErrors>true</ILLinkTreatWarningsAsErrors>
+    <IlcTreatWarningsAsErrors>true</IlcTreatWarningsAsErrors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
+    <NativeSmokeGraph Condition="'$(NativeSmokeGraph)' == ''">public</NativeSmokeGraph>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RanvierTrace)' == 'true'">
+    <DefineConstants>$(DefineConstants);EXPECT_TRACED</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ScopeNativeProbe.fs" />
+    <Compile Include="CssScopeNativeProbe.fs" />
+    <Compile Include="CssDirectRevertNativeProbe.fs" />
+    <Compile Include="ScopeRootNativeProbe.fs" />
+    <Compile Include="ScopeDefaultsNativeProbe.fs" />
+    <Compile Include="ScopeAnimationDefaultsNativeProbe.fs" />
+    <Compile Include="CompositionNativeIdentityProbe.fs" />
+    <Compile Include="EngineCoreNativeProbe.fs" />
+    <Compile Include="SvgNativeProbe.fs" />
+    <Compile Include="ScrollNativeProbe.fs" />
+    <Compile Include="DraggableNativeProbe.fs" />
+    <Compile Include="DraggableHostProbe.fs" />
+    <Compile Include="LayoutNativeProbe.fs" />
+    <Compile Include="TextNativeProbe.fs" />
+    <Compile Include="WaapiNativeProbe.fs" />
+    <Compile Include="FullFamiliesNativeProbe.fs" />
+    <Compile Include="MotionViewProbe.fs" />
+    <Compile Include="MotionPartsProbe.fs" />
+    <Compile Include="MotionFixtures.fs" />
+    <Compile Include="MotionServerProbe.fs" />
+    <Compile Include="Program.fs" />
+    <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
+    <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
+    <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" Condition="'$(NativeSmokeGraph)' == 'source'" />
+    <PackageReference Include="Ranvier.View.WebCore$(RanvierPackageSuffix)" Version="[$(RanvierViewWebCoreVersion)]" Condition="'$(NativeSmokeGraph)' != 'source'" />
+    <PackageReference Update="FSharp.Core" Version="10.1.401" />
+    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" ILCompilerPackVersion="10.0.14" Condition="'$(PublishAot)' == 'true'" />
+    <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssBindingsVersion)]" />
+  </ItemGroup>
+  <Target Name="RequirePinnedSourceGraph" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(NativeSmokeGraph)' != 'source' and '$(NativeSmokeGraph)' != 'public'" Text="Select NativeSmokeGraph=public or source." />
+    <Error Condition="'$(NativeSmokeGraph)' == 'source' and '$(UseLocalRanvier)' != 'true'" Text="The source cohort requires local Core projects." />
+    <Error Condition="'$(NativeSmokeGraph)' == 'public' and ('$(UseLocalRanvier)' == 'true' or '$(UseLocalRanvierWebCore)' == 'true')" Text="The public cohort requires package-only Core/View/Native inputs." />
+  </Target>
+</Project>

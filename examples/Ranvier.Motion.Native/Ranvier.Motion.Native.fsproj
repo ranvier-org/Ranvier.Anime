@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+    The Motion example pages of Ranvier.View (examples/Ranvier.Motion) as one native app: an SDL3 window over a WebCore
+    page, the Motion parts running on Ranvier.Anime. `dotnet run` opens it; `dotnet run smoke` drives every page in a
+    hidden window and exits non-zero on a failed check.
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <IsAotCompatible>true</IsAotCompatible>
+        <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="src/Native.fs" />
+        <Compile Include="src/Kanban.fs" />
+        <Compile Include="src/Dashboard.fs" />
+        <Compile Include="src/Story.fs" />
+        <Compile Include="src/Physics.fs" />
+        <Compile Include="src/Routes.fs" />
+        <Compile Include="src/Graphs.fs" />
+        <Compile Include="src/Shell.fs" />
+        <Compile Include="src/Host.fs" />
+        <Compile Include="src/Smoke.fs" />
+        <Compile Include="src/Program.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="styles/*.css" CopyToOutputDirectory="PreserveNewest" LinkBase="styles" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
+        <PackageReference Include="Ranvier.View.WebCore.Sdl$(RanvierPackageSuffix)" Version="[$(RanvierViewWebCoreSdlVersion)]" />
+        <PackageReference Include="Ranvier.Elmish$(RanvierPackageSuffix)" Version="[0.1.1-preview.1]" />
+        <PackageReference Update="FSharp.Core" Version="10.1.401" />
+    </ItemGroup>
+</Project>
