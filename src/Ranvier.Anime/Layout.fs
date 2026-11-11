@@ -383,8 +383,8 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         measurements<-current
         scroll<-viewport |> Option.map(fun v -> v.Position())
     /// <summary>Moves the recorded box of <c>element</c> to the viewport position <c>left</c>, <c>top</c>, keeping its recorded size.</summary>
-    /// <remarks>Used by view integrations to start a row's next transition from its visual box rather than its laid-out box.</remarks>
-    member internal _.StartFrom(element:HTMLElement, left:float, top:float) =
+    /// <remarks>Starts an element's next transition from its visual box rather than its laid-out box. Call after <c>Record</c> and before <c>Animate</c>.</remarks>
+    member _.StartFrom(element:HTMLElement, left:float, top:float) =
         measurements <-
             measurements |> Array.map(fun m ->
                 if same m.Element element then { m with X=m.X+left-m.Left; Y=m.Y+top-m.Top; Left=left; Top=top } else m)

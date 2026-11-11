@@ -91,6 +91,7 @@ type NativeDraggable internal(controller:Draggable,input:DraggableDom option,scr
                 yield fun () -> match input with Some binding -> binding.Cancel() | None -> controller.Cancel()
                 yield fun () -> scroll |> Option.iter _.Cancel()
                 for capture in captures do yield capture.Cancel })
+    interface IRevertible with member _.Revert()=this.Revert()
     interface IDisposable with member _.Dispose()=this.Cancel()
 
 /// <summary>Native axis mapping to source translations, scalar transform functions, numeric identities or typed CSS declarations.</summary>

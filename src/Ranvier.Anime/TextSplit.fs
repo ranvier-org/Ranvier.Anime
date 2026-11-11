@@ -333,6 +333,7 @@ type TextSplitter(target: HTMLElement, ?options: TextSplitterOptions) as this =
     let mutable resizeTimeout : IDisposable option = None
     let mutable fontReadyOp : IDisposable option = None
     let mutable resizeObserver : ResizeObserver option = None
+    let mutable ownedRoot : IDisposable option = None
 
     let clearResizeTimeout () =
         match resizeTimeout with
@@ -631,7 +632,7 @@ type TextSplitter(target: HTMLElement, ?options: TextSplitterOptions) as this =
         this
 
     /// <summary>Stops resize observation and pending re-splits, keeping the split content in place.</summary>
-    member internal _.Freeze() =
+    member _.Freeze() =
         clearResizeTimeout()
         match resizeObserver with
         | Some obs ->
@@ -672,13 +673,24 @@ type TextSplitter(target: HTMLElement, ?options: TextSplitterOptions) as this =
                     rev()
                 | None -> ()
             target.innerHTML <- originalHtml
+            match ownedRoot with
+            | Some root ->
+                ownedRoot <- None
+                root.Dispose()
+            | None -> ()
         this
+
+    // The root a portable split was created under; Revert disposes it last.
+    member internal _.OwnRoot(root: IDisposable) = ownedRoot <- Some root
 
     /// <summary>Invariant diagnostic of the TextSplitter state.</summary>
     override _.ToString() =
         "TextSplitter(Lines=" + linesStore.Count.ToString(CultureInfo.InvariantCulture) +
         "; Words=" + wordsStore.Count.ToString(CultureInfo.InvariantCulture) +
         "; Chars=" + charsStore.Count.ToString(CultureInfo.InvariantCulture) + ")"
+
+    interface IRevertible with
+        member this.Revert() = this.Revert() |> ignore
 
     interface IDisposable with
         member this.Dispose() = this.Revert() |> ignore
@@ -689,6 +701,26 @@ module Text =
     /// <summary>Creates a <see cref="T:Ranvier.Anime.TextSplitter"/> on a DOM element.</summary>
     let splitText (target: HTMLElement) (options: TextSplitterOptions option) : TextSplitter =
         new TextSplitter(target, ?options = options)
+
+    /// <summary>Splits the static text of an HTML element; the splitter owns the Ranvier root it is created under.</summary>
+    /// <remarks>
+    /// Needs a current graph. <c>Revert</c> restores the element's content and disposes the root; the owner that is
+    /// current at the call does not end the split.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentException">The element is not an HTML element.</exception>
+    let split (element: Element) (options: TextSplitterOptions) : TextSplitter =
+        match box element with
+        | :? HTMLElement as target ->
+            let root = Ranvier.Api.createRoot id
+
+            try
+                let splitter = Ranvier.Api.runWithOwner root (fun () -> new TextSplitter(target, options))
+                splitter.OwnRoot root
+                splitter
+            with _ ->
+                root.Dispose()
+                reraise ()
+        | _ -> invalidArg "element" "Text.split needs an HTML element."
 
     /// <summary>Selects the first matching element in the active Scope or document and creates a <see cref="T:Ranvier.Anime.TextSplitter"/>.</summary>
     let splitSelector (document: Document) (selector: string) (options: TextSplitterOptions option) : TextSplitter option =

@@ -69,3 +69,9 @@ module Reactive =
             let signal = Api.createSignal Full
             policies.Add(graph, signal)
             signal
+
+    /// <summary>Reverts the object when the current owner is disposed.</summary>
+    /// <remarks>Needs a current owner.</remarks>
+    let own (revertible: #IRevertible) : unit =
+        if isNull (box revertible) then nullArg "revertible"
+        Api.onCleanup (fun () -> revertible.Revert())

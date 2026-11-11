@@ -85,6 +85,8 @@
     <Compile Include="CompositionAndTransformTests.fs" />
     <Compile Include="AdapterTests.fs" />
     <Compile Include="TextTests.fs" />
+    <Compile Include="PortableTests.fs" />
+    <Compile Include="../Portable/Surface.fs" Link="Portable/Surface.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -1174,6 +1174,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     let mutable iterDuration = 0.
     let mutable cancelled = false
     let auto = defaultArg autoplay (AnimationDefaults.autoplay true)
+    let mutable defaultComputed: ComputedStyleService option = None
     let clock = ScopeRegistration.run ignore (fun () ->
         new Timer(scheduler, 0., ?options = options, onComplete = (fun _ -> onComplete |> Option.iter (fun cb -> cb this))))
 
@@ -1210,6 +1211,9 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
 
     member internal _.Children = entries
 
+    // The computed styles children added without their own read from; set by Anime.timeline.
+    member internal _.DefaultComputed with get() = defaultComputed and set value = defaultComputed <- value
+
     /// <summary>Adds a multi-target/property child animation at an optional position.</summary>
     member this.Add(targets: obj array, specs: PropertySpec array, ?options: ComposedAnimationOptions, ?position: TimelinePosition) =
         let prev =
@@ -1220,7 +1224,8 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
         let resolvedOffset =
             TimelinePositions.resolve iterDuration prev
                 (fun lbl -> match labels.TryGetValue lbl with true, v -> Some v | _ -> None) position
-        let childOpts = { defaultArg options ComposedAnimationOptions.Default with Autoplay = false }
+        let authored = defaultArg options ComposedAnimationOptions.Default
+        let childOpts = { authored with Autoplay = false; Computed = authored.Computed |> Option.orElse defaultComputed }
         let child = new ComposedAnimation(scheduler, targets, specs, childOpts, Some this, resolvedOffset)
         entries.Add(resolvedOffset, child)
         recalcDuration()
