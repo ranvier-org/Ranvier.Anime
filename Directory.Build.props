@@ -29,7 +29,7 @@
         <UseLocalRanvierCss Condition="'$(UseLocalRanvierCss)' == ''">false</UseLocalRanvierCss>
         <RanvierCssRoot Condition="'$(RanvierCssRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../Ranvier.Css'))</RanvierCssRoot>
         <RanvierVersion>0.1.1-preview.2</RanvierVersion>
-        <RanvierCssVersion>0.1.1-alpha.2</RanvierCssVersion>
+        <RanvierCssVersion>0.1.1-alpha.4</RanvierCssVersion>
         <RanvierCssAddonsVersion>0.1.1-alpha.1</RanvierCssAddonsVersion>
         <RanvierTrace Condition="'$(RanvierTrace)' == '' and '$(Configuration)' == 'Debug'">true</RanvierTrace>
         <RanvierPackageSuffix Condition="'$(RanvierTrace)' == 'true'">.Traced</RanvierPackageSuffix>
