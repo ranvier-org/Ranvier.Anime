@@ -1,5 +1,5 @@
 ---
-last_commit_released: 7a81c0a4ba0f2e2b36c3b0b7ce68ef10e97da9c9
+last_commit_released: b42f59bb0bc055cc22b1803bc80c678a84e01f9b
 pre_release: rc
 updaters:
   - regex:
