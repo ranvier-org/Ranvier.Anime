@@ -1,6 +1,6 @@
 # One Ranvier.Anime API over two engines
 
-Status: proposed, awaiting approval. Nothing below is built yet.
+Status: approved 2026-11-11. The exact contract is in `2026-11-11-portable-surface.md`.
 
 ## Intent
 
@@ -38,8 +38,8 @@ The goal is one source-compatible API: the same F# text compiles against `Ranvie
 Nineteen names collide today (`Ease`, `Timeline`, `Timer`, `Animatable`, `Draggable`, `ScrollObserver`,
 `TextSplitter`, `AutoLayout`, `Scope`, `Svg`, `Text`, `Waapi`, `Utils`, `Engine`, `Keyframes`, `ScrollSync`,
 `IRevertible`, `ITickable`, `Reactive.drive`). The raw anime.js bindings move from `Ranvier.Anime` to
-`Ranvier.Anime.Bindings`, unchanged apart from the namespace. `Ranvier.Anime` in the Fable package then holds only the
-portable surface, implemented over those bindings. Existing Fable users add `open Ranvier.Anime.Bindings`.
+`Fable.Ranvier.Anime`, unchanged apart from the namespace. `Ranvier.Anime` in the Fable package then holds only the
+portable surface, implemented over those bindings. Existing Fable users add `open Fable.Ranvier.Anime`.
 
 ### 2. The portable surface
 
