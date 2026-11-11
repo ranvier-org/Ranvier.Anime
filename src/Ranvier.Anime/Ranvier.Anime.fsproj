@@ -1,7 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Ranvier.Anime</AssemblyName>
-    <IsPackable>false</IsPackable>
+    <RootNamespace>Ranvier.Anime</RootNamespace>
+    <PackageId>Ranvier.Anime</PackageId>
+    <!-- The traced build packs as Ranvier.Anime.Traced and depends on the traced Ranvier packages. -->
+    <PackageId Condition="'$(RanvierTrace)' == 'true'">Ranvier.Anime.Traced</PackageId>
+    <Title>Ranvier.Anime</Title>
+    <Description>A .NET port of anime.js 4.5 for Ranvier hosts: timers, timelines, keyframes, typed CSS, layout, scroll, drag, SVG and text animation on a frame scheduler, with the API shared with Fable.Ranvier.Anime.</Description>
+    <Description Condition="'$(RanvierTrace)' == 'true'">The traced build of Ranvier.Anime, a .NET port of anime.js 4.5 for Ranvier hosts. Depends on the traced Ranvier packages.</Description>
+    <PackageTags>animation;animejs;reactive;signals;native;aot;fsharp</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsAotCompatible>true</IsAotCompatible>
+    <!-- Set by ShipIt from CHANGELOG.md. -->
+    <Version>0.1.0-rc.0</Version>
+    <AssemblyVersion>0.0.0.0</AssemblyVersion>
     <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
   </PropertyGroup>
   <ItemGroup>
@@ -77,6 +89,14 @@
     <Compile Include="DeferredStubs.fs" />
     <Compile Include="AnimeHost.fs" />
     <Compile Include="Portable.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="../../brand/icon/ranvier-icon.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RanvierTrace)' == 'true'">
+    <AssemblyMetadata Include="RanvierTrace" Value="true" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Ranvier$(RanvierPackageSuffix)" Version="[0.1.1-preview.2]" Condition="'$(UseLocalRanvier)' != 'true'" />
