@@ -1,0 +1,2535 @@
+{
+  "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "methodHarness": "unmodified ScrollObserver.prototype.updateBounds/handleScroll, explicit measured geometry; constructor and native scheduling excluded",
+  "geometry": [
+    {
+      "offset": 0,
+      "enter": "end start",
+      "leave": "start end",
+      "start": -600,
+      "end": 100,
+      "distance": 700,
+      "coords": [
+        0,
+        100,
+        600,
+        0
+      ]
+    },
+    {
+      "offset": 0,
+      "enter": "center center",
+      "leave": "center end",
+      "start": -250,
+      "end": -200,
+      "distance": 50,
+      "coords": [
+        50,
+        100,
+        300,
+        300
+      ]
+    },
+    {
+      "offset": 0,
+      "enter": "max start",
+      "leave": "min end",
+      "start": 0,
+      "end": 100,
+      "distance": 100,
+      "coords": [
+        0,
+        100,
+        0,
+        0
+      ]
+    },
+    {
+      "offset": 0,
+      "enter": "max-=20 start",
+      "leave": "min+=30 end",
+      "start": 0,
+      "end": 70,
+      "distance": 70,
+      "coords": [
+        0,
+        100,
+        0,
+        30
+      ]
+    },
+    {
+      "offset": 0,
+      "enter": "75% 25%",
+      "leave": "10% 90%",
+      "start": -425,
+      "end": 30,
+      "distance": 455,
+      "coords": [
+        25,
+        90,
+        450,
+        60
+      ]
+    },
+    {
+      "offset": 0,
+      "enter": "end+=12.5 start",
+      "leave": "start-=12.5 end",
+      "start": -613,
+      "end": 112,
+      "distance": 725,
+      "coords": [
+        0,
+        100,
+        613,
+        -12
+      ]
+    },
+    {
+      "offset": 12.5,
+      "enter": "end start",
+      "leave": "start end",
+      "start": -587.5,
+      "end": 112.5,
+      "distance": 700,
+      "coords": [
+        0,
+        100,
+        600,
+        0
+      ]
+    },
+    {
+      "offset": 12.5,
+      "enter": "center center",
+      "leave": "center end",
+      "start": -237.5,
+      "end": -187.5,
+      "distance": 50,
+      "coords": [
+        50,
+        100,
+        300,
+        300
+      ]
+    },
+    {
+      "offset": 12.5,
+      "enter": "max start",
+      "leave": "min end",
+      "start": -0.5,
+      "end": 112.5,
+      "distance": 113,
+      "coords": [
+        0,
+        100,
+        13,
+        0
+      ]
+    },
+    {
+      "offset": 12.5,
+      "enter": "max-=20 start",
+      "leave": "min+=30 end",
+      "start": -0.5,
+      "end": 82.5,
+      "distance": 83,
+      "coords": [
+        0,
+        100,
+        13,
+        30
+      ]
+    },
+    {
+      "offset": 12.5,
+      "enter": "75% 25%",
+      "leave": "10% 90%",
+      "start": -412.5,
+      "end": 42.5,
+      "distance": 455,
+      "coords": [
+        25,
+        90,
+        450,
+        60
+      ]
+    },
+    {
+      "offset": 12.5,
+      "enter": "end+=12.5 start",
+      "leave": "start-=12.5 end",
+      "start": -600.5,
+      "end": 124.5,
+      "distance": 725,
+      "coords": [
+        0,
+        100,
+        613,
+        -12
+      ]
+    },
+    {
+      "offset": 800,
+      "enter": "end start",
+      "leave": "start end",
+      "start": 200,
+      "end": 900,
+      "distance": 700,
+      "coords": [
+        0,
+        100,
+        600,
+        0
+      ]
+    },
+    {
+      "offset": 800,
+      "enter": "center center",
+      "leave": "center end",
+      "start": 550,
+      "end": 600,
+      "distance": 50,
+      "coords": [
+        50,
+        100,
+        300,
+        300
+      ]
+    },
+    {
+      "offset": 800,
+      "enter": "max start",
+      "leave": "min end",
+      "start": 200,
+      "end": 900,
+      "distance": 700,
+      "coords": [
+        0,
+        100,
+        600,
+        0
+      ]
+    },
+    {
+      "offset": 800,
+      "enter": "max-=20 start",
+      "leave": "min+=30 end",
+      "start": 220,
+      "end": 870,
+      "distance": 650,
+      "coords": [
+        0,
+        100,
+        580,
+        30
+      ]
+    },
+    {
+      "offset": 800,
+      "enter": "75% 25%",
+      "leave": "10% 90%",
+      "start": 375,
+      "end": 830,
+      "distance": 455,
+      "coords": [
+        25,
+        90,
+        450,
+        60
+      ]
+    },
+    {
+      "offset": 800,
+      "enter": "end+=12.5 start",
+      "leave": "start-=12.5 end",
+      "start": 187,
+      "end": 912,
+      "distance": 725,
+      "coords": [
+        0,
+        100,
+        613,
+        -12
+      ]
+    },
+    {
+      "offset": 2300,
+      "enter": "end start",
+      "leave": "start end",
+      "start": 1700,
+      "end": 2400,
+      "distance": 700,
+      "coords": [
+        0,
+        100,
+        600,
+        0
+      ]
+    },
+    {
+      "offset": 2300,
+      "enter": "center center",
+      "leave": "center end",
+      "start": 2050,
+      "end": 2100,
+      "distance": 50,
+      "coords": [
+        50,
+        100,
+        300,
+        300
+      ]
+    },
+    {
+      "offset": 2300,
+      "enter": "max start",
+      "leave": "min end",
+      "start": 1700,
+      "end": 1800,
+      "distance": 100,
+      "coords": [
+        0,
+        100,
+        600,
+        600
+      ]
+    },
+    {
+      "offset": 2300,
+      "enter": "max-=20 start",
+      "leave": "min+=30 end",
+      "start": 1720,
+      "end": 1800,
+      "distance": 80,
+      "coords": [
+        0,
+        100,
+        580,
+        600
+      ]
+    },
+    {
+      "offset": 2300,
+      "enter": "75% 25%",
+      "leave": "10% 90%",
+      "start": 1875,
+      "end": 2330,
+      "distance": 455,
+      "coords": [
+        25,
+        90,
+        450,
+        60
+      ]
+    },
+    {
+      "offset": 2300,
+      "enter": "end+=12.5 start",
+      "leave": "start-=12.5 end",
+      "start": 1687,
+      "end": 2412,
+      "distance": 725,
+      "coords": [
+        0,
+        100,
+        613,
+        -12
+      ]
+    }
+  ],
+  "traces": [
+    {
+      "mode": "disabled",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.428571,
+          "previous": 0.428571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 901,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Enter",
+            "EnterBackward",
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.428571,
+          "previous": 0.428571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 199,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "disabled",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 1000,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "disabled",
+      "steps": [
+        {
+          "scroll": 200,
+          "events": [
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 900,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "mode": "disabled",
+      "steps": [
+        {
+          "scroll": 900,
+          "events": [
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 899,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.998571,
+          "previous": 0.998571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "mode": "methods",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "command:Play",
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.428571,
+          "previous": 0.428571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "command:Pause",
+            "Leave",
+            "LeaveForward",
+            "SyncComplete"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 901,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "command:Play",
+            "Enter",
+            "EnterBackward",
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.428571,
+          "previous": 0.428571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "command:Pause",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 199,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "methods",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 1000,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "methods",
+      "steps": [
+        {
+          "scroll": 200,
+          "events": [
+            "command:Play",
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "command:Pause",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "command:Play",
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "command:Pause",
+            "Leave",
+            "LeaveForward",
+            "SyncComplete"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 900,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "mode": "methods",
+      "steps": [
+        {
+          "scroll": 900,
+          "events": [
+            "command:Play",
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 899,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.998571,
+          "previous": 0.998571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "command:Pause",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "command:Play",
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "command:Pause",
+            "Leave",
+            "LeaveForward",
+            "SyncComplete"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "mode": "directional",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Enter",
+            "command:EnterForward",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.428571,
+          "previous": 0.428571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "command:LeaveForward",
+            "LeaveForward",
+            "SyncComplete"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 901,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Enter",
+            "command:EnterBackward",
+            "EnterBackward",
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.428571,
+          "previous": 0.428571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "command:LeaveBackward",
+            "LeaveBackward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 199,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "directional",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 1000,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "directional",
+      "steps": [
+        {
+          "scroll": 200,
+          "events": [
+            "Enter",
+            "command:EnterForward",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "command:LeaveBackward",
+            "LeaveBackward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Enter",
+            "command:EnterForward",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "command:LeaveForward",
+            "LeaveForward",
+            "SyncComplete"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 900,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "mode": "directional",
+      "steps": [
+        {
+          "scroll": 900,
+          "events": [
+            "Enter",
+            "command:EnterForward",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 899,
+          "events": [
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.998571,
+          "previous": 0.998571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "command:LeaveBackward",
+            "LeaveBackward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Enter",
+            "command:EnterForward",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "command:LeaveForward",
+            "LeaveForward",
+            "SyncComplete"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "mode": "linear",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              1.4289999999999998,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              428.57099999999997,
+              false
+            ]
+          ],
+          "progress": 0.428571,
+          "previous": 0.428571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward"
+          ],
+          "writes": [
+            [
+              1000,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 901,
+          "events": [
+            "SyncComplete"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Enter",
+            "EnterBackward",
+            "Update"
+          ],
+          "writes": [
+            [
+              428.57099999999997,
+              false
+            ]
+          ],
+          "progress": 0.428571,
+          "previous": 0.428571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [
+            [
+              0,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 199,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "linear",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 1000,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              1000,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 0,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              0,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "linear",
+      "steps": [
+        {
+          "scroll": 200,
+          "events": [
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              1.4289999999999998,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [
+            [
+              0,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [
+            [
+              1.4289999999999998,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward"
+          ],
+          "writes": [
+            [
+              1000,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "SyncComplete"
+          ],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "mode": "linear",
+      "steps": [
+        {
+          "scroll": 900,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [
+            [
+              1000,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 899,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              998.571,
+              false
+            ]
+          ],
+          "progress": 0.998571,
+          "previous": 0.998571,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [
+            [
+              0,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [
+            [
+              1.4289999999999998,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.001429,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward"
+          ],
+          "writes": [
+            [
+              1000,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "smooth",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              0.15,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.00015,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              45.134,
+              false
+            ]
+          ],
+          "progress": 0.428571,
+          "previous": 0.045134,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward"
+          ],
+          "writes": [
+            [
+              145.495,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 0.145495,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 901,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              235.318,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 0.235318,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Enter",
+            "EnterBackward",
+            "Update"
+          ],
+          "writes": [
+            [
+              255.61,
+              false
+            ]
+          ],
+          "progress": 0.428571,
+          "previous": 0.25561,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [
+            [
+              228.67100000000002,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0.228671,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 199,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              204.56099999999998,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0.204561,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "smooth",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 1000,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              105.1,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 0.1051,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 0,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              93.96400000000001,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0.093964,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "smooth",
+      "steps": [
+        {
+          "scroll": 200,
+          "events": [
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              0.15,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.00015,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [
+            [
+              0.034,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0.000034,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [
+            [
+              0.18000000000000002,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.00018,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward"
+          ],
+          "writes": [
+            [
+              105.261,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 0.105261,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              199.309,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 0.199309,
+          "inView": false,
+          "began": true,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "smooth",
+      "steps": [
+        {
+          "scroll": 900,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [
+            [
+              105.1,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 0.1051,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 899,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              198.91400000000002,
+              false
+            ]
+          ],
+          "progress": 0.998571,
+          "previous": 0.198914,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [
+            [
+              177.928,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0.177928,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [
+            [
+              159.39600000000002,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.159396,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward"
+          ],
+          "writes": [
+            [
+              247.75900000000001,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 0.247759,
+          "inView": false,
+          "began": true,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "ease",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              0.0020420409999999996,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.0000020420409999999997,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              183.673102041,
+              false
+            ]
+          ],
+          "progress": 0.428571,
+          "previous": 0.18367310204099999,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward",
+            "SyncComplete"
+          ],
+          "writes": [
+            [
+              1000,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 901,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 500,
+          "events": [
+            "Enter",
+            "EnterBackward",
+            "Update"
+          ],
+          "writes": [
+            [
+              183.673102041,
+              false
+            ]
+          ],
+          "progress": 0.428571,
+          "previous": 0.18367310204099999,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [
+            [
+              0,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 199,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "ease",
+      "steps": [
+        {
+          "scroll": 0,
+          "events": [],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 1000,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              1000,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 0,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              0,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        }
+      ]
+    },
+    {
+      "mode": "ease",
+      "steps": [
+        {
+          "scroll": 200,
+          "events": [
+            "Enter",
+            "EnterForward"
+          ],
+          "writes": [],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              0.0020420409999999996,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.0000020420409999999997,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [
+            [
+              0,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [
+            [
+              0.0020420409999999996,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.0000020420409999999997,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward",
+            "SyncComplete"
+          ],
+          "writes": [
+            [
+              1000,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        },
+        {
+          "scroll": 900,
+          "events": [],
+          "writes": [],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "mode": "ease",
+      "steps": [
+        {
+          "scroll": 900,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [
+            [
+              1000,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 899,
+          "events": [
+            "Update"
+          ],
+          "writes": [
+            [
+              997.1440420409999,
+              false
+            ]
+          ],
+          "progress": 0.998571,
+          "previous": 0.9971440420409999,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 200,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveBackward"
+          ],
+          "writes": [
+            [
+              0,
+              false
+            ]
+          ],
+          "progress": 0,
+          "previous": 0,
+          "inView": false,
+          "began": false,
+          "completed": false
+        },
+        {
+          "scroll": 201,
+          "events": [
+            "Enter",
+            "EnterForward",
+            "Update"
+          ],
+          "writes": [
+            [
+              0.0020420409999999996,
+              false
+            ]
+          ],
+          "progress": 0.001429,
+          "previous": 0.0000020420409999999997,
+          "inView": true,
+          "began": true,
+          "completed": false
+        },
+        {
+          "scroll": 900,
+          "events": [
+            "Update",
+            "Leave",
+            "LeaveForward",
+            "SyncComplete"
+          ],
+          "writes": [
+            [
+              1000,
+              false
+            ]
+          ],
+          "progress": 1,
+          "previous": 1,
+          "inView": false,
+          "began": true,
+          "completed": true
+        }
+      ]
+    }
+  ]
+}

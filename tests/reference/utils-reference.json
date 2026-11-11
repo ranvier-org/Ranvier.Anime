@@ -1,0 +1,668 @@
+{
+  "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "mathSamples": {
+    "clamp": [
+      {
+        "v": -5,
+        "min": 0,
+        "max": 10,
+        "expected": 0
+      },
+      {
+        "v": 5,
+        "min": 0,
+        "max": 10,
+        "expected": 5
+      },
+      {
+        "v": 15,
+        "min": 0,
+        "max": 10,
+        "expected": 10
+      },
+      {
+        "v": 0,
+        "min": -10,
+        "max": -2,
+        "expected": -2
+      },
+      {
+        "v": -20,
+        "min": -10,
+        "max": -2,
+        "expected": -10
+      }
+    ],
+    "round": [
+      {
+        "v": 1.23456,
+        "d": 0,
+        "expected": 1
+      },
+      {
+        "v": 1.23456,
+        "d": 2,
+        "expected": 1.23
+      },
+      {
+        "v": 1.235,
+        "d": 2,
+        "expected": 1.24
+      },
+      {
+        "v": -1.5,
+        "d": 0,
+        "expected": -1
+      },
+      {
+        "v": 2.5,
+        "d": 0,
+        "expected": 3
+      },
+      {
+        "v": 12.3456,
+        "d": -1,
+        "expected": 12.3456
+      },
+      {
+        "v": 0.123456789,
+        "d": 6,
+        "expected": 0.123457
+      }
+    ],
+    "snapScalar": [
+      {
+        "v": 10,
+        "inc": 25,
+        "expected": 0
+      },
+      {
+        "v": 20,
+        "inc": 25,
+        "expected": 25
+      },
+      {
+        "v": 50,
+        "inc": 25,
+        "expected": 50
+      },
+      {
+        "v": 60,
+        "inc": 25,
+        "expected": 50
+      },
+      {
+        "v": 70,
+        "inc": 25,
+        "expected": 75
+      },
+      {
+        "v": -13,
+        "inc": 10,
+        "expected": -10
+      },
+      {
+        "v": 3.7,
+        "inc": 0,
+        "expected": 3.7
+      }
+    ],
+    "snapArray": [
+      {
+        "v": 10,
+        "points": [
+          25,
+          100,
+          400
+        ],
+        "expected": 25
+      },
+      {
+        "v": 20,
+        "points": [
+          25,
+          100,
+          400
+        ],
+        "expected": 25
+      },
+      {
+        "v": 50,
+        "points": [
+          25,
+          100,
+          400
+        ],
+        "expected": 25
+      },
+      {
+        "v": 63,
+        "points": [
+          25,
+          100,
+          400
+        ],
+        "expected": 100
+      },
+      {
+        "v": 75,
+        "points": [
+          25,
+          100,
+          400
+        ],
+        "expected": 100
+      },
+      {
+        "v": 200,
+        "points": [
+          25,
+          100,
+          400
+        ],
+        "expected": 100
+      },
+      {
+        "v": 300,
+        "points": [
+          25,
+          100,
+          400
+        ],
+        "expected": 400
+      },
+      {
+        "v": 1000,
+        "points": [
+          25,
+          100,
+          400
+        ],
+        "expected": 400
+      },
+      {
+        "v": -50,
+        "points": [
+          25,
+          100,
+          400
+        ],
+        "expected": 25
+      }
+    ],
+    "wrap": [
+      {
+        "v": 0,
+        "min": 0,
+        "max": 10,
+        "expected": 0
+      },
+      {
+        "v": 10,
+        "min": 0,
+        "max": 10,
+        "expected": 0
+      },
+      {
+        "v": 13,
+        "min": 0,
+        "max": 10,
+        "expected": 3
+      },
+      {
+        "v": -3,
+        "min": 0,
+        "max": 10,
+        "expected": 7
+      },
+      {
+        "v": 370,
+        "min": -180,
+        "max": 180,
+        "expected": 10
+      },
+      {
+        "v": -190,
+        "min": -180,
+        "max": 180,
+        "expected": 170
+      },
+      {
+        "v": 5.5,
+        "min": 2,
+        "max": 5,
+        "expected": 2.5
+      }
+    ],
+    "mapRange": [
+      {
+        "v": 50,
+        "inLow": 0,
+        "inHigh": 100,
+        "outLow": 0,
+        "outHigh": 1000,
+        "expected": 500
+      },
+      {
+        "v": 0,
+        "inLow": 0,
+        "inHigh": 100,
+        "outLow": -50,
+        "outHigh": 50,
+        "expected": -50
+      },
+      {
+        "v": 25,
+        "inLow": 0,
+        "inHigh": 100,
+        "outLow": 100,
+        "outHigh": 0,
+        "expected": 75
+      },
+      {
+        "v": 150,
+        "inLow": 0,
+        "inHigh": 100,
+        "outLow": 0,
+        "outHigh": 10,
+        "expected": 15
+      }
+    ],
+    "lerp": [
+      {
+        "a": 0,
+        "b": 100,
+        "t": 0,
+        "expected": 0
+      },
+      {
+        "a": 0,
+        "b": 100,
+        "t": 0.25,
+        "expected": 25
+      },
+      {
+        "a": 0,
+        "b": 100,
+        "t": 0.5,
+        "expected": 50
+      },
+      {
+        "a": 0,
+        "b": 100,
+        "t": 1,
+        "expected": 100
+      },
+      {
+        "a": -50,
+        "b": 50,
+        "t": 0.75,
+        "expected": 25
+      },
+      {
+        "a": 10,
+        "b": 20,
+        "t": 1.5,
+        "expected": 25
+      }
+    ],
+    "damp": [
+      {
+        "a": 0,
+        "b": 100,
+        "dt": 16,
+        "f": 0,
+        "expected": 0
+      },
+      {
+        "a": 0,
+        "b": 100,
+        "dt": 16,
+        "f": 1,
+        "expected": 100
+      },
+      {
+        "a": 0,
+        "b": 100,
+        "dt": 16,
+        "f": 0.5,
+        "expected": 55.067103588277845
+      },
+      {
+        "a": 20,
+        "b": 80,
+        "dt": 33.333,
+        "f": 0.25,
+        "expected": 53.92389018956563
+      },
+      {
+        "a": -10,
+        "b": 50,
+        "dt": 8,
+        "f": 0.8,
+        "expected": 18.362454557417088
+      }
+    ],
+    "angles": [
+      {
+        "deg": -180,
+        "rad": -3.141592653589793,
+        "roundtrip": -180
+      },
+      {
+        "deg": -90,
+        "rad": -1.5707963267948966,
+        "roundtrip": -90
+      },
+      {
+        "deg": 0,
+        "rad": 0,
+        "roundtrip": 0
+      },
+      {
+        "deg": 45,
+        "rad": 0.7853981633974483,
+        "roundtrip": 45
+      },
+      {
+        "deg": 90,
+        "rad": 1.5707963267948966,
+        "roundtrip": 90
+      },
+      {
+        "deg": 180,
+        "rad": 3.141592653589793,
+        "roundtrip": 180
+      },
+      {
+        "deg": 360,
+        "rad": 6.283185307179586,
+        "roundtrip": 360
+      }
+    ],
+    "strings": [
+      {
+        "op": "roundPad",
+        "v": 3.1,
+        "len": 3,
+        "pad": "",
+        "expected": "3.100"
+      },
+      {
+        "op": "roundPad",
+        "v": 12.3456,
+        "len": 2,
+        "pad": "",
+        "expected": "12.35"
+      },
+      {
+        "op": "padStart",
+        "v": 7,
+        "len": 4,
+        "pad": "0",
+        "expected": "0007"
+      },
+      {
+        "op": "padStart",
+        "v": 42,
+        "len": 6,
+        "pad": "ab",
+        "expected": "abab42"
+      },
+      {
+        "op": "padEnd",
+        "v": 7,
+        "len": 4,
+        "pad": "0",
+        "expected": "7000"
+      },
+      {
+        "op": "padEnd",
+        "v": 1.5,
+        "len": 6,
+        "pad": "-",
+        "expected": "1.5---"
+      }
+    ]
+  },
+  "chainSamples": {
+    "mapClamp": [
+      {
+        "v": 1,
+        "expected": 10
+      },
+      {
+        "v": 5,
+        "expected": 50
+      },
+      {
+        "v": 50,
+        "expected": 100
+      },
+      {
+        "v": -2,
+        "expected": 0
+      }
+    ],
+    "clampLerpSnap": [
+      {
+        "v": -0.5,
+        "expected": 0
+      },
+      {
+        "v": 0.1,
+        "expected": 25
+      },
+      {
+        "v": 0.4,
+        "expected": 50
+      },
+      {
+        "v": 0.65,
+        "expected": 75
+      },
+      {
+        "v": 1.5,
+        "expected": 100
+      }
+    ],
+    "wrapAngleRound": [
+      {
+        "v": -45,
+        "expected": 315
+      },
+      {
+        "v": 0,
+        "expected": 0
+      },
+      {
+        "v": 123.456,
+        "expected": 123.46
+      },
+      {
+        "v": 405.789,
+        "expected": 45.79
+      }
+    ],
+    "mapRoundPadStart": [
+      {
+        "v": 0,
+        "expected": "0000.00"
+      },
+      {
+        "v": 1.234,
+        "expected": "0012.34"
+      },
+      {
+        "v": 9.876,
+        "expected": "0098.76"
+      }
+    ]
+  },
+  "seededCases": [
+    {
+      "seed": 0,
+      "min": 0,
+      "max": 1,
+      "dec": 4,
+      "draws": [
+        0.2664,
+        0.1368,
+        0.2191,
+        0.7393,
+        0.9031,
+        0.3785,
+        0.8381,
+        0.2806,
+        0.3987,
+        0.7909,
+        0.2957,
+        0.5299
+      ],
+      "overrideDraws": [
+        462,
+        1.24
+      ]
+    },
+    {
+      "seed": 1,
+      "min": 0,
+      "max": 100,
+      "dec": 0,
+      "draws": [
+        63,
+        66,
+        18,
+        95,
+        25,
+        92,
+        92,
+        29,
+        11,
+        48,
+        40,
+        20
+      ],
+      "overrideDraws": [
+        818,
+        -4.56
+      ]
+    },
+    {
+      "seed": 42,
+      "min": -50,
+      "max": 50,
+      "dec": 2,
+      "draws": [
+        10.11,
+        -13.19,
+        24.65,
+        49.68,
+        -9.64,
+        18.37,
+        33.13,
+        31.36,
+        29.82,
+        -43.49,
+        1.21,
+        22.57
+      ],
+      "overrideDraws": [
+        229,
+        -0.58
+      ]
+    },
+    {
+      "seed": -14,
+      "min": 10,
+      "max": 20,
+      "dec": 3,
+      "draws": [
+        19.743,
+        15.61,
+        10.151,
+        16.19,
+        10.644,
+        11.278,
+        16.224,
+        12.411,
+        12.464,
+        18.456,
+        19.49,
+        16.92
+      ],
+      "overrideDraws": [
+        88,
+        4.56
+      ]
+    },
+    {
+      "seed": 1.75,
+      "min": 0,
+      "max": 10,
+      "dec": 1,
+      "draws": [
+        6.3,
+        6.6,
+        1.8,
+        9.5,
+        2.5,
+        9.2,
+        9.2,
+        2.9,
+        1.1,
+        4.8,
+        4,
+        2
+      ],
+      "overrideDraws": [
+        818,
+        -4.56
+      ]
+    }
+  ],
+  "shuffled": [
+    2,
+    7,
+    8,
+    3,
+    6,
+    1,
+    0,
+    5,
+    4,
+    9
+  ],
+  "keepTimeSteps": [
+    {
+      "op": "init1000",
+      "currentTime": 0,
+      "iterProgress": 0
+    },
+    {
+      "op": "seek500",
+      "currentTime": 500,
+      "iterProgress": 0.5
+    },
+    {
+      "op": "recreate2000",
+      "currentTime": 1000,
+      "iterProgress": 0.5
+    },
+    {
+      "op": "recreate500",
+      "currentTime": 125,
+      "iterProgress": 0.25
+    },
+    {
+      "op": "seek875",
+      "currentTime": 875,
+      "iterProgress": 0.25
+    },
+    {
+      "op": "recreate1000_odd",
+      "currentTime": 1750,
+      "iterProgress": 0.25
+    }
+  ]
+}

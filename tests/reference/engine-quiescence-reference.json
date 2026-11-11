@@ -1,0 +1,966 @@
+{
+  "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "scope": "Unmodified browser engine/Timer: cancel or pause,100ms host advance with no frames, new30FPS root, dense successors. Client cancellation releases only client work; the shared engine retains bounded cleanup requests and source wake phases.",
+  "fixtures": [
+    {
+      "name": "cancelOnly",
+      "samples": [
+        {
+          "stage": "first",
+          "clock": 5,
+          "phase": 4.166666666666667,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "stopped",
+          "clock": 5,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "idleAdvance",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "constructed",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 0,
+              "paused": true,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "resumed",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 0,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame1",
+          "clock": 106,
+          "phase": 104.16666666666669,
+          "events": [
+            {
+              "name": "C",
+              "time": 13
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 13,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame1",
+          "clock": 107,
+          "phase": 104.16666666666669,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 13,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame2",
+          "clock": 109,
+          "phase": 108.33333333333336,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 16,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame17",
+          "clock": 126,
+          "phase": 125.00000000000003,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 33,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame17",
+          "clock": 143,
+          "phase": 141.66666666666669,
+          "events": [
+            {
+              "name": "C",
+              "time": 50
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 50,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        }
+      ]
+    },
+    {
+      "name": "cancelBoth",
+      "samples": [
+        {
+          "stage": "first",
+          "clock": 5,
+          "phase": 4.166666666666667,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 17
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "stopped",
+          "clock": 5,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "idleAdvance",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "constructed",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 0,
+              "paused": true,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "resumed",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 0,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame1",
+          "clock": 106,
+          "phase": 104.16666666666669,
+          "events": [
+            {
+              "name": "C",
+              "time": 13
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 13,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame1",
+          "clock": 107,
+          "phase": 104.16666666666669,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 13,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame2",
+          "clock": 109,
+          "phase": 108.33333333333336,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 16,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame17",
+          "clock": 126,
+          "phase": 125.00000000000003,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 33,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame17",
+          "clock": 143,
+          "phase": 141.66666666666669,
+          "events": [
+            {
+              "name": "C",
+              "time": 50
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "C": {
+              "time": 50,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        }
+      ]
+    },
+    {
+      "name": "mixedLive",
+      "samples": [
+        {
+          "stage": "first",
+          "clock": 5,
+          "phase": 4.166666666666667,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 17
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "stopped",
+          "clock": 5,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "idleAdvance",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "constructed",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            },
+            "C": {
+              "time": 0,
+              "paused": true,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "resumed",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            },
+            "C": {
+              "time": 0,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame1",
+          "clock": 106,
+          "phase": 104.16666666666669,
+          "events": [
+            {
+              "name": "B",
+              "time": 118
+            },
+            {
+              "name": "C",
+              "time": 13
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 118,
+              "paused": false,
+              "cancelled": false
+            },
+            "C": {
+              "time": 13,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame1",
+          "clock": 107,
+          "phase": 104.16666666666669,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 118,
+              "paused": false,
+              "cancelled": false
+            },
+            "C": {
+              "time": 13,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame2",
+          "clock": 109,
+          "phase": 108.33333333333336,
+          "events": [
+            {
+              "name": "B",
+              "time": 121
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 121,
+              "paused": false,
+              "cancelled": false
+            },
+            "C": {
+              "time": 16,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame17",
+          "clock": 126,
+          "phase": 125.00000000000003,
+          "events": [
+            {
+              "name": "B",
+              "time": 138
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 138,
+              "paused": false,
+              "cancelled": false
+            },
+            "C": {
+              "time": 33,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame17",
+          "clock": 143,
+          "phase": 141.66666666666669,
+          "events": [
+            {
+              "name": "B",
+              "time": 155
+            },
+            {
+              "name": "C",
+              "time": 50
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": true
+            },
+            "B": {
+              "time": 155,
+              "paused": false,
+              "cancelled": false
+            },
+            "C": {
+              "time": 50,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        }
+      ]
+    },
+    {
+      "name": "pauseBoth",
+      "samples": [
+        {
+          "stage": "first",
+          "clock": 5,
+          "phase": 4.166666666666667,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 17
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "stopped",
+          "clock": 5,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "idleAdvance",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "constructed",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "C": {
+              "time": 0,
+              "paused": true,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "resumed",
+          "clock": 105,
+          "phase": 4.166666666666667,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "C": {
+              "time": 0,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame1",
+          "clock": 106,
+          "phase": 104.16666666666669,
+          "events": [
+            {
+              "name": "C",
+              "time": 13
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "C": {
+              "time": 13,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame1",
+          "clock": 107,
+          "phase": 104.16666666666669,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "C": {
+              "time": 13,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame2",
+          "clock": 109,
+          "phase": 108.33333333333336,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "C": {
+              "time": 16,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame17",
+          "clock": 126,
+          "phase": 125.00000000000003,
+          "events": [],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "C": {
+              "time": 33,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        },
+        {
+          "stage": "frame17",
+          "clock": 143,
+          "phase": 141.66666666666669,
+          "events": [
+            {
+              "name": "C",
+              "time": 50
+            }
+          ],
+          "timers": {
+            "A": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "B": {
+              "time": 17,
+              "paused": true,
+              "cancelled": false
+            },
+            "C": {
+              "time": 50,
+              "paused": false,
+              "cancelled": false
+            }
+          },
+          "pending": 1
+        }
+      ]
+    }
+  ]
+}

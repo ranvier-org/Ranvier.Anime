@@ -1,0 +1,79 @@
+{
+  "baselineCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "harness": "Unmodified Timer.prototype.init and ScrollObserver.prototype.link on explicit controller state. Reset, resume and layout refresh record method calls; actual DOM construction, clock property setters, frame scheduling and CSS layout excluded.",
+  "cases": [
+    {
+      "mode": "true",
+      "events": [
+        "reset",
+        "resume"
+      ],
+      "target": "explicit",
+      "linked": false,
+      "persist": null
+    },
+    {
+      "mode": "false",
+      "events": [
+        "reset"
+      ],
+      "target": "explicit",
+      "linked": false,
+      "persist": null
+    },
+    {
+      "mode": "direct",
+      "events": [
+        "reset",
+        "pause",
+        "refresh:first"
+      ],
+      "target": "first",
+      "linked": true,
+      "persist": null
+    },
+    {
+      "mode": "body",
+      "events": [
+        "reset",
+        "pause",
+        "refresh:body"
+      ],
+      "target": "body",
+      "linked": true,
+      "persist": null
+    },
+    {
+      "mode": "explicit",
+      "events": [
+        "reset",
+        "pause"
+      ],
+      "target": "explicit",
+      "linked": true,
+      "persist": null
+    },
+    {
+      "mode": "timeline",
+      "events": [
+        "reset",
+        "pause",
+        "refresh:child-first"
+      ],
+      "target": "child-first",
+      "linked": true,
+      "persist": null
+    },
+    {
+      "mode": "persist",
+      "events": [
+        "reset",
+        "pause",
+        "refresh:first"
+      ],
+      "target": "first",
+      "linked": true,
+      "persist": true
+    }
+  ]
+}

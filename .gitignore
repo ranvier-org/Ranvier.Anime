@@ -22,3 +22,10 @@ playwright-report/
 test-results/
 /artifacts/
 /.config/.tool-restore/
+# native port
+.superpowers/
+/upstream/
+.SageFs/*
+!.SageFs/init.fsx
+tests/Ranvier.View.Anime.Browser/generated/
+tests/Ranvier.View.Anime.Browser/generated-size/

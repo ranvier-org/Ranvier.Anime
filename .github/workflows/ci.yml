@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [bindings, workflows]
+        group: [native, bindings, workflows]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,7 +51,7 @@ jobs:
         with:
           global-json-file: global.json
           dotnet-version: 8.0.x
-      - name: Build and pack Fable.Ranvier.Anime untraced and traced, with Fable sources
+      - name: Build and pack Ranvier.Anime and Fable.Ranvier.Anime, untraced and traced
         run: dotnet fsi build.fsx -- pack
       - uses: actions/upload-artifact@v7
         with:

@@ -1,0 +1,1280 @@
+{
+  "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "scope": "Unmodified engine.update, Clock and Timer; deterministic Date.now; manual engine updates. Default-loop pause is tested separately.",
+  "fixtures": [
+    {
+      "name": "dense",
+      "steps": [
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 3
+        },
+        {
+          "op": "frame",
+          "after": 4
+        },
+        {
+          "op": "frame",
+          "after": 8
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 2
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 4
+        },
+        {
+          "op": "frame",
+          "after": 17
+        }
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 1,
+          "time": 0,
+          "events": [],
+          "engineLastTick": 0,
+          "engineDelta": 0,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 2,
+          "time": 0,
+          "events": [],
+          "engineLastTick": 0,
+          "engineDelta": 0,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 3
+          },
+          "clock": 5,
+          "time": 17,
+          "events": [
+            {
+              "time": 17,
+              "delta": 0
+            }
+          ],
+          "engineLastTick": 4.166666666666667,
+          "engineDelta": 5,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 4
+          },
+          "clock": 9,
+          "time": 21,
+          "events": [
+            {
+              "time": 21,
+              "delta": 17
+            }
+          ],
+          "engineLastTick": 8.333333333333334,
+          "engineDelta": 4,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 8
+          },
+          "clock": 17,
+          "time": 29,
+          "events": [
+            {
+              "time": 29,
+              "delta": 4
+            }
+          ],
+          "engineLastTick": 16.666666666666668,
+          "engineDelta": 8,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 18,
+          "time": 29,
+          "events": [],
+          "engineLastTick": 16.666666666666668,
+          "engineDelta": 8,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 2
+          },
+          "clock": 20,
+          "time": 32,
+          "events": [
+            {
+              "time": 32,
+              "delta": 8
+            }
+          ],
+          "engineLastTick": 20,
+          "engineDelta": 3,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 21,
+          "time": 32,
+          "events": [],
+          "engineLastTick": 20,
+          "engineDelta": 3,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 4
+          },
+          "clock": 25,
+          "time": 37,
+          "events": [
+            {
+              "time": 37,
+              "delta": 3
+            }
+          ],
+          "engineLastTick": 24.166666666666668,
+          "engineDelta": 5,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 42,
+          "time": 54,
+          "events": [
+            {
+              "time": 54,
+              "delta": 5
+            }
+          ],
+          "engineLastTick": 40.833333333333336,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        }
+      ]
+    },
+    {
+      "name": "engine60_child30",
+      "fps": 60,
+      "childFps": 30,
+      "steps": [
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 11
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 3
+        },
+        {
+          "op": "frame",
+          "after": 14
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 2
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "frame",
+          "after": 16
+        },
+        {
+          "op": "frame",
+          "after": 17
+        }
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 1,
+          "time": 0,
+          "events": [],
+          "engineLastTick": 0,
+          "engineDelta": 0,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 11
+          },
+          "clock": 12,
+          "time": 0,
+          "events": [],
+          "engineLastTick": 0,
+          "engineDelta": 0,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 13,
+          "time": 25,
+          "events": [],
+          "engineLastTick": 13,
+          "engineDelta": 13,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 3
+          },
+          "clock": 16,
+          "time": 25,
+          "events": [],
+          "engineLastTick": 13,
+          "engineDelta": 13,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 14
+          },
+          "clock": 30,
+          "time": 42,
+          "events": [
+            {
+              "time": 42,
+              "delta": 25
+            }
+          ],
+          "engineLastTick": 29.666666666666668,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 31,
+          "time": 42,
+          "events": [],
+          "engineLastTick": 29.666666666666668,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 2
+          },
+          "clock": 33,
+          "time": 42,
+          "events": [],
+          "engineLastTick": 29.666666666666668,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 50,
+          "time": 62,
+          "events": [],
+          "engineLastTick": 46.333333333333336,
+          "engineDelta": 20,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 16
+          },
+          "clock": 66,
+          "time": 78,
+          "events": [
+            {
+              "time": 78,
+              "delta": 37
+            }
+          ],
+          "engineLastTick": 63,
+          "engineDelta": 16,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 83,
+          "time": 95,
+          "events": [],
+          "engineLastTick": 79.66666666666667,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        }
+      ]
+    },
+    {
+      "name": "engine480_child240",
+      "fps": 480,
+      "childFps": 240,
+      "steps": [
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 2
+        },
+        {
+          "op": "frame",
+          "after": 2
+        }
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 1,
+          "time": 0,
+          "events": [],
+          "engineLastTick": 0,
+          "engineDelta": 0,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 2,
+          "time": 14,
+          "events": [],
+          "engineLastTick": 2,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 3,
+          "time": 14,
+          "events": [],
+          "engineLastTick": 2,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 4,
+          "time": 16,
+          "events": [
+            {
+              "time": 16,
+              "delta": 14
+            }
+          ],
+          "engineLastTick": 4,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 5,
+          "time": 16,
+          "events": [],
+          "engineLastTick": 4,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 6,
+          "time": 18,
+          "events": [],
+          "engineLastTick": 6,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 2
+          },
+          "clock": 8,
+          "time": 20,
+          "events": [
+            {
+              "time": 20,
+              "delta": 4
+            }
+          ],
+          "engineLastTick": 8,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 2
+          },
+          "clock": 10,
+          "time": 22,
+          "events": [],
+          "engineLastTick": 10,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        }
+      ]
+    },
+    {
+      "name": "engine480_inheritedDefault",
+      "fps": 480,
+      "inheritFps": true,
+      "steps": [
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 2
+        },
+        {
+          "op": "frame",
+          "after": 2
+        }
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 1,
+          "time": 0,
+          "events": [],
+          "engineLastTick": 0,
+          "engineDelta": 0,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 2,
+          "time": 14,
+          "events": [
+            {
+              "time": 14,
+              "delta": 0
+            }
+          ],
+          "engineLastTick": 2,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 3,
+          "time": 14,
+          "events": [],
+          "engineLastTick": 2,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 4,
+          "time": 16,
+          "events": [
+            {
+              "time": 16,
+              "delta": 14
+            }
+          ],
+          "engineLastTick": 4,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 5,
+          "time": 16,
+          "events": [],
+          "engineLastTick": 4,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 6,
+          "time": 18,
+          "events": [
+            {
+              "time": 18,
+              "delta": 2
+            }
+          ],
+          "engineLastTick": 6,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 2
+          },
+          "clock": 8,
+          "time": 20,
+          "events": [
+            {
+              "time": 20,
+              "delta": 2
+            }
+          ],
+          "engineLastTick": 8,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 2
+          },
+          "clock": 10,
+          "time": 22,
+          "events": [
+            {
+              "time": 22,
+              "delta": 2
+            }
+          ],
+          "engineLastTick": 10,
+          "engineDelta": 2,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        }
+      ]
+    },
+    {
+      "name": "idleLateConstructor_child30",
+      "startAfter": 100,
+      "childFps": 30,
+      "steps": [
+        {
+          "op": "frame",
+          "after": 1
+        },
+        {
+          "op": "frame",
+          "after": 3
+        },
+        {
+          "op": "frame",
+          "after": 13
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "frame",
+          "after": 17
+        }
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "frame",
+            "after": 1
+          },
+          "clock": 101,
+          "time": 13,
+          "events": [
+            {
+              "time": 13,
+              "delta": 0
+            }
+          ],
+          "engineLastTick": 100.00000000000001,
+          "engineDelta": 101,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 3
+          },
+          "clock": 104,
+          "time": 16,
+          "events": [],
+          "engineLastTick": 104,
+          "engineDelta": 3,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 13
+          },
+          "clock": 117,
+          "time": 29,
+          "events": [],
+          "engineLastTick": 116.5,
+          "engineDelta": 13,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 134,
+          "time": 46,
+          "events": [
+            {
+              "time": 46,
+              "delta": 29
+            }
+          ],
+          "engineLastTick": 133.16666666666666,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 151,
+          "time": 63,
+          "events": [],
+          "engineLastTick": 149.83333333333331,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        }
+      ]
+    },
+    {
+      "name": "speed",
+      "steps": [
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "speed",
+          "value": 2
+        },
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "speed",
+          "value": 0.5
+        },
+        {
+          "op": "frame",
+          "after": 17
+        }
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 17,
+          "time": 29,
+          "events": [
+            {
+              "time": 29,
+              "delta": 0
+            }
+          ],
+          "engineLastTick": 16.666666666666668,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "speed",
+            "value": 2
+          },
+          "clock": 17,
+          "time": 29,
+          "events": [],
+          "engineLastTick": 16.666666666666668,
+          "engineDelta": 17,
+          "engineSpeed": 2,
+          "rawSpeed": 2,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 34,
+          "time": 63,
+          "events": [
+            {
+              "time": 63,
+              "delta": 29
+            }
+          ],
+          "engineLastTick": 33.333333333333336,
+          "engineDelta": 17,
+          "engineSpeed": 2,
+          "rawSpeed": 2,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "speed",
+            "value": 0.5
+          },
+          "clock": 34,
+          "time": 63,
+          "events": [],
+          "engineLastTick": 33.333333333333336,
+          "engineDelta": 17,
+          "engineSpeed": 0.5,
+          "rawSpeed": 0.5,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 51,
+          "time": 71.5,
+          "events": [
+            {
+              "time": 71.5,
+              "delta": 34
+            }
+          ],
+          "engineLastTick": 50,
+          "engineDelta": 17,
+          "engineSpeed": 0.5,
+          "rawSpeed": 0.5,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        }
+      ]
+    },
+    {
+      "name": "seconds",
+      "unit": "s",
+      "steps": [
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "frame",
+          "after": 33
+        },
+        {
+          "op": "speed",
+          "value": 2
+        },
+        {
+          "op": "frame",
+          "after": 50
+        },
+        {
+          "op": "unit",
+          "value": "ms"
+        },
+        {
+          "op": "frame",
+          "after": 17
+        }
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 17,
+          "time": 0.029,
+          "events": [
+            {
+              "time": 0.029,
+              "delta": 0
+            }
+          ],
+          "engineLastTick": 16.666666666666668,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 0.001,
+          "timeUnit": "s",
+          "tickThreshold": 0.2
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 33
+          },
+          "clock": 50,
+          "time": 0.062,
+          "events": [
+            {
+              "time": 0.062,
+              "delta": 0.029
+            }
+          ],
+          "engineLastTick": 45.83333333333334,
+          "engineDelta": 33,
+          "engineSpeed": 1,
+          "rawSpeed": 0.001,
+          "timeUnit": "s",
+          "tickThreshold": 0.2
+        },
+        {
+          "step": {
+            "op": "speed",
+            "value": 2
+          },
+          "clock": 50,
+          "time": 0.062,
+          "events": [],
+          "engineLastTick": 45.83333333333334,
+          "engineDelta": 33,
+          "engineSpeed": 2,
+          "rawSpeed": 0.002,
+          "timeUnit": "s",
+          "tickThreshold": 0.2
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 50
+          },
+          "clock": 100,
+          "time": 0.162,
+          "events": [
+            {
+              "time": 0.162,
+              "delta": 0.033
+            }
+          ],
+          "engineLastTick": 95.83333333333334,
+          "engineDelta": 50,
+          "engineSpeed": 2,
+          "rawSpeed": 0.002,
+          "timeUnit": "s",
+          "tickThreshold": 0.2
+        },
+        {
+          "step": {
+            "op": "unit",
+            "value": "ms"
+          },
+          "clock": 100,
+          "time": 0.162,
+          "events": [],
+          "engineLastTick": 95.83333333333334,
+          "engineDelta": 50,
+          "engineSpeed": 2,
+          "rawSpeed": 2,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 117,
+          "time": 10,
+          "events": [
+            {
+              "time": 10,
+              "delta": 0.1
+            }
+          ],
+          "engineLastTick": 116.66666666666667,
+          "engineDelta": 17,
+          "engineSpeed": 2,
+          "rawSpeed": 2,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        }
+      ]
+    },
+    {
+      "name": "pauseResume",
+      "steps": [
+        {
+          "op": "frame",
+          "after": 17
+        },
+        {
+          "op": "pause"
+        },
+        {
+          "op": "advance",
+          "after": 100
+        },
+        {
+          "op": "resume"
+        },
+        {
+          "op": "frame",
+          "after": 17
+        }
+      ],
+      "samples": [
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 17,
+          "time": 29,
+          "events": [
+            {
+              "time": 29,
+              "delta": 0
+            }
+          ],
+          "engineLastTick": 16.666666666666668,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "pause"
+          },
+          "clock": 17,
+          "time": 29,
+          "events": [],
+          "engineLastTick": 16.666666666666668,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "advance",
+            "after": 100
+          },
+          "clock": 117,
+          "time": 29,
+          "events": [],
+          "engineLastTick": 16.666666666666668,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "resume"
+          },
+          "clock": 117,
+          "time": 29,
+          "events": [],
+          "engineLastTick": 16.666666666666668,
+          "engineDelta": 17,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        },
+        {
+          "step": {
+            "op": "frame",
+            "after": 17
+          },
+          "clock": 134,
+          "time": 46,
+          "events": [
+            {
+              "time": 46,
+              "delta": 29
+            }
+          ],
+          "engineLastTick": 133.33333333333334,
+          "engineDelta": 117,
+          "engineSpeed": 1,
+          "rawSpeed": 1,
+          "timeUnit": "ms",
+          "tickThreshold": 200
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Ranvier.View.Anime</AssemblyName>
+    <RootNamespace>Ranvier.View.Anime</RootNamespace>
+    <Description>Motion parts for Ranvier.View templates on .NET hosts such as native WebCore, powered by Ranvier.Anime.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Motion.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Ranvier.View$(RanvierPackageSuffix)" Version="[$(RanvierViewVersion)]" />
+  </ItemGroup>
+  <!-- One source over the portable surface: Ranvier.Anime on .NET hosts, Fable.Ranvier.Anime (anime.js) under Fable. -->
+  <ItemGroup Condition="'$(FABLE_COMPILER)' != 'true'">
+    <ProjectReference Include="../Ranvier.Anime/Ranvier.Anime.fsproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FABLE_COMPILER)' == 'true'">
+    <ProjectReference Include="../Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ranvier.Anime.Tests" />
+    <InternalsVisibleTo Include="Ranvier.View.Anime.Browser" />
+  </ItemGroup>
+</Project>

@@ -1,10 +1,11 @@
-namespace Ranvier.Anime
+namespace Fable.Ranvier.Anime
 
 open Fable.Core
 
 /// <summary>An anime object that restores the state its targets had before it was created.</summary>
 [<AllowNullLiteral>]
 type IRevertible =
+    inherit global.Ranvier.Anime.IRevertible
     /// <summary>Stops the object and restores the inline styles and attributes it changed.</summary>
     abstract revert: unit -> unit
 
@@ -13,6 +14,7 @@ type IRevertible =
 [<AllowNullLiteral>]
 type ITickable =
     inherit IRevertible
+    inherit global.Ranvier.Anime.ITickable
     /// <summary>The total duration across iterations; infinite for an endless loop.</summary>
     abstract duration: float
     abstract iterationDuration: float
@@ -65,6 +67,7 @@ type Timer =
 [<AllowNullLiteral>]
 type JSAnimation =
     inherit ITickable
+    inherit global.Ranvier.Anime.ComposedAnimation
     /// <summary>Re-reads function-based values and the targets' current values.</summary>
     abstract refresh: unit -> unit
     abstract onBegin: (JSAnimation -> unit) with get, set
@@ -103,6 +106,7 @@ type WAAPIAnimation =
 [<AllowNullLiteral>]
 type Timeline =
     inherit ITickable
+    inherit global.Ranvier.Anime.ComposedTimeline
     /// <summary>Adds a callback at <c>position</c>, the end of the timeline by default.</summary>
     abstract call: callback: (Timer -> unit) * ?position: At -> Timeline
     /// <summary>Names <c>position</c>, the end of the timeline by default, as the label <c>name</c>.</summary>
@@ -144,6 +148,7 @@ type Animatable =
 [<AllowNullLiteral>]
 type Draggable =
     inherit IRevertible
+    inherit global.Ranvier.Anime.NativeDraggable
     /// <summary>The horizontal position; setting it moves the element.</summary>
     abstract x: float with get, set
     abstract y: float with get, set
@@ -211,6 +216,7 @@ type ScrollObserver =
 [<AllowNullLiteral>]
 type TextSplitter =
     inherit IRevertible
+    inherit global.Ranvier.Anime.TextSplitter
     abstract lines: TS.Dom.Element array
     abstract words: TS.Dom.Element array
     abstract chars: TS.Dom.Element array

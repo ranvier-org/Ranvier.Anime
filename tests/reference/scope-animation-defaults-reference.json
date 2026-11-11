@@ -1,0 +1,53 @@
+{
+  "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "cases": {
+    "inherited": {
+      "duration": 240,
+      "easeHalf": 0.25,
+      "modifier25": 30,
+      "composition": 1,
+      "autoplay": false,
+      "iterationDuration": 240,
+      "paused": true,
+      "value120": 30
+    },
+    "partial": {
+      "duration": 0,
+      "easeHalf": 0.25,
+      "modifier25": 26,
+      "composition": 0,
+      "autoplay": true
+    },
+    "zero": {
+      "iterationDuration": 1e-11,
+      "paused": true
+    },
+    "explicit": {
+      "iterationDuration": 120,
+      "paused": false,
+      "value60": 50
+    },
+    "mutation": {
+      "inherited": 300,
+      "copied": 240,
+      "same": true,
+      "copy": true
+    },
+    "refresh": [
+      300,
+      360
+    ],
+    "afterRevert": {
+      "duration": 360,
+      "easeHalf": 0.25,
+      "modifier25": 30,
+      "composition": 1,
+      "autoplay": false
+    },
+    "globalFactory": {
+      "iterationDuration": 180,
+      "paused": true,
+      "value90": 30
+    }
+  }
+}

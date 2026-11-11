@@ -1,19 +1,23 @@
 <Project>
     <Import Project="../Directory.Build.props" />
 
-    <PropertyGroup>
+    <!-- Fable packages only: the native port (Ranvier.*) is an ordinary .NET library. -->
+    <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Fable.'))">
         <FSharpCoreImplicitPackageVersion>8.0.100</FSharpCoreImplicitPackageVersion>
         <FablePackageType>library</FablePackageType>
+    </PropertyGroup>
+
+    <PropertyGroup>
         <NuspecOutputPath Condition="'$(NuspecOutputPath)' == ''">$(MSBuildThisFileDirectory)../bin/nuspec/$(MSBuildProjectName)/$(Configuration)/</NuspecOutputPath>
     </PropertyGroup>
 
     <!-- A traced build's creation sites skip frames from an assembly with this marker. The core is matched by
          reference, so its untraced build is unchanged. -->
-    <ItemGroup Condition="'$(MSBuildProjectName)' != 'Ranvier'">
+    <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Fable.'))">
         <AssemblyMetadata Include="RanvierLibrary" Value="true" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Fable.'))">
         <PackageReference Include="Fable.Package.SDK" Version="1.4.1" PrivateAssets="all"
                           IncludeAssets="runtime;build;native;contentfiles;analyzers;buildtransitive" />
     </ItemGroup>

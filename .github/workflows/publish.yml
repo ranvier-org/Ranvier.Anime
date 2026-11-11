@@ -15,8 +15,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Publishes the packages the merged release commit's CI run packed. Only Fable.Ranvier.Anime and
-  # Fable.Ranvier.Anime.Traced are pushed; any other package in the artifact fails the job.
+  # Publishes the packages the merged release commit's CI run packed: Ranvier.Anime and Fable.Ranvier.Anime, each
+  # untraced and traced, at their projects' versions. Any other package in the artifact fails the job; a version
+  # already on NuGet is skipped.
   publish:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
@@ -46,9 +47,10 @@ jobs:
       - name: Require exactly the published package set
         run: |
           set -euo pipefail
-          version="$(grep -oP '(?<=<Version>)[^<]+' src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj)"
-          expected="$(printf '%s\n' "Fable.Ranvier.Anime.$version.nupkg" "Fable.Ranvier.Anime.Traced.$version.nupkg")"
-          actual="$(cd bin && ls *.nupkg | sort)"
+          fable="$(grep -oP '(?<=<Version>)[^<]+' src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj)"
+          native="$(grep -oP '(?<=<Version>)[^<]+' src/Ranvier.Anime/Ranvier.Anime.fsproj)"
+          expected="$(printf '%s\n' "Fable.Ranvier.Anime.$fable.nupkg" "Fable.Ranvier.Anime.Traced.$fable.nupkg" "Ranvier.Anime.$native.nupkg" "Ranvier.Anime.Traced.$native.nupkg" | LC_ALL=C sort)"
+          actual="$(cd bin && ls *.nupkg | LC_ALL=C sort)"
           if [ "$actual" != "$expected" ]; then
             printf 'Expected:\n%s\nFound:\n%s\n' "$expected" "$actual" >&2
             exit 1

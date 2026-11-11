@@ -1,17 +1,17 @@
 ---
 title: Owning and driving animations
 order: 2
-description: "Ranvier.Anime.Reactive: animations reverted by owners, playback as memos, signals that seek and drive, and the reduced-motion policy."
+description: "Fable.Ranvier.Anime.Reactive: animations reverted by owners, playback as memos, signals that seek and drive, and the reduced-motion policy."
 ---
 
-`Ranvier.Anime.Reactive` connects anime objects to owners and signals. It works with the core
+`Fable.Ranvier.Anime.Reactive` connects anime objects to owners and signals. It works with the core
 without the view layer. Use the opens from [Animation](bindings.md#animating-an-element) plus
 `open global.Ranvier`.
 
 ```fsharp
 open global.Ranvier
 open Fable.Core
-open Ranvier.Anime
+open Fable.Ranvier.Anime
 
 /// Fades the panel in, marks it shown once the fade completes, and scales the bar with the level.
 let animatePanel (panel: TS.Dom.Element) (bar: TS.Dom.Element) (level: Signal<float>) (shown: Signal<bool>) =

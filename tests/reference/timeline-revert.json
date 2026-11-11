@@ -1,0 +1,573 @@
+{
+  "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "version": "4.5.0",
+  "scope": "Actual pinned timeline revert against recording numeric object getters/setters and borrowed actual Timer; traces retain construction reads, rewind writes, callbacks and reverse property restoration. Native CSS and owner-disposal behavior require separate qualification.",
+  "fixtures": [
+    {
+      "spec": {
+        "name": "inferred",
+        "children": [
+          {
+            "x": 100,
+            "duration": 100
+          }
+        ]
+      },
+      "construction": [
+        [
+          "get",
+          10
+        ]
+      ],
+      "before": {
+        "value": 77.5,
+        "time": 75,
+        "borrowedTime": null
+      },
+      "first": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "paused": true,
+        "borrowedTime": null,
+        "borrowedCancelled": null,
+        "trace": [
+          [
+            "set",
+            10
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      },
+      "second": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "trace": [
+          [
+            "set",
+            10
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      }
+    },
+    {
+      "spec": {
+        "name": "explicit",
+        "children": [
+          {
+            "x": [
+              20,
+              100
+            ],
+            "duration": 100
+          }
+        ]
+      },
+      "construction": [
+        [
+          "get",
+          10
+        ]
+      ],
+      "before": {
+        "value": 80,
+        "time": 75,
+        "borrowedTime": null
+      },
+      "first": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "paused": true,
+        "borrowedTime": null,
+        "borrowedCancelled": null,
+        "trace": [
+          [
+            "set",
+            20
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      },
+      "second": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "trace": [
+          [
+            "set",
+            20
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      }
+    },
+    {
+      "spec": {
+        "name": "overlap",
+        "children": [
+          {
+            "x": 100,
+            "duration": 100
+          },
+          {
+            "x": 200,
+            "duration": 100,
+            "at": 50
+          }
+        ]
+      },
+      "construction": [
+        [
+          "get",
+          10
+        ]
+      ],
+      "before": {
+        "value": 91.25,
+        "time": 75,
+        "borrowedTime": null
+      },
+      "first": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "paused": true,
+        "borrowedTime": null,
+        "borrowedCancelled": null,
+        "trace": [
+          [
+            "set",
+            10
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      },
+      "second": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "trace": [
+          [
+            "set",
+            10
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      }
+    },
+    {
+      "spec": {
+        "name": "explicitOverlap",
+        "children": [
+          {
+            "x": [
+              20,
+              100
+            ],
+            "duration": 100
+          },
+          {
+            "x": [
+              300,
+              400
+            ],
+            "duration": 100,
+            "at": 50
+          }
+        ]
+      },
+      "construction": [
+        [
+          "get",
+          10
+        ],
+        [
+          "get",
+          10
+        ]
+      ],
+      "before": {
+        "value": 325,
+        "time": 75,
+        "borrowedTime": null
+      },
+      "first": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "paused": true,
+        "borrowedTime": null,
+        "borrowedCancelled": null,
+        "trace": [
+          [
+            "set",
+            20
+          ],
+          [
+            "set",
+            10
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      },
+      "second": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "trace": [
+          [
+            "set",
+            20
+          ],
+          [
+            "set",
+            10
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      }
+    },
+    {
+      "spec": {
+        "name": "keyframesAndScalar",
+        "children": [
+          {
+            "x": [
+              0,
+              100,
+              200
+            ],
+            "duration": 200
+          },
+          {
+            "x": 400,
+            "duration": 100,
+            "at": 75
+          }
+        ]
+      },
+      "construction": [
+        [
+          "get",
+          10
+        ]
+      ],
+      "before": {
+        "value": 75,
+        "time": 75,
+        "borrowedTime": null
+      },
+      "first": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "paused": true,
+        "borrowedTime": null,
+        "borrowedCancelled": null,
+        "trace": [
+          [
+            "set",
+            0
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      },
+      "second": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "trace": [
+          [
+            "set",
+            0
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      }
+    },
+    {
+      "spec": {
+        "name": "setThenKeyframes",
+        "children": [
+          {
+            "x": 100,
+            "duration": 0,
+            "at": 25
+          },
+          {
+            "x": [
+              200,
+              300,
+              400
+            ],
+            "duration": 100,
+            "at": 50
+          }
+        ]
+      },
+      "construction": [
+        [
+          "get",
+          10
+        ],
+        [
+          "get",
+          10
+        ]
+      ],
+      "before": {
+        "value": 250,
+        "time": 75,
+        "borrowedTime": null
+      },
+      "first": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "paused": true,
+        "borrowedTime": null,
+        "borrowedCancelled": null,
+        "trace": [
+          [
+            "set",
+            10
+          ],
+          [
+            "set",
+            10
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      },
+      "second": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "trace": [
+          [
+            "set",
+            10
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      }
+    },
+    {
+      "spec": {
+        "name": "reversed",
+        "options": {
+          "reversed": true
+        },
+        "children": [
+          {
+            "x": [
+              20,
+              100
+            ],
+            "duration": 100
+          }
+        ]
+      },
+      "construction": [
+        [
+          "get",
+          10
+        ]
+      ],
+      "before": {
+        "value": 40,
+        "time": 75,
+        "borrowedTime": null
+      },
+      "first": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "paused": true,
+        "borrowedTime": null,
+        "borrowedCancelled": null,
+        "trace": [
+          [
+            "set",
+            100
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      },
+      "second": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "trace": [
+          [
+            "set",
+            100
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      }
+    },
+    {
+      "spec": {
+        "name": "alternate",
+        "options": {
+          "alternate": true,
+          "loop": 1
+        },
+        "children": [
+          {
+            "x": [
+              20,
+              100
+            ],
+            "duration": 100
+          }
+        ]
+      },
+      "construction": [
+        [
+          "get",
+          10
+        ]
+      ],
+      "before": {
+        "value": 80,
+        "time": 75,
+        "borrowedTime": null
+      },
+      "first": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "paused": true,
+        "borrowedTime": null,
+        "borrowedCancelled": null,
+        "trace": [
+          [
+            "set",
+            20
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      },
+      "second": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "trace": [
+          [
+            "set",
+            20
+          ],
+          [
+            "set",
+            10
+          ]
+        ]
+      }
+    },
+    {
+      "spec": {
+        "name": "borrowedTimer",
+        "borrow": true,
+        "children": []
+      },
+      "construction": [],
+      "before": {
+        "value": 10,
+        "time": 75,
+        "borrowedTime": 75
+      },
+      "first": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "paused": true,
+        "borrowedTime": 0,
+        "borrowedCancelled": 0,
+        "trace": []
+      },
+      "second": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "trace": []
+      }
+    },
+    {
+      "spec": {
+        "name": "empty",
+        "children": []
+      },
+      "construction": [],
+      "before": {
+        "value": 10,
+        "time": 0,
+        "borrowedTime": null
+      },
+      "first": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "paused": true,
+        "borrowedTime": null,
+        "borrowedCancelled": null,
+        "trace": []
+      },
+      "second": {
+        "value": 10,
+        "time": 0,
+        "cancelled": 1,
+        "trace": []
+      }
+    }
+  ]
+}

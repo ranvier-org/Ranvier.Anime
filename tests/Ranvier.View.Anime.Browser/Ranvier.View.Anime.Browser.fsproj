@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+  The shared Motion parts compiled with Fable over anime.js and run under the Node test runner with jsdom and a mocked
+  clock (npm test). Fable-only: the .NET build of Ranvier.View.Anime is covered by the native smoke host.
+  -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Ranvier.View.Anime.Browser</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Fixtures.fs" />
+    <Compile Include="SizeEntries.fs" />
+    <Compile Include="MotionChecks.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ranvier.View.Dom$(RanvierPackageSuffix)" Version="[$(RanvierViewVersion)]" />
+    <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
+    <PackageReference Update="FSharp.Core" Version="10.1.401" />
+  </ItemGroup>
+
+</Project>

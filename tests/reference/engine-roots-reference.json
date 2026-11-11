@@ -1,0 +1,1046 @@
+{
+  "upstreamCommit": "2c9cf8ea00329f6768c7d7902252ed977d75ce42",
+  "scope": "Unmodified browser engine automatic loop and real Timer with deterministic queued RAF; root ordering, mutations and engine pause during callbacks.",
+  "fixtures": [
+    {
+      "name": "samePriority",
+      "other": true,
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "A",
+              "time": 22
+            },
+            {
+              "name": "B",
+              "time": 22
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 39
+            },
+            {
+              "name": "B",
+              "time": 39
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 56
+            },
+            {
+              "name": "B",
+              "time": 56
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "priority",
+      "other": true,
+      "priorityA": 2,
+      "priorityB": 0,
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "B",
+              "time": 17
+            },
+            {
+              "name": "A",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "B",
+              "time": 22
+            },
+            {
+              "name": "A",
+              "time": 22
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "B",
+              "time": 39
+            },
+            {
+              "name": "A",
+              "time": 39
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "B",
+              "time": 56
+            },
+            {
+              "name": "A",
+              "time": 56
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "appendWithSibling",
+      "other": true,
+      "action": "append",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 17
+            },
+            {
+              "name": "C",
+              "time": 12
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "A",
+              "time": 22
+            },
+            {
+              "name": "B",
+              "time": 22
+            },
+            {
+              "name": "C",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 39
+            },
+            {
+              "name": "B",
+              "time": 39
+            },
+            {
+              "name": "C",
+              "time": 34
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 56
+            },
+            {
+              "name": "B",
+              "time": 56
+            },
+            {
+              "name": "C",
+              "time": 51
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "appendAtTail",
+      "other": false,
+      "action": "append",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "A",
+              "time": 22
+            },
+            {
+              "name": "C",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 39
+            },
+            {
+              "name": "C",
+              "time": 34
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 56
+            },
+            {
+              "name": "C",
+              "time": 51
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "insertBefore",
+      "other": true,
+      "action": "prepend",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "C",
+              "time": 17
+            },
+            {
+              "name": "A",
+              "time": 22
+            },
+            {
+              "name": "B",
+              "time": 22
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "C",
+              "time": 34
+            },
+            {
+              "name": "A",
+              "time": 39
+            },
+            {
+              "name": "B",
+              "time": 39
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "C",
+              "time": 51
+            },
+            {
+              "name": "A",
+              "time": 56
+            },
+            {
+              "name": "B",
+              "time": 56
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "pauseNext",
+      "other": true,
+      "action": "pause",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "A",
+              "time": 22
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 39
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 56
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "resumeNext",
+      "other": true,
+      "action": "resume",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 12
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "A",
+              "time": 22
+            },
+            {
+              "name": "B",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 39
+            },
+            {
+              "name": "B",
+              "time": 34
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 56
+            },
+            {
+              "name": "B",
+              "time": 51
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "cancelNext",
+      "other": true,
+      "action": "cancel",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "A",
+              "time": 22
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 39
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 56
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "pauseEngine",
+      "other": true,
+      "action": "enginePause",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 0
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [],
+          "paused": true,
+          "requests": 0
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [],
+          "paused": true,
+          "requests": 0
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [],
+          "paused": true,
+          "requests": 0
+        }
+      ]
+    },
+    {
+      "name": "resumeEngine",
+      "other": true,
+      "action": "engineResume",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            }
+          ],
+          "paused": false,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "A",
+              "time": 22
+            },
+            {
+              "name": "B",
+              "time": 5
+            }
+          ],
+          "paused": false,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 39
+            },
+            {
+              "name": "B",
+              "time": 22
+            }
+          ],
+          "paused": false,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 56
+            },
+            {
+              "name": "B",
+              "time": 39
+            }
+          ],
+          "paused": false,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "speedDuringTraversal",
+      "other": true,
+      "action": "engineSpeed",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "A",
+              "time": 27
+            },
+            {
+              "name": "B",
+              "time": 10
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 61
+            },
+            {
+              "name": "B",
+              "time": 44
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 95
+            },
+            {
+              "name": "B",
+              "time": 78
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "fpsDuringTraversal",
+      "other": true,
+      "action": "engineFps",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 39
+            },
+            {
+              "name": "B",
+              "time": 39
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 56
+            },
+            {
+              "name": "B",
+              "time": 56
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "unitsDuringTraversal",
+      "other": true,
+      "action": "engineUnit",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "A",
+              "time": 0.022
+            },
+            {
+              "name": "B",
+              "time": 0.022
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 0.039
+            },
+            {
+              "name": "B",
+              "time": 0.039
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 0.056
+            },
+            {
+              "name": "B",
+              "time": 0.056
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    },
+    {
+      "name": "disableDefaultLoopDuringTraversal",
+      "other": true,
+      "action": "engineManual",
+      "samples": [
+        {
+          "after": 1,
+          "clock": 1,
+          "events": [],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 4,
+          "clock": 5,
+          "events": [
+            {
+              "name": "A",
+              "time": 17
+            },
+            {
+              "name": "B",
+              "time": 17
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 5,
+          "clock": 10,
+          "events": [
+            {
+              "name": "A",
+              "time": 22
+            },
+            {
+              "name": "B",
+              "time": 22
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 27,
+          "events": [
+            {
+              "name": "A",
+              "time": 39
+            },
+            {
+              "name": "B",
+              "time": 39
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        },
+        {
+          "after": 17,
+          "clock": 44,
+          "events": [
+            {
+              "name": "A",
+              "time": 56
+            },
+            {
+              "name": "B",
+              "time": 56
+            }
+          ],
+          "paused": true,
+          "requests": 1
+        }
+      ]
+    }
+  ]
+}

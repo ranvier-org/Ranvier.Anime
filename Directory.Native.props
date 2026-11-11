@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <FSharpCoreImplicitPackageVersion>10.0.100</FSharpCoreImplicitPackageVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarnOn>$(WarnOn);3390</WarnOn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RanvierTrace Condition="'$(RanvierTrace)' == '' and '$(Configuration)' == 'Debug'">true</RanvierTrace>
+    <RanvierPackageSuffix Condition="'$(RanvierTrace)' == 'true'">.Traced</RanvierPackageSuffix>
+    <RanvierCssVersion Condition="'$(RanvierCssVersion)' == ''">0.1.1-alpha.2</RanvierCssVersion>
+    <RanvierDomVersion Condition="'$(RanvierDomVersion)' == ''">0.1.0-rc.1</RanvierDomVersion>
+    <RanvierCssBindingsVersion Condition="'$(RanvierCssBindingsVersion)' == ''">0.1.1-alpha.1</RanvierCssBindingsVersion>
+    <RanvierViewVersion Condition="'$(RanvierViewVersion)' == ''">0.1.49-rc.2</RanvierViewVersion>
+    <FableRanvierAnimeVersion Condition="'$(FableRanvierAnimeVersion)' == ''">0.1.44</FableRanvierAnimeVersion>
+    <RanvierViewWebCoreVersion Condition="'$(RanvierViewWebCoreVersion)' == ''">0.1.0-rc.3</RanvierViewWebCoreVersion>
+    <RanvierViewWebCoreSdlVersion Condition="'$(RanvierViewWebCoreSdlVersion)' == ''">0.1.0-rc.5</RanvierViewWebCoreSdlVersion>
+    <RanvierWebCoreNativeVersion Condition="'$(RanvierWebCoreNativeVersion)' == ''">0.1.1-rc.5</RanvierWebCoreNativeVersion>
+  </PropertyGroup>
+</Project>

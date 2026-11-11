@@ -4,7 +4,7 @@
 /// before that import, calls <c>manual</c>, then advances the mocked time and calls <c>step</c>. anime starts each
 /// resumed tickable 12 ms early, so a read after advancing <c>t</c> ms shows the value at <c>t + 12</c> ms.
 /// </remarks>
-module Ranvier.Anime.Testing
+module Fable.Ranvier.Anime.Testing
 
 /// <summary>Stops the engine ticking on animation frames and on document visibility, leaving ticks to <c>step</c>.</summary>
 let manual () =
