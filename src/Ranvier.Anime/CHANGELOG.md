@@ -1,5 +1,5 @@
 ---
-last_commit_released: 25b7a02ee23ef59f56d429eedf468dbc3fd411c6
+last_commit_released: 18fe47a890f2a829db867321cbcb3fc710785bd6
 pre_release: rc
 updaters:
   - regex:
@@ -10,6 +10,14 @@ updaters:
 # Changelog
 
 This changelog is generated from conventional commits by [EasyBuild.ShipIt](https://github.com/easybuild-org/EasyBuild.ShipIt).
+
+## 0.1.0-rc.2 - 2026-11-12
+
+### 🚀 Features
+
+* *(native)* Expose pure sRGB Lab and HCL color interpolation (#8) ([18fe47a](https://github.com/ranvier-org/Ranvier.Anime/commit/18fe47a890f2a829db867321cbcb3fc710785bd6))
+
+<strong><small>[View changes on Github](https://github.com/ranvier-org/Ranvier.Anime/compare/25b7a02ee23ef59f56d429eedf468dbc3fd411c6..18fe47a890f2a829db867321cbcb3fc710785bd6)</small></strong>
 
 ## 0.1.0-rc.1 - 2026-11-11
 
