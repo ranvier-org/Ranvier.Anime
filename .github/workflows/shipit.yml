@@ -7,7 +7,6 @@ on:
     types: [completed]
 
 permissions:
-  actions: write
   contents: write
   pull-requests: write
 
@@ -44,34 +43,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           dotnet fsi build.fsx -- tools
           dotnet fsi build.fsx -- shipit github --allow-branch "$RELEASE_BRANCH" --mode pull-request --skip-merge-commit
-      # GitHub holds pull request runs started by GITHUB_TOKEN for approval. A dispatched run reports the required check
-      # on the same head commit.
-      - name: Run CI on the release pull request
-        env:
-          RELEASE_BRANCH: release/${{ github.event.workflow_run.head_branch }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          open="$(gh pr list -R "$GITHUB_REPOSITORY" --head "$RELEASE_BRANCH" --state open --json number --jq 'length')"
-          if [ "$open" -gt 0 ]; then
-            gh workflow run ci.yml -R "$GITHUB_REPOSITORY" --ref "$RELEASE_BRANCH"
-          fi
-      # The held runs never need approval, and approving one starts a second CI run whose pending check blocks the merge
-      # until it ends. They are removed for a minute after the push; a run GitHub creates later stays, as does any run
-      # this token may not delete.
-      - name: Remove the held pull request runs
-        env:
-          RELEASE_BRANCH: release/${{ github.event.workflow_run.head_branch }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$RELEASE_BRANCH" --jq .object.sha)" || exit 0
-          for attempt in 1 2 3 4 5 6; do
-            sleep 10
-            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$sha&event=pull_request&status=action_required" --jq '.workflow_runs[].id')" || continue
-            for run in $runs; do
-              if gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/runs/$run"; then
-                echo "Removed held run $run"
-              else
-                echo "::warning::Could not remove held run $run"
-              fi
-            done
-          done
+      # GitHub holds the pull request runs of a pull request opened with GITHUB_TOKEN. The required CI result check
+      # comes only from them: approve the held CI run on the release pull request, or close and reopen the pull request,
+      # which starts it under your own account. A CI run this workflow dispatches does not report the required check,
+      # and deleting the held runs leaves nothing to approve.
