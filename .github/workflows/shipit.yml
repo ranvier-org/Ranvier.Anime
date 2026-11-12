@@ -55,3 +55,23 @@ jobs:
           if [ "$open" -gt 0 ]; then
             gh workflow run ci.yml -R "$GITHUB_REPOSITORY" --ref "$RELEASE_BRANCH"
           fi
+      # The held runs never need approval, and approving one starts a second CI run whose pending check blocks the merge
+      # until it ends. They are removed for a minute after the push; a run GitHub creates later stays, as does any run
+      # this token may not delete.
+      - name: Remove the held pull request runs
+        env:
+          RELEASE_BRANCH: release/${{ github.event.workflow_run.head_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$RELEASE_BRANCH" --jq .object.sha)" || exit 0
+          for attempt in 1 2 3 4 5 6; do
+            sleep 10
+            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$sha&event=pull_request&status=action_required" --jq '.workflow_runs[].id')" || continue
+            for run in $runs; do
+              if gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/runs/$run"; then
+                echo "Removed held run $run"
+              else
+                echo "::warning::Could not remove held run $run"
+              fi
+            done
+          done
