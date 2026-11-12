@@ -84,6 +84,7 @@
     <Compile Include="Composition.fs" />
     <Compile Include="Waapi.fs" />
     <Compile Include="Utils.fs" />
+    <Compile Include="ColorSpace.fs" />
     <Compile Include="TextScramble.fs" />
     <Compile Include="TextSplit.fs" />
     <Compile Include="DeferredStubs.fs" />
