@@ -195,15 +195,21 @@ module Stage =
                 }
         }
 
+    /// Installs Playwright's Chromium for a directory's npm package, unless `--quick`.
     let chromium (directory: string) =
+        let directory = Path.Combine (Spec.root, directory)
+
+        let installer =
+            Path.GetRelativePath(directory, Path.Combine (Spec.root, "tools/install-chromium.mjs")).Replace('\\', '/')
+
         input {
             let! quick = Baked.Common.quick
 
             return
                 stage "install Chromium" {
                     when' (not quick)
-                    workingDir (Path.Combine (Spec.root, directory))
-                    run "npx playwright install --with-deps chromium"
+                    workingDir directory
+                    run $"node {installer}"
                 }
         }
 
