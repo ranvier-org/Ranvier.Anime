@@ -95,9 +95,26 @@ jobs:
             python3 -I .github/scripts/check_versioning.py
           fi
 
+  color-contracts:
+    name: Color (${{ matrix.os }}, traced=${{ matrix.traced }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        traced: [false, true]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: dotnet run --project tests/Ranvier.Anime.Tests -c Release -f net10.0 -p:RanvierTrace=${{ matrix.traced }} -- --filter-test-list Perceptual
+      - run: dotnet fsi tools/color-benchmark.fsx
+
   result:
     name: CI result
-    needs: [tests, packages, format, versioning]
+    needs: [tests, packages, format, versioning, color-contracts]
     if: always()
     runs-on: ubuntu-latest
     steps:
