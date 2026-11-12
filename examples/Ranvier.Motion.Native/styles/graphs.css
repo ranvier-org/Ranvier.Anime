@@ -12,7 +12,7 @@
 .plot-frame { display: flex; height: 320px; }
 .y-axis { width: 38px; flex: 0 0 38px; display: flex; flex-direction: column; justify-content: space-between; padding: 28px 0 37px; color: var(--muted); font: 10px var(--mono); }
 .plot-area { flex: 1; min-width: 0; height: 100%; position: relative; }
-.explorer-svg { display: block; width: 100%; height: 100%; overflow: hidden; touch-action: pan-y; border-radius: 6px; }
+.explorer-svg { display: block; width: 100%; height: 100%; overflow: hidden; cursor: crosshair; touch-action: pan-y; border-radius: 6px; }
 .explorer-svg:active { cursor: grabbing; }
 .explorer-svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .graph-grid { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
