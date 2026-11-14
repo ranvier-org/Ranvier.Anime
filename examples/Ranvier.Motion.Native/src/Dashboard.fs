@@ -9,7 +9,7 @@ open global.Ranvier
 open Ranvier.Anime
 open Ranvier.Dom
 open Ranvier.View
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.View.Anime
 
 /// <summary>One reading of the service; loads are in 0..1.</summary>
@@ -240,39 +240,39 @@ let private pulse (delay: int) (_: unit) (element: Element) =
 let private skeleton =
     Component.template
         (fun _ () -> ())
-        (div (Attrs.className "skeleton", Attrs.aria ("busy", "true")) {
+        (div (div.className "skeleton", div.aria ("busy", "true")) {
             for index in 0..2 do
-                div (Attrs.className "skeleton-tile", Motion.on (pulse (index * 140))) {
-                    div (Attrs.className "skeleton-line short") { () }
-                    div (Attrs.className "skeleton-line") { () }
+                div (div.className "skeleton-tile", Motion.on (pulse (index * 140))) {
+                    div (div.className "skeleton-line short") { () }
+                    div (div.className "skeleton-line") { () }
                 }
 
-            div (Attrs.className "skeleton-tile wide", Motion.on (pulse 420)) { div (Attrs.className "skeleton-chart") { () } }
+            div (div.className "skeleton-tile wide", Motion.on (pulse 420)) { div (div.className "skeleton-chart") { () } }
         })
 
 let private failed =
     Component.template
         (fun _ (failure: BoundaryFailure) -> failure)
-        (div (Attrs.className "failed") {
+        (div (div.className "failed") {
             p () {
                 fun (failure: BoundaryFailure) ->
                     "The metrics stream failed: "
                     + failure.Error.Message
             }
 
-            button (Events.onClick (fun (failure: BoundaryFailure) _ -> failure.Retry ())) { "Retry" }
+            button (button.onClick (fun (failure: BoundaryFailure) _ -> failure.Retry ())) { "Retry" }
         })
 
 let private gauge (label: string) (read: Sample -> float) =
-    div (Attrs.className "gauge") {
-        div (Attrs.className "gauge-head") {
+    div (div.className "gauge") {
+        div (div.className "gauge-head") {
             span () { label }
             strong () { fun (panel: Panel) -> percent (read panel.Latest.Value) }
         }
 
-        div (Attrs.className "gauge-track") {
+        div (div.className "gauge-track") {
             div (
-                Attrs.className "gauge-fill",
+                div.className "gauge-fill",
                 Motion.follow "scaleX" { ComposedAnimationOptions.Default with Duration = 700.; Ease = Native.outQuart } (fun (panel: Panel) -> read panel.Latest.Value)
             ) {
                 ()
@@ -320,78 +320,78 @@ let private content (store: Store) =
                     })
 
             panel)
-        (div (Attrs.className "metrics", Attrs.data ("refreshing", fun (panel: Panel) -> if panel.Status.IsPending () then Some "true" else None)) {
-            article (Attrs.className "tile requests") {
+        (div (div.className "metrics", div.data ("refreshing", fun (panel: Panel) -> if panel.Status.IsPending () then Some "true" else None)) {
+            article (article.className "tile requests") {
                 h3 () { "Requests / s" }
-                strong (Attrs.className "counter") { fun (panel: Panel) -> sprintf "%.0f" panel.Shown }
-                span (Attrs.className "note") { fun (panel: Panel) -> sprintf "sample %d" panel.Latest.Value.Tick }
+                strong (strong.className "counter") { fun (panel: Panel) -> sprintf "%.0f" panel.Shown }
+                span (span.className "note") { fun (panel: Panel) -> sprintf "sample %d" panel.Latest.Value.Tick }
             }
 
-            article (Attrs.className "tile ring") {
-                svg (Attrs.className "ring-svg", Attrs.attribute ("viewBox", "0 0 100 100")) {
-                    circle (Attrs.className "ring-track", Attrs.attribute ("cx", "50"), Attrs.attribute ("cy", "50"), Attrs.attribute ("r", "42")) {
+            article (article.className "tile ring") {
+                svg (svg.className "ring-svg", svg.attribute ("viewBox", "0 0 100 100")) {
+                    circle (circle.className "ring-track", circle.attribute ("cx", "50"), circle.attribute ("cy", "50"), circle.attribute ("r", "42")) {
                         ()
                     }
 
                     circle (
-                        Attrs.className "ring-value",
-                        Attrs.attribute ("cx", "50"),
-                        Attrs.attribute ("cy", "50"),
-                        Attrs.attribute ("r", "42"),
+                        circle.className "ring-value",
+                        circle.attribute ("cx", "50"),
+                        circle.attribute ("cy", "50"),
+                        circle.attribute ("r", "42"),
                         Motion.draw { ComposedAnimationOptions.Default with Duration = 700.; Ease = Native.outQuart } (fun (panel: Panel) -> panel.Latest.Value.Cpu)
                     ) {
                         ()
                     }
                 }
 
-                div (Attrs.className "ring-label") {
+                div (div.className "ring-label") {
                     strong () { fun (panel: Panel) -> percent panel.Latest.Value.Cpu }
                     span () { "CPU" }
                 }
             }
 
-            article (Attrs.className "tile gauges") {
+            article (article.className "tile gauges") {
                 gauge "CPU" (fun sample -> sample.Cpu)
                 gauge "Memory" (fun sample -> sample.Memory)
                 gauge "Latency" (fun sample -> sample.Latency)
             }
 
-            article (Attrs.className "tile chart") {
-                div (Attrs.className "chart-head") {
+            article (article.className "tile chart") {
+                div (div.className "chart-head") {
                     h3 () { "CPU, last 24 samples" }
-                    span (Attrs.className "note") { fun (panel: Panel) -> sprintf "%d of %d" panel.Cpu.Value.Length capacity }
+                    span (span.className "note") { fun (panel: Panel) -> sprintf "%d of %d" panel.Cpu.Value.Length capacity }
                 }
 
-                svg (Attrs.className "chart-svg", Attrs.attribute ("viewBox", "0 0 600 200"), Attrs.attribute ("preserveAspectRatio", "none")) {
+                svg (svg.className "chart-svg", svg.attribute ("viewBox", "0 0 600 200"), svg.attribute ("preserveAspectRatio", "none")) {
                     defs () {
                         linearGradient (
-                            Attrs.attribute ("id", "cpu-fill"),
-                            Attrs.attribute ("x1", "0"),
-                            Attrs.attribute ("y1", "0"),
-                            Attrs.attribute ("x2", "0"),
-                            Attrs.attribute ("y2", "1")
+                            linearGradient.attribute ("id", "cpu-fill"),
+                            linearGradient.attribute ("x1", "0"),
+                            linearGradient.attribute ("y1", "0"),
+                            linearGradient.attribute ("x2", "0"),
+                            linearGradient.attribute ("y2", "1")
                         ) {
-                            stop (Attrs.attribute ("offset", "0%"), Attrs.className "fill-top") { () }
-                            stop (Attrs.attribute ("offset", "100%"), Attrs.className "fill-bottom") { () }
+                            stop (stop.attribute ("offset", "0%"), stop.className "fill-top") { () }
+                            stop (stop.attribute ("offset", "100%"), stop.className "fill-bottom") { () }
                         }
                     }
 
-                    path (Attrs.className "chart-area", Attrs.attribute ("d", fun (panel: Panel) -> Some (snd panel.Chart.Value))) { () }
+                    path (path.className "chart-area", path.attribute ("d", fun (panel: Panel) -> Some (snd panel.Chart.Value))) { () }
 
-                    path (Attrs.className "chart-line", Attrs.attribute ("d", fun (panel: Panel) -> Some (fst panel.Chart.Value))) { () }
+                    path (path.className "chart-line", path.attribute ("d", fun (panel: Panel) -> Some (fst panel.Chart.Value))) { () }
                 }
             }
 
             show
                 (fun (panel: Panel) -> panel.Latest.Value.Cpu > 0.85)
-                (div (Attrs.className "alert", Attrs.role "status", Motion.fade) {
+                (div (div.className "alert", div.role "status", Motion.fade) {
                     strong () { "CPU above 85%" }
                     span () { fun (panel: Panel) -> sprintf " at sample %d" panel.Latest.Value.Tick }
                 })
 
             show
                 (fun (panel: Panel) -> panel.Store.Details.Value)
-                (aside (Attrs.className "details", Motion.fade) {
+                (aside (aside.className "details", Motion.fade) {
                     h3 () { "Latest sample" }
 
                     dl () {
@@ -415,22 +415,22 @@ let view (store: Store) : Component<unit> =
 
     Component.template
         (fun _ () -> store)
-        (section (Attrs.className "dashboard") {
-            header (Attrs.className "toolbar") {
-                button (Attrs.className "primary pause", Events.onClick (fun (s: Store) _ -> s.Running.Value <- not s.Running.Value)) {
+        (section (section.className "dashboard") {
+            header (header.className "toolbar") {
+                button (button.className "primary pause", button.onClick (fun (s: Store) _ -> s.Running.Value <- not s.Running.Value)) {
                     fun (s: Store) -> if s.Running.Value then "Pause" else "Resume"
                 }
 
-                button (Attrs.className "reconnect", Events.onClick (fun (s: Store) _ -> s.Session.Value <- s.Session.Value + 1)) { "Reconnect" }
+                button (button.className "reconnect", button.onClick (fun (s: Store) _ -> s.Session.Value <- s.Session.Value + 1)) { "Reconnect" }
 
-                button (Attrs.className "details-toggle", Events.onClick (fun (s: Store) _ -> s.Details.Value <- not s.Details.Value)) {
+                button (button.className "details-toggle", button.onClick (fun (s: Store) _ -> s.Details.Value <- not s.Details.Value)) {
                     fun (s: Store) -> if s.Details.Value then "Hide details" else "Show details"
                 }
 
-                span (Attrs.className "meta") { fun (s: Store) -> if s.Running.Value then "live · 1 sample / s" else "paused" }
+                span (span.className "meta") { fun (s: Store) -> if s.Running.Value then "live · 1 sample / s" else "paused" }
             }
 
-            div (Attrs.className "stage") { boundary skeleton failed revealed }
+            div (div.className "stage") { boundary skeleton failed revealed }
         })
 
 /// <summary>Pushes the sample <c>sample</c> builds for the next tick into the store's feed.</summary>

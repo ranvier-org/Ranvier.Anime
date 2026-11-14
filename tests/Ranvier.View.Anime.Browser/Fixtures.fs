@@ -5,7 +5,7 @@ open global.Ranvier
 open Fable.Ranvier.Anime
 open Ranvier.Anime
 open Ranvier.View
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.View.Anime
 
 type Card = { Id: int; Title: string }
@@ -24,7 +24,7 @@ let board =
                 Selected = Api.createSignal false
             })
         (section () {
-            ul (Attrs.className "cards", Motion.flip { LayoutOptions.Default.WithDuration 350u with Ease = fun t -> 1. - (1. - t) ** 4. }) {
+            ul (ul.className "cards", Motion.flip { LayoutOptions.Default.WithDuration 350u with Ease = fun t -> 1. - (1. - t) ** 4. }) {
                 forEach
                     (fun card -> card.Id)
                     (fun b -> b.Cards.Value)
@@ -94,7 +94,7 @@ let gauge =
                 Label = Api.createSignal "idle"
             })
         (div () {
-            div (Attrs.className "bar", Motion.follow "scaleX" { ComposedAnimationOptions.Default with Duration = 400.; Ease = fun t -> 1. - (1. - t) ** 4. } (fun g -> g.Load.Value)) {
+            div (div.className "bar", Motion.follow "scaleX" { ComposedAnimationOptions.Default with Duration = 400.; Ease = fun t -> 1. - (1. - t) ** 4. } (fun g -> g.Load.Value)) {
                 ()
             }
 
@@ -140,7 +140,7 @@ let story =
             }
 
             div (
-                Attrs.className "puck",
+                div.className "puck",
                 Motion.drag NativeDraggableOptions.Default (fun s ->
                     {
                         Position = s.Puck
@@ -204,7 +204,7 @@ let tile =
             })
         (div () {
             div (
-                Attrs.className "tile",
+                div.className "tile",
                 Motion.drag NativeDraggableOptions.Default (fun t ->
                     {
                         Position = t.Offset
@@ -215,5 +215,5 @@ let tile =
                 "drag"
             }
 
-            button (Events.onClick (fun (t: Tile) _ -> springHome t)) { "Home" }
+            button (button.onClick (fun (t: Tile) _ -> springHome t)) { "Home" }
         })

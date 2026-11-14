@@ -33,8 +33,8 @@
 
     <ItemGroup>
         <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
-        <PackageReference Include="Ranvier.View.WebCore.Sdl$(RanvierPackageSuffix)" Version="[$(RanvierViewWebCoreSdlVersion)]" />
-        <PackageReference Include="Ranvier.Elmish$(RanvierPackageSuffix)" Version="[0.1.1-preview.1]" />
+        <PackageReference Include="Ranvier.View.WebCore.Sdl$(RanvierPackageSuffix)" Version="$(RanvierViewWebCoreSdlVersion)" />
+        <PackageReference Include="Ranvier.Elmish$(RanvierPackageSuffix)" Version="$(RanvierElmishVersion)" />
         <PackageReference Update="FSharp.Core" Version="10.1.401" />
     </ItemGroup>
 </Project>

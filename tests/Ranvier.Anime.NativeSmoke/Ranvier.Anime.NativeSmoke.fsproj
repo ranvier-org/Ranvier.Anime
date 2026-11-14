@@ -41,10 +41,10 @@
     <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
     <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
     <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" Condition="'$(NativeSmokeGraph)' == 'source'" />
-    <PackageReference Include="Ranvier.View.WebCore$(RanvierPackageSuffix)" Version="[$(RanvierViewWebCoreVersion)]" Condition="'$(NativeSmokeGraph)' != 'source'" />
+    <PackageReference Include="Ranvier.View.WebCore$(RanvierPackageSuffix)" Version="$(RanvierViewWebCoreVersion)" Condition="'$(NativeSmokeGraph)' != 'source'" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
     <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" ILCompilerPackVersion="10.0.14" Condition="'$(PublishAot)' == 'true'" />
-    <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssBindingsVersion)]" />
+    <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="$(RanvierCssBindingsVersion)" />
   </ItemGroup>
   <Target Name="RequirePinnedSourceGraph" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(NativeSmokeGraph)' != 'source' and '$(NativeSmokeGraph)' != 'public'" Text="Select NativeSmokeGraph=public or source." />

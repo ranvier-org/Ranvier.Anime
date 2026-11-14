@@ -9,7 +9,7 @@ open Ranvier.Anime
 open Ranvier.Dom
 open Ranvier.Elmish
 open Ranvier.View
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.View.Anime
 
 type Card = { Id: int; Title: string; Column: int }
@@ -244,13 +244,13 @@ let private cardRow (board: Board) =
 
             row)
         (li (
-            Attrs.className (fun (row: CardRow) ->
+            li.className (fun (row: CardRow) ->
                 if row.Dragging.Value then
                     "card-slot dragging"
                 else
                     "card-slot"),
-            Attrs.data ("id", fun (row: CardRow) -> Some (string (row.Current ()).Card.Id)),
-            Attrs.data ("lane", fun (row: CardRow) -> Some (string (row.Current ()).Card.Column)),
+            li.data ("id", fun (row: CardRow) -> Some (string (row.Current ()).Card.Id)),
+            li.data ("lane", fun (row: CardRow) -> Some (string (row.Current ()).Card.Column)),
             Motion.presence enterCard leaveCard,
             Motion.drag
                 { NativeDraggableOptions.Default with
@@ -261,31 +261,31 @@ let private cardRow (board: Board) =
                     Dragging = ValueSome row.Dragging
                     Slot = ValueSome row.Spring
                 }),
-            Hooks.mounted (fun (row: CardRow) element ->
+            li.mounted (fun (row: CardRow) element ->
                 row.Element.Value <- box element
                 fun () -> row.Element.Value <- null)
         ) {
-            div (Attrs.className "card") {
-                div (Attrs.className "card-top") {
-                    span (Attrs.className "card-id") { fun (row: CardRow) -> "#" + string (row.Current ()).Card.Id }
+            div (div.className "card") {
+                div (div.className "card-top") {
+                    span (span.className "card-id") { fun (row: CardRow) -> "#" + string (row.Current ()).Card.Id }
 
                     button (
-                        Attrs.className "icon delete",
-                        Attrs.title "Delete",
-                        Events.onClick (fun (row: CardRow) _ -> board.Loop.Dispatch (Delete (row.Current ()).Card.Id))
+                        button.className "icon delete",
+                        button.title "Delete",
+                        button.onClick (fun (row: CardRow) _ -> board.Loop.Dispatch (Delete (row.Current ()).Card.Id))
                     ) {
                         "×"
                     }
                 }
 
-                p (Attrs.className "card-title") { fun (row: CardRow) -> (row.Current ()).Card.Title }
+                p (p.className "card-title") { fun (row: CardRow) -> (row.Current ()).Card.Title }
 
-                div (Attrs.className "card-moves") {
+                div (div.className "card-moves") {
                     button (
-                        Attrs.className "icon left",
-                        Attrs.title "Move left",
-                        Attrs.Button.disabled (fun (row: CardRow) -> (row.Current ()).Card.Column = 0),
-                        Events.onClick (fun (row: CardRow) _ ->
+                        button.className "icon left",
+                        button.title "Move left",
+                        button.disabled (fun (row: CardRow) -> (row.Current ()).Card.Column = 0),
+                        button.onClick (fun (row: CardRow) _ ->
                             let card = (row.Current ()).Card
                             board.Loop.Dispatch (Move (card.Id, card.Column - 1)))
                     ) {
@@ -293,10 +293,10 @@ let private cardRow (board: Board) =
                     }
 
                     button (
-                        Attrs.className "icon right",
-                        Attrs.title "Move right",
-                        Attrs.Button.disabled (fun (row: CardRow) -> (row.Current ()).Card.Column = lanes.Length - 1),
-                        Events.onClick (fun (row: CardRow) _ ->
+                        button.className "icon right",
+                        button.title "Move right",
+                        button.disabled (fun (row: CardRow) -> (row.Current ()).Card.Column = lanes.Length - 1),
+                        button.onClick (fun (row: CardRow) _ ->
                             let card = (row.Current ()).Card
                             board.Loop.Dispatch (Move (card.Id, card.Column + 1)))
                     ) {
@@ -312,35 +312,35 @@ let view (board: Board) : Component<unit> =
 
     Component.template
         (fun _ () -> board)
-        (section (Attrs.className "kanban") {
-            header (Attrs.className "toolbar") {
-                button (Attrs.className "primary add", Events.onClick (fun (b: Board) _ -> b.Loop.Dispatch (Add 0))) { "Add card" }
-                button (Attrs.className "shuffle", Events.onClick (fun (b: Board) _ -> b.Loop.Dispatch Shuffle)) { "Shuffle" }
-                button (Attrs.className "clear", Events.onClick (fun (b: Board) _ -> b.Loop.Dispatch Clear)) { "Clear" }
+        (section (section.className "kanban") {
+            header (header.className "toolbar") {
+                button (button.className "primary add", button.onClick (fun (b: Board) _ -> b.Loop.Dispatch (Add 0))) { "Add card" }
+                button (button.className "shuffle", button.onClick (fun (b: Board) _ -> b.Loop.Dispatch Shuffle)) { "Shuffle" }
+                button (button.className "clear", button.onClick (fun (b: Board) _ -> b.Loop.Dispatch Clear)) { "Clear" }
 
                 button (
-                    Attrs.className "undo",
-                    Attrs.Button.disabled (fun (b: Board) -> not b.CanUndo.Value),
-                    Events.onClick (fun (b: Board) _ -> b.Loop.Dispatch Undo)
+                    button.className "undo",
+                    button.disabled (fun (b: Board) -> not b.CanUndo.Value),
+                    button.onClick (fun (b: Board) _ -> b.Loop.Dispatch Undo)
                 ) {
                     "Undo"
                 }
 
-                span (Attrs.className "meta") { fun (b: Board) -> sprintf "%d cards" b.Total.Value }
+                span (span.className "meta") { fun (b: Board) -> sprintf "%d cards" b.Total.Value }
             }
 
-            div (Attrs.className "board-frame") {
-                div (Attrs.className "lanes") {
+            div (div.className "board-frame") {
+                div (div.className "lanes") {
                     for lane in 0 .. lanes.Length - 1 do
-                        div (Attrs.className "lane") {
-                            div (Attrs.className "lane-head") {
+                        div (div.className "lane") {
+                            div (div.className "lane-head") {
                                 h2 () { lanes[lane] }
-                                span (Attrs.className "count") { fun (b: Board) -> string b.Counts.Value[lane] }
+                                span (span.className "count") { fun (b: Board) -> string b.Counts.Value[lane] }
 
                                 button (
-                                    Attrs.className "icon add-to",
-                                    Attrs.title ("Add to " + lanes[lane]),
-                                    Events.onClick (fun (b: Board) _ -> b.Loop.Dispatch (Add lane))
+                                    button.className "icon add-to",
+                                    button.title ("Add to " + lanes[lane]),
+                                    button.onClick (fun (b: Board) _ -> b.Loop.Dispatch (Add lane))
                                 ) {
                                     "+"
                                 }
@@ -349,16 +349,16 @@ let view (board: Board) : Component<unit> =
                 }
 
                 ul (
-                    Attrs.className "board",
+                    ul.className "board",
                     Motion.flip { LayoutOptions.Default.WithDuration 420u with Ease = Native.outQuart },
-                    Hooks.mounted (fun (b: Board) element ->
+                    ul.mounted (fun (b: Board) element ->
                         b.Element.Value <- box element
                         fun () -> b.Element.Value <- null)
                 ) {
                     each (fun (slot: Slot) -> slot.Card.Id) (fun (b: Board) -> b.Slots.Value) row
                 }
 
-                show (fun (b: Board) -> b.Total.Value = 0) (p (Attrs.className "empty", Motion.fade) { "The board is clear. Add a card, or undo." })
+                show (fun (b: Board) -> b.Total.Value = 0) (p (p.className "empty", Motion.fade) { "The board is clear. Add a card, or undo." })
             }
         })
 

@@ -1,6 +1,5 @@
 ---
 last_commit_released: 25b7a02ee23ef59f56d429eedf468dbc3fd411c6
-pre_release: rc
 updaters:
   - regex:
       file: Fable.Ranvier.Anime.fsproj

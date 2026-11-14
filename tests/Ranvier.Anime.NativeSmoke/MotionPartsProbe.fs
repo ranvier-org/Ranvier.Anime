@@ -9,7 +9,7 @@ open Ranvier.Dom
 open Ranvier.Anime
 open Ranvier.View
 open Ranvier.View.Dom
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.View.Anime
 open Ranvier.View.WebCore
 
@@ -90,7 +90,7 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
 
     // enter and exit as separate parts: the exit is not pinned.
     do
-        let view = rowsWith (Hooks.both (Motion.enter fadeIn, Motion.exit (fadeTo 0.)))
+        let view = rowsWith (li.both (Motion.enter fadeIn, Motion.exit (fadeTo 0.)))
         let graph, container, items, dispose = mountOf view (fun _ -> Api.createSignal [| 1 |])
         graph.Run(fun () -> items.Value <- [| 1; 2 |])
         require "enter plays on an inserted row" (number (value (row container "2") "opacity") |> ValueOption.exists (fun v -> v < 0.5))
@@ -105,7 +105,7 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
     do
         let view =
             rowsWith (
-                Hooks.both (
+                li.both (
                     Motion.follow "x" { ComposedAnimationOptions.Default with Duration = 100. } (fun (_: unit -> int) -> 10.),
                     Motion.exit (fadeTo 0.)
                 )
@@ -228,10 +228,10 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
             Component.define
                 (fun _ (fraction: Signal<float>) -> fraction)
                 (fun _ ->
-                    svg (Attrs.attribute ("viewBox", "0 0 200 200"), Attrs.attribute ("width", "200"), Attrs.attribute ("height", "200")) {
+                    svg (svg.attribute ("viewBox", "0 0 200 200"), svg.attribute ("width", "200"), svg.attribute ("height", "200")) {
                         path (
-                            Attrs.attribute ("d", "M0 0 L100 0"),
-                            Attrs.attribute ("stroke", "black"),
+                            path.attribute ("d", "M0 0 L100 0"),
+                            path.attribute ("stroke", "black"),
                             Motion.draw { ComposedAnimationOptions.Default with Duration = 100. } (fun (fraction: Signal<float>) -> fraction.Value)
                         ) {
                             ()
@@ -253,8 +253,8 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
             Component.define
                 (fun _ (shape: Signal<string>) -> shape)
                 (fun _ ->
-                    svg (Attrs.attribute ("viewBox", "0 0 200 200"), Attrs.attribute ("width", "200"), Attrs.attribute ("height", "200")) {
-                        path (Attrs.attribute ("d", "M0 0 L100 0"), Motion.morph { ComposedAnimationOptions.Default with Duration = 100. } (fun (shape: Signal<string>) -> shape.Value)) {
+                    svg (svg.attribute ("viewBox", "0 0 200 200"), svg.attribute ("width", "200"), svg.attribute ("height", "200")) {
+                        path (path.attribute ("d", "M0 0 L100 0"), Motion.morph { ComposedAnimationOptions.Default with Duration = 100. } (fun (shape: Signal<string>) -> shape.Value)) {
                             ()
                         }
                     })

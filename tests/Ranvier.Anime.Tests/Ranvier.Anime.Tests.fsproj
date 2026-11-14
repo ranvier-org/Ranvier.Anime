@@ -93,7 +93,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
     <PackageReference Include="Expecto" Version="10.2.3" />
-    <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="[$(RanvierCssBindingsVersion)]" />
+    <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="$(RanvierCssBindingsVersion)" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../reference/pure.json" Link="reference/pure.json" CopyToOutputDirectory="PreserveNewest" />

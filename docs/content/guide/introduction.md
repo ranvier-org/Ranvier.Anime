@@ -6,13 +6,13 @@ order: 1
 ## Installation
 
 ```bash frame="terminal"
-dotnet add package Fable.Ranvier.Anime --prerelease
+dotnet add package Fable.Ranvier.Anime
 npm install animejs@4.5.0
 ```
 
 `Fable.Ranvier.Anime` holds typed [anime.js](https://animejs.com) 4.5.0 bindings for Fable, with owners and
 signals from the [Ranvier core](https://ranvier-org.github.io/Ranvier/). It supports .NET 8, .NET 10 and Fable;
-the bindings run under Fable, and .NET builds reference them from portable code. It is an alpha release; the API
+the bindings run under Fable, and .NET builds reference them from portable code. It is a pre-1.0 release; the API
 can change before 1.0.
 
 The package depends on `Xantham.Fable.Core.TS`, which restores from the public
