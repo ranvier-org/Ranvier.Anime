@@ -8,7 +8,7 @@ open Ranvier
 open Ranvier.Dom
 open Ranvier.Anime
 open Ranvier.View
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.View.Anime
 open Ranvier.View.WebCore
 
@@ -31,7 +31,7 @@ let board =
                 Selected = Api.createSignal false
             })
         (section () {
-            ul (Attrs.className "cards", Motion.flip { LayoutOptions.Default.WithDuration 350u with Ease = fun t -> 1. - (1. - t) ** 4. }) {
+            ul (ul.className "cards", Motion.flip { LayoutOptions.Default.WithDuration 350u with Ease = fun t -> 1. - (1. - t) ** 4. }) {
                 forEach
                     (fun card -> card.Id)
                     (fun b -> b.Cards.Value)
@@ -106,7 +106,7 @@ let gauge =
                 Label = Api.createSignal "idle"
             })
         (div () {
-            div (Attrs.className "bar", Motion.follow "scaleX" { ComposedAnimationOptions.Default with Duration = 400.; Ease = fun t -> 1. - (1. - t) ** 4. } (fun g -> g.Load.Value)) {
+            div (div.className "bar", Motion.follow "scaleX" { ComposedAnimationOptions.Default with Duration = 400.; Ease = fun t -> 1. - (1. - t) ** 4. } (fun g -> g.Load.Value)) {
                 ()
             }
 
@@ -152,7 +152,7 @@ let story =
             }
 
             div (
-                Attrs.className "puck",
+                div.className "puck",
                 Motion.drag NativeDraggableOptions.Default (fun s ->
                     {
                         Position = s.Puck

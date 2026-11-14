@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ranvier.View.Dom$(RanvierPackageSuffix)" Version="[$(RanvierViewVersion)]" />
+    <PackageReference Include="Ranvier.View.Dom$(RanvierPackageSuffix)" Version="$(RanvierViewVersion)" />
     <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
   </ItemGroup>

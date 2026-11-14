@@ -10,7 +10,7 @@ open Ranvier.Anime
 open Ranvier.Dom
 open Ranvier.Elmish
 open Ranvier.View
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.View.Anime
 
 type Route =
@@ -129,20 +129,20 @@ let private home (shell: Shell) =
                 Loop = loop
                 Visits = shell.Visits
             })
-        (div (Attrs.className "page-body") {
+        (div (div.className "page-body") {
             h2 () { "A shell of arms" }
 
             p () {
                 "Each page is an arm of the shell's route. Leaving pages are pinned where they were while they fade, so the next one takes their place at once."
             }
 
-            div (Attrs.className "counter-row") {
-                button (Attrs.className "decrement", Events.onClick (fun (h: HomePage) _ -> h.Loop.Dispatch Decrement)) { "−" }
-                strong (Attrs.className "count") { fun (h: HomePage) -> string h.Count.Value }
-                button (Attrs.className "increment", Events.onClick (fun (h: HomePage) _ -> h.Loop.Dispatch Increment)) { "+" }
+            div (div.className "counter-row") {
+                button (button.className "decrement", button.onClick (fun (h: HomePage) _ -> h.Loop.Dispatch Decrement)) { "−" }
+                strong (strong.className "count") { fun (h: HomePage) -> string h.Count.Value }
+                button (button.className "increment", button.onClick (fun (h: HomePage) _ -> h.Loop.Dispatch Increment)) { "+" }
             }
 
-            p (Attrs.className "note") {
+            p (p.className "note") {
                 fun (h: HomePage) ->
                     sprintf "This counter lives in the page's own loop and resets on every visit. Route changes so far: %d." h.Visits.Value
             }
@@ -196,25 +196,25 @@ let private gallery =
                 Shown = loop.Select shownBy
                 Filter = loop.Select id
             })
-        (div (Attrs.className "page-body") {
+        (div (div.className "page-body") {
             h2 () { "Swatches" }
 
-            div (Attrs.className "filters") {
+            div (div.className "filters") {
                 for filter, label in [ All, "All"; Warm, "Warm"; Cool, "Cool" ] do
                     button (
-                        Attrs.className (fun (g: GalleryPage) -> if g.Filter.Value = filter then "chip active" else "chip"),
-                        Attrs.data ("filter", label.ToLowerInvariant ()),
-                        Events.onClick (fun (g: GalleryPage) _ -> g.Loop.Dispatch filter)
+                        button.className (fun (g: GalleryPage) -> if g.Filter.Value = filter then "chip active" else "chip"),
+                        button.data ("filter", label.ToLowerInvariant ()),
+                        button.onClick (fun (g: GalleryPage) _ -> g.Loop.Dispatch filter)
                     ) {
                         label
                     }
             }
 
-            ul (Attrs.className "swatches") {
+            ul (ul.className "swatches") {
                 forEach
                     (fun (swatch: Swatch) -> swatch.Id)
                     (fun (g: GalleryPage) -> g.Shown.Value)
-                    (li (Attrs.className (fun (swatch: unit -> Swatch) -> "swatch " + (swatch ()).Name.ToLowerInvariant()), Motion.scale) {
+                    (li (li.className (fun (swatch: unit -> Swatch) -> "swatch " + (swatch ()).Name.ToLowerInvariant()), Motion.scale) {
                         fun (swatch: unit -> Swatch) -> (swatch ()).Name
                     })
             }
@@ -237,16 +237,16 @@ let private settings (shell: Shell) =
                 Mvu.withCmd (start, []) (fun theme _ -> theme, [ fun _ -> shell.Loop.Dispatch (ThemeChosen theme) ])
 
             { Loop = loop; Theme = loop.Select id })
-        (div (Attrs.className "page-body") {
+        (div (div.className "page-body") {
             h2 () { "Settings" }
             p () { "The picker keeps its own loop and reports each choice to the shell, which themes the whole frame." }
 
-            div (Attrs.className "themes") {
+            div (div.className "themes") {
                 for theme, label in [ Daylight, "Daylight"; Dusk, "Dusk" ] do
                     button (
-                        Attrs.className (fun (s: SettingsPage) -> if s.Theme.Value = theme then "chip active" else "chip"),
-                        Attrs.data ("theme", label.ToLowerInvariant ()),
-                        Events.onClick (fun (s: SettingsPage) _ -> s.Loop.Dispatch theme)
+                        button.className (fun (s: SettingsPage) -> if s.Theme.Value = theme then "chip active" else "chip"),
+                        button.data ("theme", label.ToLowerInvariant ()),
+                        button.onClick (fun (s: SettingsPage) _ -> s.Loop.Dispatch theme)
                     ) {
                         label
                     }
@@ -256,14 +256,14 @@ let private settings (shell: Shell) =
 let private about =
     Component.template
         (fun _ () -> ())
-        (div (Attrs.className "page-body") {
+        (div (div.className "page-body") {
             h2 () { "About" }
 
             p () {
                 "Each tab dispatches its route to the shell's loop. Switch quickly: every leaving page finishes its exit, and only the last page stays."
             }
 
-            p (Attrs.className "note") { "Built with Ranvier's view sugar, Ranvier.Elmish and Ranvier.Anime." }
+            p (p.className "note") { "Built with Ranvier's view sugar, Ranvier.Elmish and Ranvier.Anime." }
         })
 
 let private arrive (_: unit -> unit) (element: Element) =
@@ -273,7 +273,7 @@ let private depart (_: unit -> unit) (element: Element) =
     Native.animate element (Native.timing 260. Native.inQuad) [| Native.toward "opacity" 0.; Native.toward "y" -16. |]
 
 let private page (route: Route) (content: TemplateView<unit -> unit>) =
-    armOf (section (Attrs.className "page", Attrs.data ("route", nameOf route), Motion.presence arrive depart) { content })
+    armOf (section (section.className "page", section.data ("route", nameOf route), Motion.presence arrive depart) { content })
 
 /// <summary>The shell's component over <c>shell</c>; build it once per shell.</summary>
 let view (shell: Shell) : Component<unit> =
@@ -284,14 +284,14 @@ let view (shell: Shell) : Component<unit> =
 
     Component.template
         (fun _ () -> shell)
-        (div (Attrs.className "shell", Attrs.data ("theme", fun (s: Shell) -> Some (if s.Theme.Value = Dusk then "dusk" else "daylight"))) {
-            nav (Attrs.className "tabs") {
+        (div (div.className "shell", div.data ("theme", fun (s: Shell) -> Some (if s.Theme.Value = Dusk then "dusk" else "daylight"))) {
+            nav (nav.className "tabs") {
                 for route in routes do
                     a (
-                        Attrs.attribute ("href", hashOf route),
-                        Events.onClick (fun (s: Shell) _ -> s.Loop.Dispatch (Navigated route)),
-                        Attrs.className (fun (s: Shell) -> if s.Route.Value = route then "tab active" else "tab"),
-                        Attrs.data ("route", nameOf route)
+                        a.attribute ("href", hashOf route),
+                        a.onClick (fun (s: Shell) _ -> s.Loop.Dispatch (Navigated route)),
+                        a.className (fun (s: Shell) -> if s.Route.Value = route then "tab active" else "tab"),
+                        a.data ("route", nameOf route)
                     ) {
                         titleOf route
                     }
@@ -299,7 +299,7 @@ let view (shell: Shell) : Component<unit> =
                 // The indicator is as wide as a tab at every breakpoint, so its offset is the route's index in widths of its own:
                 // anime's x in % of the element, here in the pixels of its measured width.
                 span (
-                    Attrs.className "indicator",
+                    span.className "indicator",
                     Motion.follow "x" { ComposedAnimationOptions.Default with Duration = 420.; Ease = Native.outBack } (fun (s: Shell) ->
                         float (Array.findIndex ((=) s.Route.Value) routes)
                         * (Native.select ".indicator" |> Option.map (box >> Native.widthOf) |> Option.defaultValue 0.))
@@ -308,14 +308,14 @@ let view (shell: Shell) : Component<unit> =
                 }
             }
 
-            main (Attrs.className "stage", Motion.flip { LayoutOptions.Default.WithDuration 380u with Ease = Native.outQuart }) {
+            main (main.className "stage", Motion.flip { LayoutOptions.Default.WithDuration 380u with Ease = Native.outQuart }) {
                 matchWith (fun (s: Shell) -> s.Route.Value) (function
                     | Home -> arm homeArm ()
                     | Gallery -> arm galleryArm ()
                     | Settings -> arm settingsArm ()
                     | About -> arm aboutArm ())
 
-                footer (Attrs.className "shell-foot") { fun (s: Shell) -> sprintf "%s · %d route changes" (titleOf s.Route.Value) s.Visits.Value }
+                footer (footer.className "shell-foot") { fun (s: Shell) -> sprintf "%s · %d route changes" (titleOf s.Route.Value) s.Visits.Value }
             }
         })
 

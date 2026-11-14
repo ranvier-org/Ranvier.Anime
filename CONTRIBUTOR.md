@@ -54,19 +54,20 @@ the `xml` updater reformats the whole project file.
 
 | You want | Do this |
 | --- | --- |
-| A new prerelease | Merge a `feat`, `perf` or `fix` commit touching the project's folder, then merge the release pull request. |
+| A new release | Merge a `feat`, `perf` or `fix` commit touching the project's folder, then merge the release pull request. |
 | A release after a dependency pin change | Title the change `fix(deps): ...`. Commits typed `chore`, `build` or `ci` release nothing. |
-| A stable version | Remove `pre_release` from the project's changelog. |
+| A prerelease line | Add `pre_release: <channel>` to the project's changelog; remove it to return to stable versions. |
 | A new base version in a prerelease line | Set `force_version` in the changelog for one run. |
 
 | Changelog | Projects | Channel | Published |
 | --- | --- | --- | --- |
-| `src/Fable.Ranvier.Anime` | `Fable.Ranvier.Anime`, `Fable.Ranvier.Anime.Traced` | `rc` | yes |
+| `src/Fable.Ranvier.Anime` | `Fable.Ranvier.Anime`, `Fable.Ranvier.Anime.Traced` | stable | yes |
+| `src/Ranvier.Anime` | `Ranvier.Anime`, `Ranvier.Anime.Traced` | stable | yes |
 
 After CI succeeds on a push to `main`, the ShipIt workflow opens or updates a release PR and starts CI on its
 branch. Merge it using its `chore: release ...` title. CI validates and packs that release commit, then the publish
 workflow uploads those exact CI artifacts to NuGet using trusted publishing. The publish workflow pushes exactly
-`Fable.Ranvier.Anime` and `Fable.Ranvier.Anime.Traced` and fails on any other package; a new published package
+`Fable.Ranvier.Anime`, `Ranvier.Anime` and their `.Traced` packages and fails on any other package; a new published package
 needs its name added there. Pull request runs on the release branch stay at `action_required`, because GitHub
 holds runs started by `GITHUB_TOKEN`; the started CI run reports the required check on the same commit.
 
@@ -87,6 +88,6 @@ holds runs started by `GITHUB_TOKEN`; the started CI run reports the required ch
 attempt to overwrite an existing NuGet version.
 
 When a release requires a newer core, test against a sibling checkout in local-reference mode, publish the core,
-update `RanvierVersion` in `Directory.Build.props`, then run every gate in package mode. `Ranvier.View.Anime` in
+update `RanvierVersion` in `Directory.Build.props`, which holds every sibling package version, then run every gate in package mode. `Ranvier.View.Anime` in
 ranvier-org/Ranvier.View consumes `Fable.Ranvier.Anime` from this repository: release the bindings before a view
 release that needs them.

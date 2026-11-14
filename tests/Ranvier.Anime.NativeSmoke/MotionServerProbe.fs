@@ -7,7 +7,7 @@ module Ranvier.Anime.NativeSmoke.MotionServerProbe
 open System
 open Ranvier
 open Ranvier.View
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.Anime.NativeSmoke.MotionFixtures
 
 let private boardTwinOf (selected: bool) =
@@ -18,7 +18,7 @@ let private boardTwinOf (selected: bool) =
                 Selected = Api.createSignal selected
             })
         (section () {
-            ul (Attrs.className "cards") { forEach (fun card -> card.Id) (fun b -> b.Cards.Value) (li () { fun current -> (current ()).Title }) }
+            ul (ul.className "cards") { forEach (fun card -> card.Id) (fun b -> b.Cards.Value) (li () { fun current -> (current ()).Title }) }
             show (fun b -> b.Selected.Value) (p () { "Selected" })
         })
 
@@ -30,7 +30,7 @@ let private selectedBoard =
                 Selected = Api.createSignal true
             })
         (section () {
-            ul (Attrs.className "cards", Ranvier.View.Anime.Motion.flip Ranvier.Anime.LayoutOptions.Default) {
+            ul (ul.className "cards", Ranvier.View.Anime.Motion.flip Ranvier.Anime.LayoutOptions.Default) {
                 forEach (fun card -> card.Id) (fun b -> b.Cards.Value) (li (Ranvier.View.Anime.Motion.fade) { fun current -> (current ()).Title })
             }
 
@@ -61,7 +61,7 @@ let private gaugeTwin =
                 Label = Api.createSignal "idle"
             })
         (div () {
-            div (Attrs.className "bar") { () }
+            div (div.className "bar") { () }
             span () { fun g -> g.Label.Value }
         })
 
@@ -76,7 +76,7 @@ let private storyTwin =
         (article () {
             h2 () { "Ranvier" }
             section () { fun s -> string (round (s.Progress.Value * 100.)) + " %" }
-            div (Attrs.className "puck") { "drag" }
+            div (div.className "puck") { "drag" }
         })
 
 let private chartTwin =

@@ -1,6 +1,5 @@
 ---
 last_commit_released: 18fe47a890f2a829db867321cbcb3fc710785bd6
-pre_release: rc
 updaters:
   - regex:
       file: Ranvier.Anime.fsproj

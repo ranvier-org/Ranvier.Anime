@@ -8,7 +8,7 @@ open System
 open System.IO
 open Ranvier
 open Ranvier.View
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.Anime
 open Ranvier.View.Anime
 
@@ -88,7 +88,7 @@ let private pageView (create: unit -> 'state) (view: 'state -> Component<unit>) 
             let selected = Component.template (fun _ (_: unit -> unit) -> ()) (renderOf nested ())
             state, selected)
         (div (
-            Hooks.mounted (fun (state, _) _ ->
+            div.mounted (fun (state, _) _ ->
                 let owned = activate Graph.Current state
                 fun () -> owned.Dispose ())
         ) {
@@ -180,27 +180,27 @@ let view (app: App) : Component<unit> =
 
     Component.template
         (fun _ () -> app)
-        (div (Attrs.className "frame") {
-            header (Attrs.className "site-header") {
-                a (Attrs.className "brand") {
-                    span (Attrs.className "brand-mark") { () }
+        (div (div.className "frame") {
+            header (header.className "site-header") {
+                a (a.className "brand") {
+                    span (span.className "brand-mark") { () }
                     "Ranvier Motion"
                 }
 
                 nav () {
                     for entry in infos do
                         a (
-                            Attrs.data ("page", entry.Name),
-                            Attrs.attribute ("aria-current", fun (a: App) -> if a.Current.Value = entry.Name then Some "page" else None),
-                            Events.onClick (fun (a: App) _ -> a.Open entry.Name)
+                            a.data ("page", entry.Name),
+                            a.attribute ("aria-current", fun (a: App) -> if a.Current.Value = entry.Name then Some "page" else None),
+                            a.onClick (fun (a: App) _ -> a.Open entry.Name)
                         ) {
                             entry.Title
                         }
                 }
             }
 
-            section (Attrs.className "intro") {
-                span (Attrs.className "tag") { fun (a: App) -> (info a.Current.Value).Tag }
+            section (section.className "intro") {
+                span (span.className "tag") { fun (a: App) -> (info a.Current.Value).Tag }
                 h1 () { fun (a: App) -> (info a.Current.Value).Title }
                 p () { fun (a: App) -> (info a.Current.Value).Description }
             }

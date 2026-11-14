@@ -6,7 +6,7 @@ open global.Ranvier
 open Ranvier.Anime
 open Ranvier.Dom
 open Ranvier.View
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.View.Anime
 
 /// <summary>The visible horizontal interval in a 960-unit, 24-hour data set.</summary>
@@ -268,25 +268,25 @@ let private pointerSetup (graph: Graph) (store: Store) (element: Element) =
             target.removeEventListener (name, callback)
 
 let private inspector =
-    article (Attrs.className "graph-card explorer") {
-        header (Attrs.className "graph-heading") {
+    article (article.className "graph-card explorer") {
+        header (header.className "graph-heading") {
             div () {
-                span (Attrs.className "eyebrow") { "01 / INSPECT & NAVIGATE" }
+                span (span.className "eyebrow") { "01 / INSPECT & NAVIGATE" }
                 h2 () { "Explore a signal" }
                 p () { "API latency over one day. Move over the line, scroll to zoom, or drag to pan." }
             }
 
-            span (Attrs.className "graph-unit") { "milliseconds" }
+            span (span.className "graph-unit") { "milliseconds" }
         }
 
-        div (Attrs.className "graph-controls") {
-            button (Events.onClick (fun store _ -> changeZoom store 0.65)) { "Zoom in" }
-            button (Events.onClick (fun store _ -> changeZoom store (1. / 0.65))) { "Zoom out" }
-            button (Events.onClick (fun store _ -> pan store -1.)) { "Pan left" }
-            button (Events.onClick (fun store _ -> pan store 1.)) { "Pan right" }
+        div (div.className "graph-controls") {
+            button (button.onClick (fun store _ -> changeZoom store 0.65)) { "Zoom in" }
+            button (button.onClick (fun store _ -> changeZoom store (1. / 0.65))) { "Zoom out" }
+            button (button.onClick (fun store _ -> pan store -1.)) { "Pan left" }
+            button (button.onClick (fun store _ -> pan store 1.)) { "Pan right" }
 
             button (
-                Events.onClick (fun (store: Store) _ ->
+                button.onClick (fun (store: Store) _ ->
                     store.Window.Value <- viewport 0. 960.
                     store.Inspecting.Value <- false)
             ) {
@@ -294,8 +294,8 @@ let private inspector =
             }
 
             button (
-                Events.onClick (fun (store: Store) _ -> store.Comparison.Value <- not store.Comparison.Value),
-                Attrs.attribute (
+                button.onClick (fun (store: Store) _ -> store.Comparison.Value <- not store.Comparison.Value),
+                button.attribute (
                     "aria-pressed",
                     fun (store: Store) ->
                         Some (
@@ -308,21 +308,21 @@ let private inspector =
             }
         }
 
-        div (Attrs.className "plot-frame") {
-            div (Attrs.className "y-axis", Attrs.attribute ("aria-hidden", "true")) {
+        div (div.className "plot-frame") {
+            div (div.className "y-axis", div.attribute ("aria-hidden", "true")) {
                 for value in [ 200; 150; 100; 50; 0 ] do
                     span () { string value }
             }
 
-            div (Attrs.className "plot-area") {
+            div (div.className "plot-area") {
                 svg (
-                    Attrs.className "explorer-svg",
-                    Attrs.attribute ("viewBox", "0 0 960 280"),
-                    Attrs.attribute ("preserveAspectRatio", "none"),
-                    Attrs.attribute ("tabindex", "0"),
-                    Attrs.role "group",
-                    Attrs.attribute ("aria-label", "Latency chart. Arrow keys inspect points; plus and minus zoom; zero resets."),
-                    Hooks.mounted (fun store element -> pointerSetup Graph.Current store (unbox<Element> (box element))),
+                    svg.className "explorer-svg",
+                    svg.attribute ("viewBox", "0 0 960 280"),
+                    svg.attribute ("preserveAspectRatio", "none"),
+                    svg.attribute ("tabindex", "0"),
+                    svg.role "group",
+                    svg.attribute ("aria-label", "Latency chart. Arrow keys inspect points; plus and minus zoom; zero resets."),
+                    svg.mounted (fun store element -> pointerSetup Graph.Current store (unbox<Element> (box element))),
                     Motion.animateOn (fun (store: Store) -> store.Window.Value, store.Dragging.Value) (fun _ element (window, dragging) ->
                         Native.animate
                             element
@@ -331,24 +331,24 @@ let private inspector =
                 ) {
                     defs () {
                         linearGradient (
-                            Attrs.attribute ("id", "graph-fill"),
-                            Attrs.attribute ("x1", "0"),
-                            Attrs.attribute ("y1", "0"),
-                            Attrs.attribute ("x2", "0"),
-                            Attrs.attribute ("y2", "1")
+                            linearGradient.attribute ("id", "graph-fill"),
+                            linearGradient.attribute ("x1", "0"),
+                            linearGradient.attribute ("y1", "0"),
+                            linearGradient.attribute ("x2", "0"),
+                            linearGradient.attribute ("y2", "1")
                         ) {
                             stop (
-                                Attrs.attribute ("offset", "0%"),
-                                Attrs.attribute ("stop-color", "#6953e8"),
-                                Attrs.attribute ("stop-opacity", ".24")
+                                stop.attribute ("offset", "0%"),
+                                stop.attribute ("stop-color", "#6953e8"),
+                                stop.attribute ("stop-opacity", ".24")
                             ) {
                                 ()
                             }
 
                             stop (
-                                Attrs.attribute ("offset", "100%"),
-                                Attrs.attribute ("stop-color", "#6953e8"),
-                                Attrs.attribute ("stop-opacity", ".01")
+                                stop.attribute ("offset", "100%"),
+                                stop.attribute ("stop-color", "#6953e8"),
+                                stop.attribute ("stop-opacity", ".01")
                             ) {
                                 ()
                             }
@@ -357,27 +357,27 @@ let private inspector =
 
                     for value in [ 0; 50; 100; 150; 200 ] do
                         line (
-                            Attrs.className "graph-grid",
-                            Attrs.attribute ("x1", "0"),
-                            Attrs.attribute ("x2", "960"),
-                            Attrs.attribute ("y1", string (y (float value))),
-                            Attrs.attribute ("y2", string (y (float value)))
+                            line.className "graph-grid",
+                            line.attribute ("x1", "0"),
+                            line.attribute ("x2", "960"),
+                            line.attribute ("y1", string (y (float value))),
+                            line.attribute ("y2", string (y (float value)))
                         ) {
                             ()
                         }
 
-                    path (Attrs.className "signal-area", Attrs.attribute ("d", curve 0. + " L960 280 L0 280 Z")) { () }
+                    path (path.className "signal-area", path.attribute ("d", curve 0. + " L960 280 L0 280 Z")) { () }
 
                     show
                         (fun (store: Store) -> store.Comparison.Value)
-                        (path (Attrs.className "comparison-line", Attrs.attribute ("d", curve 1.7), Motion.fade) { () })
+                        (path (path.className "comparison-line", path.attribute ("d", curve 1.7), Motion.fade) { () })
 
-                    path (Attrs.className "signal-line", Attrs.attribute ("d", curve 0.)) { () }
+                    path (path.className "signal-line", path.attribute ("d", curve 0.)) { () }
 
                     line (
-                        Attrs.className "crosshair",
-                        Attrs.attribute ("y1", "12"),
-                        Attrs.attribute ("y2", "255"),
+                        line.className "crosshair",
+                        line.attribute ("y1", "12"),
+                        line.attribute ("y2", "255"),
                         Motion.follow "x1" { ComposedAnimationOptions.Default with Duration = 240.; Ease = Native.outQuart } (fun (store: Store) ->
                             float store.Cursor.Value * 10.),
                         Motion.follow "x2" { ComposedAnimationOptions.Default with Duration = 240.; Ease = Native.outQuart } (fun (store: Store) ->
@@ -387,9 +387,9 @@ let private inspector =
                     }
 
                     ellipse (
-                        Attrs.className "focus-point",
-                        Attrs.attribute ("rx", "5"),
-                        Attrs.attribute ("ry", "5"),
+                        ellipse.className "focus-point",
+                        ellipse.attribute ("rx", "5"),
+                        ellipse.attribute ("ry", "5"),
                         Motion.animateOn (fun (store: Store) -> store.Window.Value.Span, store.Dragging.Value) (fun _ element (span, dragging) ->
                             Native.animate element (Native.timing (if dragging then 100. else 650.) Native.outQuart) [| Native.toward "rx" (span * 5. / 960.) |]),
                         Motion.follow "cx" { ComposedAnimationOptions.Default with Duration = 240.; Ease = Native.outQuart } (fun (store: Store) ->
@@ -404,8 +404,8 @@ let private inspector =
                 show
                     (fun (store: Store) -> store.Inspecting.Value)
                     (div (
-                        Attrs.className "graph-tooltip",
-                        Attrs.role "status",
+                        div.className "graph-tooltip",
+                        div.role "status",
                         // anime follows both in %; Ranvier.Anime's follow keeps a property's default unit, so the tooltip
                         // eases to each pointer position as percentage text instead.
                         Motion.animateOn (fun (store: Store) -> store.Pointer.Value) (fun _ element (struct (x, y)) ->
@@ -418,30 +418,30 @@ let private inspector =
                         strong () { fun (store: Store) -> sprintf "%.1f ms" (value 0. store.Cursor.Value) }
                     })
 
-                div (Attrs.className "x-axis", Attrs.attribute ("aria-hidden", "true")) {
+                div (div.className "x-axis", div.attribute ("aria-hidden", "true")) {
                     for index in 0..4 do
                         span () { fun (store: Store) -> let window = store.Window.Value in time (window.Start + window.Span * float index / 4.) }
                 }
             }
         }
 
-        footer (Attrs.className "graph-footnote") {
-            span (Attrs.className "legend-api") { "API" }
-            span (Attrs.className "legend-worker") { "Worker" }
+        footer (footer.className "graph-footnote") {
+            span (span.className "legend-api") { "API" }
+            span (span.className "legend-worker") { "Worker" }
             span () { "← / → inspect · + / − zoom · 0 reset" }
         }
 
-        p (Attrs.className "technique") {
+        p (p.className "technique") {
             "Motion.follow eases the crosshair and tooltip. Motion.animateOn interpolates the SVG viewBox; pointer coordinates use the viewBox currently on screen."
         }
     }
 
 let private bar (index: int) =
     div (
-        Attrs.className ("rank-row region-" + string index),
-        Attrs.data ("region", regions[index]),
-        Attrs.role "listitem",
-        Attrs.attribute ("style", sprintf "transform:translateY(%dpx)" (rank 0 index * 52)),
+        div.className ("rank-row region-" + string index),
+        div.data ("region", regions[index]),
+        div.role "listitem",
+        div.attribute ("style", sprintf "transform:translateY(%dpx)" (rank 0 index * 52)),
         Motion.animateOn
             (fun (store: Store) -> let snapshot = store.Snapshot.Value in rank snapshot index, snapshots[snapshot][index])
             (fun _ element (rank, score) ->
@@ -455,38 +455,38 @@ let private bar (index: int) =
                         TimelinePosition.At (80. + float rank * 30.)
                     ))
     ) {
-        span (Attrs.className "region-name") { regions[index] }
-        div (Attrs.className "bar-track") { div (Attrs.className "bar-fill") { () } }
-        strong (Attrs.className "region-score") { fun (store: Store) -> sprintf "%d k" (snapshots[store.Snapshot.Value][index]) }
+        span (span.className "region-name") { regions[index] }
+        div (div.className "bar-track") { div (div.className "bar-fill") { () } }
+        strong (strong.className "region-score") { fun (store: Store) -> sprintf "%d k" (snapshots[store.Snapshot.Value][index]) }
     }
 
 /// <summary>The line explorer and ranked traffic chart over <c>store</c>.</summary>
 let view (store: Store) =
     Component.template
         (fun _ () -> store)
-        (section (Attrs.className "graphs") {
+        (section (section.className "graphs") {
             inspector
 
-            article (Attrs.className "graph-card rankings") {
-                header (Attrs.className "graph-heading") {
+            article (article.className "graph-card rankings") {
+                header (header.className "graph-heading") {
                     div () {
-                        span (Attrs.className "eyebrow") { "02 / REORDER & RETARGET" }
+                        span (span.className "eyebrow") { "02 / REORDER & RETARGET" }
                         h2 () { "A changing leaderboard" }
                         p () { "Regional requests per minute. Change the snapshot, or play the four-part cycle." }
                     }
 
-                    strong (Attrs.className "snapshot-time") { fun (store: Store) -> times[store.Snapshot.Value] }
+                    strong (strong.className "snapshot-time") { fun (store: Store) -> times[store.Snapshot.Value] }
                 }
 
-                div (Attrs.className "graph-controls") {
+                div (div.className "graph-controls") {
                     button (
-                        Attrs.className "primary",
-                        Events.onClick (fun (store: Store) _ -> store.Snapshot.Value <- (store.Snapshot.Value + 1) % snapshots.Length)
+                        button.className "primary",
+                        button.onClick (fun (store: Store) _ -> store.Snapshot.Value <- (store.Snapshot.Value + 1) % snapshots.Length)
                     ) {
                         "Next snapshot"
                     }
 
-                    button (Events.onClick (fun (store: Store) _ -> store.Playing.Value <- not store.Playing.Value)) {
+                    button (button.onClick (fun (store: Store) _ -> store.Playing.Value <- not store.Playing.Value)) {
                         fun (store: Store) ->
                             if store.Playing.Value then
                                 "Pause snapshots"
@@ -495,19 +495,19 @@ let view (store: Store) =
                     }
                 }
 
-                div (Attrs.className "rank-bars", Attrs.role "list", Attrs.attribute ("aria-label", "Regional request ranking")) {
+                div (div.className "rank-bars", div.role "list", div.attribute ("aria-label", "Regional request ranking")) {
                     for index in 0..4 do
                         bar index
                 }
 
-                p (Attrs.className "technique") {
+                p (p.className "technique") {
                     "Each row owns a timeline. Position and bar length overlap with a short rank-based stagger, and new snapshots retarget the same elements."
                 }
             }
 
-            p (Attrs.className "graph-credit") {
+            p (p.className "graph-credit") {
                 "Interaction ideas inspired by the "
-                a (Attrs.attribute ("href", "https://livecharts.dev/docs/Avalonia/2.0.4/gallery")) { "LiveCharts gallery" }
+                a (a.attribute ("href", "https://livecharts.dev/docs/Avalonia/2.0.4/gallery")) { "LiveCharts gallery" }
                 ". These charts use Ranvier views and Ranvier.Anime. Data is synthetic."
             }
         })

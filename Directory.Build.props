@@ -10,7 +10,7 @@
         <Copyright>Copyright (c) 2026 Shayan Habibi</Copyright>
         <PackageIcon>ranvier-icon.png</PackageIcon>
         <PackageProjectUrl>https://ranvier-org.github.io/Ranvier.Anime/</PackageProjectUrl>
-        <PackageReleaseNotes>Alpha release. The API may change before 1.0.</PackageReleaseNotes>
+        <PackageReleaseNotes>Pre-1.0 release. The API may change before 1.0.</PackageReleaseNotes>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <!-- Fable.Package.SDK sets DebugType=embedded: the PDB (with SourceLink) lives in each dll, so no .snupkg is produced. nuget.org rejects an empty one. -->
@@ -28,11 +28,22 @@
         <RanvierRoot Condition="'$(RanvierRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../Ranvier'))</RanvierRoot>
         <UseLocalRanvierCss Condition="'$(UseLocalRanvierCss)' == ''">false</UseLocalRanvierCss>
         <RanvierCssRoot Condition="'$(RanvierCssRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../Ranvier.Css'))</RanvierCssRoot>
-        <RanvierVersion>0.1.1-preview.2</RanvierVersion>
-        <RanvierCssVersion>0.1.1-alpha.2</RanvierCssVersion>
-        <RanvierCssAddonsVersion>0.1.1-alpha.1</RanvierCssAddonsVersion>
         <RanvierTrace Condition="'$(RanvierTrace)' == '' and '$(Configuration)' == 'Debug'">true</RanvierTrace>
         <RanvierPackageSuffix Condition="'$(RanvierTrace)' == 'true'">.Traced</RanvierPackageSuffix>
+    </PropertyGroup>
+
+    <!-- Every sibling Ranvier package version, in one place. Each yields to Local.Build.props and to -p: overrides. -->
+    <PropertyGroup>
+        <RanvierVersion Condition="'$(RanvierVersion)' == ''">0.2.0</RanvierVersion>
+        <RanvierElmishVersion Condition="'$(RanvierElmishVersion)' == ''">0.2.0</RanvierElmishVersion>
+        <RanvierDomVersion Condition="'$(RanvierDomVersion)' == ''">0.1.0-rc.1</RanvierDomVersion>
+        <RanvierCssVersion Condition="'$(RanvierCssVersion)' == ''">0.1.1-alpha.4</RanvierCssVersion>
+        <RanvierCssBindingsVersion Condition="'$(RanvierCssBindingsVersion)' == ''">0.1.1-alpha.2</RanvierCssBindingsVersion>
+        <RanvierCssDomVersion Condition="'$(RanvierCssDomVersion)' == ''">0.1.0-alpha.1</RanvierCssDomVersion>
+        <RanvierViewVersion Condition="'$(RanvierViewVersion)' == ''">0.1.49-rc.5</RanvierViewVersion>
+        <RanvierViewWebCoreVersion Condition="'$(RanvierViewWebCoreVersion)' == ''">0.1.0-rc.11</RanvierViewWebCoreVersion>
+        <RanvierViewWebCoreSdlVersion Condition="'$(RanvierViewWebCoreSdlVersion)' == ''">0.1.0-rc.16</RanvierViewWebCoreSdlVersion>
+        <RanvierWebCoreNativeVersion Condition="'$(RanvierWebCoreNativeVersion)' == ''">0.1.1-rc.9</RanvierWebCoreNativeVersion>
     </PropertyGroup>
 
     <!-- A solution build passes its configuration to the sibling-checkout projects outside the solution, which would

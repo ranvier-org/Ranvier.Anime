@@ -8,7 +8,7 @@ open global.Ranvier
 open Ranvier.Anime
 open Ranvier.Dom
 open Ranvier.View
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.View.Anime
 
 [<NoEquality; NoComparison>]
@@ -102,12 +102,12 @@ let private scrubbed (playground: Playground) (track: Element) =
 let private follower (index: int) =
     let parameters = { ComposedAnimationOptions.Default with Duration = trail[index]; Ease = Native.outQuart }
 
-    div (Attrs.className "follower", Attrs.data ("follower", string index), Motion.follow "x" parameters xOf, Motion.follow "y" parameters yOf) { () }
+    div (div.className "follower", div.data ("follower", string index), Motion.follow "x" parameters xOf, Motion.follow "y" parameters yOf) { () }
 
 let private tips =
     show
         (fun (p: Playground) -> p.Tips.Value)
-        (aside (Attrs.className "tips", Motion.rise) {
+        (aside (aside.className "tips", Motion.rise) {
             h3 () { "Try this" }
 
             ul () {
@@ -124,13 +124,13 @@ let view: Component<Playground -> unit> =
             let playground = create ()
             publish playground
             playground)
-        (section (Attrs.className "physics") {
-            div (Attrs.className "arena") {
+        (section (section.className "physics") {
+            div (div.className "arena") {
                 for index in trail.Length - 1 .. -1 .. 0 do
                     follower index
 
                 div (
-                    Attrs.className (fun (p: Playground) -> if p.Dragging.Value then "puck grabbed" else "puck"),
+                    div.className (fun (p: Playground) -> if p.Dragging.Value then "puck grabbed" else "puck"),
                     Motion.drag
                         { NativeDraggableOptions.Default with
                             Container = fun () -> Native.select ".arena"
@@ -149,21 +149,21 @@ let view: Component<Playground -> unit> =
                 }
             }
 
-            div (Attrs.className "controls") {
-                button (Attrs.className "primary home", Events.onClick (fun (p: Playground) _ -> springHome p)) { "Spring home" }
+            div (div.className "controls") {
+                button (button.className "primary home", button.onClick (fun (p: Playground) _ -> springHome p)) { "Spring home" }
 
-                span (Attrs.className "readout") {
+                span (span.className "readout") {
                     fun (p: Playground) ->
                         let struct (x, y) = p.Puck.Value
                         sprintf "x %.0f · y %.0f" x y
                 }
 
-                label (Attrs.className "switch") {
+                label (label.className "switch") {
                     input (
-                        Attrs.Input.``type`` "checkbox",
-                        Attrs.className "reduced",
-                        Props.Input.``checked`` (fun (p: Playground) -> p.Policy.Value = Reactive.Reduced),
-                        Events.onChange (fun (p: Playground) event ->
+                        input.``type`` "checkbox",
+                        input.className "reduced",
+                        input.props.``checked`` (fun (p: Playground) -> p.Policy.Value = Reactive.Reduced),
+                        input.onChange (fun (p: Playground) event ->
                             p.Policy.Value <-
                                 if Native.targetChecked event then
                                     Reactive.Reduced
@@ -174,30 +174,30 @@ let view: Component<Playground -> unit> =
                     "Reduced motion"
                 }
 
-                button (Attrs.className "tips-toggle", Events.onClick (fun (p: Playground) _ -> p.Tips.Value <- not p.Tips.Value)) {
+                button (button.className "tips-toggle", button.onClick (fun (p: Playground) _ -> p.Tips.Value <- not p.Tips.Value)) {
                     fun (p: Playground) -> if p.Tips.Value then "Hide tips" else "Show tips"
                 }
             }
 
-            div (Attrs.className "scrubber") {
-                div (Attrs.className "track", Motion.on scrubbed) {
+            div (div.className "scrubber") {
+                div (div.className "track", Motion.on scrubbed) {
                     for index in 1..9 do
-                        div (Attrs.className "dot", Attrs.data ("dot", string index)) { () }
+                        div (div.className "dot", div.data ("dot", string index)) { () }
                 }
 
                 input (
-                    Attrs.Input.``type`` "range",
-                    Attrs.attribute ("min", "0"),
-                    Attrs.attribute ("max", "1000"),
-                    Attrs.className "scrub",
-                    Attrs.aria ("label", "Timeline progress"),
-                    Props.Input.value (fun (p: Playground) -> string (System.Math.Round (p.Scrub.Value * 1000.))),
-                    Events.onInput (fun (p: Playground) event -> p.Scrub.Value <- float (Native.targetValue event) / 1000.)
+                    input.``type`` "range",
+                    input.attribute ("min", "0"),
+                    input.attribute ("max", "1000"),
+                    input.className "scrub",
+                    input.aria ("label", "Timeline progress"),
+                    input.props.value (fun (p: Playground) -> string (System.Math.Round (p.Scrub.Value * 1000.))),
+                    input.onInput (fun (p: Playground) event -> p.Scrub.Value <- float (Native.targetValue event) / 1000.)
                 )
 
-                span (Attrs.className "readout") { fun (p: Playground) -> sprintf "%.0f%%" (p.Scrub.Value * 100.) }
+                span (span.className "readout") { fun (p: Playground) -> sprintf "%.0f%%" (p.Scrub.Value * 100.) }
             }
 
-            div (Attrs.className "tips-frame") { tips }
+            div (div.className "tips-frame") { tips }
         })
 

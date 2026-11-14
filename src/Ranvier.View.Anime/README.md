@@ -6,7 +6,7 @@ packages expose the same portable API in the namespace `Ranvier.Anime`, and the 
 it: a template, its parameter records and its play functions compile unchanged for either engine. See
 [one API, two engines](#one-api-two-engines) and [native hosts](#native-hosts).
 
-Add a `Motion.*` part to a Sugar tag beside its attributes and events. It creates anime objects when
+Add a `Motion.*` part to a DSL tag beside its attributes and events. It creates anime objects when
 the element is placed and normally reverts them on disposal; [exits](#enter-and-exit-rules) preserve
 the current visual state until the leaving animation finishes.
 
@@ -29,11 +29,11 @@ npm install animejs@4.5.0
 open global.Ranvier
 open Ranvier.Anime
 open Ranvier.View
-open Ranvier.View.Sugar
+open Ranvier.View.Dsl
 open Ranvier.View.Anime
 ```
 
-Every sample on this page assumes these lines; the [view sugar reference](https://github.com/ranvier-org/Ranvier.View/blob/main/src/Ranvier.View/README.md) covers `Ranvier.View` and `Ranvier.View.Sugar`, and `Ranvier.Anime` holds the portable API of both engines. `Motion` requires qualified access: its `exit` would otherwise shadow FSharp.Core's.
+Every sample on this page assumes these lines; the [view DSL reference](https://github.com/ranvier-org/Ranvier.View/blob/main/src/Ranvier.View/README.md) covers `Ranvier.View` and `Ranvier.View.Dsl`, and `Ranvier.Anime` holds the portable API of both engines. `Motion` requires qualified access: its `exit` would otherwise shadow FSharp.Core's.
 
 **A play function receives the element as `Element`,** `Ranvier.Anime.Dom.Element`: the engine's DOM element, `Fable.Core.TS.Dom.Element` in the browser and `Ranvier.Dom.Element` on .NET. `Anime.animate el specs options` takes it as its target on both.
 
@@ -69,7 +69,7 @@ let board =
                 Selected = Api.createSignal false
             })
         (section () {
-            ul (Attrs.className "cards", Motion.flip { LayoutOptions.Default.WithDuration 350u with Ease = fun t -> 1. - (1. - t) ** 4. }) {
+            ul (ul.className "cards", Motion.flip { LayoutOptions.Default.WithDuration 350u with Ease = fun t -> 1. - (1. - t) ** 4. }) {
                 forEach
                     (fun card -> card.Id)
                     (fun b -> b.Cards.Value)
@@ -197,7 +197,7 @@ samples (`Fixtures.fs`, `MotionFixtures.fs`).
 - **Motion parts keep the visual properties.** In a pass where an element under the container carries a Motion part, the layout animates position and size only, and the opacity, colours, borders, filters, clip paths and font size stay with the parts (an opacity `enter` or `presence` under `flip` ends at its last frame). In a pass with no such element, anime's default fades apply. A property in `parameters.Properties` beyond the default set, or named in the browser `Extra`'s `enterFrom`, `leaveTo` or `swapAt`, is always the layout's.
 - **The container is positioned.** anime animates moved rows with `position: absolute` and a translation through the Web Animations API during the animation.
 - **The layout is created on the first recording,** and reverted with the instance.
-- **A dropped row starts from where it was dropped.** `Motion.flipFrom element` starts the element's next FLIP from its current visual box, drag transform included, in place of the transform-free box the recording measures. Call it before the change that moves the row and before the drag position is reset. The box stays on the element until the next pass that measures the element as a row, which starts its FLIP there, with the recorded size, and drops the box; under `Reduced`, where flip stays still, the call returns at once. The element comes from the handler's event or from `Hooks.mounted`.
+- **A dropped row starts from where it was dropped.** `Motion.flipFrom element` starts the element's next FLIP from its current visual box, drag transform included, in place of the transform-free box the recording measures. Call it before the change that moves the row and before the drag position is reset. The box stays on the element until the next pass that measures the element as a row, which starts its FLIP there, with the recorded size, and drops the box; under `Reduced`, where flip stays still, the call returns at once. The element comes from the handler's event or from a `mounted` part.
 
 ## Reactive parts
 
@@ -226,7 +226,7 @@ let gauge =
                 Label = Api.createSignal "idle"
             })
         (div () {
-            div (Attrs.className "bar", Motion.follow "scaleX" { ComposedAnimationOptions.Default with Duration = 400.; Ease = fun t -> 1. - (1. - t) ** 4. } (fun g -> g.Load.Value)) {
+            div (div.className "bar", Motion.follow "scaleX" { ComposedAnimationOptions.Default with Duration = 400.; Ease = fun t -> 1. - (1. - t) ** 4. } (fun g -> g.Load.Value)) {
                 ()
             }
 
@@ -276,7 +276,7 @@ let story =
             }
 
             div (
-                Attrs.className "puck",
+                div.className "puck",
                 Motion.drag NativeDraggableOptions.Default (fun s ->
                     {
                         Position = s.Puck
@@ -293,7 +293,7 @@ let story =
 
 **`split` takes static text.** A text slot or region inside the split element stops updating once its text is split. `splitText`, `onScroll` and `createDraggable` require `ResizeObserver`, and the draggable `DOMPoint` and `DOMMatrix`.
 
-**`draw` and `morph` need SVG elements.** The SVG tags of the sugar (`svg`, `g`, `path`, `circle` and the others listed in the [sugar reference](https://github.com/ranvier-org/Ranvier.View/blob/main/src/Ranvier.View/README.md#tags)) create SVG elements under both commit modes:
+**`draw` and `morph` need SVG elements.** The SVG tags of the DSL (`svg`, `g`, `path`, `circle` and the others listed in the [DSL reference](https://github.com/ranvier-org/Ranvier.View/blob/main/src/Ranvier.View/README.md#tags)) create SVG elements under both commit modes:
 
 ```fsharp
 type Chart =
@@ -361,7 +361,7 @@ let tile =
             })
         (div () {
             div (
-                Attrs.className "tile",
+                div.className "tile",
                 Motion.drag NativeDraggableOptions.Default (fun t ->
                     {
                         Position = t.Offset
@@ -372,7 +372,7 @@ let tile =
                 "drag"
             }
 
-            button (Events.onClick (fun (t: Tile) _ -> springHome t)) { "Home" }
+            button (button.onClick (fun (t: Tile) _ -> springHome t)) { "Home" }
         })
 ```
 
@@ -390,8 +390,8 @@ The three hook kinds behind the parts (motion, exit and reflow) add no markup, a
 
 | Entry | Against | Δ gzip | Budget |
 |---|---|--:|--:|
-| rows with `Motion.presence` | the same rows with `Hooks.motion` and `Hooks.exit` calling `animate` by hand | +706 B | 900 B |
-| a list with `Motion.flip` | the same list with `Hooks.reflow` calling `createLayout` by hand | +1071 B | 1100 B |
+| rows with `Motion.presence` | the same rows with `li.motion` and `li.exit` calling `animate` by hand | +706 B | 900 B |
+| a list with `Motion.flip` | the same list with `ul.reflow` calling `createLayout` by hand | +1071 B | 1100 B |
 
 `flip`'s glue includes the `LayoutOptions` record and its conversion to anime's layout parameters, the price of the
 parameter record both engines share, and the `FlipLayout` object through which the one `Motion.flip` reaches either

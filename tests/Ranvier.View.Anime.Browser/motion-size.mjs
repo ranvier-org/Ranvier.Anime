@@ -1,7 +1,7 @@
 // Bundle-size checks of the Motion parts, over the SizeEntries.fs entries bundled with rolldown and compressed with gzip
 // level 9 (spec "Bundle budget"):
-// - glue: Motion.presence against its twin calling animate through Hooks.motion and Hooks.exit (≤ 900 B), and
-//   Motion.flip against its twin calling createLayout through Hooks.reflow (≤ 1100 B: over the 589 B of anime-only
+// - glue: Motion.presence against its twin calling animate through li.motion and li.exit (≤ 900 B), and
+//   Motion.flip against its twin calling createLayout through ul.reflow (≤ 1100 B: over the 589 B of anime-only
 //   parameters, the shared LayoutOptions record and its conversion to anime layout parameters add about 320 B, and the
 //   portable FlipLayout seam between Motion.flip and the engine about 160 B);
 // - isolation: an unminified entry using one Motion part declares no anime feature class beyond those its own anime

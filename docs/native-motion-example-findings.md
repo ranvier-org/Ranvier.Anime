@@ -149,7 +149,7 @@ constant width in the read, the callback ran and the indicator moved. Forcing la
 ends the effect without a reported error. I suspect a layout flush re-entering the graph, but I didn't find the cause
 upstream.
 
-**Workaround.** The indicator measures its width once in `Hooks.mounted` into a `TabWidth` signal, which the `follow`
+**Workaround.** The indicator measures its width once in a `mounted` part into a `TabWidth` signal, which the `follow`
 read uses (`examples/Ranvier.Motion.Native/src/Routes.fs:304`).
 
 **Upstream follow-up.** Either layout reads inside tracking should be safe, or the failure should be reported rather

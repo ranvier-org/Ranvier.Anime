@@ -13,7 +13,7 @@
         <Description Condition="'$(RanvierTrace)' == 'true'">The traced build of Fable.Ranvier.Anime: typed anime.js 4.5 bindings for Fable. Depends on Ranvier.Traced.</Description>
         <PackageTags>animation;animejs;bindings;fable;reactive;signals;fsharp</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageReleaseNotes>Alpha release. The API may change before 1.0.</PackageReleaseNotes>
+        <PackageReleaseNotes>Pre-1.0 release. The API may change before 1.0.</PackageReleaseNotes>
         <!-- Set by ShipIt from CHANGELOG.md. -->
         <Version>0.1.45-rc.2</Version>
         <AssemblyVersion>0.0.0.0</AssemblyVersion>
