@@ -40,10 +40,10 @@
         <RanvierCssVersion Condition="'$(RanvierCssVersion)' == ''">0.1.1</RanvierCssVersion>
         <RanvierCssBindingsVersion Condition="'$(RanvierCssBindingsVersion)' == ''">0.1.1</RanvierCssBindingsVersion>
         <RanvierCssDomVersion Condition="'$(RanvierCssDomVersion)' == ''">0.1.0</RanvierCssDomVersion>
-        <RanvierViewVersion Condition="'$(RanvierViewVersion)' == ''">0.1.49-rc.5</RanvierViewVersion>
-        <RanvierViewWebCoreVersion Condition="'$(RanvierViewWebCoreVersion)' == ''">0.1.0-rc.11</RanvierViewWebCoreVersion>
-        <RanvierViewWebCoreSdlVersion Condition="'$(RanvierViewWebCoreSdlVersion)' == ''">0.1.0-rc.16</RanvierViewWebCoreSdlVersion>
-        <RanvierWebCoreNativeVersion Condition="'$(RanvierWebCoreNativeVersion)' == ''">0.1.1-rc.9</RanvierWebCoreNativeVersion>
+        <RanvierViewVersion Condition="'$(RanvierViewVersion)' == ''">0.1.49</RanvierViewVersion>
+        <RanvierViewWebCoreVersion Condition="'$(RanvierViewWebCoreVersion)' == ''">0.1.0</RanvierViewWebCoreVersion>
+        <RanvierViewWebCoreSdlVersion Condition="'$(RanvierViewWebCoreSdlVersion)' == ''">0.1.0</RanvierViewWebCoreSdlVersion>
+        <RanvierWebCoreNativeVersion Condition="'$(RanvierWebCoreNativeVersion)' == ''">0.1.1</RanvierWebCoreNativeVersion>
     </PropertyGroup>
 
     <!-- A solution build passes its configuration to the sibling-checkout projects outside the solution, which would
