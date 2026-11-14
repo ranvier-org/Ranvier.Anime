@@ -1,5 +1,5 @@
 ---
-last_commit_released: 25b7a02ee23ef59f56d429eedf468dbc3fd411c6
+last_commit_released: a067d3dfac4e501d5f1719d6bf8866862268071d
 updaters:
   - regex:
       file: Fable.Ranvier.Anime.fsproj
@@ -9,6 +9,14 @@ updaters:
 # Changelog
 
 This changelog is generated from conventional commits by [EasyBuild.ShipIt](https://github.com/easybuild-org/EasyBuild.ShipIt).
+
+## 0.1.45 - 2026-11-14
+
+### 🐞 Bug Fixes
+
+* *(deps)* Build against Ranvier 0.2.0, the stable Dom and Css cohort and the View DSL, and move both packages to the stable channel (#14) ([a067d3d](https://github.com/ranvier-org/Ranvier.Anime/commit/a067d3dfac4e501d5f1719d6bf8866862268071d))
+
+<strong><small>[View changes on Github](https://github.com/ranvier-org/Ranvier.Anime/compare/25b7a02ee23ef59f56d429eedf468dbc3fd411c6..a067d3dfac4e501d5f1719d6bf8866862268071d)</small></strong>
 
 ## 0.1.45-rc.2 - 2026-11-11
 
