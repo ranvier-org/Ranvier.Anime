@@ -1,0 +1,24 @@
+version: 2
+# Declared so Dependabot's proxy allows these hosts: a feed named only in nuget.config is blocked.
+registries:
+  partas-build:
+    type: nuget-feed
+    url: https://nuget.cloudsmith.io/shayanhabibi/shayanhabibi-partas-build/v3/index.json
+  xantham-cloudsmith:
+    type: nuget-feed
+    url: https://nuget.cloudsmith.io/shayanhabibi/xantham/v3/index.json
+
+updates:
+  # Fickl only: the tool manifest follows the latest release. ShipIt releases nothing for a chore commit.
+  - package-ecosystem: nuget
+    directory: "/"
+    registries:
+      - partas-build
+      - xantham-cloudsmith
+    schedule:
+      interval: daily
+    allow:
+      - dependency-name: "fickl"
+    commit-message:
+      prefix: "chore(deps)"
+    open-pull-requests-limit: 1
