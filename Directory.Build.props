@@ -36,10 +36,10 @@
     <PropertyGroup>
         <RanvierVersion Condition="'$(RanvierVersion)' == ''">0.2.0</RanvierVersion>
         <RanvierElmishVersion Condition="'$(RanvierElmishVersion)' == ''">0.2.0</RanvierElmishVersion>
-        <RanvierDomVersion Condition="'$(RanvierDomVersion)' == ''">0.1.0-rc.1</RanvierDomVersion>
-        <RanvierCssVersion Condition="'$(RanvierCssVersion)' == ''">0.1.1-alpha.4</RanvierCssVersion>
-        <RanvierCssBindingsVersion Condition="'$(RanvierCssBindingsVersion)' == ''">0.1.1-alpha.2</RanvierCssBindingsVersion>
-        <RanvierCssDomVersion Condition="'$(RanvierCssDomVersion)' == ''">0.1.0-alpha.1</RanvierCssDomVersion>
+        <RanvierDomVersion Condition="'$(RanvierDomVersion)' == ''">0.1.0</RanvierDomVersion>
+        <RanvierCssVersion Condition="'$(RanvierCssVersion)' == ''">0.1.1</RanvierCssVersion>
+        <RanvierCssBindingsVersion Condition="'$(RanvierCssBindingsVersion)' == ''">0.1.1</RanvierCssBindingsVersion>
+        <RanvierCssDomVersion Condition="'$(RanvierCssDomVersion)' == ''">0.1.0</RanvierCssDomVersion>
         <RanvierViewVersion Condition="'$(RanvierViewVersion)' == ''">0.1.49-rc.5</RanvierViewVersion>
         <RanvierViewWebCoreVersion Condition="'$(RanvierViewWebCoreVersion)' == ''">0.1.0-rc.11</RanvierViewWebCoreVersion>
         <RanvierViewWebCoreSdlVersion Condition="'$(RanvierViewWebCoreSdlVersion)' == ''">0.1.0-rc.16</RanvierViewWebCoreSdlVersion>
