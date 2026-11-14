@@ -7,6 +7,13 @@ registries:
   xantham-cloudsmith:
     type: nuget-feed
     url: https://nuget.cloudsmith.io/shayanhabibi/xantham/v3/index.json
+  # Each Cloudsmith feed serves its packages from this second host, which the proxy blocks unless it is declared too.
+  partas-build-packages:
+    type: nuget-feed
+    url: https://dl.cloudsmith.io/public/shayanhabibi/shayanhabibi-partas-build/nuget/index.json
+  xantham-cloudsmith-packages:
+    type: nuget-feed
+    url: https://dl.cloudsmith.io/public/shayanhabibi/xantham/nuget/index.json
 
 updates:
   # Fickl only: the tool manifest follows the latest release. ShipIt releases nothing for a chore commit.
@@ -15,6 +22,8 @@ updates:
     registries:
       - partas-build
       - xantham-cloudsmith
+      - partas-build-packages
+      - xantham-cloudsmith-packages
     schedule:
       interval: daily
     allow:
