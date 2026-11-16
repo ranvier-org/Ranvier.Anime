@@ -148,7 +148,7 @@ module Svg =
             | None -> raise(ObjectDisposedException "SVG motion sample")
 
     /// <summary>A typed draw setter for an SVG element; fractions may extend beyond zero and one.</summary>
-    type Drawable internal (path:SVGGeometryElement, computed:CSSStyleDeclaration) as this =
+    type Drawable internal (path:SVGGeometryElement, computed:CSSStyleDeclaration) =
         let lifetime=SvgOperationLifetime()
         let cap=lifetime.ReadConstruction(fun()->computed.getPropertyValue "stroke-linecap")
         let nonScaling=lifetime.ReadConstruction(fun()->computed.getPropertyValue "vector-effect")="non-scaling-stroke"
@@ -159,11 +159,11 @@ module Svg =
         let capSnapshot=CssPropertySnapshot.Capture(style,"stroke-linecap",lifetime.EnsureConstruction)
         let mutable mutated=false
         /// <summary>Registers restoration and attaches disposal before the first SVG mutation.</summary>
-        member internal _.Register()=
+        member internal this.Register()=
             ScopeRegistration.register this.Revert
             lifetime.Attach(this:>IDisposable)
         /// <summary>Normalizes path length with constructor rollback and first-fault preservation.</summary>
-        member internal _.Initialize(start,finish)=
+        member internal this.Initialize(start,finish)=
             try
                 lifetime.EnsureConstruction()
                 if snd attributes[0]<>"1000" then
@@ -209,7 +209,7 @@ module Svg =
                     if not lifetime.Initializing then lifetime.Close()
                     reraise()
         /// <summary>Writes draw, stroke dash offset/array, and the line cap for an empty segment.</summary>
-        member _.Draw(start:float,finish:float)=
+        member this.Draw(start:float,finish:float)=
             ObjectDisposedException.ThrowIf(not lifetime.Active,"SVG drawable")
             this.TryDraw(start,finish) |> ignore
         /// <summary>The underlying geometry receives all attribute and inline-style writes.</summary>
@@ -229,7 +229,7 @@ module Svg =
                 failure |> Option.iter(fun error->Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
         /// <summary>Whether restoration, owner disposal or a fault ended drawing accessors.</summary>
         member _.IsReverted=not lifetime.Active
-        interface IDisposable with member _.Dispose()=this.Revert()
+        interface IDisposable with member this.Dispose()=this.Revert()
 
     /// <summary>Normalizes pathLength to 1000 and initializes the draw range when normalization changes.</summary>
     /// <remarks>Pass the owning document's computed style. Standalone graph-free callers own explicit disposal.</remarks>

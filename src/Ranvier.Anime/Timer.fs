@@ -145,20 +145,31 @@ type ScopeClockDefaults(options: PlaybackOptions, ?animation: AnimationDefaultOp
 
 /// <summary>The active clock-default cell, restored when scoped execution ends.</summary>
 module internal ScopePlaybackContext =
+    [<AbstractClass; Sealed>]
+    type private ActiveDefaults =
+        [<ThreadStatic; DefaultValue>]
+        static val mutable private value: ScopeClockDefaults
+        static member Value
+            with get () = ActiveDefaults.value
+            and set (v: ScopeClockDefaults) = ActiveDefaults.value <- v
     let globalDefaults = ScopeClockDefaults(PlaybackOptions.Default)
     do EngineDefaults.attach(fun frameRate ->
         if frameRate>globalDefaults.Options.FrameRate then
             globalDefaults.Options<-{globalDefaults.Options with FrameRate=frameRate})
     do EngineDefaults.attachDurationScale(fun scale ->
         globalDefaults.Animation<-{globalDefaults.Animation with Duration=globalDefaults.Animation.Duration*scale})
-    let private active = new System.Threading.ThreadLocal<ScopeClockDefaults option>(fun () -> None)
-    let current () = defaultArg active.Value globalDefaults
-    let isScoped () = active.Value.IsSome
-    let resolve options = defaultArg options (current().Options)
+    let current () =
+        let active = ActiveDefaults.Value
+        if Object.ReferenceEquals(active, null) then globalDefaults else active
+    let isScoped () = not(Object.ReferenceEquals(ActiveDefaults.Value, null))
+    let resolve options =
+        match options with
+        | Some value -> value
+        | None -> (current()).Options
     let run defaults callback =
-        let previous = active.Value
-        active.Value <- Some defaults
-        try callback() finally active.Value <- previous
+        let previous = ActiveDefaults.Value
+        ActiveDefaults.Value <- defaults
+        try callback() finally ActiveDefaults.Value <- previous
 
 /// <summary>Clock defaults for explicitly authored factory options.</summary>
 [<RequireQualifiedAccess>]
