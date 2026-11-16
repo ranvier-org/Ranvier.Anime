@@ -22,7 +22,7 @@ type DraggableScrollSettings =
 /// <summary>Native container geometry, autoscrolling and in-view movement using existing frame/animation services.</summary>
 type DraggableScroll(controller:Draggable,scheduler:FrameScheduler,target:HTMLElement,container:HTMLElement,
                      computed:ComputedStyleService,?settings:unit -> DraggableScrollSettings,
-                     ?viewport:ViewportService,?windowScroll:ViewportScrollService,?containerProvider:unit -> HTMLElement) as this =
+                     ?viewport:ViewportService,?windowScroll:ViewportScrollService,?containerProvider:unit -> HTMLElement) =
     let mutable container=container
     let settings=defaultArg settings (fun()->DraggableScrollSettings.Default)
     let mutable config=settings()
@@ -173,9 +173,9 @@ type DraggableScroll(controller:Draggable,scheduler:FrameScheduler,target:HTMLEl
             animation<-Some driver
             driver.Reset();driver.Resume()
     /// <summary>Animates native scrolling with unsigned whole milliseconds, defaulting to 350.</summary>
-    member _.ScrollInView(?duration:uint,?gap:float,?ease:float -> float)=this.ScrollInViewPrecise(float(defaultArg duration 350u),?gap=gap,?ease=ease)
+    member this.ScrollInView(?duration:uint,?gap:float,?ease:float -> float)=this.ScrollInViewPrecise(float(defaultArg duration 350u),?gap=gap,?ease=ease)
     /// <summary>Moves out-of-view enabled axes into the measured scroll viewport using precise milliseconds.</summary>
-    member _.AnimateInViewPrecise(duration:float,?gap:float,?ease:float -> float) =
+    member this.AnimateInViewPrecise(duration:float,?gap:float,?ease:float -> float) =
         live();controller.Stop();this.Refresh()
         let gap=defaultArg gap 0.
         let struct(sx,sy)=position()
@@ -187,17 +187,17 @@ type DraggableScroll(controller:Draggable,scheduler:FrameScheduler,target:HTMLEl
         if outside&&&1<>0 then controller.AnimateXPrecise(DragPhysics.clampAxis b.Left b.Right (DragPhysics.snap controller.Settings.SnapX controller.X),duration,ease)
         if outside&&&2<>0 then controller.AnimateYPrecise(DragPhysics.clampAxis b.Top b.Bottom (DragPhysics.snap controller.Settings.SnapY controller.Y),duration,ease)
     /// <summary>Moves enabled axes into view with unsigned whole milliseconds, defaulting to 350.</summary>
-    member _.AnimateInView(?duration:uint,?gap:float,?ease:float -> float)=this.AnimateInViewPrecise(float(defaultArg duration 350u),?gap=gap,?ease=ease)
+    member this.AnimateInView(?duration:uint,?gap:float,?ease:float -> float)=this.AnimateInViewPrecise(float(defaultArg duration 350u),?gap=gap,?ease=ease)
     /// <summary>Stops edge scrolling and any in-view scroll animation while retaining measured geometry.</summary>
     member _.StopMotion() =
         pause()
         animation |> Option.iter _.Cancel();animation<-None
         animating<-false
     /// <summary>Stops native scroll motion and clears scroll eligibility until the next geometry refresh.</summary>
-    member _.Reset()=this.StopMotion();canScroll<-false
+    member this.Reset()=this.StopMotion();canScroll<-false
     /// <summary>Cancels owned native scroll animation and edge frames.</summary>
     member _.Cancel() =
         if not disposed then
             disposed<-true;pause()
             animation |> Option.iter _.Cancel();animation<-None
-    interface IDisposable with member _.Dispose()=this.Cancel()
+    interface IDisposable with member this.Dispose()=this.Cancel()

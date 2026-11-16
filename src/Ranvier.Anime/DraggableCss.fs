@@ -7,7 +7,7 @@ open Ranvier.Css.Dom
 
 /// <summary>A typed native declaration mapping for one draggable numeric axis.</summary>
 /// <remarks>The author must retain one property name. Revert restores only that property's original inline value, importance and absence.</remarks>
-type DraggableCssAxis(element:HTMLElement,initial:float,author:float -> Declaration) as this =
+type DraggableCssAxis(element:HTMLElement,initial:float,author:float -> Declaration) =
     let ownerAllowsWrite=ScopeRegistration.captureWriteGuard()
     let declaration=author initial
     let name=Declaration.name declaration
@@ -32,7 +32,7 @@ type DraggableCssAxis(element:HTMLElement,initial:float,author:float -> Declarat
             state<-1
             try snapshot.Restore(style,fun () -> state=1 && current() && ownerAllowsWrite()) finally state<-2
     /// <summary>Restores the captured inline property after its controller has stopped.</summary>
-    member _.Revert()=this.Restore(fun()->true)
+    member this.Revert()=this.Restore(fun()->true)
     /// <summary>Stops future writes while retaining the current inline declaration.</summary>
     member _.Cancel()=state<-2
     interface IDisposable with member _.Dispose()=state<-2
