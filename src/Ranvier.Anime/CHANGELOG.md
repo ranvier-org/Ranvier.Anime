@@ -1,5 +1,5 @@
 ---
-last_commit_released: a067d3dfac4e501d5f1719d6bf8866862268071d
+last_commit_released: 45c35a8ea4bc4aa0073df21294bc4ccc1a3fe972
 updaters:
   - regex:
       file: Ranvier.Anime.fsproj
@@ -9,6 +9,18 @@ updaters:
 # Changelog
 
 This changelog is generated from conventional commits by [EasyBuild.ShipIt](https://github.com/easybuild-org/EasyBuild.ShipIt).
+
+## 0.2.0 - 2026-11-18
+
+### 🚀 Features
+
+* *(anime)* Add native motion authoring and playback improvements (#23) ([45c35a8](https://github.com/ranvier-org/Ranvier.Anime/commit/45c35a8ea4bc4aa0073df21294bc4ccc1a3fe972))
+
+### ⚡ Performance Improvements
+
+* *(anime)* Remove tick init guards and ThreadLocal option allocations (#20) ([5e44e0a](https://github.com/ranvier-org/Ranvier.Anime/commit/5e44e0a46ac1cc57d77555ced8a4d2a700042989))
+
+<strong><small>[View changes on Github](https://github.com/ranvier-org/Ranvier.Anime/compare/a067d3dfac4e501d5f1719d6bf8866862268071d..45c35a8ea4bc4aa0073df21294bc4ccc1a3fe972)</small></strong>
 
 ## 0.1.0 - 2026-11-14
 
