@@ -218,7 +218,7 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
         new ScrollContainer(scheduler,provider.Document.body,computed,resize,viewport=(provider,scroll))
 
 /// <summary>Host-local container reuse; disposing the registry releases every listener and observer it created.</summary>
-type ScrollContainerRegistry(scheduler:FrameScheduler, computed:ComputedStyleService, resize:ResizeObservationService) as this =
+type ScrollContainerRegistry(scheduler:FrameScheduler, computed:ComputedStyleService, resize:ResizeObservationService) =
     let containers = System.Collections.Generic.Dictionary<EventTarget,ScrollContainer>(HashIdentity.Reference)
     let mutable disposed = false
     let get key create =
@@ -243,7 +243,7 @@ type ScrollContainerRegistry(scheduler:FrameScheduler, computed:ComputedStyleSer
     member _.Count = containers.Count
 
     /// <summary>Attaches the registry and its current and future containers to the current Ranvier owner.</summary>
-    member _.Own() = Ranvier.Api.getOwner().Attach(this :> IDisposable); this
+    member this.Own() = Ranvier.Api.getOwner().Attach(this :> IDisposable); this
 
     /// <summary>Reverts all observers and removes each container from the registry.</summary>
     member _.Dispose() =
@@ -251,4 +251,4 @@ type ScrollContainerRegistry(scheduler:FrameScheduler, computed:ComputedStyleSer
             disposed <- true
             for container in containers.Values |> Seq.toArray do container.Dispose()
             containers.Clear()
-    interface IDisposable with member _.Dispose() = this.Dispose()
+    interface IDisposable with member this.Dispose() = this.Dispose()

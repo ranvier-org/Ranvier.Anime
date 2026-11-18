@@ -67,33 +67,55 @@ type internal IDeferredWrite =
     /// <summary>Applies the staged write.</summary>
     abstract Flush: unit -> unit
 
+[<AbstractClass; Sealed>]
+type private DeferredWriteDepth =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private value: int
+    static member Value
+        with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () = DeferredWriteDepth.value
+        and [<MethodImpl(MethodImplOptions.AggressiveInlining)>] set (v: int) = DeferredWriteDepth.value <- v
+
+[<AbstractClass; Sealed>]
+type private DeferredWriteList =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private value: List<IDeferredWrite>
+    static member Value
+        with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () = DeferredWriteList.value
+        and set (v: List<IDeferredWrite>) = DeferredWriteList.value <- v
+
 /// <summary>Writes staged while an engine frame runs, applied when the outermost frame ends.</summary>
 /// <remarks>Several tracks of one element then write it once per frame. Per thread, as schedulers are.</remarks>
 type internal DeferredWrites =
-    [<ThreadStatic; DefaultValue>]
-    static val mutable private depth: int
-    [<ThreadStatic; DefaultValue>]
-    static val mutable private pending: List<IDeferredWrite>
+    [<MethodImpl(MethodImplOptions.NoInlining)>]
+    static member private FlushPending(pending: List<IDeferredWrite>) =
+        let mutable failure: exn = null
+        let mutable index = 0
+        while index < pending.Count do
+            try pending[index].Flush() with error -> if isNull failure then failure <- error
+            index <- index + 1
+        pending.Clear()
+        if not(isNull failure) then System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw()
     /// <summary>Whether an engine frame is running on this thread, so writes can be staged.</summary>
-    static member Deferring = DeferredWrites.depth > 0
+    static member Deferring
+        with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () = DeferredWriteDepth.Value > 0
     /// <summary>Stages a write; the caller adds each target once until it flushes.</summary>
     static member Add(write: IDeferredWrite) =
-        if isNull DeferredWrites.pending then DeferredWrites.pending <- List<IDeferredWrite>()
-        DeferredWrites.pending.Add write
+        let mutable pending = DeferredWriteList.Value
+        if isNull pending then
+            pending <- List<IDeferredWrite>()
+            DeferredWriteList.Value <- pending
+        pending.Add write
     /// <summary>Enters a frame.</summary>
-    static member Enter() = DeferredWrites.depth <- DeferredWrites.depth + 1
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    static member Enter() = DeferredWriteDepth.Value <- DeferredWriteDepth.Value + 1
     /// <summary>Leaves a frame, applying the staged writes when it is the outermost; the first failure is rethrown.</summary>
     static member Exit() =
-        DeferredWrites.depth <- DeferredWrites.depth - 1
-        let pending = DeferredWrites.pending
-        if DeferredWrites.depth = 0 && not(isNull pending) && pending.Count > 0 then
-            let mutable failure: exn = null
-            let mutable index = 0
-            while index < pending.Count do
-                try pending[index].Flush() with error -> if isNull failure then failure <- error
-                index <- index + 1
-            pending.Clear()
-            if not(isNull failure) then System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw()
+        let next = DeferredWriteDepth.Value - 1
+        DeferredWriteDepth.Value <- next
+        if next = 0 then
+            let pending = DeferredWriteList.Value
+            if not(isNull pending) && pending.Count > 0 then
+                DeferredWrites.FlushPending pending
 
 type private EngineFrameEntry() =
     /// <summary>The pending frame callback; null when none is pending (no per-frame option allocation).</summary>

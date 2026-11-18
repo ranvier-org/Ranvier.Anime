@@ -12,8 +12,7 @@ open Ranvier.Dom
 /// <summary>A refreshable group of animation resources attached to a Ranvier owner.</summary>
 /// <remarks>All operations require its graph thread. Revert ends the lifetime; repeated calls are harmless.</remarks>
 type Scope(?root: ParentNode, ?defaults: PlaybackOptions, ?clockDefaults: PlaybackDefaults, ?animationDefaults: AnimationDefaults, ?media: MediaQueryProvider, ?mediaQueries: seq<string * string>) as this =
-    static let current = new Threading.ThreadLocal<Scope option>(fun () -> None)
-    let parentScope = current.Value
+    let parentScope = let active = CurrentScope.Value in if Object.ReferenceEquals(active, null) then None else Some active
     let inheritedDefaults = ScopePlaybackContext.current()
     let clockDefaults =
         match defaults,clockDefaults,animationDefaults with
@@ -137,14 +136,14 @@ type Scope(?root: ParentNode, ?defaults: PlaybackOptions, ?clockDefaults: Playba
         let register revert =
             if disposed || generation <> expected then revert()
             else this.Register revert
-        let previous = current.Value
-        current.Value <- Some this
+        let previous = CurrentScope.Value
+        CurrentScope.Value <- this
         try ScopePlaybackContext.run clockDefaults (fun () ->
             matches <- (queries |> Seq.map(fun (name,query) -> KeyValuePair(name,query.Matches))).ToFrozenDictionary(StringComparer.Ordinal)
             ScopeRegistration.runOwned register (fun () -> if once then persistent else epoch)
                 (fun () -> not disposed && generation = expected && not parent.IsDisposed) (fun () ->
                 Api.runWithOwner (if once then persistent else epoch) (fun () -> Api.untrack(fun () -> callback this))))
-        finally current.Value <- previous
+        finally CurrentScope.Value <- previous
     /// <summary>Registers restoration in the regular or once group selected by the latest Add or AddOnce.</summary>
     member _.Register(revert: unit -> unit) =
         live()
@@ -259,7 +258,9 @@ type Scope(?root: ParentNode, ?defaults: PlaybackOptions, ?clockDefaults: Playba
             if isNull(box found) then document :> ParentNode else found :> ParentNode
         | None -> document :> ParentNode
     /// <summary>The scope currently executing on this thread.</summary>
-    static member Current = current.Value
+    static member Current =
+        let active = CurrentScope.Value
+        if Object.ReferenceEquals(active, null) then None else Some active
     /// <summary>The shared clock-default cell used outside scoped execution and by top-level scopes without overrides.</summary>
     static member GlobalClockDefaults = ScopePlaybackContext.globalDefaults
     /// <summary>Registers a factory's restoration when constructed inside a scoped callback.</summary>
@@ -267,3 +268,10 @@ type Scope(?root: ParentNode, ?defaults: PlaybackOptions, ?clockDefaults: Playba
         ScopeRegistration.register revert
     interface IDisposable with
         member _.Dispose() = this.Revert()
+
+and [<AbstractClass; Sealed>] private CurrentScope =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private value: Scope
+    static member Value
+        with get () = CurrentScope.value
+        and set (v: Scope) = CurrentScope.value <- v
