@@ -145,7 +145,11 @@ let verify (fixture:JsonElement) =
         let expected=construction[childIndex]
         for name in ["snapshot";"writes";"effects";"events";"trace"] do compare (fixture.GetProperty("name").GetString()+" construction "+string childIndex+" "+name) actual[name] (expected.GetProperty name)
     root.Reset()
-    compare (fixture.GetProperty("name").GetString()+" initial") (capture()) (fixture.GetProperty "initial")
+    let name=fixture.GetProperty("name").GetString()
+    let compareSample label time expected =
+        if name="replace-loopingPredecessor" then TimelineTests.verifyOwnedSample name "x" time (capture()) expected
+        else compare label (capture()) expected
+    compareSample (name+" initial") 0. (fixture.GetProperty "initial")
     for sample in fixture.GetProperty("samples").EnumerateArray() do
         let arg=optional "value" sample |> Option.filter(fun value -> value.ValueKind<>JsonValueKind.Null) |> Option.map _.GetDouble() |> Option.defaultValue 0.
         match sample.GetProperty("operation").GetString() with
@@ -160,7 +164,7 @@ let verify (fixture:JsonElement) =
         | "speed" -> root.Speed<-arg
         | "frame" -> scheduler.Advance arg;scheduler.RunFrame()
         | other -> failwith other
-        compare (fixture.GetProperty("name").GetString()+" "+sample.GetProperty("operation").GetString()+" "+string arg) (capture()) (sample.GetProperty "state")
+        compareSample (name+" "+sample.GetProperty("operation").GetString()+" "+string arg) arg (sample.GetProperty "state")
 
 let private fixtures() =
     let root=Environment.GetEnvironmentVariable "RANVIER_ANIME_REFERENCE_ROOT"

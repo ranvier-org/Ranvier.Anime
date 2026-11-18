@@ -34,18 +34,29 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
     let mutable x,y,previousX,previousY,velocity = 0.,0.,0.,0.,0.
     let mutable backwardX,backwardY = false,false
     let mutable left,top,width,height,scrollWidth,scrollHeight,scale = 0.,0.,0.,0.,0.,0.,1.
-    let data = new Timer(scheduler,infinity,options={PlaybackOptions.Default with FrameRate=30.},onUpdate=(fun timer ->
+    let engine = EngineFrames.forScheduler scheduler
+    let mutable lastVelocitySample = scheduler.Now()
+    let mutable lastScrollSample = lastVelocitySample
+    let data = new Timer(scheduler,infinity,options={PlaybackOptions.Default with FrameRate=30.},onUpdate=(fun _ ->
         let dx,dy = previousX-x,previousY-y
         previousX <- x; previousY <- y
         if dx <> 0. then backwardX <- dx > 0.
         if dy <> 0. then backwardY <- dy > 0.
-        velocity <- ScrollMath.round 5 (if timer.DeltaTime > 0. then sqrt(dx*dx+dy*dy)/timer.DeltaTime else 0.)))
+        let now = scheduler.Now()
+        let elapsed = now - lastVelocitySample
+        lastVelocitySample <- now
+        velocity <- ScrollMath.round 5 (if elapsed > 0. then sqrt(dx*dx+dy*dy)/elapsed else 0.)))
     let ticker = new Timer(scheduler,infinity,onBegin=(fun _ -> data.Resume()),onUpdate=(fun _ ->
         let ordered = children.ToArray()
         if backwardX || backwardY then Array.Reverse ordered
-        for child in ordered do if not disposed then child.HandleScroll()))
-    let wake = new Timer(scheduler,500u,onBegin=(fun _ -> ticker.Resume()),onComplete=(fun _ -> ticker.Pause()))
-    let resizeTicker = new Timer(scheduler,250u,onComplete=(fun _ -> this.Refresh()))
+        let now = scheduler.Now()
+        let elapsed = now - lastScrollSample
+        lastScrollSample <- now
+        for child in ordered do if not disposed then child.HandleScroll(elapsed)))
+    let wake = new Timer(scheduler,500. * engine.TimeScale,onBegin=(fun _ ->
+        if ticker.Paused then lastScrollSample <- scheduler.Now()
+        ticker.Resume()),onComplete=(fun _ -> ticker.Pause()))
+    let resizeTicker = new Timer(scheduler,250. * engine.TimeScale,onComplete=(fun _ -> this.Refresh()))
     let eventTarget = match viewport with Some(provider,_) -> provider.Window | None -> element:>EventTarget
     let readCoords () =
         match viewport with
@@ -182,8 +193,8 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
             bounds()
             for child in children.ToArray() do if not disposed && child.Ready then child.Resize()
             if not disposed then readCoords(); wake.Restart()
-    /// <summary>Current 30 FPS Euclidean velocity in pixels per millisecond.</summary>
-    member _.Velocity = velocity
+    /// <summary>Current Euclidean velocity in CSS pixels per engine time unit.</summary>
+    member _.Velocity = velocity / engine.TimeScale
     /// <summary>Whether the last changed horizontal sample moved backward.</summary>
     member _.BackwardX = backwardX
     /// <summary>Whether the last changed vertical sample moved backward.</summary>

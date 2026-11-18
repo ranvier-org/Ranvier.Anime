@@ -21,7 +21,8 @@ type internal PlaybackEvent =
 
 /// <summary>Playback callback and control state; clock input includes the initial delay.</summary>
 type internal PlaybackState(duration: float, iterations: float, delay: float, loopDelay: float,
-                            initialReversed: bool, alternate: bool, callback: PlaybackEvent -> unit) =
+                            initialReversed: bool, alternate: bool, callback: PlaybackEvent -> unit, ?seconds:unit -> bool) =
+    let seconds = defaultArg seconds (fun () -> false)
     let mutable delay = delay
     let mutable loopDelay = loopDelay
     let mutable duration = duration
@@ -30,6 +31,9 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let mutable paused = true
     let mutable began = false
     let mutable completed = false
+    let mutable completedSilently = false
+    let mutable isMuted : unit -> bool = fun () -> false
+    let mutable onSettled : unit -> unit = ignore
     let mutable cancelled = false
     let mutable reversed = initialReversed
     let mutable speed = 1.
@@ -62,12 +66,16 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             previousAbsoluteTime <- sample.AbsoluteTime
             let next = timing.Sample(previousAbsoluteTime, time, reversed, alternate, wasCompleted, mode,
                                      ?parentBackwards=(match parentContext with Some(backwards,_,_) -> ValueSome backwards | None -> ValueNone),
-                                     ?child=(if parentContext.IsSome then ValueSome true else ValueNone))
+                                     ?child=(if parentContext.IsSome then ValueSome true else ValueNone), seconds=seconds())
             sample <- next
             let current () = expected = generation && not cancelled && writeGuard() &&
                              (parentContext |> Option.forall(fun (_,_,live) -> live()))
             let parentAllowsLifecycle () = parentContext |> Option.forall(fun (_,parentBegan,_) -> not next.Backwards && parentBegan)
-            let emit event = if not mute && current() then callback event
+            let emit event = if not mute && not(isMuted()) && current() then callback event
+            let finish allowCallback =
+                completedSilently <- isMuted()
+                if allowCallback then emit PlaybackEvent.Complete
+                onSettled()
             if next.AboveZero && not began then
                 began <- true
                 if parentAllowsLifecycle() then emit PlaybackEvent.Begin
@@ -84,18 +92,18 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             if current() then
                 if parentContext.IsSome && timing.Duration <= 1e-11 then
                     let _,parentBegan,_ = parentContext.Value
-                    if not mute && not completingSetter &&
+                    if (not mute || isMuted()) && not completingSetter &&
                        ((parentBegan && not next.Backwards && next.AbsoluteTime > 0. && not completed) ||
                         (next.Backwards && next.AbsoluteTime <= 1e-11 && completed)) then
                         completingSetter <- true
-                        try emit PlaybackEvent.Complete finally completingSetter <- false
+                        try finish true finally completingSetter <- false
                         if current() then completed <- not next.Backwards
                 elif next.AboveZero && next.AtEnd then
                     if System.Double.IsFinite iterations && float next.Iteration >= iterations - 1. then
                         paused <- true
                         if childRenderer.IsNone && not wasCompleted then
                             completed <- true
-                            if parentAllowsLifecycle() then emit PlaybackEvent.Complete
+                            finish (parentAllowsLifecycle())
                 else completed <- false
             match childRenderer with
             | Some renderChildren when current() ->
@@ -107,7 +115,7 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
                     paused <- true
                     if not completed then
                         completed <- true
-                        emit PlaybackEvent.Complete
+                        finish true
             | _ -> ()
 
         finally internalRender <- previousInternal
@@ -122,7 +130,7 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let pause () =
         if not paused then
             paused <- true
-            callback PlaybackEvent.Pause
+            if not(isMuted()) then callback PlaybackEvent.Pause
 
     let rec resume expected =
         if current expected && paused then
@@ -168,6 +176,8 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
 
     /// <summary>Most recent geometry, including raw time and public rounded getters.</summary>
     member _.Sample = sample
+    member _.IterationTimeAt(time:float) =
+        timing.Sample(0., time, reversed, alternate, false, PlaybackTickMode.Force).IterationTime
     /// <summary>Whether the current renderer invocation updates caches without target dispatch.</summary>
     member _.InternalRender = internalRender
     /// <summary>Total duration including repeated iterations and gaps.</summary>
@@ -178,11 +188,17 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     member _.Began = began
     /// <summary>Whether the most recent sample completed the finite repeat sequence.</summary>
     member _.Completed = completed
+    /// <summary>Whether a late completion subscriber can observe the current endpoint.</summary>
+    member _.CanDeliverCompletion = completed && not completedSilently && not(isMuted())
+    /// <summary>Installs the root and ancestor dispatch gate independently of the playback clock.</summary>
+    member _.MuteGate with set value = isMuted <- value
+    /// <summary>Runs internal completion cleanup even when callback delivery is muted.</summary>
+    member _.OnSettled with set value = onSettled <- value
     /// <summary>Whether cancellation has ended this controller's lifetime.</summary>
     member _.Cancelled = cancelled
     /// <summary>Whether the base playback direction is reversed.</summary>
     member _.Reversed = reversed
-    /// <summary>The source callback delta in milliseconds.</summary>
+    /// <summary>Signed interval between preceding playback samples, in the engine time unit.</summary>
     member _.DeltaTime = deltaTime
     /// <summary>Changes on control operations and sampling, allowing callers to reject interrupted work.</summary>
     member _.Generation = generation

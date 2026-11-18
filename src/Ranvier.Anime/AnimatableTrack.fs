@@ -50,11 +50,11 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
                     if alive then
                         let output=values[index].TrySample(progress,precision,modifier,renderCurrent)
                         if not(isNull output) && renderCurrent() then
-                            if not clock.InternalRender then write index output
+                            if not clock.InternalRender && not clock.EffectivelyMuted then write index output
                             alive<-renderCurrent()
                         else alive<-false
         finally renderToken<-savedToken
-    do clock.ConfigureRenderer(render,?totalDuration=(if iterationDuration=1e-11 then Some 1e-11 else None),
+    do clock.ConfigureRenderer(render,sampleWhenMuted=true,?totalDuration=(if iterationDuration=1e-11 then Some 1e-11 else None),
                                onStretch=(fun scale -> tweenTime<-tweenTime*scale))
     // A retarget's arguments, read by the cached prepare closure: mode 0 is one scalar for every target, 1 one scalar
     // per target, 2 components.

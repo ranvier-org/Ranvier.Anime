@@ -7,6 +7,7 @@ module Dashboard
 open System
 open global.Ranvier
 open Ranvier.Anime
+open Ranvier.Anime.KeyframeDsl
 open Ranvier.Dom
 open Ranvier.View
 open Ranvier.View.Dsl
@@ -147,15 +148,13 @@ let linePath (values: float array) =
 let areaPath (values: float array) =
     linePath values + " L600 200 L0 200 Z"
 
-let private streamingPaths (previous: float array) (current: float array) (progress: float) =
+let private streamingPaths (previous: float array) (current: float array) (struct (progress, grow)) =
     if progress >= 1. then
         linePath current, areaPath current
     else
         let padded =
             Array.append (Array.create (capacity - previous.Length) previous[0]) previous
 
-        let blend = min 1. (max 0. (progress / 0.4))
-        let grow = (1. - cos (Math.PI * blend)) / 2.
         let step = 600. / float (capacity - 1)
         let offset = step * progress
 
@@ -179,9 +178,32 @@ let private streamingPaths (previous: float array) (current: float array) (progr
         line
         + sprintf " L%.1f 200 L%.1f 200 Z" (fst tip) (fst old[0])
 
+let private chartKeys : KeyframeSequence<NumericProperty,float> =
+    keyframes {
+        yield (KeyframeOffset.at 0. [| "grow", 0. |]).WithEase Native.inOutSine
+        yield KeyframeOffset.at 0.4 [| "grow", 1. |]
+        yield KeyframeOffset.at 1. [| "pan", 1. |]
+    }
+
+let private chartMotion () =
+    let graph = Graph.Current
+    let progress = Api.createSignal (struct (0., 0.))
+    let mutable pan = 0.
+    let mutable grow = 0.
+    let tracks =
+        [| "pan", NumericProperty((fun () -> pan), (fun value -> pan <- value))
+           "grow", NumericProperty((fun () -> grow), (fun value -> grow <- value)) |]
+    let options =
+        { KeyframeAnimationOptions.Default with
+            Ease = id
+            OnUpdate = fun _ -> graph.Batch(fun () -> progress.Value <- struct (pan, grow)) }
+    let animation = Keyframes.Numeric(AnimeHost.Current.Scheduler, tracks, chartKeys, 1000u, options)
+    Api.onCleanup animation.Cancel
+    fun () -> progress.Value
+
 let private trackChart (cpu: Memo<float array>) =
     let mutable previous = [||]
-    let finished () = 1.
+    let finished () = struct (1., 1.)
     let frame = Api.createSignal (previous, previous, finished)
     let mutable first = true
 
@@ -190,8 +212,7 @@ let private trackChart (cpu: Memo<float array>) =
             first <- false
             frame.Value <- current, current, finished
         else
-            let progress = Native.clock 1000.
-            frame.Value <- previous, current, (fun () -> progress.Value)
+            frame.Value <- previous, current, chartMotion ()
 
         previous <- current)
 

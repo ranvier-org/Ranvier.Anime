@@ -103,6 +103,20 @@ let tests =
             let expectedShuffled = (doc.RootElement.GetProperty "shuffled").EnumerateArray() |> Seq.map (fun e -> e.GetInt32()) |> Seq.toArray
             Expect.sequenceEqual arr expectedShuffled "seeded Fisher-Yates shuffle"
 
+        testCase "seeded options, per-target callbacks and typed picks consume the same sequence as the beta" <| fun _ ->
+            let options = { RandomOptions.Default with Min = 10.; Max = 100.; Decimals = 2; Seed = Some 42. }
+            let generator = Utils.seededRandom 42.
+            let overrideSeed = { options with Seed = Some 13. }
+            let next = generator.PerTarget overrideSeed
+            Expect.equal (generator.Next overrideSeed) 64.1 "the generator owns the seed"
+            Expect.equal (next ()) 43.13 "creating the callback consumed no draw"
+            let pick: string = generator.Pick [| "red"; "blue"; "green" |]
+            Expect.equal pick "green" "a pick consumes the next draw"
+            Expect.equal (next ()) 99.71 "reusing the callback advances the stream"
+            Expect.equal (Utils.randomWith options, Utils.randomWith options) (64.1, 64.1) "standalone seed resets"
+            Expect.equal (Utils.randomWith { options with Seed = Some 1000000000001.5 }) 61.17 "numeric seed exceeds the integer range"
+            Expect.throws (fun () -> generator.Pick (Array.empty<string>) |> ignore) "empty array"
+
         testCase "linked list addChild, sortMethod, removeChild and forEachChildren match upstream" <| fun _ ->
             let parent = LinkedParent<int>()
             let c1 = LinkedChild(1, priority = 999.)

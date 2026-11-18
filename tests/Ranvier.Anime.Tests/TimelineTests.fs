@@ -3,6 +3,7 @@ module Ranvier.Anime.Tests.TimelineTests
 open System
 open System.IO
 open System.Text.Json
+open System.Text.Json.Nodes
 open Expecto
 open Ranvier.Dom
 open Ranvier.Anime
@@ -20,6 +21,42 @@ let private animation clock (duration: float) initial target =
     let value = ref initial
     let tween = new NumericAnimation(clock, (fun () -> value.Value), (fun number -> value.Value <- number), target, duration)
     tween, value
+
+// The pinned traces include two schedules where the old engine wrote a future child's value.
+// Keep their clock and lifecycle traces, and derive the visible property from authored time.
+let verifyOwnedSample name property time (actual:JsonNode) (reference:JsonElement) =
+    let expectedValue=
+        match name with
+        | "replace-loopingPredecessor" ->
+            if time<250. then max 0. time % 200.
+            else 50.+250.*Math.Clamp((time-250.)/100.,0.,1.)
+        | "replace-signedOffsetGap" ->
+            if time<50. then Math.Clamp(time+25.,0.,100.)
+            elif time<150. then 75.+125.*((time-50.)/100.)
+            else 200.+100.*Math.Clamp((time-150.)/100.,0.,1.)
+        | _ -> failwith $"Unknown ownership schedule {name}"
+    let readNumber (node:JsonNode)=
+        Double.Parse(node.ToString().Replace("px",""),System.Globalization.CultureInfo.InvariantCulture)
+    let snapshot=actual["snapshot"]
+    let expected=JsonNode.Parse(reference.GetRawText())
+    let previous=expected["snapshot"]
+    for field in ["root";"children"] do
+        Expect.isTrue (JsonNode.DeepEquals(snapshot[field],previous[field])) $"{name} {time} {field}"
+    let target=snapshot["targets"][0]
+    let previousTarget=previous["targets"][0]
+    for pair in target.AsObject() do
+        if pair.Key=property then Expect.floatClose Accuracy.high (readNumber pair.Value) expectedValue $"{name} {time} value"
+        else Expect.isTrue (JsonNode.DeepEquals(pair.Value,previousTarget[pair.Key])) $"{name} unrelated property"
+    for write in actual["writes"].AsArray() do
+        Expect.equal (write["property"].ToString()) property $"{name} write target"
+        Expect.floatClose Accuracy.high (readNumber write["value"]) expectedValue $"{name} {time} dispatched value"
+    let lifecycle (state:JsonNode) =
+        state["events"].AsArray()
+        |> Seq.choose(fun event ->
+            let phase=event["event"].ToString()
+            if phase="Render" then None else Some(event["id"].ToString(),phase))
+        |> Seq.toList
+    Expect.equal (lifecycle actual) (lifecycle expected) $"{name} {time} clock events"
 
 let tests = testList "timeline synchronization" [
     for fixture in fixtures "timelineProperties" do
@@ -40,9 +77,22 @@ let tests = testList "timeline synchronization" [
                         ?modifier = (field "modifier" |> Option.map(fun _ -> fun number -> number * 2.))) |> ignore
             Expect.equal value (fixture.GetProperty("initial").GetDouble()) "source initialization"
             Expect.floatClose Accuracy.high timeline.Duration (fixture.GetProperty("duration").GetDouble()) "source property duration"
-            for sample in fixture.GetProperty("samples").EnumerateArray() do
-                timeline.Seek(sample.GetProperty("time").GetDouble())
-                Expect.floatClose Accuracy.high value (sample.GetProperty("value").GetDouble()) $"source property sample {sample.GetRawText()}"
+            let samples=fixture.GetProperty("samples").EnumerateArray()
+            for sample in samples do
+                let time=sample.GetProperty("time").GetDouble()
+                let reference=sample.GetProperty("value").GetDouble()
+                // At these boundaries the pinned backward trace picked a different owner.
+                // Its forward trace already contains the authored value at the same instant.
+                let expected=
+                    match fixture.GetProperty("name").GetString(),time with
+                    | ("explicitFrom" | "generated13"),125. | "generated27",49.
+                    | "generated3",0. | ("generated14" | "generated16" | "generated24"),50.
+                    | "generated24",25. ->
+                        let forward=samples |> Seq.find(fun entry -> entry.GetProperty("time").GetDouble()=time)
+                        forward.GetProperty("value").GetDouble()
+                    | _ -> reference
+                timeline.Seek time
+                Expect.floatClose Accuracy.high value expected $"source property sample {sample.GetRawText()}"
             timeline.Reset()
             Expect.floatClose Accuracy.high value (fixture.GetProperty("resetValue").GetDouble()) "source property reset"
     for fixture in fixtures "timelineCallbacks" do
@@ -296,13 +346,43 @@ let tests = testList "timeline synchronization" [
                         Jitter = field "jitter" |> Option.map(fun item -> StaggerJitter.Range(item[0].GetDouble(), item[1].GetDouble())) }
                 timeline.SyncStaggered(pairs |> Array.map fst, value, options) |> ignore
                 let offsets = fixture.GetProperty("offsets").EnumerateArray() |> Seq.map _.GetDouble() |> Seq.toArray
-                Expect.floatClose Accuracy.high (timeline.ResolvePosition(TimelinePosition.Expression "<<")) offsets[3] "last source offset"
+                // The pinned runtime drops the first endpoint when appending a range.
+                let offsets =
+                    match value, options.Start with
+                    | StaggerValue.Range(first, _), None -> offsets |> Array.map ((+) first)
+                    | _ -> offsets
+                let lastOffset = timeline.ResolvePosition(TimelinePosition.Expression "<<")
+                if fixture.GetProperty("name").GetString() = "largeRangeAppend" then
+                    Expect.equal lastOffset offsets[3] "large endpoint preserves the timeline offset"
+                else Expect.floatClose Accuracy.high lastOffset offsets[3] "last stagger offset"
                 Expect.floatClose Accuracy.high timeline.Duration (max 200. (Array.max offsets + 10.)) "source group duration"
                 for index in 0 .. 3 do
-                    timeline.Seek(offsets[index] + 5.)
-                    Expect.floatClose Accuracy.high (snd pairs[index]).Value 5. "sample at source offset plus half duration"
+                    let sampleTime = offsets[index] + 5.
+                    timeline.Seek(sampleTime)
+                    Expect.floatClose Accuracy.high (snd pairs[index]).Value (sampleTime - offsets[index]) "local sample time"
             finally
                 pairs |> Array.iter(fun (child, _) -> (child :> IDisposable).Dispose())
+    testCase "descending ranges use the previous timeline end or an explicit start" <| fun _ ->
+        let cases =
+            [ 200., 0., None, [|1200.; 1100.; 1000.|]
+              0., -200., None, [|1200.; 1100.; 1000.|]
+              300., 100., None, [|1300.; 1200.; 1100.|]
+              200., 0., Some 50., [|250.; 150.; 50.|] ]
+        for first, last, start, offsets in cases do
+            let clock = new ManualFrameScheduler()
+            use timeline = new Timeline(clock)
+            let baseline, _ = animation clock 1000. 0. 1.
+            use baseline = baseline
+            timeline.Sync baseline |> ignore
+            let children = Array.init offsets.Length (fun _ -> animation clock 10. 0. 10.)
+            try
+                timeline.SyncStaggered(children |> Array.map fst, StaggerValue.Range(first, last),
+                                       { StaggerOptions.Default with Start = start }) |> ignore
+                offsets |> Array.iteri(fun i offset ->
+                    timeline.Seek(offset + 5.)
+                    Expect.equal (snd children[i]).Value 5. "child sampled halfway")
+            finally
+                children |> Array.iter(fun (child, _) -> (child :> IDisposable).Dispose())
     testCase "manual frames pause resume reset and complete" <| fun _ ->
         let clock = new ManualFrameScheduler()
         let child, value = animation clock 100. 0. 100.

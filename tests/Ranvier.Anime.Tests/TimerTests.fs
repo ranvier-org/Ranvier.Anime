@@ -128,6 +128,63 @@ type private LateFrameScheduler() =
             frames.Clear()
 
 let private lifetimeTests = testList "timer lifetime and inputs" [
+    testCase "muted scheduled completion advances time and leaves observers pending until unmuted completion" <| fun _ ->
+        use frames = new ManualFrameScheduler()
+        let events = ResizeArray<string>()
+        let mark name (_:Timer) = events.Add name
+        use timer = new Timer(frames, 100., options={PlaybackOptions.Default with Muted=true},
+                              onBegin=mark "begin", onUpdate=mark "update", onPause=mark "pause", onComplete=mark "complete")
+        let early = timer.Then(mark "early")
+        timer.Resume()
+        frames.Advance 120.
+        frames.RunFrame()
+        Expect.equal (timer.CurrentTime,timer.Completed,timer.Paused) (100.,true,true) "silent clock reached its endpoint"
+        let late = timer.Then(mark "late")
+        timer.Muted <- false
+        let afterUnmute = timer.Then(mark "after unmute")
+        Expect.isFalse (early.IsCompleted || late.IsCompleted || afterUnmute.IsCompleted) "unmuting does not replay completion"
+        Expect.isEmpty events "no callbacks escaped"
+        timer.Reset()
+        timer.Seek 100.
+        Expect.isTrue (early.IsCompletedSuccessfully && late.IsCompletedSuccessfully && afterUnmute.IsCompletedSuccessfully) "next observed completion settles all"
+        Expect.sequenceEqual events ["begin";"update";"complete";"early";"late";"after unmute"] "delivery order"
+
+    testCase "silent terminal Complete leaves observers pending until explicit disposal" <| fun _ ->
+        use frames = new ManualFrameScheduler()
+        use timer = new Timer(frames, 100.)
+        timer.Muted <- true
+        let early = timer.AsTask()
+        timer.Complete()
+        let late = timer.AsTask()
+        Expect.isTrue (timer.Completed && timer.Cancelled) "terminal complete retained"
+        Expect.isFalse (early.IsCompleted || late.IsCompleted) "no promise dispatch"
+        timer.Cancel()
+        Expect.isTrue (early.IsCanceled && late.IsCanceled && timer.AsTask().IsCanceled) "disposal releases every waiter"
+
+    testCase "timeline mute crosses owned and borrowed clocks while retaining independent mute settings" <| fun _ ->
+        use frames = new ManualFrameScheduler()
+        let events = ResizeArray<string>()
+        use borrowed = new Timeline(frames)
+        use inner = borrowed.AddTimer(100., onUpdate=(fun _ -> events.Add "nested"))
+        use root = new Timeline(frames, options={PlaybackOptions.Default with Muted=true})
+        use owned = root.AddTimer(100., onUpdate=(fun _ -> events.Add "owned"))
+        root.Sync(borrowed,TimelinePosition.At 0.) |> ignore
+        root.Call((fun () -> events.Add "call"),TimelinePosition.At 25.) |> ignore
+        let pending = root.AsTask()
+        events.Clear()
+        root.Seek 100.
+        Expect.equal (root.CurrentTime,owned.CurrentTime,borrowed.CurrentTime,inner.CurrentTime) (100.,100.,100.,100.) "all clocks advanced"
+        Expect.isTrue root.Completed "muted call track can complete"
+        Expect.isFalse pending.IsCompleted "silent timeline did not deliver completion"
+        Expect.isEmpty events "no child or call callbacks"
+        owned.Muted <- true
+        root.Muted <- false
+        root.Seek 50.
+        Expect.contains events "nested" "borrowed child resumes delivery"
+        Expect.isFalse (events.Contains "owned") "child retained its own mute"
+        root.Cancel()
+        Expect.isTrue pending.IsCanceled "disposal releases pending root task"
+
     testCase "invalid stretch preserves geometry and active scheduling" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         use timer=new Timer(scheduler,100u,options={PlaybackOptions.Default with Delay=400.})

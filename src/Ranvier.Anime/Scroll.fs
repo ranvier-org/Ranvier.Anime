@@ -231,7 +231,12 @@ type ScrollObserver(readScroll:unit -> float * bool, measure:unit -> ScrollGeome
             debug |> Option.iter(fun debug -> debug.Refresh())
             this.HandleScroll()
     /// <summary>Samples current scroll position, preserving edge entry and directional callback order.</summary>
-    member _.HandleScroll() =
+    member this.HandleScroll() = this.SampleScroll(ValueNone)
+
+    /// <summary>Samples the scroll position using elapsed host milliseconds for frame-rate independent smoothing.</summary>
+    member this.HandleScroll(elapsedMilliseconds:float) = this.SampleScroll(ValueSome elapsedMilliseconds)
+
+    member private _.SampleScroll(elapsedMilliseconds:float voption) =
         if ready && not reverted then
             generation <- generation + 1L
             let expected = generation
@@ -253,7 +258,11 @@ type ScrollObserver(readScroll:unit -> float * bool, measure:unit -> ScrollGeome
                 match settings.Sync with
                 | ScrollSync.Smooth amount when amount <> 0. && amount < 1. ->
                     let snap = if lp < p && p = 1. then 0.0001 elif lp > p && p = 0. then -0.0001 else 0.
-                    p <- ScrollMath.round 6 (lp + (p-lp)*(0.01+(0.2-0.01)*amount)+snap)
+                    let weight =
+                        match elapsedMilliseconds with
+                        | ValueSome elapsed -> 1. - Math.Exp(-(0.006 + 0.128 * amount) * max 0. elapsed * 0.1)
+                        | ValueNone -> 0.01 + (0.2 - 0.01) * amount
+                    p <- ScrollMath.round 6 (lp + (p-lp)*weight+snap)
                 | ScrollSync.Ease ease -> p <- ease p
                 | _ -> ()
                 updated <- p <> previousProgress

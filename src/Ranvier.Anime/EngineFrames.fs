@@ -213,6 +213,8 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
         clock.LastTick
     /// <summary>Effective multiplier, including seconds mode's 0.001 scale.</summary>
     member _.EffectiveSpeed=speed
+    /// <summary>Playback time units per host millisecond, independent of playback speed.</summary>
+    member _.TimeScale=if seconds then 0.001 else 1.
     /// <summary>The engine speed captured before the current cached-next traversal.</summary>
     member _.FrameSpeed=if pumping then frameSpeed else speed
     /// <summary>The engine frame ceiling captured before the current cached-next traversal.</summary>

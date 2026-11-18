@@ -4,7 +4,7 @@ open System
 open Ranvier
 open Ranvier.Dom
 
-/// <summary>Refreshable drag physics; distances are CSS pixels and velocities are pixels per millisecond.</summary>
+/// <summary>Refreshable drag physics; distances are CSS pixels and velocity limits are pixels per engine time unit.</summary>
 [<NoEquality;NoComparison>]
 type DraggableSettings =
     { Bounds:DragBounds; Contained:bool; XEnabled:bool; YEnabled:bool
@@ -17,7 +17,7 @@ type DraggableSettings =
         { Bounds=DragBounds.Unbounded; Contained=false; XEnabled=true; YEnabled=true
           SnapX=DragSnap.None; SnapY=DragSnap.None; DragSpeed=1.
           ContainerFriction=0.8; ReleaseContainerFriction=0.8
-          MouseThreshold=3.; TouchThreshold=7.; MinVelocity=0.;MaxVelocity=50.;VelocityMultiplier=1. }
+          MouseThreshold=3.; TouchThreshold=7.; MinVelocity=0.;MaxVelocity=50. / EngineDefaults.timeScale();VelocityMultiplier=1. }
 
 /// <summary>Owned draggable input state using existing numeric animatables and the shared frame scheduler.</summary>
 /// <remarks>DOM input, coordinate normalization and scrolling attach through DraggableDom. Accessors supply native mapTo equivalents.</remarks>
@@ -27,7 +27,8 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
                ?onGrab:Draggable -> unit,?onDrag:Draggable -> unit,?onRelease:Draggable -> unit,
                ?onUpdate:Draggable -> unit,?onSettle:Draggable -> unit,?onSnap:Draggable -> unit) as this =
     let ownerAllowsWrite=ScopeRegistration.captureWriteGuard()
-    let settings=defaultArg settings (fun () -> DraggableSettings.Default)
+    let engine = EngineFrames.forScheduler scheduler
+    let settings=defaultArg settings (fun () -> {DraggableSettings.Default with MaxVelocity=50. / engine.TimeScale})
     let mutable config=settings()
     let springX=defaultArg releaseSpring (Spring(mass=defaultArg releaseMass 1.,stiffness=defaultArg releaseStiffness 80.,damping=defaultArg releaseDamping 20.))
     let springY=defaultArg releaseSpring (Spring(mass=defaultArg releaseMass 1.,stiffness=defaultArg releaseStiffness 80.,damping=defaultArg releaseDamping 20.))
@@ -51,6 +52,9 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
     let mutable releaseDuration=0.
     let mutable threshold=3.
     let velocity=DragVelocity(scheduler.Now())
+    let sampleVelocity dx dy =
+        velocity.Sample(scheduler.Now(),dx,dy,config.VelocityMultiplier,
+                        config.MinVelocity * engine.TimeScale,config.MaxVelocity * engine.TimeScale)
     let mutable axisX:AnimatableNumber option=None
     let mutable axisY:AnimatableNumber option=None
     let notify callback=if not disposed && ownerAllowsWrite() then callback |> Option.iter(fun callback -> callback this)
@@ -70,7 +74,7 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
             if updated && (deltaX<>0. || deltaY<>0.) then notify onUpdate
             if not hasReleased then updated<-false
             elif not disposed then
-                velocity.Sample(scheduler.Now(),deltaX,deltaY,config.VelocityMultiplier,config.MinVelocity,config.MaxVelocity) |> ignore
+                sampleVelocity deltaX deltaY |> ignore
                 angle<-Math.Atan2(deltaY,deltaX)
     let settle () =
         if not disposed then
@@ -105,7 +109,7 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
             axis |> Option.iter(fun axis -> axis.To(target,duration=0u))
             manual<-false
     let pointerAngle ()=angle<-Math.Atan2(pointer[1]-pointer[3],pointer[0]-pointer[2])
-    let sampleVelocity dx dy=velocity.Sample(scheduler.Now(),dx,dy,config.VelocityMultiplier,config.MinVelocity,config.MaxVelocity)
+
     let update () =
         if not disposed && ownerAllowsWrite() then
             beforeUpdate()
@@ -189,8 +193,8 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
     member _.DeltaX=deltaX
     /// <summary>Last rendered vertical displacement.</summary>
     member _.DeltaY=deltaY
-    /// <summary>Three-sample maximum velocity.</summary>
-    member _.Velocity=velocity.Value
+    /// <summary>Three-sample maximum velocity in CSS pixels per engine time unit.</summary>
+    member _.Velocity=velocity.Value / engine.TimeScale
     /// <summary>Last pointer or release direction in radians.</summary>
     member _.Angle=angle
     /// <summary>Whether a pointer owns the input gesture.</summary>
@@ -279,11 +283,14 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
             let struct(dx,bx)=DragPhysics.releaseAxis b.Left b.Right config.ReleaseContainerFriction config.DragSpeed config.SnapX currentX (Math.Cos angle*displacement)
             let struct(dy,by)=DragPhysics.releaseAxis b.Top b.Bottom config.ReleaseContainerFriction config.DragSpeed config.SnapY currentY (Math.Sin angle*displacement)
             destination[0]<-dx;destination[1]<-dy
+            let scale = engine.TimeScale
             let duration (spring:Spring) disabledOther current target high low =
                 let direction=if target=high then (if current>high then -1. else 1.) else (if current<low then -1. else 1.)
                 let distance=Math.Floor(current-target+0.5)
                 spring.Velocity<-if disabledOther && releaseSpring.IsSome then (if distance=0. then 0. else displacement*direction/abs distance) else pv
-                if current=target then 0. elif releaseSpring.IsSome then spring.SettlingDuration else spring.SettlingDuration-200.
+                if current=target then 0.
+                elif releaseSpring.IsSome then spring.SettlingDuration * scale
+                else (spring.SettlingDuration - 200.) * scale
             let durationX=if config.XEnabled then duration springX (not config.YEnabled) currentX dx b.Right b.Left else 0.
             let easeX=if releaseSpring.IsSome then springX.Ease else defaultArg releaseEase (Ease.named "outQuint")
             let durationY=if config.YEnabled then duration springY (not config.XEnabled) currentY dy b.Bottom b.Top else 0.
@@ -310,8 +317,8 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
                             renderedX<-overshootX;renderedY<-overshootY
                             overshootX<-overshoot currentX bx dx durationX time
                             overshootY<-overshoot currentY by dy durationY time
-                            if config.XEnabled then axisX.Value.To(renderedX,duration=1u)
-                            if not disposed && ownerAllowsWrite() && config.YEnabled then axisY.Value.To(renderedY,duration=1u)),
+                            if config.XEnabled then axisX.Value.ToPrecise(renderedX,duration=scale)
+                            if not disposed && ownerAllowsWrite() && config.YEnabled then axisY.Value.ToPrecise(renderedY,duration=scale)),
                     onComplete=(fun _ ->
                         if not disposed && ownerAllowsWrite() then
                             manual<-false

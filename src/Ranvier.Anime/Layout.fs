@@ -519,7 +519,8 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                         invalidArg "animationOptions" "Boundary property providers must use names declared by the layout's captured Properties."
                 finite "delay" delay
                 finite "duration" length
-                plans.Add(m,previous,parentRemoved,wasHidden,isEntering,isLeaving,boundaryProperties,delay,length,ease)
+                let scale = (EngineFrames.forScheduler scheduler).TimeScale
+                plans.Add(m,previous,parentRemoved,wasHidden,isEntering,isLeaving,boundaryProperties,delay * scale,length * scale,ease)
             for m,previous,parentRemoved,wasHidden,isEntering,isLeaving,boundaryProperties,delay,length,ease in plans do
                 let nodeSwaps=ResizeArray<unit -> unit>()
                 let before=if wasHidden then m else previous
@@ -674,26 +675,23 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         entering<-[||]; leaving<-[||]; animating<-[||]; swapping<-[||]
     /// <summary>The most recently constructed layout transition timeline, if active.</summary>
     member _.Timeline = clock
-    /// <summary>Registers an optional completion callback on the active layout transition and returns a settling task.</summary>
-    member this.Then(?callback: AutoLayout -> unit) : Threading.Tasks.Task<AutoLayout> =
-        let invoke () = callback |> Option.iter (fun action -> action this)
+    /// <summary>Maps observable completion to the callback result.</summary>
+    member this.ThenResult<'T>(callback: AutoLayout -> 'T) : Threading.Tasks.Task<'T> =
         match clock with
-        | None ->
-            invoke()
-            Threading.Tasks.Task.FromResult this
-        | Some active when active.Completed ->
-            invoke()
-            Threading.Tasks.Task.FromResult this
-        | Some active when active.Cancelled ->
-            Threading.Tasks.Task.FromCanceled<AutoLayout>(Threading.CancellationToken(true))
-        | Some active ->
-            let source = Threading.Tasks.TaskCompletionSource<AutoLayout>()
-            active.Then(fun _ -> invoke()).ContinueWith((fun (task: Threading.Tasks.Task<Timeline>) ->
-                if task.IsCanceled then source.TrySetCanceled() |> ignore
-                elif task.IsFaulted then source.TrySetException(task.Exception.InnerExceptions) |> ignore
-                else source.TrySetResult this |> ignore
-            ), Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously) |> ignore
-            source.Task
+        | Some active -> active.ThenResult(fun _ -> callback this)
+        | None -> task { return callback this }
+
+    /// <summary>Awaits the task returned by the completion callback.</summary>
+    member this.ThenAsync<'T>(callback: AutoLayout -> Threading.Tasks.Task<'T>) : Threading.Tasks.Task<'T> =
+        Threading.Tasks.TaskExtensions.Unwrap(this.ThenResult(callback))
+
+    /// <summary>Awaits a completion callback that produces no result.</summary>
+    member this.ThenAsync(callback: AutoLayout -> Threading.Tasks.Task) : Threading.Tasks.Task =
+        Threading.Tasks.TaskExtensions.Unwrap(this.ThenResult(callback))
+
+    /// <summary>Runs the optional completion callback and returns this instance.</summary>
+    member this.Then(?callback: AutoLayout -> unit) : Threading.Tasks.Task<AutoLayout> =
+        this.ThenResult(CompletionTask.withInstance callback)
     /// <summary>Returns a task settling when the active layout transition completes.</summary>
     member this.AsTask() : Threading.Tasks.Task<AutoLayout> = this.Then()
     /// <summary>Attaches this layout's cleanup to the current Ranvier owner.</summary>

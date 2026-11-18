@@ -40,5 +40,26 @@ let run (document: Document) =
         scheduler.RunFrame()
         require (style.getPropertyValue "--scope-direct-gap"="7px" && style.getPropertyValue "--scope-direct-absent"="")
             "A pending frame changed direct-restored native CSS."
+
+        style.setProperty("opacity", "0", priority="important")
+        element.setAttribute("data-empty", "")
+        let options = { ComposedAnimationOptions.Default with Duration = 100.; Ease = id; Autoplay = false }
+        let scalar name = PropertySpec.Scalar(name, 1., fromValue = 0.)
+        use older = Composed.animate scheduler element
+                        [| scalar "opacity"; scalar "--transient"; scalar "data-empty"
+                           scalar "data-absent"; scalar "data-owned" |] (Some options)
+        older.Seek 50. |> ignore
+        use newer = Composed.animate scheduler element [| PropertySpec.Scalar("data-owned", 20., fromValue = 0.) |] (Some options)
+        newer.Seek 75. |> ignore
+        require (element.getAttribute("data-empty") = "0.5" && element.hasAttribute("data-absent"))
+            "Composed animation did not write the attributes before restoration."
+        older.Revert(false) |> ignore
+        require (style.getPropertyValue("opacity") = "0" && style.getPropertyPriority("opacity") = "important")
+            "Soft revert lost an inline zero or its priority."
+        require (element.hasAttribute("data-empty") && element.getAttribute("data-empty") = "" &&
+                 not (element.hasAttribute("data-absent")) && style.getPropertyValue("--transient") = "")
+            "Soft revert lost the distinction between empty and absent declarations or attributes."
+        require (element.getAttribute("data-owned") = "15" && not newer.Cancelled)
+            "Soft revert overwrote the newer property owner."
     finally
         container.removeChild(element :> Node) |> ignore

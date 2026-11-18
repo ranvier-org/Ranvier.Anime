@@ -36,6 +36,8 @@ type private FakeElement(name: string) as this =
             let key () = unbox<string> args[0]
 
             match methodInfo.Name with
+            | "get_length" -> box (uint32 styles.Count)
+            | "item" -> box (styles.Keys |> Seq.tryItem (int (unbox<uint32> args[0])) |> Option.defaultValue "")
             | "setProperty" ->
                 let priority =
                     match args[2] with
@@ -195,6 +197,18 @@ let private animeTests =
             close 50. (first.GetNumber "x") "first target halfway"
             close 75. (second.GetNumber "x") "second target halfway"
 
+        testCase "per-target random endpoints follow target order and stay fixed when seeking" <| fun _ ->
+            use scheduler = new ManualFrameScheduler()
+            use host = AnimeHost.Install(servicesFor scheduler [])
+            let targets = Array.init 2 (fun _ -> AnimatedObject [ "x", AdaptedValue.Scalar 0. ])
+            let options = { RandomOptions.Default with Min = 10.; Max = 100.; Decimals = 2; Seed = Some 42. }
+            let track = PropertySpec.ScalarPerTarget("x", Utils.randomPerTarget options)
+            use animation = Anime.animateTargets (Array.map box targets) [| track |] { linearOptions () with Autoplay = false }
+            for time in [ animation.Duration; 0.; animation.Duration ] do
+                animation.Seek time |> ignore
+                if time = animation.Duration then
+                    Expect.sequenceEqual (targets |> Array.map (fun t -> t.GetNumber "x")) [| 64.1; 43.13 |] "ordered endpoints"
+
         testCase "animate reads starting values through the host's computed styles" <| fun _ ->
             use scheduler = new ManualFrameScheduler()
             let element = FakeElement "target"
@@ -221,6 +235,20 @@ let private animeTests =
 
             animation.Seek 50. |> ignore
             close 0.4 (opacity element) "halfway from the options' 0.8"
+
+        testCase "a completion projection reads the final mixed-format colour written by the animation" <| fun _ ->
+            use scheduler = new ManualFrameScheduler()
+            let element = FakeElement "swatch"
+            element.Seed("--swatch", "#111", "")
+            use host = AnimeHost.Install(servicesFor scheduler [ element ])
+            let spec = PropertySpec.Text("--swatch", "color(display-p3 0 1 0 / 50%)", fromValue = "oklab(0% 0 0)")
+            use animation = Anime.animate (box element.Dom) [| spec |] { linearOptions () with Autoplay = false }
+            let result = animation.ThenResult(fun _ -> Utils.parseColor (element.Inline "--swatch"))
+            animation.Seek(animation.Duration / 2.) |> ignore
+            Expect.isFalse result.IsCompleted "seeking halfway leaves the projection pending"
+            animation.Seek(animation.Duration) |> ignore
+            let channels = result.WaitAsync(TimeSpan.FromSeconds 5.).GetAwaiter().GetResult()
+            Expect.equal channels [| 0.; 255.; 0.; 0.5 |] "computed colour at completion"
 
         testCase "a timeline's children read starting values through the host's computed styles" <| fun _ ->
             use scheduler = new ManualFrameScheduler()

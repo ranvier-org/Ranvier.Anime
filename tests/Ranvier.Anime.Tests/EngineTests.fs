@@ -50,6 +50,42 @@ let private sourceCase (fixture:JsonElement) =
 
 let engineClockTests =
     testList "Shared Anime engine" [
+        testSequenced <| testCase "uneven frames report engine and callback deltas in either time unit" (fun _ ->
+            for unit, scale in [EngineTimeUnit.Milliseconds, 1.; EngineTimeUnit.Seconds, 0.001] do
+                use host = new ManualFrameScheduler()
+                let engine = Engine.forScheduler host
+                engine.TimeUnit <- unit
+                try
+                    host.Advance 5000.
+                    let deltas = ResizeArray<float>()
+                    use timer = new Timer(host, 500. * scale, onUpdate=(fun t -> deltas.Add(t.DeltaTime / scale)))
+                    timer.Resume()
+                    for elapsed in [10.; 30.; 16.] do
+                        host.Advance elapsed
+                        host.RunFrame()
+                    Expect.equal deltas.Count 3 "all three distinct frames admitted"
+                    near "first callback has no preceding interval" 0. deltas[0]
+                    near "first elapsed interval, including resume lead" 22. deltas[1]
+                    near "preceding timer interval" 30. deltas[2]
+                    near "engine frame" 16. (engine.DeltaTime / scale)
+                    near "physical damping" (Utils.damp 0. 100. 30. 0.5) (Utils.dampInUnit unit 0. 100. timer.DeltaTime 0.5)
+                    timer.Seek(123.45678 * scale)
+                    near "fractional current time" 123.4568 (timer.CurrentTime / scale)
+                    near "fractional iteration time" 123.4568 (timer.IterationCurrentTime / scale)
+                finally engine.TimeUnit <- EngineTimeUnit.Milliseconds)
+        testCase "a delayed fractional loop completes at the same physical end" <| fun _ ->
+            for seconds, scale in [false, 1.; true, 0.001] do
+                use host = new ManualFrameScheduler()
+                (EngineFrames.forScheduler host).Seconds <- seconds
+                let mutable completed = 0
+                use timer = new Timer(host, 100. * scale,
+                                      options={ PlaybackOptions.Default with Delay=400. * scale; Repeat=PlaybackRepeat.Count 2u },
+                                      onComplete=(fun _ -> completed <- completed + 1))
+                timer.Seek(300. * scale)
+                Expect.equal completed 1 "completion at the authored boundary"
+                Expect.equal timer.CurrentIteration 2 "last repetition"
+                near "final iteration" 100. (timer.IterationCurrentTime / scale)
+
         testCase "actual source engine Clock Timer traces" <| fun _ ->
             use document=JsonDocument.Parse(System.IO.File.ReadAllText(fixturePath()))
             for fixture in document.RootElement.GetProperty("fixtures").EnumerateArray() do

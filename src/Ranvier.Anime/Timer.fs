@@ -4,6 +4,21 @@ open System
 open Ranvier
 open Ranvier.Dom
 
+module internal CompletionTask =
+    let observe callback register =
+        let source = Threading.Tasks.TaskCompletionSource<_>(Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
+        let complete () =
+            try source.TrySetResult(callback()) |> ignore
+            with
+            | :? OperationCanceledException as cancelled -> source.TrySetCanceled(cancelled.CancellationToken) |> ignore
+            | error -> source.TrySetException(error: exn) |> ignore
+        register complete (fun () -> source.TrySetCanceled() |> ignore)
+        source.Task
+
+    let withInstance callback instance =
+        callback |> Option.iter (fun action -> action instance)
+        instance
+
 /// <summary>Additional iterations after the initial playback, or an indefinite repeat sequence.</summary>
 [<RequireQualifiedAccess; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type PlaybackRepeat =
@@ -24,18 +39,20 @@ type PlaybackOptions =
       Reversed: bool
       Alternate: bool
       Speed: float
-      FrameRate: float }
+      FrameRate: float
+      /// <summary>Advance the playhead while suppressing target writes, callbacks and completion delivery.</summary>
+      Muted: bool }
     /// <summary>One forward iteration, zero delays, unit speed and a 240 FPS ceiling.</summary>
     static member Default =
         { Repeat = PlaybackRepeat.Count 0u; Delay = 0.; LoopDelay = 0.; Reversed = false
-          Alternate = false; Speed = 1.; FrameRate = 240. }
+          Alternate = false; Speed = 1.; FrameRate = 240.; Muted = false }
     /// <summary>An invariant one-line diagnostic of the clock options.</summary>
     override this.ToString() =
         let culture = Globalization.CultureInfo.InvariantCulture
         String.Concat [| "PlaybackOptions(Repeat="; this.Repeat.ToString(); "; Delay="; this.Delay.ToString("R", culture)
                          "; LoopDelay="; this.LoopDelay.ToString("R", culture); "; Reversed="; this.Reversed.ToString()
                          "; Alternate="; this.Alternate.ToString(); "; Speed="; this.Speed.ToString("R", culture)
-                         "; FrameRate="; this.FrameRate.ToString("R", culture); ")" |]
+                         "; FrameRate="; this.FrameRate.ToString("R", culture); "; Muted="; this.Muted.ToString(); ")" |]
 
 /// <summary>Optional scope clock overrides; None inherits, while false and zero remain explicit values.</summary>
 type PlaybackDefaults =
@@ -45,10 +62,12 @@ type PlaybackDefaults =
       Reversed: bool option
       Alternate: bool option
       Speed: float option
-      FrameRate: float option }
+      FrameRate: float option
+      /// <summary>Optional initial mute state inherited by clocks constructed in this scope.</summary>
+      Muted: bool option }
     /// <summary>Inherits every clock setting.</summary>
     static member Empty =
-        { Repeat=None; Delay=None; LoopDelay=None; Reversed=None; Alternate=None; Speed=None; FrameRate=None }
+        { Repeat=None; Delay=None; LoopDelay=None; Reversed=None; Alternate=None; Speed=None; FrameRate=None; Muted=None }
     /// <summary>Applies present fields without normalization; the playback controller validates and normalizes its settings.</summary>
     member this.Apply(fallback: PlaybackOptions) : PlaybackOptions =
         { Repeat=defaultArg this.Repeat fallback.Repeat
@@ -57,7 +76,8 @@ type PlaybackDefaults =
           Reversed=defaultArg this.Reversed fallback.Reversed
           Alternate=defaultArg this.Alternate fallback.Alternate
           Speed=defaultArg this.Speed fallback.Speed
-          FrameRate=defaultArg this.FrameRate fallback.FrameRate }
+          FrameRate=defaultArg this.FrameRate fallback.FrameRate
+          Muted=defaultArg this.Muted fallback.Muted }
     /// <summary>An invariant diagnostic preserving explicit values and identifying inherited fields.</summary>
     override this.ToString() =
         let optional render value = value |> Option.map render |> Option.defaultValue "inherit"
@@ -66,7 +86,8 @@ type PlaybackDefaults =
                          "; Delay="; optional number this.Delay; "; LoopDelay="; optional number this.LoopDelay
                          "; Reversed="; optional (fun (value:bool) -> value.ToString()) this.Reversed
                          "; Alternate="; optional (fun (value:bool) -> value.ToString()) this.Alternate
-                         "; Speed="; optional number this.Speed; "; FrameRate="; optional number this.FrameRate; ")" |]
+                         "; Speed="; optional number this.Speed; "; FrameRate="; optional number this.FrameRate
+                         "; Muted="; optional (fun (value:bool) -> value.ToString()) this.Muted; ")" |]
 
 /// <summary>Endpoint arbitration across sequence frames and concurrent animations.</summary>
 [<RequireQualifiedAccess; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
@@ -216,20 +237,23 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let mutable duration = duration
     let options = ScopePlaybackContext.resolve options
     let iterations = match options.Repeat with PlaybackRepeat.Count count -> float count + 1. | PlaybackRepeat.Forever -> infinity
-    let completionWaiters = Collections.Generic.List<Timer -> unit>()
-    let cancelWaiters = Collections.Generic.List<unit -> unit>()
+    let mutable explicitlyCancelled = false
+    let mutable softlyReverted = false
+    let mutable muted = options.Muted
+    let mutable inheritedMute : unit -> bool = fun () -> false
+    let effectivelyMuted () = muted || inheritedMute()
+    let waiters = Collections.Generic.Queue<struct ((unit -> unit) * (unit -> unit))>()
+    let mutable deliveringCompletion = false
     let settleCompletion () =
-        if completionWaiters.Count > 0 then
-            let snapshot = completionWaiters.ToArray()
-            completionWaiters.Clear()
-            cancelWaiters.Clear()
-            for waiter in snapshot do waiter this
+        let mutable remaining = waiters.Count
+        while remaining > 0 && waiters.Count > 0 && not(effectivelyMuted()) do
+            let struct (complete, _) = waiters.Dequeue()
+            remaining <- remaining - 1
+            complete()
     let settleCancelled () =
-        completionWaiters.Clear()
-        if cancelWaiters.Count > 0 then
-            let snapshot = cancelWaiters.ToArray()
-            cancelWaiters.Clear()
-            for waiter in snapshot do waiter()
+        while waiters.Count > 0 do
+            let struct (_, cancel) = waiters.Dequeue()
+            cancel()
     let callback event =
         let action =
             match event with
@@ -239,9 +263,18 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             | PlaybackEvent.Loop -> onLoop
             | PlaybackEvent.Pause -> onPause
             | PlaybackEvent.Complete -> onComplete
-        action |> Option.iter(fun action -> action this)
-        if event = PlaybackEvent.Complete then settleCompletion()
-    let state = PlaybackState(duration, iterations, options.Delay, options.LoopDelay, options.Reversed, options.Alternate, callback)
+        if event = PlaybackEvent.Complete then
+            let previous = deliveringCompletion
+            deliveringCompletion <- true
+            try
+                action |> Option.iter(fun action -> action this)
+                settleCompletion()
+                if explicitlyCancelled then settleCancelled()
+            finally deliveringCompletion <- previous
+        else action |> Option.iter(fun action -> action this)
+    let state = PlaybackState(duration, iterations, options.Delay, options.LoopDelay, options.Reversed, options.Alternate, callback,
+                              seconds=(fun () -> engine.Seconds))
+    do state.MuteGate <- effectivelyMuted
     let finite name value =
         if not(Double.IsFinite value) then invalidArg name "Expected a finite number."
     do finite "FrameRate" options.FrameRate
@@ -262,6 +295,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let mutable parented = false
     let mutable onFault = fun () -> ()
     let mutable onCancel = fun () -> ()
+    let mutable softRestore : (unit -> unit) option = None
 
     let live () =
         if state.Cancelled then raise(ObjectDisposedException(nameof Timer))
@@ -286,6 +320,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             PlaybackTickMode.Auto
 
     let abandon () =
+        explicitlyCancelled <- true
         stopFrame() |> ignore
         try state.Cancel() with _ -> ()
         try EngineFrames.terminate scheduler with _ -> ()
@@ -364,17 +399,18 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let setTime time = setTimeGuarded (fun () -> true) time
 
     let cancel notify =
+        explicitlyCancelled <- true
         stopFrame() |> ignore
         let mutable failure:exn option=None
         let attempt action =
             try action() with error -> if failure.IsNone then failure<-Some error
         attempt state.Cancel
         attempt(fun () -> EngineFrames.terminate scheduler)
-        if not state.Completed then attempt settleCancelled
+        if not deliveringCompletion then attempt settleCancelled
         if notify then attempt onCancel
         failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     do EngineFrames.configure scheduler (fun () -> reanchor 0.) 1.
-    do ScopeRegistration.register this.RewindForRevert
+    do ScopeRegistration.register (fun () -> if not softlyReverted then this.RewindForRevert())
     /// <summary>Accepts an unsigned whole-millisecond iteration duration.</summary>
     new(scheduler: FrameScheduler, duration: uint, ?options: PlaybackOptions,
         ?onBegin: Timer -> unit, ?onBeforeUpdate: Timer -> unit, ?onUpdate: Timer -> unit,
@@ -424,34 +460,55 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Rewinds to zero with muted render callbacks and cancels this timer.</summary>
     member _.Revert() =
         if not state.Cancelled then this.RewindForRevert()
-    /// <summary>Registers an optional completion callback and returns a task settling when this timer completes.</summary>
-    member _.Then(?callback: Timer -> unit) : Threading.Tasks.Task<Timer> =
-        let invoke () = callback |> Option.iter (fun action -> action this)
-        if state.Completed then
-            invoke()
-            Threading.Tasks.Task.FromResult this
-        elif state.Cancelled then
-            Threading.Tasks.Task.FromCanceled<Timer>(Threading.CancellationToken(true))
+    /// <summary>Optionally skips the rewind, retaining the playhead while restoring any attached property snapshot.</summary>
+    member _.Revert(seekToStart: bool) =
+        if seekToStart then this.Revert()
         else
-            let source = Threading.Tasks.TaskCompletionSource<Timer>()
-            completionWaiters.Add(fun timer ->
-                try
-                    invoke()
-                    source.TrySetResult timer |> ignore
-                with error -> source.TrySetException error |> ignore)
-            cancelWaiters.Add(fun () -> source.TrySetCanceled() |> ignore)
-            source.Task
+            match softRestore with
+            | Some restore -> restore()
+            | None when not explicitlyCancelled -> this.StopForRevert(false)
+            | None -> ()
+    member internal _.OnSoftRevert with set value = softRestore <- Some value
+    /// <summary>Maps observable completion to the callback result.</summary>
+    member this.ThenResult<'T>(callback: Timer -> 'T) : Threading.Tasks.Task<'T> =
+        CompletionTask.observe (fun () -> callback this) (fun complete cancel ->
+            if softlyReverted then cancel()
+            elif state.CanDeliverCompletion then complete()
+            elif explicitlyCancelled || (state.Cancelled && not state.Completed) then cancel()
+            else waiters.Enqueue(struct (complete, cancel)))
+
+    /// <summary>Awaits the task returned by the completion callback.</summary>
+    member this.ThenAsync<'T>(callback: Timer -> Threading.Tasks.Task<'T>) : Threading.Tasks.Task<'T> =
+        Threading.Tasks.TaskExtensions.Unwrap(this.ThenResult(callback))
+
+    /// <summary>Awaits a completion callback that produces no result.</summary>
+    member this.ThenAsync(callback: Timer -> Threading.Tasks.Task) : Threading.Tasks.Task =
+        Threading.Tasks.TaskExtensions.Unwrap(this.ThenResult(callback))
+
+    /// <summary>Runs the optional completion callback and returns this instance.</summary>
+    member this.Then(?callback: Timer -> unit) : Threading.Tasks.Task<Timer> =
+        this.ThenResult(CompletionTask.withInstance callback)
     /// <summary>Returns a task settling with this timer upon completion or cancelling if explicitly cancelled beforehand.</summary>
     member this.AsTask() : Threading.Tasks.Task<Timer> = this.Then()
-    /// <summary>Last sampled time in milliseconds; setting it emits pause when active and then restores playback.</summary>
-    member _.CurrentTime with get() = state.Sample.CurrentTime and set value = setTime value
+    /// <summary>Last sampled time in engine units; setting it emits pause when active and restores playback.</summary>
+    member _.CurrentTime
+        with get() =
+            if engine.Seconds then
+                let rounded = PropertyNumbers.round 1e7 state.Sample.AbsoluteTime
+                let lower = -state.Delay
+                if lower > state.Duration then (if rounded < lower then lower else state.Duration)
+                else Math.Clamp(rounded,lower,state.Duration)
+            else state.Sample.CurrentTime
+        and set value = setTime value
     /// <summary>Gets bounded overall progress; setting scales by total duration and seeks with playback preserved.</summary>
     member _.Progress
         with get() = state.Sample.Progress
         and set value = setTime (state.Duration * value)
     /// <summary>Gets bounded directional iteration time; setting seeks within the current iteration with playback preserved.</summary>
     member _.IterationCurrentTime
-        with get() = state.Sample.IterationCurrentTime
+        with get() =
+            if engine.Seconds then Math.Clamp(PropertyNumbers.round 1e7 state.Sample.IterationTime,0.,duration)
+            else state.Sample.IterationCurrentTime
         and set value = setTime (duration * float state.Sample.Iteration + value)
     /// <summary>Gets bounded iteration progress; setting scales by iteration duration and seeks with playback preserved.</summary>
     member _.IterationProgress
@@ -478,11 +535,25 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member _.Began = state.Began
     /// <summary>Whether the last sample completed the finite sequence.</summary>
     member _.Completed = state.Completed
+    /// <summary>Suppresses writes, callbacks and completion delivery while the playhead continues advancing.</summary>
+    member _.Muted with get() = muted and set value = muted <- value
+    /// <summary>Includes muting inherited from a driving timeline.</summary>
+    member internal _.EffectivelyMuted = effectivelyMuted()
+    /// <summary>Installs an owned child's inherited mute gate.</summary>
+    member internal _.InheritMute(gate) = inheritedMute <- gate
+    /// <summary>Includes a borrowing timeline's mute gate for the duration of its seek.</summary>
+    member internal _.WithInheritedMute(gate, action) =
+        let previous = inheritedMute
+        inheritedMute <- fun () -> previous() || gate()
+        try action() finally inheritedMute <- previous
+
+    /// <summary>Runs internal cleanup on completion independently of callback delivery.</summary>
+    member internal _.OnSettled with set value = state.OnSettled <- value
     /// <summary>Whether scheduling is paused.</summary>
     member _.Paused = state.Paused
     /// <summary>Whether cancellation has ended the disposable lifetime.</summary>
     member _.Cancelled = state.Cancelled
-    /// <summary>The source callback delta in milliseconds.</summary>
+    /// <summary>Signed interval between preceding playback samples, in the engine time unit.</summary>
     member _.DeltaTime = state.DeltaTime
     /// <summary>Finite playback multiplier; values below 1e-11 clamp to that minimum.</summary>
     member _.Speed
@@ -500,6 +571,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             EngineDefaults.raiseFrameRate fps
     /// <summary>Raw geometry for shared playback integration and behavioral verification.</summary>
     member internal _.Sample = state.Sample
+    member internal _.IterationTimeAt(time:float) = state.IterationTimeAt time
     /// <summary>Forced-render gap in the engine's current time unit.</summary>
     member internal _.TickThreshold=engine.TickThreshold
     /// <summary>Both scheduler and state generations for guarding property writes across user code.</summary>
@@ -516,8 +588,10 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Raw time immediately before the current sample.</summary>
     member internal _.PreviousAbsoluteTime = state.PreviousAbsoluteTime
     /// <summary>Installs an animation renderer and an optional source setter-duration override before sampling.</summary>
-    member internal _.ConfigureRenderer(renderer, ?totalDuration: float, ?onStretch: (float -> unit)) =
-        state.Renderer <- fun sample mode muted -> if renderingEnabled then renderer sample mode muted
+    member internal _.ConfigureRenderer(renderer, ?totalDuration: float, ?onStretch: (float -> unit), ?sampleWhenMuted: bool) =
+        let sampleWhenMuted = defaultArg sampleWhenMuted false
+        state.Renderer <- fun sample mode muteCallbacks ->
+            if renderingEnabled && (sampleWhenMuted || not(effectivelyMuted())) then renderer sample mode muteCallbacks
         onStretch |> Option.iter(fun hook -> stretchRenderer <- hook)
         totalDuration |> Option.iter state.OverrideDuration
     /// <summary>Assigns current time with pause/seek/resume semantics while every ancestor remains live.</summary>
@@ -563,7 +637,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             state.TickChild(time, mode, muted, backwards, parentBegan, canWrite, ?internalRender=internalRender)
     /// <summary>Emits the source reverse-loop boundary completion without changing child flags.</summary>
     member internal _.NotifyBoundaryCompletion() =
-        if not state.Cancelled then callback PlaybackEvent.Complete
+        if not state.Cancelled && not(effectivelyMuted()) then callback PlaybackEvent.Complete
     /// <summary>Resets owned child flags after a timeline reset or forward loop.</summary>
     member internal _.ResetChildFlags() =
         if not state.Cancelled then state.ResetChildFlags()
@@ -578,6 +652,8 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             if current() then state.Reset()) ignore
     /// <summary>Revives the internal animatable callback controller and resets its retained clock history.</summary>
     member internal _.ReviveReset() =
+        softlyReverted <- false
+        explicitlyCancelled <- false
         state.ReviveForReset()
         this.Reset()
     /// <summary>Samples raw zero with muted render callbacks, then cancels if the rewind remains current.</summary>
@@ -586,6 +662,14 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         operate (fun current ->
             state.Tick(0.,PlaybackTickMode.Auto,true)
             if current() then cancel false) ignore
+    /// <summary>Stops this driver before its owner restores snapshots. A soft revert preserves its playhead.</summary>
+    member internal _.StopForRevert(seekToStart: bool) =
+        if seekToStart then this.RewindForRevert()
+        elif not softlyReverted then
+            softlyReverted <- true
+            this.WithInheritedMute((fun () -> true), fun () -> cancel false)
+            // Completion callbacks can revert while the clock is delivering its queued observers.
+            if deliveringCompletion then settleCancelled()
     /// <summary>Whether the current renderer invocation refreshes caches without target dispatch.</summary>
     member internal _.InternalRender = state.InternalRender
     /// <summary>Prepares endpoints, optional stretch, cache-only reset and resume under one interruption guard.</summary>

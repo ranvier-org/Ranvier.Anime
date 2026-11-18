@@ -68,6 +68,21 @@ let private fixture () =
     container,target,computed,resize,events,scroll,resized,(fun () -> listener.IsSome)
 
 let tests = testList "scroll DOM contracts" [
+    testSequenced <| testCase "scroll velocity follows the engine unit at the same host sampling rate" (fun _ ->
+        for unit, scale in [EngineTimeUnit.Milliseconds, 1.; EngineTimeUnit.Seconds, 0.001] do
+            let element,_,computed,resize,_,scroll,_,_ = fixture()
+            use scheduler = new ManualFrameScheduler()
+            let engine = Engine.forScheduler scheduler
+            engine.TimeUnit <- unit
+            try
+                use container = new ScrollContainer(scheduler,element,computed,resize)
+                let frame () = scheduler.Advance 36.; scheduler.RunFrame()
+                for _ in 1..4 do frame()
+                scroll 72
+                frame()
+                Expect.floatClose Accuracy.high container.Velocity (2. / scale) "CSS pixels per engine unit"
+            finally engine.TimeUnit <- EngineTimeUnit.Milliseconds)
+
     testCase "explicit linked target preserves source deferred refresh" <| fun _ ->
         let element,target,computed,resize,_,_,_,_ = fixture()
         use scheduler = new ManualFrameScheduler()

@@ -103,6 +103,68 @@ let tests =
             Expect.equal tlResolved 30. "Timeline Then saw 30"
             Expect.isTrue tlTask.IsCompletedSuccessfully "Timeline task settled"
 
+        testCase "Completion maps values, adopts tasks and isolates callback exceptions" <| fun _ ->
+            use host = new ManualFrameScheduler()
+            use timer = new Timer(host, 30u)
+            let expected = InvalidOperationException("callback failed")
+            let inner = Threading.Tasks.TaskCompletionSource<string>()
+            let mapped = timer.ThenResult(fun self -> self.CurrentTime)
+            let adopted = timer.ThenAsync(fun _ -> inner.Task)
+            let signal = Threading.Tasks.TaskCompletionSource()
+            let work = timer.ThenAsync(fun _ -> signal.Task)
+            let failure = timer.ThenResult<int>(fun _ -> raise expected)
+            let instance = timer.AsTask()
+
+            timer.Complete()
+            Expect.equal mapped.Result 30. "callback received the completed timer"
+            Expect.isTrue (Object.ReferenceEquals(instance.Result, timer)) "instance completion preserves identity"
+            Expect.isFalse adopted.IsCompleted "the chain waits for the callback task"
+            Expect.isFalse work.IsCompleted "the chain waits for a task without a result"
+            signal.SetResult()
+            work.GetAwaiter().GetResult()
+            inner.SetResult "done"
+            Expect.equal adopted.Result "done" "the chain yields the inner result"
+            Expect.isTrue (Object.ReferenceEquals(failure.Exception.InnerException, expected)) "pending callback fault"
+            let late = timer.ThenAsync<int>(fun _ -> raise expected)
+            Expect.isTrue (Object.ReferenceEquals(late.Exception.InnerException, expected)) "late callback fault"
+            let lateThen = timer.Then(fun _ -> raise expected)
+            Expect.isTrue (Object.ReferenceEquals(lateThen.Exception.InnerException, expected)) "late unit callback fault"
+            let faulted = timer.ThenAsync(fun _ -> Threading.Tasks.Task.FromException<int>(expected))
+            Expect.isTrue (Object.ReferenceEquals(faulted.Exception.InnerException, expected)) "adopted task fault"
+            let cancelled = timer.ThenAsync(fun _ -> Threading.Tasks.Task.FromCanceled<int>(Threading.CancellationToken(true)))
+            Expect.isTrue cancelled.IsCanceled "adopted task cancellation"
+
+        testCase "Callback cancellation preserves its token before and after completion" <| fun _ ->
+            use host = new ManualFrameScheduler()
+            use timer = new Timer(host, 30u)
+            use cancellation = new Threading.CancellationTokenSource()
+            cancellation.Cancel()
+            let cancel _ = raise (OperationCanceledException(cancellation.Token))
+            let early = timer.ThenResult<int>(cancel)
+            timer.Complete()
+            let late = timer.ThenAsync<int>(cancel)
+            for chain in [ early; late ] do
+                Expect.isTrue chain.IsCanceled "callback cancellation produces a cancelled task"
+                try
+                    chain.GetAwaiter().GetResult() |> ignore
+                    failtest "cancelled chain returned a result"
+                with :? OperationCanceledException as error ->
+                    Expect.equal error.CancellationToken cancellation.Token "the callback token reaches the caller"
+
+        testCase "Cancellation settles pending and late completion chains without invoking them" <| fun _ ->
+            use host = new ManualFrameScheduler()
+            use timer = new Timer(host, 30u)
+            let callback _ = failwith "cancelled timer ran its callback"
+            let pending = timer.ThenAsync<int>(callback)
+            timer.Cancel()
+            let late = timer.ThenResult<int>(callback)
+            try
+                pending.GetAwaiter().GetResult() |> ignore
+                failtest "pending chain returned a result"
+            with :? OperationCanceledException -> ()
+            Expect.isTrue pending.IsCanceled "pending chain cancelled"
+            Expect.isTrue late.IsCanceled "late chain cancelled"
+
         testCase "Timeline Labels, Stretch, Remove and property setters preserve proportional timing" <| fun _ ->
             use host = new ManualFrameScheduler()
             let mutable v1 = 0.

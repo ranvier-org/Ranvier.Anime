@@ -204,6 +204,22 @@ let svgReentryTests=testList "SVG scope owner and native-call reentry regression
             scope.Execute(fun _->SvgProperties.morph source destination 0.1 (Some "M9 8 L7 6") |> ignore) |> ignore) "geometry fault"
         Expect.equal attrs["d"] "M1 2 L3 4" "constructor rollback before scope teardown"
 
+    testCase "nested morph progress during attribute write supersedes the outer commit" <| fun _ ->
+        let raw,attrs,_ = geometry "path" 10. "line" Unchecked.defaultof<SVGMatrix>
+        let destination,target,_ = geometry "path" 10. "line" Unchecked.defaultof<SVGMatrix>
+        target["d"] <- "M5 6 L7 8"
+        let mutable nested: (unit -> unit) option = None
+        let source = intercept raw noHook (fun name _ ->
+            if name="setAttribute" then
+                let action = nested
+                nested <- None
+                action |> Option.iter (fun write -> write()))
+        use morph = SvgProperties.morph source destination 0. None
+        nested <- Some(fun () -> morph.Progress.Value <- 0.75)
+        morph.Progress.Value <- 0.25
+        Expect.equal attrs["d"] "M4 5 L6 7" "nested value wins"
+        Expect.equal morph.Progress.Value 0.75 "outer progress is superseded"
+
     testCase "morph hidden endpoints produce only one outer restoration registration" <| fun _ ->
         use graph=new Graph()
         use active=graph.Activate()

@@ -98,7 +98,7 @@ type internal FrameProgram(delay:float,iterationDuration:float,offset:float,twee
 [<NoEquality;NoComparison;Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type internal FrameCompilationSiblings =
     { Tail:int -> FrameTween option
-      Select:int -> float -> FrameTween option
+      Select:int -> float -> bool option -> FrameTween option
       Register:int -> FrameTween -> unit }
     /// <summary>A diagnostic without formatting construction callbacks.</summary>
     override _.ToString()="FrameCompilationSiblings"
@@ -253,7 +253,8 @@ module internal KeyframeCompilation =
                         let start=previousEnd+delay
                         let nextEnd=PropertyNumbers.round 1e12 (start+duration)
                         let absoluteStart=PropertyNumbers.round 1e12 (defaults.Offset+start)
-                        let parentSelected=if replace then parent |> Option.bind(fun siblings -> siblings.Select propertyIndex absoluteStart) else None
+                        let sampleStart=if index=0 && (frame.From.IsNone || frame.To.IsNone) then Some(delay<>0.) else None
+                        let parentSelected=if replace then parent |> Option.bind(fun siblings -> siblings.Select propertyIndex absoluteStart sampleStart) else None
                         let selected=
                             if replace then
                                 match parent with

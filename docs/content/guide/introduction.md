@@ -31,6 +31,12 @@ the graph's event log.
 
 ## Where to go next
 
+On .NET, `Ranvier.Anime.ComposedTimelineDsl` builds a paused timeline from children and labels.
+Call `Seek` for a scrubber or `Play()` to start playback. `Ranvier.Anime.KeyframeDsl` builds a
+sequence of sparse rows or normalized offsets for the native numeric and CSS keyframe APIs.
+The [native Motion sample](https://github.com/ranvier-org/Ranvier.Anime/tree/main/examples/Ranvier.Motion.Native)
+uses both builders in interactive charts and scroll-driven animations.
+
 - [Animation](../anime/bindings.md): parameters, values, eases, staggers and timelines.
 - [Owning and driving animations](../anime/reactive.md): owners, playback memos, signals and reduced motion.
 - [Testing and costs](../anime/testing.md): a manual clock under jsdom and Playwright, and the bundle size.

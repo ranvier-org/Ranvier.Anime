@@ -71,12 +71,12 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
         if eligible && canWrite() then
             tweenTime <- Math.Clamp(sample.IterationTime, 0., iterationDuration)
             let progress = ease (tweenTime / iterationDuration)
-            if canWrite() then
+            if canWrite() && not clock.EffectivelyMuted then
                 finite "ease" progress
                 write (PropertyNumbers.interpolate first last progress)
-                if canWrite() && sample.AboveZero && not muted then
+                if canWrite() && sample.AboveZero && not muted && not clock.EffectivelyMuted then
                     onRender |> Option.iter(fun callback -> callback this)
-    do clock.ConfigureRenderer(render, ?totalDuration=(if iterationDuration = 1e-11 then Some 1e-11 else None),
+    do clock.ConfigureRenderer(render, sampleWhenMuted=true, ?totalDuration=(if iterationDuration = 1e-11 then Some 1e-11 else None),
                                onStretch=(fun scale -> tweenTime <- tweenTime*scale))
     do clock.OnFault <- closeRestoration
     do clock.OnCancel <- closeRestoration
@@ -142,7 +142,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     member internal _.CaptureRestorationGuard() =
         let expected = restorationGeneration
         let admitted = restorationActive && (not clock.Cancelled || completionAllowsRestoration)
-        fun () -> admitted && restorationActive && restorationGeneration = expected && constructionAccepted && ownerAllowsWrite()
+        fun () -> admitted && restorationActive && restorationGeneration = expected && constructionAccepted && ownerAllowsWrite() && not clock.EffectivelyMuted
     /// <summary>Captures the shared timer's rounded iteration progress, direction policy and scheduling anchor.</summary>
     member internal _.CaptureScopeTime() = clock.CaptureScopeTime()
     /// <summary>Restores iteration setters and the original scheduling anchor through the shared timer.</summary>
@@ -168,15 +168,17 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     member _.Cancel() = closeRestoration(); clock.Cancel()
     /// <summary>Rewinds with muted callbacks and restores the immutable construction value, then cancels playback.</summary>
     /// <remarks>Explicit cancellation closes restoration. Reentrant cancellation during rewind suppresses the final restoration write.</remarks>
-    member _.Revert() =
+    member this.Revert() = this.Revert(true)
+    /// <summary>Restores the captured property and cancels playback, optionally skipping the rewind sample.</summary>
+    member _.Revert(seekToStart: bool) =
         if restorationActive && not reverting && (not clock.Cancelled || completionAllowsRestoration) then
             reverting <- true
             let expected = restorationGeneration
-            let current () = restorationActive && restorationGeneration = expected && constructionAccepted && ownerAllowsWrite()
+            let current () = restorationActive && restorationGeneration = expected && constructionAccepted && ownerAllowsWrite() && not clock.EffectivelyMuted
             let mutable failure : exn option = None
             let attempt action =
                 try action() with error -> if failure.IsNone then failure <- Some error
-            attempt clock.RewindForRevert
+            attempt(fun () -> clock.StopForRevert(seekToStart))
             if current() then attempt(fun () -> restoration |> Option.iter(fun restore -> restore current))
             closeRestoration()
             attempt clock.Cancel
@@ -184,6 +186,8 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
             failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     /// <summary>Last sampled time with source bounds and four-decimal precision.</summary>
     member _.CurrentTime with get() = clock.CurrentTime and set value = clock.CurrentTime <- value
+    /// <summary>Signed interval between preceding playback samples, in the engine time unit.</summary>
+    member _.DeltaTime = clock.DeltaTime
     /// <summary>Bounded directional time inside the current iteration.</summary>
     member _.IterationCurrentTime with get() = clock.IterationCurrentTime and set value = clock.IterationCurrentTime <- value
     /// <summary>Bounded directional progress inside the current iteration.</summary>
@@ -200,25 +204,25 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     member _.Backwards = clock.Backwards
     /// <summary>Whether the base playback direction is reversed.</summary>
     member _.Reversed with get() = clock.Reversed and set value = clock.Reversed <- value
-    /// <summary>Registers an optional completion callback and returns a task settling when this animation completes.</summary>
+    /// <summary>Maps observable completion to the callback result.</summary>
+    member this.ThenResult<'T>(callback: NumericAnimation -> 'T) : Threading.Tasks.Task<'T> =
+        clock.ThenResult(fun _ -> callback this)
+
+    /// <summary>Awaits the task returned by the completion callback.</summary>
+    member this.ThenAsync<'T>(callback: NumericAnimation -> Threading.Tasks.Task<'T>) : Threading.Tasks.Task<'T> =
+        Threading.Tasks.TaskExtensions.Unwrap(this.ThenResult(callback))
+
+    /// <summary>Awaits a completion callback that produces no result.</summary>
+    member this.ThenAsync(callback: NumericAnimation -> Threading.Tasks.Task) : Threading.Tasks.Task =
+        Threading.Tasks.TaskExtensions.Unwrap(this.ThenResult(callback))
+
+    /// <summary>Runs the optional completion callback and returns this instance.</summary>
     member this.Then(?callback: NumericAnimation -> unit) : Threading.Tasks.Task<NumericAnimation> =
-        let invoke () = callback |> Option.iter (fun action -> action this)
-        if clock.Completed then
-            invoke()
-            Threading.Tasks.Task.FromResult this
-        elif clock.Cancelled then
-            Threading.Tasks.Task.FromCanceled<NumericAnimation>(Threading.CancellationToken(true))
-        else
-            let source = Threading.Tasks.TaskCompletionSource<NumericAnimation>()
-            let inner = clock.Then(fun _ -> invoke())
-            inner.ContinueWith((fun (task: Threading.Tasks.Task<Timer>) ->
-                if task.IsCanceled then source.TrySetCanceled() |> ignore
-                elif task.IsFaulted then source.TrySetException(task.Exception.InnerExceptions) |> ignore
-                else source.TrySetResult this |> ignore
-            ), Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously) |> ignore
-            source.Task
+        this.ThenResult(CompletionTask.withInstance callback)
     /// <summary>Returns a task settling with this animation upon completion.</summary>
     member this.AsTask() : Threading.Tasks.Task<NumericAnimation> = this.Then()
+    /// <summary>Suppresses property writes, lifecycle callbacks and completion delivery while time advances.</summary>
+    member _.Muted with get() = clock.Muted and set value = clock.Muted <- value
     /// <summary>Whether positive time has been sampled since reset.</summary>
     member _.Began = clock.Began
     /// <summary>Whether the most recent sample completed the finite repeat sequence.</summary>
@@ -254,7 +258,8 @@ module Animation =
     let animate scheduler read write target duration = animateWith id scheduler read write target duration
     /// <summary>Creates a tween using a spring easing and its calculated settling duration.</summary>
     let animateSpring (spring: Spring) scheduler read write target =
-        animateWith spring.Ease scheduler read write target spring.SettlingDuration
+        let duration = spring.SettlingDuration * (EngineFrames.forScheduler scheduler).TimeScale
+        animateWith spring.Ease scheduler read write target duration
     /// <summary>Attaches a tween to the current Ranvier owner, which cancels it on disposal.</summary>
     let own (animation: NumericAnimation) =
         ScopeRegistration.attach animation

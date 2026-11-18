@@ -7,6 +7,7 @@ module Story
 
 open global.Ranvier
 open Ranvier.Anime
+open Ranvier.Anime.ComposedTimelineDsl
 open Ranvier.Dom
 open Ranvier.View
 open Ranvier.View.Dsl
@@ -114,28 +115,18 @@ let private bound (read: Story -> Chapter) (story: Story) =
 // A chapter's copy slides in from the side its art leaves, and the art turns and settles, scrubbed by the scroll.
 let private chapterTimeline (index: int) (_: Story) (section: Element) =
     let side = if index % 2 = 0 then -1. else 1.
-    let timeline = Native.timeline false
-
-    timeline
-        .Add(
-            Native.queryAll section ".chapter-copy" |> Array.map box,
-            [| Native.fromTo "x" (side * 80.) 0.; Native.fromTo "opacity" 0. 1. |],
-            Native.timing 500. Native.outCubic
-        )
-        .Add(
-            Native.queryAll section ".chapter-art" |> Array.map box,
-            [| Native.fromTo "rotate" (side * -24.) 0.; Native.fromTo "scale" 0.7 1.; Native.fromTo "opacity" 0.2 1. |],
-            Native.timing 500. Native.outBack,
-            Native.withPrevious
-        )
+    composedTimeline AnimeHost.Current.Scheduler {
+        yield group (Native.queryAll section ".chapter-copy") (Native.timing 500. Native.outCubic)
+                  [| Native.fromTo "x" (side * 80.) 0.; Native.fromTo "opacity" 0. 1. |]
+        yield group (Native.queryAll section ".chapter-art") (Native.timing 500. Native.outBack)
+                  [| Native.fromTo "rotate" (side * -24.) 0.; Native.fromTo "scale" 0.7 1.; Native.fromTo "opacity" 0.2 1. |]
+              |> at Native.withPrevious
+    }
 
 let private galleryTimeline (_: Story) (section: Element) =
     let tiles = Native.queryAll section ".tile"
-    let delays = Native.stagger 60. StaggerOrigin.Center (StaggerGrid.Grid2D (4u, 3u)) tiles.Length
-
-    Native.animateAll
-        (Array.map box tiles)
-        ({ Native.timing 500. Native.outQuart with Autoplay = false } |> Native.delayedBy delays)
+    Native.animateStaggered tiles 60. StaggerOrigin.Center (StaggerGrid.Grid2D (4u, 3u))
+        { Native.timing 500. Native.outQuart with Autoplay = false }
         [| Native.fromTo "y" 60. 0.; Native.fromTo "scale" 0.6 1.; Native.fromTo "opacity" 0. 1. |]
 
 let private rise (_: Story) (element: Element) =
@@ -145,12 +136,8 @@ let private bob (_: Story) (element: Element) =
     Native.animate element (Native.timing 900. Native.inOutSine |> Native.alternating) [| Native.toward "y" 8. |]
 
 let private letters (_: Story) (splitter: TextSplitter) =
-    let chars = splitter.Chars |> Array.map box
-    let delays = Native.stagger 22. StaggerOrigin.First StaggerGrid.Flat chars.Length
-
-    Native.animateAll
-        chars
-        (Native.timing 640. Native.outQuart |> Native.delayedBy delays)
+    Native.animateStaggered splitter.Chars 22. StaggerOrigin.First StaggerGrid.Flat
+        (Native.timing 640. Native.outQuart)
         [| Native.fromTo "y" 28. 0.; Native.fromTo "opacity" 0. 1.; Native.fromTo "rotate" 8. 0. |]
 
 let private popIn (_: string) (element: Element) =

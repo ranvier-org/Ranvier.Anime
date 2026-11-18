@@ -44,6 +44,31 @@ module internal Portable =
 
     let invariant (value: float) = value.ToString("R", CultureInfo.InvariantCulture)
 
+/// <summary>The asynchronous result of a completion callback.</summary>
+type CompletionResult<'T> = System.Threading.Tasks.Task<'T>
+
+/// <summary>Composes typed completion results for animation, timer and timeline handles.</summary>
+[<RequireQualifiedAccess>]
+module Completion =
+    /// <summary>Resolves with the completed handle.</summary>
+    let inline instance (handle: ^Handle) : CompletionResult<^Handle> =
+        (^Handle : (member AsTask: unit -> CompletionResult<^Handle>) handle)
+
+    /// <summary>Resolves with the callback result or faults with its exception.</summary>
+    let inline thenResult (handle: ^Handle) (callback: ^Handle -> 'T) : CompletionResult<'T> =
+        (^Handle : (member ThenResult: (^Handle -> 'T) -> CompletionResult<'T>) (handle, callback))
+
+    /// <summary>Waits for the callback's task and propagates its result, fault or cancellation.</summary>
+    let inline thenAsync (handle: ^Handle) (callback: ^Handle -> CompletionResult<'T>) : CompletionResult<'T> =
+        (^Handle : (member ThenAsync: (^Handle -> CompletionResult<'T>) -> CompletionResult<'T>) (handle, callback))
+
+[<AutoOpen>]
+module PortableMuting =
+    type ComposedAnimationOptions with
+        /// <summary>Sets persistent muting before the animation starts.</summary>
+        member this.WithMuted(value: bool) =
+            { this with Playback = { this.Playback with Muted = value } }
+
 /// <summary>Animations over the host installed with <c>AnimeHost.Install</c>.</summary>
 [<RequireQualifiedAccess>]
 module Anime =
@@ -61,14 +86,27 @@ module Anime =
         if isNull target then nullArg "target"
         animateTargets [| target |] specs options
 
+    let private createTimeline options =
+        let services = AnimeHost.Current
+        let created = Composed.createTimeline services.Scheduler options None
+        created.DefaultComputed <- Some services.Computed
+        created
+
     /// <summary>Creates an empty timeline on the host's scheduler.</summary>
     /// <remarks>Children added without computed styles read starting values through the host's.</remarks>
     /// <exception cref="T:System.InvalidOperationException">No host is installed on this thread.</exception>
-    let timeline () : ComposedTimeline =
-        let services = AnimeHost.Current
-        let created = Composed.createTimeline services.Scheduler None None
-        created.DefaultComputed <- Some services.Computed
-        created
+    let timeline () : ComposedTimeline = createTimeline None
+
+    /// <summary>Creates a timeline with persistent muting set before its children play.</summary>
+    let timelineWithMute (muted: bool) : ComposedTimeline =
+        createTimeline (Some { PlaybackDefaults.current() with Muted = muted })
+
+    /// <summary>Starts a timer with persistent muting set before its first tick.</summary>
+    let timerWithMute (duration: float) (muted: bool) : Timer =
+        let options = { PlaybackDefaults.current() with Muted = muted }
+        let timer = new Timer(AnimeHost.Current.Scheduler, duration, options = options)
+        timer.Play() |> ignore
+        timer
 
     /// <summary>Pauses the object at its current values when it is a tickable; any other revertible is left as it is.</summary>
     let pause (revertible: IRevertible) : unit =

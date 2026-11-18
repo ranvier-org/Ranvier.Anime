@@ -7,17 +7,17 @@ open Ranvier.Dom
 
 let private authored =
     { PlaybackOptions.Default with Repeat=PlaybackRepeat.Count 4u;Delay=20.;LoopDelay=30.
-                                   Reversed=true;Alternate=true;Speed=3.;FrameRate=60. }
+                                   Reversed=true;Alternate=true;Speed=3.;FrameRate=60.;Muted=true }
 
 let scopeClockDefaultsTests = testSequenced <| testList "scope clock defaults" [
     testCase "absent fields inherit and explicit false and zero survive application" <| fun _ ->
         Expect.equal (PlaybackDefaults.Empty.Apply authored) authored "all inherited"
         let overrides =
             { PlaybackDefaults.Empty with Repeat=Some(PlaybackRepeat.Count 0u);Delay=Some 0.;LoopDelay=Some 0.
-                                          Reversed=Some false;Alternate=Some false;Speed=Some 0.;FrameRate=Some 0. }
-        Expect.equal (overrides.Apply authored) {PlaybackOptions.Default with Speed=0.;FrameRate=0.} "all seven present"
+                                          Reversed=Some false;Alternate=Some false;Speed=Some 0.;FrameRate=Some 0.;Muted=Some false }
+        Expect.equal (overrides.Apply authored) {PlaybackOptions.Default with Speed=0.;FrameRate=0.} "explicit settings replace every inherited field"
 
-    testCase "scope omitted Timer options receive all seven authored fields" <| fun _ ->
+    testCase "scope omitted Timer options receive authored fields" <| fun _ ->
         use graph = new Ranvier.Graph()
         use active = graph.Activate()
         use frames = new ManualFrameScheduler()
@@ -26,6 +26,7 @@ let scopeClockDefaultsTests = testSequenced <| testList "scope clock defaults" [
             use clock = new Timer(frames,100.)
             Expect.equal (clock.IterationCount,clock.Delay,clock.LoopDelay,clock.Reversed,clock.Speed,clock.Fps)
                 (5.,20.,30.,true,3.,60.) "clock construction"
+            Expect.isTrue clock.Muted "mute inherited"
             Expect.isTrue (clock.CaptureScopeTime().Alternate) "alternate authored")
 
     testCase "partial scope defaults merge inherited fields and explicit zeros normalize only in Timer" <| fun _ ->

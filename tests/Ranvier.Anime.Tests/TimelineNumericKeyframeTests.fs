@@ -9,6 +9,50 @@ open Ranvier.Anime
 let private options={KeyframeAnimationOptions.Default with Ease=id;Precision=None}
 
 let tests=testList "public owned numeric timeline keyframes" [
+    testCase "delayed replacement captures the predecessor at the effective start" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use root=new Timeline(scheduler)
+        let mutable value=0.
+        let property=NumericProperty((fun () -> value),(fun next -> value<-next))
+        root.Animate(property,100.,1000.,from=0.) |> ignore
+        let frames=[|Keyframe<NumericProperty,float>.To(180.).WithDelay(300.)|]
+        use second=root.AddKeyframes(property,frames,duration=200u,position=TimelinePosition.At 500.,options=options)
+        for time,expected in [650.,65.;800.,80.;900.,130.;750.,75.;900.,130.] do
+            root.Seek time
+            Expect.floatClose Accuracy.high value expected "same sampled value in either direction"
+
+    testCase "backward gap seeks restore the earlier endpoint before the later explicit from" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use root=new Timeline(scheduler)
+        let mutable value=0.
+        let property=NumericProperty((fun () -> value),(fun next -> value<-next))
+        root.Animate(property,100.,100.,from=0.).Animate(property,500.,100.,from=400.,position=TimelinePosition.At 200.) |> ignore
+        for time,expected in [150.,100.;250.,450.;150.,100.;200.,400.;100.,100.] do
+            root.Seek time
+            Expect.equal value expected "the child that owns the playhead supplies the property"
+
+    testCase "an explicit overlapping child owns its exact start in either seek direction" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use root=new Timeline(scheduler)
+        let mutable value=0.
+        let property=NumericProperty((fun () -> value),(fun next -> value<-next))
+        root.Animate(property,100.,100.,from=0.).Animate(property,300.,100.,from=200.,position=TimelinePosition.At 50.) |> ignore
+        for time,expected in [49.,49.;50.,200.;70.,220.;50.,200.;49.,49.] do
+            root.Seek time
+            Expect.equal value expected "the explicit from takes effect at the authored boundary"
+
+    testCase "repeated alternate child regains its property on a backward seek" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use root=new Timeline(scheduler)
+        let mutable value=0.
+        let property=NumericProperty((fun () -> value),(fun next -> value<-next))
+        let looping={options with Playback={options.Playback with Repeat=PlaybackRepeat.Count 2u;Alternate=true}}
+        use first=root.AddKeyframes(property,Keyframe.values [|0.;50.;100.|],duration=100u,options=looping)
+        root.Animate(property,300.,100.,from=200.,position=TimelinePosition.At 180.) |> ignore
+        for time,expected in [220.,240.;150.,50.;120.,80.;180.,200.;199.,219.] do
+            root.Seek time
+            Expect.equal value expected "parent time selects the owner and child iteration time selects the keyframe"
+
     testCase "reentrant public reset leaves cache-only construction context" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         use root=new Timeline(scheduler)

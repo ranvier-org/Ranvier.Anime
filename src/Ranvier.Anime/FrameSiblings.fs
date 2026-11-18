@@ -43,6 +43,10 @@ type internal FrameSibling(definition:FrameTween,child:obj) =
     member val Repeats=false with get,set
     /// <summary>Child total duration minus one iteration, including repeated gaps.</summary>
     member val LoopExtension=0. with get,set
+    // These bounds use the timeline playhead, independent of the child's repeated or reversed iteration.
+    member val OwnsFrom=Double.NegativeInfinity with get,set
+    member val OwnsUntil=Double.PositiveInfinity with get,set
+    member val SampleAt:(FrameSibling -> float -> (unit -> bool) -> Output option) option=None with get,set
     /// <summary>Marks an overridden frame using source epsilon geometry and history.</summary>
     member this.Override() =
         this.Overlapped<-true
@@ -50,11 +54,11 @@ type internal FrameSibling(definition:FrameTween,child:obj) =
         this.Change<-1e-11
         this.Time<-1e-11
     /// <summary>Snapshots raw endpoints and current output without exposing the retained component cache.</summary>
-    member this.Snapshot() =
+    member this.Snapshot(?sampled:Output) =
         let frame=this.Definition
         FrameTween(frame.Target,frame.Name,frame.First,frame.Last,this.Start,this.Delay,this.Update,
                    this.AbsoluteStart,this.AbsoluteUpdateStart,this.AbsoluteEnd,frame.HasFrom,frame.Ease,frame.Modifier,
-                   this.Value.CopyComponents())
+                   (defaultArg sampled this.Value).CopyComponents())
     /// <summary>Captures a publication guard that rejects intervening playback or geometry changes.</summary>
     member this.Observe() =
         let definition=this.Definition
@@ -86,6 +90,9 @@ type internal FrameSibling(definition:FrameTween,child:obj) =
         target.Value<-this.Value
         target.Repeats<-this.Repeats
         target.LoopExtension<-this.LoopExtension
+        target.OwnsFrom<-this.OwnsFrom
+        target.OwnsUntil<-this.OwnsUntil
+        target.SampleAt<-this.SampleAt
     /// <summary>Stages finite stretched geometry while retaining endpoints, current cache and cross-child links.</summary>
     member this.Scaled(scale:float) =
         let normalize value =
@@ -102,6 +109,8 @@ type internal FrameSibling(definition:FrameTween,child:obj) =
         next.AbsoluteEnd<-this.AbsoluteEnd*scale
         next.Time<-this.Time*scale
         next.LoopExtension<-this.LoopExtension*scale
+        if Double.IsFinite this.OwnsFrom then next.OwnsFrom<-this.OwnsFrom*scale
+        if Double.IsFinite this.OwnsUntil then next.OwnsUntil<-this.OwnsUntil*scale
         if [next.Start;next.Delay;next.AbsoluteStart;next.AbsoluteUpdateStart;next.AbsoluteEnd;next.Time;next.LoopExtension]
            |> List.exists(fun value -> not(Double.IsFinite value)) then invalidArg "scale" "Scaled frame geometry must remain finite."
         next
@@ -134,15 +143,17 @@ module internal FrameSiblingComposition =
         if not(isNull next) then next.Previous<-node
         nodes.Insert(previous+1,node)
         if not(isNull prior) then
-            if not(obj.ReferenceEquals(prior.Child,node.Child)) && prior.Repeats && prior.AbsoluteEnd+prior.LoopExtension>node.AbsoluteStart then
-                prior.Override()
-                let mutable earlier=prior.Previous
-                while not(isNull earlier) && obj.ReferenceEquals(earlier.Child,prior.Child) do
-                    earlier.Override()
-                    earlier<-earlier.Previous
-            if prior.AbsoluteEnd>node.AbsoluteUpdateStart then
+            let cross=not(obj.ReferenceEquals(prior.Child,node.Child))
+            if cross && (prior.Repeats || node.Delay>0. && prior.AbsoluteEnd>node.AbsoluteUpdateStart) then
+                node.OwnsFrom<-node.AbsoluteStart
+                for earlier in nodes do
+                    if obj.ReferenceEquals(earlier.Child,prior.Child) then
+                        earlier.OwnsUntil<-min earlier.OwnsUntil node.AbsoluteStart
+            elif not cross then node.OwnsFrom<-prior.OwnsFrom
+            let takeover=if cross then node.AbsoluteStart else node.AbsoluteUpdateStart
+            if prior.AbsoluteEnd>takeover && not(cross && prior.Repeats) then
                 let offset=prior.AbsoluteEnd-(prior.Start+prior.Update)
-                let changed=PropertyNumbers.round 1e12 (node.AbsoluteUpdateStart-offset-prior.Start)
+                let changed=PropertyNumbers.round 1e12 (takeover-offset-prior.Start)
                 prior.Change<-changed
                 prior.Time<-changed
                 prior.Overlapped<-true
@@ -176,12 +187,16 @@ type internal FrameSiblingTransaction internal
         | true,nodes when nodes.Count>0 -> Some(nodes[nodes.Count-1].Snapshot())
         | _ -> None
     /// <summary>Selects the latest live predecessor and stages source future-sibling overrides at the resolved absolute start.</summary>
-    member _.Select(property:int,absoluteStart:float) =
+    member _.Select(property:int,absoluteStart:float,?sampleStart:bool) =
         ensure()
         match groups.TryGetValue(key property) with
         | true,nodes ->
             let selected=FrameSiblingComposition.select nodes absoluteStart
-            if isNull selected then None else Some(selected.Snapshot())
+            if isNull selected then None
+            elif sampleStart.IsSome && (sampleStart.Value || selected.Repeats) && not(obj.ReferenceEquals(selected.Child,child)) then
+                let sampled=selected.SampleAt |> Option.bind(fun sample -> sample selected absoluteStart canWrite)
+                Some(selected.Snapshot(?sampled=sampled))
+            else Some(selected.Snapshot())
         | _ -> None
     /// <summary>Stages one compiled frame and source replace truncation across local and earlier child frames.</summary>
     member _.Register(property:int,frame:FrameTween) =
@@ -196,7 +211,7 @@ type internal FrameSiblingTransaction internal
         added.Add node
     /// <summary>Compiler hooks retain the pre-timing input tail and resolved-start selection as separate operations.</summary>
     member this.Compilation:FrameCompilationSiblings =
-        {Tail=this.Tail;Select=(fun property start -> this.Select(property,start));Register=(fun property frame -> this.Register(property,frame))}
+        {Tail=this.Tail;Select=(fun property start sample -> this.Select(property,start,?sampleStart=sample));Register=(fun property frame -> this.Register(property,frame))}
     /// <summary>Applies final initial-delay trimming and child loop metadata to staged nodes.</summary>
     member _.Bind(program:FrameProgram,iterations:float,totalDuration:float) =
         ensure()
