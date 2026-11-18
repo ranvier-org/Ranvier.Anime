@@ -97,6 +97,17 @@ let private unitFixtures =
     [for item in document.RootElement.GetProperty("unitStaggering").EnumerateArray() -> item.Clone()]
 
 let tests = testList "upstream staggering" [
+    testCase "flat step agrees bit-for-bit with full distribution across vector tails" <| fun _ ->
+        for count in [ 0u; 1u; 7u; 31u; 32u; 33u; 64u; 257u ] do
+            for origin in [ StaggerOrigin.First; StaggerOrigin.Center; StaggerOrigin.Last; StaggerOrigin.Index UInt32.MaxValue ] do
+                for step in [ -0.; -1.25; Double.Epsilon; Double.MaxValue ] do
+                    for start in [ -0.; 2.5 ] do
+                        let options = { StaggerOptions.Default with Origin = origin; Start = Some start }
+                        let bits options =
+                            Stagger.distribute (StaggerValue.Step step) options count
+                            |> Array.map BitConverter.DoubleToInt64Bits
+                        Expect.equal (bits options) (bits { options with Modifier = Some id }) "flat step offsets"
+
     for fixture in unitFixtures do
         testCase (fixture.GetProperty("name").GetString()) <| fun _ ->
             let first = fixture.GetProperty("first").GetDouble()
@@ -130,12 +141,33 @@ let tests = testList "upstream staggering" [
             let expected = fixture.GetProperty("values").EnumerateArray() |> Seq.map(fun value ->
                 if value.ValueKind = JsonValueKind.String then Double.Parse(value.GetString(), Globalization.CultureInfo.InvariantCulture)
                 else value.GetDouble()) |> Seq.toArray
-            let actual = Stagger.distribute value (options fixture) (uint expected.Length)
+            // The pinned oracle replaces the first endpoint when given a nonzero start.
+            let options = options fixture
+            let expected =
+                match value, options.Start with
+                | StaggerValue.Range(first, _), Some start when start <> 0. -> expected |> Array.map ((+) first)
+                | _ -> expected
+            let actual = Stagger.distribute value options (uint expected.Length)
             Expect.equal actual.Length expected.Length "target count"
             Array.iteri(fun index expected ->
                 Expect.isTrue (actual[index] = expected || (Double.IsNaN actual[index] && Double.IsNaN expected) ||
                     (Double.IsFinite actual[index] && abs(actual[index] - expected) <= 1e-9))
                     $"index {index}: expected {expected:R}, got {actual[index]:R}") expected
+    testCase "range starts shift both endpoints in either direction" <| fun _ ->
+        let offsets first last start count =
+            Stagger.distribute (StaggerValue.Range(first, last)) { StaggerOptions.Default with Start = Some start } count
+        Expect.equal (offsets 200. 800. 100. 3u) [|300.; 600.; 900.|] "ascending"
+        Expect.equal (offsets 800. 200. -100. 3u) [|700.; 400.; 100.|] "descending"
+        Expect.equal (offsets 200. 800. 100. 1u) [|300.|] "single target"
+        Expect.isEmpty (offsets 200. 800. 100. 0u) "empty range"
+        Expect.equal ((offsets 0. 2e-8 1e-8 3u)[1]) 2e-8 "sub-decimal precision"
+    testCase "typed range adds the offset before the grid modifier" <| fun _ ->
+        let options =
+            { StaggerOptions.Default with
+                Start = Some 5.; Grid = StaggerGrid.Grid2D(3u, 2u); Axis = Some StaggerAxis.X
+                Origin = StaggerOrigin.Center; Reversed = true; Modifier = Some (fun value -> value * 2.) }
+        let actual = CssStagger.range Css.px (Css.px 10.) (Css.px 20.) options 6u
+        Expect.equal (actual |> Array.map Value.render) [|"50px"; "30px"; "10px"; "50px"; "30px"; "10px"|] "signed grid"
     testCase "empty targets produce an empty distribution" <| fun _ ->
         Expect.isEmpty (Stagger.distribute (StaggerValue.Step 10.) StaggerOptions.Default 0u) "empty target set"
     testCase "zero grid dimensions are rejected" <| fun _ ->

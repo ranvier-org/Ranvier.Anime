@@ -19,6 +19,24 @@ let private geometry = { Offset=800.; TargetSize=100.; ContainerSize=600.; Scrol
 
 let tests =
     testList "scroll observation" [
+        testCase "smooth scroll advances by elapsed time across different frame rates" <| fun _ ->
+            let sample frames =
+                let mutable position, progress = 0., 0.
+                use observer = new ScrollObserver((fun () -> position, false), (fun () -> geometry),
+                    options=(fun () -> {ScrollOptions.Default with Sync=ScrollSync.Smooth 0.5}))
+                observer.Refresh()
+                observer.Link {
+                    Duration=(fun () -> 1.); CurrentTime=(fun () -> progress); Progress=(fun () -> progress)
+                    Completed=(fun () -> false); Command=ignore; Seek=(fun value _ -> progress <- value)
+                } |> ignore
+                position <- (observer.OffsetStart + observer.OffsetEnd) / 2.
+                for elapsed:float in frames do observer.HandleScroll elapsed
+                progress
+            let single = sample [32.]
+            Expect.isGreaterThan single 0. "toward the target"
+            Expect.isLessThan single 0.5 "partial progress"
+            Expect.isLessThan (abs(single - sample [8.;8.;8.;8.])) 0.000003 "equal wall-clock time"
+
         testCase "pinned source geometry including min max and relative anchors" <| fun _ ->
             use document = fixture()
             for sample in (property "geometry" document.RootElement).EnumerateArray() do

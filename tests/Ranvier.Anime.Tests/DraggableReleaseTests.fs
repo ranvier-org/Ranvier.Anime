@@ -93,6 +93,30 @@ module DraggableReleaseTests =
         use document=JsonDocument.Parse(System.IO.File.ReadAllText fixturePath)
         let fixtures=document.RootElement.GetProperty("fixtures").EnumerateArray() |> Seq.map _.Clone() |> Seq.toArray
         testList "Draggable full source release traces" [
+            testSequenced <| testCase "unit-scaled velocity limits preserve physical release distance and duration" (fun _ ->
+                let release unit scale =
+                    let frames = ReleaseManualFrames()
+                    use scheduler = frames.Scheduler
+                    let engine = Engine.forScheduler scheduler
+                    engine.TimeUnit <- unit
+                    try
+                        let mutable x, y = 0., 0.
+                        let settings () = { DraggableSettings.Default with MaxVelocity=0.5 / scale }
+                        use drag = new Draggable(scheduler,NumericProperty((fun () -> x),(fun v -> x <- v)),
+                                                 NumericProperty((fun () -> y),(fun v -> y <- v)),settings=settings)
+                        Expect.equal DraggableSettings.Default.MaxVelocity (50. / scale) "default speed ceiling"
+                        drag.Grab(0.,0.)
+                        drag.Move(100.,0.)
+                        frames.AdvanceBy 20.
+                        drag.Release()
+                        Expect.equal drag.Velocity (0.5 / scale) "speed ceiling in engine time units"
+                        drag.DestX, drag.ReleaseDuration / scale
+                    finally engine.TimeUnit <- EngineTimeUnit.Milliseconds
+                let xMs, durationMs = release EngineTimeUnit.Milliseconds 1.
+                let xSec, durationSec = release EngineTimeUnit.Seconds 0.001
+                Expect.equal xSec xMs "same release destination"
+                Expect.isLessThan (abs(durationSec-durationMs)) 1e-8 "same release time")
+
             for fixture in fixtures do
                 testCase (fixture.GetProperty("name").GetString()) <| fun _ ->
                     let failures=compareFixture fixture

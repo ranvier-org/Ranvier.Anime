@@ -115,6 +115,23 @@ let private guardedProgram ease modifier explicitFrom =
     KeyframeCompilation.compile({FrameDefaults.Default with Duration=100.;Ease=ease;Modifier=modifier},properties,(fun () -> true)) |> Option.get
 
 let interruptionTests=testList "keyframe interruption" [
+    testCase "persistent mute preserves keyframe samples and suppresses construction notification" <| fun _ ->
+        use scheduler = new ManualFrameScheduler()
+        let writes = ResizeArray<string>()
+        let mutable renders = 0
+        use driver = new KeyframePlayback(scheduler,guardedProgram id id true,(fun _ name _ -> writes.Add name),
+                                          true,false,4,{PlaybackOptions.Default with Muted=true},
+                                          onRender=(fun _ -> renders <- renders+1))
+        driver.Initialize()
+        driver.Clock.Seek 50.
+        Expect.isEmpty writes "explicit-from initialization and seek are silent"
+        Expect.equal renders 0 "construction and playback callback are silent"
+        Expect.sequenceEqual driver.Times [50.;50.] "both property histories advance"
+        driver.Clock.Muted <- false
+        driver.Clock.Seek 75.
+        Expect.sequenceEqual writes ["x";"y"] "next sample renders both properties"
+        Expect.equal renders 1 "unmuted sample notifies once"
+
     testCase "owner disposal inside easing suppresses remaining properties and callbacks" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         use graph=new Ranvier.Graph()

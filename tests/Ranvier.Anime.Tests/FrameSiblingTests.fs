@@ -254,7 +254,7 @@ let tests=testList "same-parent keyframe sibling registry" [
         Expect.isNone (empty.Tail 0) "owner registry empty"
         empty.Rollback()
 
-    testCase "repeated predecessor override geometry matches source" <| fun _ ->
+    testCase "repeated predecessor retains both frames until timeline takeover" <| fun _ ->
         let registry=FrameSiblingRegistry()
         let keys=[|struct(obj(),"x")|]
         let frames=values [|0.;100.;200.|]
@@ -266,7 +266,8 @@ let tests=testList "same-parent keyframe sibling registry" [
         let b=next.Bind(nextProgram.Value,1.,100.)
         Expect.isTrue (next.Commit()) "later child"
         let fixture=source "replace-loopingPredecessor"
-        sourceGeometry a (fixture.GetProperty("programs").GetProperty("a"))
+        for frame in a do
+            Expect.equal (frame.Overridden,frame.Change,frame.OwnsUntil) (false,100.,250.) "playable in earlier iterations"
         sourceGeometry b (fixture.GetProperty("programs").GetProperty("b"))
 
     testCase "interruption after a staged frame never leaks earlier truncation" <| fun _ ->

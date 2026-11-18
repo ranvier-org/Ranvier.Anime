@@ -55,10 +55,6 @@ let fromTo (name: string) (first: float) (last: float) = PropertySpec.Scalar(nam
 /// <summary>A property from its current value to <c>last</c>.</summary>
 let toward (name: string) (last: float) = PropertySpec.Scalar(name, last)
 
-/// <summary>A paused timeline on the installed host's frames, for children added with <c>Add</c>.</summary>
-let timeline (autoplay: bool) =
-    Composed.createTimeline AnimeHost.Current.Scheduler None (Some autoplay)
-
 /// <summary>A child placed at the start of the previous one, anime's <c>"&lt;"</c>.</summary>
 let withPrevious = TimelinePosition.Expression "<"
 
@@ -70,9 +66,10 @@ let stagger (step: float) (origin: StaggerOrigin) (grid: StaggerGrid) (count: in
 let spread (first: float) (last: float) (count: int) : float array =
     Stagger.distribute (StaggerValue.Range(first, last)) StaggerOptions.Default (uint count)
 
-/// <summary>Delays each target by its entry in <c>delays</c>.</summary>
-let delayedBy (delays: float array) (options: ComposedAnimationOptions) =
-    { options with DelayBy = Some(fun _ index _ -> delays[index]) }
+/// <summary>Animates a group in target order with one staggered start per target.</summary>
+let animateStaggered (targets: 'Target array) step origin grid (options: ComposedAnimationOptions) properties =
+    let delays = stagger step origin grid targets.Length
+    animateAll (Array.map box targets) { options with DelayBy = Some(fun _ index _ -> delays[index]) } properties
 
 /// <summary>The duration and ease of a spring of that stiffness and damping, settled at its end.</summary>
 let spring (stiffness: float) (damping: float) =

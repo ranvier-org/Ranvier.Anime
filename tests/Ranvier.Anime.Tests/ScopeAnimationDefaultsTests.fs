@@ -49,7 +49,7 @@ let scopeAnimationDefaultsTests = testSequenced <| testList "scope constant anim
         Expect.equal (animation.ToString()) "AnimationDefaults(Duration=0; Composition=inherit; Autoplay=False)" "constant override presence"
         let playback={PlaybackDefaults.Empty with Delay=Some 0.;Reversed=Some false}
         Expect.equal (playback.ToString())
-            "PlaybackDefaults(Repeat=inherit; Delay=0; LoopDelay=inherit; Reversed=False; Alternate=inherit; Speed=inherit; FrameRate=inherit)"
+            "PlaybackDefaults(Repeat=inherit; Delay=0; LoopDelay=inherit; Reversed=False; Alternate=inherit; Speed=inherit; FrameRate=inherit; Muted=inherit)"
             "clock override presence"
 
     for factory in ["numeric";"declaration";"custom property"] do

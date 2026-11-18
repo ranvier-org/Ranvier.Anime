@@ -73,8 +73,8 @@ type Engine internal (queue: EngineFrameQueue) =
         with get() = EngineDefaults.precision()
         and set value = EngineDefaults.setPrecision value
 
-    /// <summary>Elapsed host milliseconds between the two most recent admitted engine frames.</summary>
-    member _.DeltaTime = queue.Clock.Delta
+    /// <summary>Elapsed time between admitted engine frames in the current time unit.</summary>
+    member _.DeltaTime = queue.Clock.Delta * queue.TimeScale
 
     /// <summary>Retained host timestamp of the most recent admitted engine tick.</summary>
     member _.LastTickTime = queue.Clock.LastTick

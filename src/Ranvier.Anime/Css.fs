@@ -51,6 +51,7 @@ type private CssPlaybackRestoration(style: CSSStyleDeclaration, name: string) as
     let mutable cancel : unit -> unit = ignore
     let mutable captureController : unit -> (unit -> bool) = fun () -> fun () -> true
     let mutable initialController : unit -> bool = fun () -> true
+    let allowsWrite() = driver |> Option.forall(fun clock -> not clock.EffectivelyMuted)
     let constructionCurrent () =
         ownerAllowsWrite() && scopeGeneration() = constructionGeneration && ScopeRegistration.canConstruct()
     let ensure () =
@@ -73,7 +74,7 @@ type private CssPlaybackRestoration(style: CSSStyleDeclaration, name: string) as
     member _.CaptureGuard() =
         let expected = generation
         let expectedScope = scopeGeneration()
-        fun () -> active && not restoringSnapshot && generation = expected && ownerAllowsWrite() &&
+        fun () -> active && not restoringSnapshot && generation = expected && ownerAllowsWrite() && allowsWrite() &&
                   scopeGeneration() = expectedScope && (not initializing || constructionCurrent())
     /// <summary>Associates the existing driver and its restoration-admission guard before initialization.</summary>
     member _.Bind(clock: Timer, stop: unit -> unit, capture: unit -> (unit -> bool)) =
@@ -97,7 +98,7 @@ type private CssPlaybackRestoration(style: CSSStyleDeclaration, name: string) as
                 | Some clock -> let expectedClock=clock.Generation in fun () -> clock.Generation=expectedClock
                 | None -> fun () -> true
             let current () =
-                not explicitlyCancelled && generation=expected && constructionCurrent() && initialController() && clockGuard()
+                not explicitlyCancelled && generation=expected && constructionCurrent() && initialController() && clockGuard() && allowsWrite()
             if current() then
                 restoringSnapshot <- true
                 try snapshot.Restore(style,current)
@@ -128,7 +129,8 @@ type private CssPlaybackRestoration(style: CSSStyleDeclaration, name: string) as
             close()
             reverting <- false
     /// <summary>Rewinds the hidden clock once, restores captured leaves, then cancels without changing the public facade.</summary>
-    member _.Revert() =
+    member this.Revert() = this.Revert(true)
+    member _.Revert(seekToStart: bool) =
         if active && not reverting then
             reverting <- true
             let expected = generation
@@ -139,11 +141,11 @@ type private CssPlaybackRestoration(style: CSSStyleDeclaration, name: string) as
                 try action() with error -> if failure.IsNone then failure <- Some error
             match driver with
             | Some clock when admitted() && ownerAllowsWrite() ->
-                attempt clock.RewindForRevert
+                attempt(fun () -> clock.StopForRevert(seekToStart))
                 let expectedClock = clock.Generation
                 let current () =
                     active && generation=expected && ownerAllowsWrite() && scopeGeneration()=expectedScope &&
-                    admitted() && clock.Generation=expectedClock && clock.Cancelled
+                    admitted() && clock.Generation=expectedClock && clock.Cancelled && allowsWrite()
                 if current() then
                     restoringSnapshot <- true
                     try attempt(fun () -> snapshot.Restore(style,current))
@@ -245,6 +247,7 @@ module CssAnimation =
         lifetime.Bind(clock,clock.Cancel,(fun () ->
             let admitted = not clock.Cancelled || clock.Completed
             fun () -> admitted))
+        clock.OnSoftRevert <- fun () -> lifetime.Revert(false)
         clock.OnCancel <- lifetime.Cancelled
         clock.OnFault <- lifetime.Faulted
         let render (sample:PlaybackSample) mode muted =

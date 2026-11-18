@@ -70,6 +70,62 @@ let sourceTests=testList "timeline revert source" [
 ]
 
 let guardTests=testList "timeline revert lifetime" [
+    testCase "soft revert restores owned snapshots without sampling borrowed controllers or pause callbacks" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let mutable pauses=0
+        use root=new Timeline(scheduler,onPause=(fun _ -> pauses<-pauses+1))
+        use borrowed=new Timer(scheduler,100u)
+        root.Sync(borrowed,position=TimelinePosition.At 0.) |> ignore
+        let writes=ResizeArray<float>()
+        let mutable value=0.
+        let property=NumericProperty((fun () -> value),(fun next -> value<-next;writes.Add next))
+        root.Animate(property,110.,100u,from=10.,position=TimelinePosition.At 0.) |> ignore
+        root.Seek 40.
+        root.Resume()
+        let before=borrowed.CurrentTime
+        let pending=root.AsTask()
+        writes.Clear()
+        pauses<-0
+        root.Revert(false)
+        root.Revert(false)
+        Expect.sequenceEqual writes [0.] "only the original property value is published"
+        Expect.equal (root.CurrentTime,borrowed.CurrentTime,pauses) (40.,before,0) "no rewind or pause callback"
+        Expect.isTrue (root.Cancelled && pending.IsCanceled) "parent lifetime closed"
+        borrowed.Seek 80.
+        Expect.equal borrowed.CurrentTime 80. "borrowed lifetime remains usable"
+
+    testCase "scope cleanup preserves a softly reverted timer playhead" <| fun _ ->
+        use graph=new Graph()
+        use active=graph.Activate()
+        use scheduler=new ManualFrameScheduler()
+        use scope=new Scope()
+        let mutable timer: Timer option=None
+        scope.Add(fun _ ->
+            timer<-Some(new Timer(scheduler,100u))
+            None) |> ignore
+        timer.Value.Seek 35.
+        timer.Value.Revert(false)
+        scope.Revert()
+        Expect.equal timer.Value.CurrentTime 35. "terminal soft revert survives scope disposal"
+
+    testCase "soft revert during completion cancels queued and later observers" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        use timer=new Timer(scheduler,100u,onComplete=(fun clock -> clock.Revert(false)))
+        let pending=timer.AsTask()
+        timer.Seek 100.
+        Expect.isTrue (pending.IsCanceled && timer.AsTask().IsCanceled) "revert closes pending completion delivery"
+        Expect.equal timer.CurrentTime 100. "endpoint retained"
+
+    testCase "soft revert from a timer update preserves that sample and cancels observers" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let mutable pauses=0
+        use timer=new Timer(scheduler,100u,onUpdate=(fun clock -> clock.Revert(false)),onPause=(fun _ -> pauses<-pauses+1))
+        let pending=timer.AsTask()
+        timer.Resume()
+        timer.Seek 40.
+        Expect.equal (timer.CurrentTime,pauses) (40.,0) "cancellation during sampling is silent"
+        Expect.isTrue (timer.Cancelled && pending.IsCanceled) "the interrupted lifetime closes"
+
     testCase "cancel closes restoration and repeated revert writes nothing" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         use root=new Timeline(scheduler)
@@ -83,7 +139,8 @@ let guardTests=testList "timeline revert lifetime" [
         root.Revert()
         root.Revert()
         Expect.equal (value,writes.Count) (50.,0) "cancel retains rendered value"
-    testCase "restore faults retain first identity and attempt other property restoration" <| fun _ ->
+    for seekToStart in [true;false] do
+      testCase $"restore faults retain first identity and attempt other property restoration (rewind {seekToStart})" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         use root=new Timeline(scheduler)
         let fault=Exception("restore fault")
@@ -95,7 +152,7 @@ let guardTests=testList "timeline revert lifetime" [
         root.Seek 50.
         armed<-true
         let mutable observed:exn option=None
-        try root.Revert() with error -> observed<-Some error
+        try root.Revert(seekToStart) with error -> observed<-Some error
         Expect.isTrue (observed |> Option.exists(fun error -> obj.ReferenceEquals(fault,error))) "original failure identity"
         Expect.equal a 10. "other property still restored"
         Expect.isTrue root.Cancelled "root cleanup completes"

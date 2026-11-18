@@ -49,6 +49,7 @@ type KeyframeAnimation internal(targetCount:int) =
     member internal _.Guard()=
         let expected=generation
         fun () -> active && expected=generation && ownerAllowsWrite() && (constructionComplete || ScopeRegistration.canConstruct())
+    member private _.AllowsRestorationWrite = driver |> Option.forall(fun value -> not value.Clock.EffectivelyMuted)
     /// <summary>Registers captured restoration before initialization invokes user code.</summary>
     member internal _.SetRestore(action)=restore<-Some action
     /// <summary>Registers terminal sibling cleanup before construction can publish or invoke user callbacks.</summary>
@@ -56,12 +57,17 @@ type KeyframeAnimation internal(targetCount:int) =
     /// <summary>Installs the prepared shared driver before initialization.</summary>
     member internal this.SetDriver(value)=
         driver<-Some value
+        value.Clock.OnSoftRevert <- fun () -> this.Revert(false)
         if ScopeRegistration.canConstruct() && ownerAllowsWrite() then
             constructionComplete<-true
             ScopeRegistration.register this.Revert
         else this.Cancel()
     /// <summary>The existing shared Timer controller, including precise seek, repeat, direction and stretch controls.</summary>
     member _.Playback=match driver with Some driver -> driver.Clock | None -> invalidOp "The sequence is still being constructed."
+    member internal _.RestoreHeld(previous,time,cacheOnly,current)=
+        active && (driver |> Option.exists(fun playback -> playback.RestoreHeld(previous,time,cacheOnly,current)))
+    /// <summary>Suppresses property writes, lifecycle callbacks and completion delivery while time advances.</summary>
+    member this.Muted with get() = this.Playback.Muted and set value = this.Playback.Muted <- value
     /// <summary>Captures the installed clock's iteration, direction and scheduling anchor.</summary>
     member internal this.CaptureScopeTime() = this.Playback.CaptureScopeTime()
     /// <summary>Restores the installed clock while this captured-property lifetime remains live.</summary>
@@ -86,13 +92,16 @@ type KeyframeAnimation internal(targetCount:int) =
             with error -> if failure.IsNone then failure<-Some error
             failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     /// <summary>Rewinds and restores captured properties, then cancels; owner disposal suppresses later restoration writes.</summary>
-    member this.Revert()=
+    member this.Revert() = this.Revert(true)
+    /// <summary>Restores captured properties and cancels playback, optionally skipping the rewind sample.</summary>
+    member this.Revert(seekToStart: bool) =
         if active && not reverting then
             reverting<-true
-            let current=this.Guard()
+            let ownCurrent=this.Guard()
+            let current()=ownCurrent() && this.AllowsRestorationWrite
             let mutable failure:exn option=None
             let attempt action=try action() with error -> if failure.IsNone then failure<-Some error
-            attempt(fun () -> driver |> Option.iter(fun value -> value.Clock.RewindForRevert()))
+            attempt(fun () -> driver |> Option.iter(fun value -> value.Clock.StopForRevert(seekToStart)))
             if current() then attempt(fun () -> restore |> Option.iter(fun action -> action current))
             attempt this.Cancel
             reverting<-false
@@ -102,7 +111,7 @@ type KeyframeAnimation internal(targetCount:int) =
         if active && not reverting then
             reverting<-true
             let ownCurrent=this.Guard()
-            let current()=ownCurrent() && parentCurrent()
+            let current()=ownCurrent() && parentCurrent() && this.AllowsRestorationWrite
             let mutable failure:exn option=None
             try
                 if current() then restore |> Option.iter(fun action -> action current)
@@ -110,23 +119,21 @@ type KeyframeAnimation internal(targetCount:int) =
             try this.Cancel() with error -> if failure.IsNone then failure<-Some error
             reverting<-false
             failure |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
-    /// <summary>Registers an optional completion callback and returns a task settling when playback completes.</summary>
+    /// <summary>Maps observable completion to the callback result.</summary>
+    member this.ThenResult<'T>(callback: KeyframeAnimation -> 'T) : Threading.Tasks.Task<'T> =
+        this.Playback.ThenResult(fun _ -> callback this)
+
+    /// <summary>Awaits the task returned by the completion callback.</summary>
+    member this.ThenAsync<'T>(callback: KeyframeAnimation -> Threading.Tasks.Task<'T>) : Threading.Tasks.Task<'T> =
+        Threading.Tasks.TaskExtensions.Unwrap(this.ThenResult(callback))
+
+    /// <summary>Awaits a completion callback that produces no result.</summary>
+    member this.ThenAsync(callback: KeyframeAnimation -> Threading.Tasks.Task) : Threading.Tasks.Task =
+        Threading.Tasks.TaskExtensions.Unwrap(this.ThenResult(callback))
+
+    /// <summary>Runs the optional completion callback and returns this instance.</summary>
     member this.Then(?callback: KeyframeAnimation -> unit) : Threading.Tasks.Task<KeyframeAnimation> =
-        let clock = this.Playback
-        let invoke () = callback |> Option.iter (fun action -> action this)
-        if clock.Completed then
-            invoke()
-            Threading.Tasks.Task.FromResult this
-        elif not active || clock.Cancelled then
-            Threading.Tasks.Task.FromCanceled<KeyframeAnimation>(Threading.CancellationToken(true))
-        else
-            let source = Threading.Tasks.TaskCompletionSource<KeyframeAnimation>()
-            clock.Then(fun _ -> invoke()).ContinueWith((fun (task: Threading.Tasks.Task<Timer>) ->
-                if task.IsCanceled then source.TrySetCanceled() |> ignore
-                elif task.IsFaulted then source.TrySetException(task.Exception.InnerExceptions) |> ignore
-                else source.TrySetResult this |> ignore
-            ), Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously) |> ignore
-            source.Task
+        this.ThenResult(CompletionTask.withInstance callback)
     /// <summary>Returns a task settling with this keyframe animation upon completion.</summary>
     member this.AsTask() : Threading.Tasks.Task<KeyframeAnimation> = this.Then()
     interface IDisposable with member this.Dispose()=this.Cancel()

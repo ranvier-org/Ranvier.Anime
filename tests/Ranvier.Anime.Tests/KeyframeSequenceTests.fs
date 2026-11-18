@@ -8,6 +8,7 @@ open Expecto
 open Ranvier
 open Ranvier.Dom
 open Ranvier.Anime
+open Ranvier.Anime.KeyframeDsl
 
 let private optional (name:string) (item:JsonElement)=match item.TryGetProperty name with true,value -> Some value | _ -> None
 let private number name fallback item=optional name item |> Option.map _.GetDouble() |> Option.defaultValue fallback
@@ -138,5 +139,46 @@ let normalizationTests=testList "public sequence normalization" [
     for fixture in fixtures "keyframes.json" do testCase (fixture.GetProperty("name").GetString()) <| fun _ -> normalize fixture
 ]
 let playbackTests=testList "public sequence playback" [
+    let compareSeeks (direct: KeyframeSequence<NumericProperty,float>) authored samples =
+        use scheduler = new ManualFrameScheduler()
+        let start (keys: KeyframeSequence<NumericProperty,float>) =
+            let values = [| 0.; 0. |]
+            let tracks = [| "x"; "y" |] |> Array.mapi (fun i name ->
+                name, NumericProperty((fun () -> values[i]), (fun value -> values[i] <- value)))
+            let options = { KeyframeAnimationOptions.Default with Autoplay = false; Ease = id }
+            Keyframes.Numeric(scheduler, tracks, keys, 100u, options), values
+        let baseline, expected = start direct
+        use baseline = baseline
+        let actual, values = start authored
+        use actual = actual
+        for time, x, y in samples do
+            baseline.Playback.Seek time
+            actual.Playback.Seek time
+            Expect.equal values expected (sprintf "direct and CE tracks agree at %g ms" time)
+            close values[0] x
+            close values[1] y
+
+    testCase "CE sparse rows hold each omitted property across backward seeks" <| fun _ ->
+        let x = KeyframeRow.values [| "x", 40. |]
+        let y = KeyframeRow.values [| "y", 80. |]
+        let authored = keyframes { yield x; yield y }
+        compareSeeks (KeyframeSequence.Rows [| x; y |]) authored
+            [ 100., 40., 80.; 75., 40., 40.; 50., 40., 0.; 25., 20., 0.; 0., 0., 0.; 100., 40., 80. ]
+
+    testCase "CE offsets preserve source order at ties and easing across backward seeks" <| fun _ ->
+        let keys = [| KeyframeOffset.at 1. [| "x", 80.; "y", 100. |]
+                      (KeyframeOffset.at 0. [| "x", 0. |]).WithEase(fun t -> t*t)
+                      KeyframeOffset.at 0.5 [| "x", 40. |]
+                      KeyframeOffset.at 0.5 [| "x", 60. |] |]
+        let mutable visits = 0
+        let authored = keyframes {
+            for key in keys do
+                visits <- visits + 1
+                yield key
+        }
+        compareSeeks (KeyframeSequence.Offsets keys) authored
+            [ 100., 80., 100.; 75., 70., 75.; 25., 10., 25.; 0., 0., 0.; 75., 70., 75. ]
+        Expect.equal visits keys.Length "authoring runs once across compilation and seeks"
+
     for fixture in fixtures "keyframe-playback.json" do testCase (fixture.GetProperty("name").GetString()) <| fun _ -> replay fixture
 ]

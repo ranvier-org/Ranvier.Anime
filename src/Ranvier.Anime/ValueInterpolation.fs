@@ -79,7 +79,6 @@ module internal ValueInterpolation =
             if kind=ValueKind.Number then number.ToString("R",CultureInfo.InvariantCulture) else this.Text
     let private regex pattern = Regex(pattern,RegexOptions.CultureInvariant ||| RegexOptions.IgnoreCase)
     let private unitPattern=regex @"^([-+]?[0-9]*\.?[0-9]+(?:e[-+]?[0-9]+)?)([a-z]+|%)$"
-    let private colorTailPattern=regex @"\)\s*[-.0-9]"
     let private radixPattern=regex @"^0(?:x[0-9a-f]+|b[01]+|o[0-7]+)$"
     let private tryNumber (text:string) =
         let text=text.Trim()
@@ -99,49 +98,10 @@ module internal ValueInterpolation =
                 Some(float value)
             | _ -> None
     let private digitsPattern=regex @"[-+]?[0-9]*\.?[0-9]+(?:e[-+]?[0-9])?"
-    let private hexPattern=regex @"^(?:#(?:[0-9a-f]{3}){1,2}|#(?:[0-9a-f]{4}){1,2})$"
-    let private rgbPattern=regex @"rgb\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*\)"
-    let private rgbaPattern=regex @"rgba\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*(-?[0-9]+|-?[0-9]*.[0-9]+)\s*\)"
-    let private hslPattern=regex @"hsl\(\s*(-?[0-9]+|-?[0-9]*.[0-9]+)\s*,\s*(-?[0-9]+|-?[0-9]*.[0-9]+)%\s*,\s*(-?[0-9]+|-?[0-9]*.[0-9]+)%\s*\)"
-    let private hslaPattern=regex @"hsla\(\s*(-?[0-9]+|-?[0-9]*.[0-9]+)\s*,\s*(-?[0-9]+|-?[0-9]*.[0-9]+)%\s*,\s*(-?[0-9]+|-?[0-9]*.[0-9]+)%\s*,\s*(-?[0-9]+|-?[0-9]*.[0-9]+)\s*\)"
     let private parse (text:string) =
         let value=Double.Parse(text,NumberStyles.Float,CultureInfo.InvariantCulture)
         finite "value" value
         value
-    let private color (text:string) =
-        if hexPattern.IsMatch text then
-            let short=text.Length=4 || text.Length=5
-            let channelByte index =
-                let part=if short then String(text[index],2) else text.Substring(index,2)
-                float(Int32.Parse(part,NumberStyles.HexNumber,CultureInfo.InvariantCulture))
-            let red=channelByte 1
-            let green=channelByte (if short then 2 else 3)
-            let blue=channelByte (if short then 3 else 5)
-            let alpha=if text.Length=5 || text.Length=9 then Math.Round(channelByte(if short then 4 else 7)/255.,3,MidpointRounding.AwayFromZero) else 1.
-            [|red;green;blue;alpha|]
-        else
-            let primary,secondary=if text.StartsWith("rgb",StringComparison.Ordinal) then rgbPattern,rgbaPattern else hslPattern,hslaPattern
-            let matched=let first=primary.Match text in if first.Success then first else secondary.Match text
-            if not matched.Success then invalidArg "value" "Unsupported source color syntax."
-            let first,second,third=parse matched.Groups[1].Value,parse matched.Groups[2].Value,parse matched.Groups[3].Value
-            let alpha=if matched.Groups[4].Success then parse matched.Groups[4].Value else 1.
-            if text.StartsWith("rgb",StringComparison.Ordinal) then [|first;second;third;alpha|]
-            else
-                let hue,saturation,lightness=first/360.,second/100.,third/100.
-                if saturation=0. then [|lightness;lightness;lightness;alpha|]
-                else
-                    let q=if lightness<0.5 then lightness*(1.+saturation) else lightness+saturation-lightness*saturation
-                    let p=2.*lightness-q
-                    let hue2rgb time =
-                        let time=if time<0. then time+1. else time
-                        let time=if time>1. then time-1. else time
-                        if time<1./6. then p+(q-p)*6.*time
-                        elif time<0.5 then q
-                        elif time<2./3. then p+(q-p)*(2./3.-time)*6.
-                        else p
-                    [| PropertyNumbers.round 1. (hue2rgb(hue+1./3.)*255.)
-                       PropertyNumbers.round 1. (hue2rgb hue*255.)
-                       PropertyNumbers.round 1. (hue2rgb(hue-1./3.)*255.); alpha |]
     /// <summary>Decomposes finite scalars and source unit/color/compound syntax without native CSS resolution.</summary>
     let decompose literal =
         let scalar number : Data = {Kind=ValueKind.Number;Number=number;Unit=null;Operator=None;Components=[||];Strings=[||]}
@@ -162,13 +122,12 @@ module internal ValueInterpolation =
                         let value=match tryNumber text with Some value -> value | None -> invalidArg "value" "Expected a finite relative operand."
                         finite "value" value
                         {scalar value with Operator=op}
-                    elif hexPattern.IsMatch text ||
-                         ((text.StartsWith("rgb",StringComparison.Ordinal) || text.StartsWith("hsl",StringComparison.Ordinal)) &&
-                          (text.EndsWith(")",StringComparison.Ordinal) || not(colorTailPattern.IsMatch text))) then
-                        {scalar 0. with Kind=ValueKind.Color;Components=color text}
                     else
-                        let components=digitsPattern.Matches text |> Seq.cast<Match> |> Seq.map(fun item -> parse item.Value) |> Seq.toArray
-                        {scalar 0. with Kind=ValueKind.Complex;Components=components;Strings=digitsPattern.Split text}
+                        match CssColor.tryParseEndpoint text with
+                        | Some color -> {scalar 0. with Kind=ValueKind.Color;Components=color}
+                        | None ->
+                            let components=digitsPattern.Matches text |> Seq.cast<Match> |> Seq.map(fun item -> parse item.Value) |> Seq.toArray
+                            {scalar 0. with Kind=ValueKind.Complex;Components=components;Strings=digitsPattern.Split text}
     let private relative first last op = match op with '-' -> first-last | '+' -> first+last | _ -> first*last
     /// <summary>Normalizes decomposed relative endpoints, units and component templates using a captured original value.</summary>
     let normalizeData (convertUnit:(float -> string -> string -> float) option, original:Data, first:Data, last:Data) =
@@ -254,12 +213,15 @@ module internal ValueInterpolation =
             if not(canWrite()) then null
             else
                 let values=Array.zeroCreate last.Components.Length
+                // Custom modifiers can cancel playback between components and must run in order.
                 let mutable alive=true
                 for index in 0..values.Length-1 do
                     if alive then
                         let value=
                             if first.Kind=ValueKind.Color && index<3 then
-                                Math.Sqrt(first.Components[index]*first.Components[index]*(1.-progress)+last.Components[index]*last.Components[index]*progress)
+                                let a, b = first.Components[index], last.Components[index]
+                                // Overshooting eases can extrapolate squared intensity below black.
+                                Math.Sqrt(max 0. (a*a*(1.-progress) + b*b*progress))
                             elif first.Kind=ValueKind.Color then lerp first.Components[index] last.Components[index]
                             else round(lerp first.Components[index] last.Components[index])
                         if not(canWrite()) then alive<-false
@@ -284,6 +246,32 @@ module internal ValueInterpolation =
 
     /// <summary>Captures object endpoints and returns a guarded sampler; differing units require native conversion.</summary>
     let prepare original first last = prepareWith false None original first last
+
+    /// <summary>Interpolates normalized SVG coordinates at the morph accessor's four decimal places.</summary>
+    let morphCoordinates (first:float[]) (last:float[]) progress =
+        if progress=0. then Array.copy first
+        elif progress=1. then Array.copy last
+        else
+            let values = Array.zeroCreate last.Length
+            for i in 0..values.Length-1 do
+                values[i] <- PropertyNumbers.round 10000. (first[i]+(last[i]-first[i])*progress)
+            values
+
+    /// <summary>Captures SVG endpoints for identity-only progress writes. Compound arithmetic has no callbacks.</summary>
+    let prepareMorph firstText lastText =
+        let first,last = normalize None (Text firstText) (Text firstText) (Text lastText)
+        if first.Kind=ValueKind.Complex then
+            fun progress current ->
+                finite "progress" progress
+                if not(current()) then None
+                else
+                    let values = morphCoordinates first.Components last.Components progress
+                    if current() then Some(compose(last,0.,values)) else None
+        else
+            fun progress current ->
+                match sampleOutput(false,first,last,progress,4,id,current) with
+                | null -> None
+                | output -> Some output
 
     /// <summary>Captures CSS endpoints, rounding intermediate unitless scalars before modifiers as source CSS dispatch does.</summary>
     let prepareCss original first last = prepareWith true None original first last

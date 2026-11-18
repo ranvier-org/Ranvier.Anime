@@ -101,7 +101,10 @@ let tests = testList "typed declaration playback" [
                                 (Declaration.create "opacity" (text(entry.GetProperty("first"))))
                                 (Declaration.create "opacity" (text(entry.GetProperty("last")))) 100.
                 clock.Seek 50.
-                Expect.equal (style.getPropertyValue "opacity") (sample.GetProperty("result").GetString()) "actual declaration dispatch"
+                let expected =
+                    ValueInterpolationTests.expectedColourText entry sample
+                    |> Option.defaultWith (fun () -> sample.GetProperty("result").GetString())
+                Expect.equal (style.getPropertyValue "opacity") expected "actual declaration dispatch"
     testCase "existing typed declarations retain property and inline priority" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         let recorder=RecordingStyle()

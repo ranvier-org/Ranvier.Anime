@@ -27,6 +27,7 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
     let mutable dampedFrequency = 0.
     let mutable coefficient = 0.
     let mutable solverDuration = 0.
+    let mutable naturalSettlingDuration = 0.
     let mutable settlingDuration = 0.
     let mutable completed = false
 
@@ -84,7 +85,8 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
             solverDuration <- time
             time <- time + 0.02
             iterations <- iterations + 1
-        settlingDuration <- round 0 (solverDuration * 1000.)
+        naturalSettlingDuration <- round 0 (solverDuration * 1000.)
+        settlingDuration <- naturalSettlingDuration
 
     do
         if bounce.IsSome || duration.IsSome then physicalFromPerceived()
@@ -145,8 +147,19 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
     /// <summary>Physical time in seconds used to normalize this spring's easing curve.</summary>
     member _.SolverDuration = solverDuration
 
-    /// <summary>Calculated settling time in milliseconds, used as an animation's actual duration.</summary>
+    /// <summary>Playback duration in milliseconds. Changing a spring parameter restores the calculated settling time.</summary>
     member _.SettlingDuration = settlingDuration
+
+    /// <summary>Shortest stretched playback duration in milliseconds.</summary>
+    member _.MinSettlingDuration = 1.
+
+    /// <summary>Sets the playback duration in milliseconds and returns this spring. The normalized easing curve and completion point are preserved.</summary>
+    /// <remarks>Durations must be finite and nonnegative. Values below MinSettlingDuration are rounded up.</remarks>
+    member this.Stretch(duration: float) =
+        finite "duration" duration
+        if duration < 0. then invalidArg "duration" "Expected a nonnegative duration."
+        settlingDuration <- max this.MinSettlingDuration duration
+        this
 
     /// <summary>Whether the last easing sample reached perceived duration; a backward sample can reset it.</summary>
     member _.Completed = completed
@@ -160,7 +173,7 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
     /// <remarks>Calling below the perceived threshold resets completion, allowing a later forward crossing to notify again.</remarks>
     member _.Ease(time: float) =
         finite "time" time
-        let currentTime = time * settlingDuration
+        let currentTime = time * naturalSettlingDuration
         let perceivedTime = durationValue
         if currentTime >= perceivedTime && not completed then
             completed <- true

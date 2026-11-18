@@ -4,6 +4,7 @@ module Graphs
 open System
 open global.Ranvier
 open Ranvier.Anime
+open Ranvier.Anime.ComposedTimelineDsl
 open Ranvier.Dom
 open Ranvier.View
 open Ranvier.View.Dsl
@@ -436,6 +437,18 @@ let private inspector =
         }
     }
 
+let internal animateRank (_: Store) (element: Element) (rank: int, score: int) =
+    let start = float rank * 30.
+    let timing = Native.timing 650. Native.outQuart
+    let timeline =
+        composedTimeline AnimeHost.Current.Scheduler {
+            yield child element timing [| Native.toward "y" (float rank * 52.) |]
+                  |> at (TimelinePosition.At start)
+            yield child (Native.query element ".bar-fill") timing [| Native.toward "scaleX" (float score / 100.) |]
+                  |> at (TimelinePosition.At (start + 80.))
+        }
+    timeline.Play()
+
 let private bar (index: int) =
     div (
         div.className ("rank-row region-" + string index),
@@ -444,16 +457,7 @@ let private bar (index: int) =
         div.attribute ("style", sprintf "transform:translateY(%dpx)" (rank 0 index * 52)),
         Motion.animateOn
             (fun (store: Store) -> let snapshot = store.Snapshot.Value in rank snapshot index, snapshots[snapshot][index])
-            (fun _ element (rank, score) ->
-                Native
-                    .timeline(true)
-                    .Add([| box element |], [| Native.toward "y" (float rank * 52.) |], Native.timing 650. Native.outQuart, TimelinePosition.At (float rank * 30.))
-                    .Add(
-                        [| box (Native.query element ".bar-fill") |],
-                        [| Native.toward "scaleX" (float score / 100.) |],
-                        Native.timing 650. Native.outQuart,
-                        TimelinePosition.At (80. + float rank * 30.)
-                    ))
+            animateRank
     ) {
         span (span.className "region-name") { regions[index] }
         div (div.className "bar-track") { div (div.className "bar-fill") { () } }

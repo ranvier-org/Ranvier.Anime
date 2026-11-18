@@ -13,6 +13,10 @@
     <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
     <NativeSmokeGraph Condition="'$(NativeSmokeGraph)' == ''">public</NativeSmokeGraph>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(MorphBenchmark)' == 'true'">
+    <OutputPath>bin/MorphBenchmark/$(Configuration)/</OutputPath>
+    <IntermediateOutputPath>obj/MorphBenchmark/$(Configuration)/$(TargetFramework)/</IntermediateOutputPath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(RanvierTrace)' == 'true'">
     <DefineConstants>$(DefineConstants);EXPECT_TRACED</DefineConstants>
   </PropertyGroup>
@@ -37,7 +41,8 @@
     <Compile Include="MotionPartsProbe.fs" />
     <Compile Include="MotionFixtures.fs" />
     <Compile Include="MotionServerProbe.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="Program.fs" Condition="'$(MorphBenchmark)' != 'true'" />
+    <Compile Include="../../tools/morph-benchmark.fs" Condition="'$(MorphBenchmark)' == 'true'" />
     <ProjectReference Include="../../src/Ranvier.Anime/Ranvier.Anime.fsproj" />
     <ProjectReference Include="../../src/Ranvier.View.Anime/Ranvier.View.Anime.fsproj" />
     <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" Condition="'$(NativeSmokeGraph)' == 'source'" />

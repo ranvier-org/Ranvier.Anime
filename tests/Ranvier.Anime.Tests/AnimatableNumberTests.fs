@@ -122,6 +122,19 @@ let private replay (fixture:JsonElement) =
         verify sample
 
 let numericFacadeTests = testList "public numeric animatable" [
+    testCase "a muted property updates its cache and preserves external values on revert" <| fun _ ->
+        use scheduler = new ManualFrameScheduler()
+        use group = new Animatable(scheduler)
+        let writes = ResizeArray<float>()
+        let options = {AnimatablePropertyOptions.Default with Playback={PlaybackOptions.Default with Muted=true}; Ease=id}
+        let property = group.Numeric(NumericProperty((fun () -> 0.),writes.Add),duration=100u,options=options)
+        property.To 100.
+        property.Playback.Seek 50.
+        Expect.equal property.Value 50. "retargeted cache advances"
+        Expect.isEmpty writes "construction and seek preserve the target"
+        group.Revert()
+        Expect.isEmpty writes "rewind and snapshot restoration preserve the target"
+
     for fixture in cases() do
         testCase ("source "+fixture.GetProperty("name").GetString()) <| fun _ -> replay fixture
     testCase "unsigned and precise inputs retain changed easing and duration" <| fun _ ->

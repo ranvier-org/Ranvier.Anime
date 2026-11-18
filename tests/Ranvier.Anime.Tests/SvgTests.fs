@@ -90,6 +90,19 @@ let private styleMatch (expected:JsonElement) (actual:Dictionary<string,string>)
         Expect.equal actual[name] (property.Value.GetString()) name
 
 let svgSourceTests = testList "SVG pinned source" [
+    testCase "morph progress preserves generic endpoint normalization and rounding" <| fun _ ->
+        let source,attrs,_ = geometry "path" 10. "line" Unchecked.defaultof<SVGMatrix>
+        let destination,target,_ = geometry "path" 10. "line" Unchecked.defaultof<SVGMatrix>
+        for first,last in ["M0 0", "M0.0001 -0.0001 L2.75 3.125"; "5", "M4 6"; "1", "3"; "", ""; "red", "blue"] do
+            attrs["d"] <- first
+            target["d"] <- last
+            let text = ValueInterpolation.Text
+            let generic = ValueInterpolation.prepare (text first) (text first) (text last)
+            use morph = SvgProperties.morph source destination 0. None
+            for progress in [-0.25;0.;0.5;0.875;1.;1.25] do
+                morph.Progress.Value <- progress
+                let expected = generic progress 4 id (fun () -> true) |> Option.get
+                Expect.equal attrs["d"] expected.Text "serialized native attribute"
     testCase "drawable owner restoration preserves unrelated properties and disables accessors" <| fun _ ->
         use graph=new Ranvier.Graph()
         use active=graph.Activate()

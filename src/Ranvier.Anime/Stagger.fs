@@ -1,6 +1,7 @@
 namespace Ranvier.Anime
 
 open System
+open System.Numerics
 open Ranvier.Dom
 
 /// <summary>The origin of a stagger distribution. Position coordinates are relative to grid dimensions.</summary>
@@ -41,6 +42,7 @@ type StaggerOptions =
       Grid: StaggerGrid
       Axis: StaggerAxis option
       Reversed: bool
+      /// <summary>An offset added to each step or range value, in the same units as the stagger.</summary>
       Start: float option
       Ease: (float -> float) option
       Modifier: (float -> float) option
@@ -134,9 +136,9 @@ module Stagger =
                 Some distances
         | _ -> None
 
-    /// <summary>Computes offsets with an optional resolved timeline start before applying modifiers.</summary>
+    /// <summary>Computes offsets before applying modifiers.</summary>
     /// <remarks>Authored numbers must be finite. Easing receives signed axis values; zero maximum distance uses zero easing input.</remarks>
-    let internal distributeAt (startOverride: float option) value (options: StaggerOptions) (targetCount: uint) =
+    let private distributeGeneral value (options: StaggerOptions) (targetCount: uint) =
         let length = count "targetCount" targetCount
         let total = options.Total |> Option.defaultValue targetCount
         let totalLength = count "Total" total
@@ -150,7 +152,6 @@ module Stagger =
                 finite "finish" finish
                 0., first, finish, true
         options.Start |> Option.iter (finite "Start")
-        startOverride |> Option.iter (finite "startOverride")
         options.Seed |> Option.iter (finite "Seed")
         let jitter =
             options.Jitter |> Option.map(fun value ->
@@ -238,11 +239,7 @@ module Stagger =
                 let previous = distances[last]
                 distances[last] <- distances[index]
                 distances[index] <- previous
-        let start =
-            match startOverride, options.Start with
-            | Some value, _ -> value
-            | None, Some value when value <> 0. -> value
-            | _ -> first
+        let start = first + Option.defaultValue 0. options.Start
         let spacing = if isRange then (finish - first) / maximum else step
         Array.init length (fun index ->
             let mapped = options.IndexMap |> Option.map(fun mapping -> mapping (uint index) total) |> Option.defaultValue index
@@ -260,9 +257,45 @@ module Stagger =
                 | _ -> output
             match options.Modifier with Some modify -> modify output | None -> output)
 
-    /// <summary>Returns one staggered value per target, preserving source range, origin and grid rounding behavior.</summary>
-    /// <remarks>Authored numbers must be finite. Signed axis easing uses zero input when maximum distance is zero.</remarks>
-    let distribute value options targetCount = distributeAt None value options targetCount
+    let private flatStep vectorize length (origin: float) (step: float) (start: float) =
+        // Flat origins are integral or half-integral, so roundDistance leaves every distance exact.
+        let offsets = Array.zeroCreate<float> length
+        let mutable index = 0
+        if vectorize then
+            let width = Vector<float>.Count
+            let stride = Vector<float>(float width)
+            let origin, step, start = Vector<float>(origin), Vector<float>(step), Vector<float>(start)
+            let mutable indices = Vector<float>.Indices
+            while index <= length - width do
+                let values = start + Vector.Abs(origin - indices) * step
+                values.CopyTo(offsets, index)
+                indices <- indices + stride
+                index <- index + width
+        while index < length do
+            offsets[index] <- start + abs (origin - float index) * step
+            index <- index + 1
+        offsets
+
+    /// <summary>Returns an offset per target, adding Start to the distributed step or range.</summary>
+    let distribute value (options: StaggerOptions) targetCount =
+        match value, options.Grid, options.Origin with
+        | StaggerValue.Step step, StaggerGrid.Flat,
+          (StaggerOrigin.First | StaggerOrigin.Last | StaggerOrigin.Center | StaggerOrigin.Index _)
+            when options.Ease.IsNone && options.Modifier.IsNone && options.Jitter.IsNone
+                 && options.IndexMap.IsNone && options.Seed.IsNone && not options.Reversed
+                 && options.Total.IsNone ->
+            let length = count "targetCount" targetCount
+            finite "value" step
+            options.Start |> Option.iter (finite "Start")
+            let start = Option.defaultValue 0. options.Start
+            let origin =
+                match options.Origin with
+                | StaggerOrigin.Last -> float length - 1.
+                | StaggerOrigin.Center -> (float length - 1.) / 2.
+                | StaggerOrigin.Index index -> float index
+                | _ -> 0.
+            flatStep (Vector.IsHardwareAccelerated && length >= 32) length origin step (if start = 0. then 0. else start)
+        | _ -> distributeGeneral value options targetCount
 
     /// <summary>Distributes offsets using element bounding-box centers measured on the caller's owning host thread.</summary>
     /// <remarks>Reads each relevant element once and retains no host resources. Missing elements use flat index fallback.</remarks>

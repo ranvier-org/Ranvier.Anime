@@ -48,12 +48,31 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
     let clock=ScopeRegistration.run ignore (fun () -> new Timer(scheduler,program.IterationDuration,options=effectiveOptions,
                         ?onBegin=onBegin,?onBeforeUpdate=onBeforeUpdate,?onUpdate=onUpdate,
                         ?onLoop=onLoop,?onPause=onPause,?onComplete=onComplete))
+    let sampleFrame (definition:FrameTween) progress current =
+        if finiteScalar then
+            let value=definition.Modifier(PropertyNumbers.interpolate definition.First.Number definition.Last.Number progress)
+            if current() then Some(struct(value,ValueInterpolation.compose(definition.First,value,[||]))) else None
+        else ValueInterpolation.sample(roundNumbers,definition.First,definition.Last,progress,precision,definition.Modifier,current)
+    do
+        if siblings.IsSome then
+            let sampleAt=
+                Some(fun (frame:FrameSibling) parentTime current ->
+                    let time=clock.IterationTimeAt((parentTime-offset)*clock.Speed)
+                    let mutable selected=frame
+                    for candidate in frames do
+                        if candidate.Definition.Target=frame.Definition.Target && candidate.Definition.Name=frame.Definition.Name &&
+                           (candidate.Start<=time || selected.Start>time && candidate.Start<selected.Start) then selected<-candidate
+                    let progress=selected.Definition.Ease(Math.Clamp((time-selected.Start)/selected.Update,0.,1.))
+                    if current() then sampleFrame selected.Definition progress current |> Option.map(fun struct(_,output) -> output)
+                    else None)
+            for frame in frames do frame.SampleAt<-sampleAt
     let render (sample:PlaybackSample) mode muted =
         let timerCurrent=clock.CaptureWriteGuard()
         let current()=timerCurrent() && ownerAllowsWrite()
         let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
         let forced=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=clock.TickThreshold
         let absolute=PropertyNumbers.round 1e12 (offset+clock.Delay+sample.IterationTime)
+        let parentTime=PropertyNumbers.round 1e12 (offset+(clock.Delay+sample.AbsoluteTime)/clock.Speed)
         let mutable rendered=false
         let mutable alive=current()
         for index in 0..frames.Length-1 do
@@ -63,6 +82,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                 let next=frame.Next
                 let previousCross=not(isNull previous) && not(obj.ReferenceEquals(previous.Child,frame.Child))
                 let nextSame=not(isNull next) && obj.ReferenceEquals(next.Child,frame.Child)
+                let timedTakeover=Double.IsFinite frame.OwnsUntil && not(isNull next) && not nextSame
                 let previousEnd=if isNull previous then 0. else previous.AbsoluteStart+previous.Change
                 let ending=frame.AbsoluteStart+frame.Change
                 let takeover=
@@ -75,37 +95,36 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                             (frame.Time<>0. || absolute>=frame.AbsoluteStart ||
                              (previousCross && not frame.Definition.HasFrom && not previous.Overridden && absolute>=previousEnd) ||
                              (nextSame && not next.Overridden && next.Time<>0. && sample.IterationTime<next.Start))
-                let eligible=(forced || history) && (isNull previous || previousCross || sample.IterationTime>=frame.Start) &&
-                             (not replace || (not frame.Overridden && (not frame.Overlapped || absolute<=ending) &&
-                                              (isNull next || next.Overridden || absolute<=takeover) &&
+                let laterAtBoundary=
+                    sample.Backwards && not clock.InternalRender && not(isNull next) && not nextSame &&
+                    not next.Overridden && next.Definition.HasFrom && parentTime=next.AbsoluteStart
+                let owns=parentTime>=frame.OwnsFrom && parentTime<frame.OwnsUntil && not laterAtBoundary
+                let eligible=owns && (forced || history || (timedTakeover && sample.Backwards)) && (isNull previous || previousCross || sample.IterationTime>=frame.Start) &&
+                             (not replace || (not frame.Overridden && (not frame.Overlapped || timedTakeover || absolute<=ending) &&
+                                              (isNull next || timedTakeover || next.Overridden || absolute<=takeover) &&
                                               (isNull previous || previous.Overridden ||
                                                (if not previousCross then absolute>=previousEnd+frame.Delay
-                                                else absolute>=frame.AbsoluteStart || (not frame.Definition.HasFrom && absolute>=previousEnd)))))
+                                                else Double.IsFinite frame.OwnsFrom || absolute>=frame.AbsoluteStart || (not frame.Definition.HasFrom && absolute>=previousEnd)))))
                 if eligible then
-                    frame.Time<-Math.Clamp(sample.IterationTime-frame.Start,0.,frame.Change)
+                    frame.Time<-Math.Clamp(sample.IterationTime-frame.Start,0.,if timedTakeover then frame.Update else frame.Change)
                     let definition=definitions[index]
                     let progress=definition.Ease(frame.Time/frame.Update)
                     alive<-current()
                     if alive then
-                        let output=
-                            if finiteScalar then
-                                let value=definition.Modifier(PropertyNumbers.interpolate definition.First.Number definition.Last.Number progress)
-                                if current() then Some(struct(value,ValueInterpolation.compose(definition.First,value,[||]))) else None
-                            else ValueInterpolation.sample(roundNumbers,definition.First,definition.Last,progress,precision,definition.Modifier,current)
-                        match output with
+                        match sampleFrame definition progress current with
                         | Some struct(_,output) when current() ->
                             frame.Value<-output
-                            if not clock.InternalRender then
+                            if not clock.InternalRender && not clock.EffectivelyMuted then
                                 write definition.Target definition.Name output
                                 renderVersion<-renderVersion+1L
                                 rendered<-true
                             alive<-current()
                         | _ -> alive<-false
                 elif frame.Time<>0. && not(isNull previous) && not previousCross && sample.IterationTime<frame.Start then frame.Time<-0.
-        if alive && current() && rendered && sample.AboveZero && not muted then onRender |> Option.iter(fun action -> action clock)
+        if alive && current() && rendered && sample.AboveZero && not muted && not clock.EffectivelyMuted then onRender |> Option.iter(fun action -> action clock)
     do
         clock.Seek(0.,muteCallbacks=true)
-        clock.ConfigureRenderer(render,?totalDuration=(if program.IterationDuration=1e-11 then Some 1e-11 else None),
+        clock.ConfigureRenderer(render,sampleWhenMuted=true,?totalDuration=(if program.IterationDuration=1e-11 then Some 1e-11 else None),
             onStretch=(fun scale ->
                 let nextOffset=offset*scale
                 if not(Double.IsFinite nextOffset) then invalidArg "scale" "Scaled offset must remain finite."
@@ -119,6 +138,22 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
     member _.Times=frames |> Array.map _.Time
     /// <summary>Advances after each target write; cache-only and skipped samples leave it unchanged.</summary>
     member _.RenderVersion=renderVersion
+    member _.RestoreHeld(previous,time,cacheOnly,parentCurrent)=
+        let before=renderVersion
+        let clockCurrent=clock.CaptureWriteGuard()
+        let current()=clockCurrent() && parentCurrent() && ownerAllowsWrite()
+        for frame in frames do
+            let next=frame.Next
+            if not(isNull next) && not(frame.Overridden || next.Overridden) && not(obj.ReferenceEquals(frame.Child,next.Child)) &&
+               next.Definition.HasFrom && time>=frame.AbsoluteEnd && time<next.AbsoluteStart && previous>=next.AbsoluteStart && current() then
+                match frame.SampleAt |> Option.bind(fun sample -> sample frame time current) with
+                | Some value when current() ->
+                    frame.Value<-value
+                    if not cacheOnly && not clock.EffectivelyMuted then
+                        write frame.Definition.Target frame.Definition.Name value
+                        renderVersion<-renderVersion+1L
+                | _ -> ()
+        renderVersion<>before
     /// <summary>Independent snapshots of each tween's most recently sampled scalar/color/compound cache.</summary>
     member _.CurrentValues=frames |> Array.map(fun frame -> frame.Value.CopyComponents())
     /// <summary>Notifies standalone explicit-from construction once, then resets; owned child initialization only refreshes caches.</summary>
@@ -132,7 +167,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
         try
             if current() && not initialized then
                 initialized<-true
-                if defaultArg notifyConstruction (not(defaultArg timelineChild false)) && (definitions |> Array.exists _.HasFrom) then
+                if not clock.EffectivelyMuted && defaultArg notifyConstruction (not(defaultArg timelineChild false)) && (definitions |> Array.exists _.HasFrom) then
                     onRender |> Option.iter(fun action -> action clock)
             if current() then
                 if defaultArg timelineChild false then clock.AttachToTimeline(internalRender=true,canWrite=inherited)

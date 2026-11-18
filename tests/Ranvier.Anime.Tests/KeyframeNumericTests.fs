@@ -218,6 +218,19 @@ let contractTests=testList "public numeric keyframe lifetime" [
         animation.Revert()
         Expect.equal value 5. "explicit native pre-construction restoration contract"
 
+    testCase "soft revert keeps the completed keyframe playhead and writes only the snapshot" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let writes=ResizeArray<float>()
+        let property=NumericProperty((fun () -> 0.),writes.Add)
+        use animation=Keyframes.Numeric(scheduler,property,[|Keyframe.between 10. 110.|],duration=100u,
+                                        options={KeyframeAnimationOptions.Default with Autoplay=false;Ease=id})
+        animation.Playback.Seek 100.
+        writes.Clear()
+        animation.Revert(false)
+        animation.Playback.Revert(false)
+        Expect.sequenceEqual writes [0.] "completed lifetime restores once"
+        Expect.equal animation.Playback.CurrentTime 100. "no intermediate sample"
+
     testCase "completed sequences rewind and restore while cancellation remains terminal" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         let mutable value=5.

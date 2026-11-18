@@ -179,10 +179,15 @@ let private dashboard (d: Driver) =
     require "dashboard: gauges follow the reading" (d.Until (fun () -> (style (d.One ".gauge-fill") "transform").Contains "scaleX("))
     require "dashboard: the ring draws the CPU load" (not (isNull ((d.One ".ring-value").getAttribute "stroke-dasharray")))
     let gauge () = style (d.One ".gauge-fill") "transform"
+    let chart () = (d.One ".chart-line").getAttribute "d"
     pump.Push Dashboard.sampleAt
-    let tween = [ for _ in 1 .. 12 -> d.Pump 50.; gauge () ] |> List.distinct
-    require "dashboard: a gauge tweens through frames to the next reading" (tween.Length >= 3)
+    let samples = [ for _ in 1 .. 12 -> d.Pump 50.; gauge (), chart () ]
+    require "dashboard: a gauge tweens through frames to the next reading" ((samples |> List.distinctBy fst).Length >= 3)
     let second = Dashboard.sampleAt 2
+    let finalPath = Dashboard.linePath [| (Dashboard.sampleAt 1).Cpu; second.Cpu |]
+    let tip = finalPath.Substring(finalPath.LastIndexOf('L'))
+    let heldTip = samples |> List.map snd |> List.filter (fun path -> path.EndsWith(tip) && path <> finalPath)
+    require "dashboard: the CPU tip holds its new height while the chart keeps panning" ((List.distinct heldTip).Length >= 2)
     require "dashboard: the counter counts up to the latest requests" (d.Until (fun () -> text (d.One ".counter") = sprintf "%.0f" second.Requests))
     require "dashboard: the chart holds both samples" (text (d.One ".chart-head .note") = "2 of 24")
     pump.Push Dashboard.spikeAt
@@ -204,14 +209,22 @@ let private dashboard (d: Driver) =
 let private story (d: Driver) =
     d.Open "story"
     let story = d.Running.App.Live.Story.Value
-    require "story: the headline is split into letters" ((d.All ".headline [data-char]").Length >= 20)
-    require "story: the letters stagger in" (d.Until (fun () -> d.All ".headline [data-char]" |> Array.forall (fun c -> style c "opacity" = "1")))
+    let chars = d.All ".headline [data-char]"
+    let opacity element = number (style element "opacity")
+    require "story: the headline is split into letters" (chars.Length >= 20)
+    require "story: the first letter leads the last" (d.Until (fun () -> opacity chars[0] > opacity (Array.last chars)))
+    require "story: the letters finish appearing" (d.Until (fun () -> chars |> Array.forall (fun c -> opacity c = 1.)))
     let progress () = d.Read (fun () -> story.Chapters |> Array.map (fun chapter -> chapter.Progress.Value))
     require "story: the last chapter starts below the window" ((progress ()).[2] = 0.)
     (d.All "section.chapter").[2].scrollIntoView ()
     require "story: scrolling writes the chapter's progress" (d.Until (fun () -> (progress ()).[2] > 0.))
     require "story: the rail reads the progress" (d.All ".rail-value" |> Array.exists (fun value -> text value <> "0%"))
     require "story: a chapter between its thresholds is seen" (d.Until (fun () -> d.Count ".rail-item.seen" > 0))
+    let tiles = d.All ".gallery .tile"
+    (d.One ".gallery").scrollIntoView ()
+    require "story: scrolling reveals the centre tiles ahead of both outer corners" (d.Until (fun () ->
+        let centre = min (opacity tiles[5]) (opacity tiles[6])
+        centre > max (opacity tiles[0]) (opacity (Array.last tiles))))
     d.ClickText ("button", "Show the extras")
     require "story: the extras appear" (d.Count ".tile.extra" = 4)
     require "story: the extras pop in" (d.Until (fun () -> d.All ".tile.extra" |> Array.forall (fun tile -> style tile "opacity" = "1")))
@@ -277,7 +290,24 @@ let private graphs (d: Driver) =
     d.ClickText ("button", "Next snapshot")
     require "graphs: Next snapshot moves to 12:00" (text (d.One ".snapshot-time") = "12:00")
     let london = d.One "[data-region=\"London\"]"
-    require "graphs: rows move to their new rank" (d.Until (fun () -> (style london "transform").Contains "translateY(0px)"))
+    let fill = query london ".bar-fill"
+    let transforms () = style london "transform", style fill "transform"
+    require "graphs: row and fill autoplay to the new rank and score" (d.Until (fun () ->
+        let row, bar = transforms ()
+        row.Contains "translateY(0px)" && bar.Contains "scaleX(0.81)"))
+    let probe = Graphs.animateRank store london (3, 50)
+    try
+        let sample time =
+            probe.Seek(time) |> ignore
+            transforms ()
+        let initial = sample 0.
+        require "graphs: the row waits for its rank delay" (sample 90. = initial)
+        let movingRow, heldFill = sample 91.
+        require "graphs: the row starts at its rank delay" (movingRow <> fst initial && heldFill = snd initial)
+        require "graphs: the fill holds until its offset from the row" (snd (sample 170.) = heldFill)
+        require "graphs: the fill starts after the row" (snd (sample 171.) <> heldFill)
+    finally
+        probe.Revert() |> ignore
 
 let private routes (d: Driver) =
     d.Open "routes"

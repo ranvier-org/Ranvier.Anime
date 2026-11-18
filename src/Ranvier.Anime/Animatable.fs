@@ -61,9 +61,12 @@ type AnimatableNumber internal (track:AnimatableTrack,live:unit -> unit) =
         live()
         track.RetargetScalarPrecise(value,duration,ease)
 
-type private AnimatableRegistration(restore:(unit -> bool) -> unit) =
+type private AnimatableRegistration(restore:(unit -> bool) -> unit,initiallyMuted:bool) =
     member val Track:AnimatableTrack option=None with get,set
-    member _.Restore current=restore current
+    member this.Restore current=
+        let canWrite() =
+            current() && (match this.Track with Some track -> not track.Clock.EffectivelyMuted | None -> not initiallyMuted)
+        if canWrite() then restore canWrite
 
 /// <summary>Retargetable properties with ordered shared frames, independent group callbacks and property-scoped restoration.</summary>
 /// <remarks>Construction creates an empty group. Adding properties captures and renders their initial values immediately.
@@ -97,7 +100,7 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
     /// <summary>Registers restoration before initializing a typed adapter's guarded property track.</summary>
     member internal _.Register(kernels,write,restore,duration,options:AnimatablePropertyOptions,precision) =
         live()
-        let registration=AnimatableRegistration restore
+        let registration=AnimatableRegistration(restore,options.Playback.Muted)
         registrations.Add registration
         try
             let track=group.Add(kernels,(fun index output -> if state<>2 && ownerAllowsWrite() then write index output),

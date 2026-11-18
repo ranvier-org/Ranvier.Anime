@@ -76,6 +76,27 @@ let directCssRestoreTests = testList "CSS direct numeric revert" [
         Expect.equal (style.Value "--gap",style.Priority "--gap") ("7px","important") "standalone original"
         Expect.isTrue handle.Cancelled "terminal after revert"
 
+    testCase "soft revert on a numeric CSS handle restores an absent property with one removal" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let style=Style()
+        use handle=create scheduler style
+        handle.Seek 40.
+        style.Writes.Clear()
+        handle.Revert(false)
+        Expect.sequenceEqual style.Writes [("--gap","","")] "the single write removes the inline property"
+        Expect.equal handle.CurrentTime 40. "numeric playhead retained"
+
+    testCase "soft revert on a declaration clock restores its captured style directly" <| fun _ ->
+        use scheduler=new ManualFrameScheduler()
+        let style=Style()
+        style.Seed("width","7px","important")
+        use clock=CssAnimation.declaration scheduler style (Css.width(Css.px 0.)) (Css.width(Css.px 100.)) 100u
+        clock.Seek 40.
+        style.Writes.Clear()
+        clock.Revert(false)
+        Expect.sequenceEqual style.Writes [("width","7px","important")] "the sole write restores the original declaration"
+        Expect.equal clock.CurrentTime 40. "declaration playhead retained"
+
     testCase "returned handle Revert restores original absence" <| fun _ ->
         use scheduler=new ManualFrameScheduler()
         let style=Style()

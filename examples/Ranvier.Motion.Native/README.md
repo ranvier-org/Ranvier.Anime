@@ -17,8 +17,8 @@ calls are rewritten:
 | Browser | Native |
 |---|---|
 | `Anime.animate (el, Anim (...))` | `Native.animate el (Native.timing duration ease) [| PropertySpec... |]` |
-| `Anime.timeline(...).add(...)` | `Native.timeline autoplay` with `ComposedTimeline.Add` |
-| `Value.stagger`, `Grid.size`, `StaggerFrom.center` | `Native.stagger` and `Native.spread` over `Stagger.distribute` |
+| `Anime.timeline(...).add(...)` | `composedTimeline scheduler { ... }` builds a paused timeline from child animations and labels |
+| `Value.stagger`, `Grid.size`, `StaggerFrom.center` | Story uses the sample's `Native.animateStaggered` for a target group. Physics uses `Native.stagger` and `Native.spread` to place individual children. |
 | `Ease.spring (stiffness, damping)` on a plain point | `Native.springPoint` over an `AnimatedObject` |
 | `Reactive.track (Reactive.own (animate ...))` | `Native.clock`, a progress signal owned by the current scope |
 | `Reactive.scrub` | `Native.scrub`, which seeks a paused timeline |
@@ -45,9 +45,13 @@ D3D11 textures at display scale 1; other display scales and other platforms pain
 
 ## Checks
 
-`Smoke.fs` opens every page and drives it through the host's mouse, wheel and frame loop, 72 checks in all. They
+`Smoke.fs` opens every page and drives it through the host's mouse, wheel and frame loop. The checks
 cover presence, FLIP, dragging between lanes and springing home on the board; the stream, gauges, ring, counter and
 timers on the dashboard; split, scroll progress and the extras on the story; dragging, the spring, scrubbing and the
 reduced policy in physics; zoom, wheel, inspection and the leaderboard in graphs; and routes, page loops and the
 indicator in routes. On Windows x64 it also requires the runtime's `presentation-d3d11` capability. The run fails
 on any mount or commit error.
+
+For timeline authoring, see the Physics scrubber and Story chapters. Both seek a paused timeline.
+The Graphs ranking chart calls `Play()` after adding the row and its delayed bar fill. For keyframes,
+see the Dashboard CPU chart, whose tip reaches the new reading while the chart continues panning.

@@ -6,6 +6,7 @@ module Physics
 
 open global.Ranvier
 open Ranvier.Anime
+open Ranvier.Anime.ComposedTimelineDsl
 open Ranvier.Dom
 open Ranvier.View
 open Ranvier.View.Dsl
@@ -76,24 +77,18 @@ let private scrubbed (playground: Playground) (track: Element) =
     let heights = Native.spread -70. 70. dots.Length
     let first = Native.stagger 60. StaggerOrigin.First StaggerGrid.Flat dots.Length
     let second = Native.stagger 60. StaggerOrigin.Center StaggerGrid.Flat dots.Length
-    let timeline = Native.timeline false
+    let timeline =
+        composedTimeline AnimeHost.Current.Scheduler {
+            for index in 0 .. dots.Length - 1 do
+                yield child dots[index] defaults [| Native.toward "y" heights[index]; Native.toward "rotate" 180. |]
+                      |> at (TimelinePosition.At first[index])
 
-    dots
-    |> Array.iteri (fun index dot ->
-        timeline.Add ([| box dot |], [| Native.toward "y" heights[index]; Native.toward "rotate" 180. |], defaults, TimelinePosition.At first[index])
-        |> ignore)
-
-    let settled = 600. + Array.max first
-
-    dots
-    |> Array.iteri (fun index dot ->
-        timeline.Add (
-            [| box dot |],
-            [| Native.fromTo "scale" 1. 1.6; PropertySpec.Text ("borderRadius", "20%") |],
-            defaults,
-            TimelinePosition.At (settled + second[index])
-        )
-        |> ignore)
+            if dots.Length > 0 then
+                let settled = defaults.Duration + Array.max first
+                for index in 0 .. dots.Length - 1 do
+                    yield child dots[index] defaults [| Native.fromTo "scale" 1. 1.6; PropertySpec.Text ("borderRadius", "20%") |]
+                          |> at (TimelinePosition.At (settled + second[index]))
+        }
 
     playground.Timeline.Value <- timeline
     Native.scrub (fun () -> playground.Scrub.Value) timeline

@@ -100,6 +100,25 @@ let private referenceTests =
     |> testList "animation playback"
 
 let private interruptionTests = testList "animation interruption" [
+    testCase "persistent mute survives seek and suppresses restoration writes" <| fun _ ->
+        use scheduler = new ManualFrameScheduler()
+        let writes = ResizeArray<float>()
+        let mutable renders = 0
+        use animation = new NumericAnimation(scheduler, (fun () -> 0.), writes.Add, 100., 100.,
+                            options={PlaybackOptions.Default with Muted=true},
+                            onRender=(fun _ -> renders <- renders+1))
+        animation.Reset()
+        animation.Seek 40.
+        Expect.equal animation.CurrentTime 40. "playhead advances"
+        Expect.isEmpty writes "initial and subsequent writes suppressed"
+        animation.Muted <- false
+        animation.Seek(60.,muteCallbacks=true)
+        Expect.sequenceEqual writes [60.] "operation-local mute still renders"
+        animation.Muted <- true
+        animation.Revert()
+        Expect.sequenceEqual writes [60.] "rewind and captured restoration are silent"
+        Expect.equal renders 0 "render callbacks suppressed"
+
     testCase "before-update seek replaces the outer render and its scheduled frame" <| fun _ ->
         use scheduler = new ManualFrameScheduler()
         let mutable value = 0.

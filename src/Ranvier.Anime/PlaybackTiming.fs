@@ -97,10 +97,16 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
                        iteration,progress,iterationProgress,sample.Backwards,sample.AboveZero,sample.AtEnd,sample.ShouldRender)
     /// <summary>Samples raw time without mutating callback, scheduler or ownership state.</summary>
     member _.Sample(previousAbsoluteTime: float, time: float, reversed: bool, alternate: bool, completed: bool,
-                    mode: PlaybackTickMode, [<Struct>] ?parentBackwards: bool, [<Struct>] ?child: bool) : PlaybackSample =
+                    mode: PlaybackTickMode, [<Struct>] ?parentBackwards: bool, [<Struct>] ?child: bool,
+                    [<Struct>] ?seconds:bool) : PlaybackSample =
         if System.Double.IsNaN previousAbsoluteTime then invalidArg "previousAbsoluteTime" "Expected a defined clock time."
         if System.Double.IsNaN time then invalidArg "time" "Expected a defined clock time."
-        let absolute = time - delay
+        let elapsed = time - delay
+        // Subtracting a fractional delay can put an exact end seek just below the duration.
+        let absolute =
+            if defaultValueArg seconds false && elapsed > 0. && elapsed < duration &&
+               duration - elapsed <= min 0.00000005 (4. * (duration - System.Math.BitDecrement(duration))) then duration
+            else elapsed
         let lower = -delay
         let previous =
             if lower > duration then (if previousAbsoluteTime < lower then lower else duration)
@@ -112,7 +118,10 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
         let index, iterationElapsed =
             if iterationCount > 1. then
                 let period = iterationDuration + (if atEnd then 0. else loopDelay)
-                let rawIndex = integer32 (bounded / period)
+                let quotient = bounded / period
+                let rawIndex =
+                    if defaultValueArg seconds false && atEnd && quotient < iterationCount && System.Math.BitIncrement(quotient) >= iterationCount then integer32 iterationCount
+                    else integer32 quotient
                 let index = int(System.Math.Clamp(float rawIndex, 0., iterationCount)) - (if atEnd then 1 else 0)
                 let elapsed = bounded - float rawIndex * period
                 index, (if System.Double.IsNaN elapsed || elapsed = 0. then 0. else elapsed)

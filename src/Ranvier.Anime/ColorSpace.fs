@@ -202,7 +202,7 @@ module ColorSpace =
         applyGamut GamutPolicy.Preserve last |> ignore
 
         let lerp a b =
-            let result = Utils.lerp a b progress
+            let result = PropertyNumbers.interpolate a b progress
 
             if Double.IsFinite result then
                 result

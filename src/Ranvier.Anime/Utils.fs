@@ -149,9 +149,34 @@ type LinkedParent<'Value>() =
     /// <summary>Invariant diagnostic reporting whether the list is nonempty.</summary>
     override this.ToString() = "LinkedParent(Empty=" + isNull(this.Head).ToString() + ")"
 
+/// <summary>Inclusive numeric bounds, decimal places, and optional seed for a random draw.</summary>
+type RandomOptions =
+    { Min: float
+      Max: float
+      Decimals: int
+      Seed: float option }
+    static member Default = { Min = 0.; Max = 1.; Decimals = 0; Seed = None }
+
+/// <summary>A reproducible sequence. Draws, per-target callbacks and picks consume it in invocation order.</summary>
+type SeededRandom internal (draw: float option -> float option -> int option -> float) =
+    /// <summary>Draws from this generator. Its creation seed takes precedence over the options seed.</summary>
+    member _.Next(options: RandomOptions) = draw (Some options.Min) (Some options.Max) (Some options.Decimals)
+
+    /// <summary>Returns a callback that draws each time a target is resolved.</summary>
+    member this.PerTarget(options: RandomOptions) = fun () -> this.Next options
+
+    /// <summary>Picks one element using the next draw from this generator.</summary>
+    member _.Pick(items: 'T array) : 'T =
+        if isNull items || items.Length = 0 then invalidArg "items" "Expected a nonempty array."
+        items[int (draw (Some 0.) (Some (float (items.Length - 1))) (Some 0))]
+
 /// <summary>Anime.js utility family: math, chainables, seeded random, timekeepers, DOM/object queries and target removal.</summary>
 [<RequireQualifiedAccess>]
 module Utils =
+    /// <summary>Parses an absolute CSS colour into clipped sRGB channels (0–255) and straight alpha (0–1).</summary>
+    /// <exception cref="T:System.ArgumentException">The syntax is unsupported or requires a CSS context.</exception>
+    let parseColor (value:string) : float array = CssColor.parse value
+
     let mutable private autoSeed = 0.
 
     /// <summary>Clamps a value between min and max bounds.</summary>
@@ -183,11 +208,16 @@ module Utils =
     let lerp (start: float) (finish: float) (factor: float) : float =
         if factor = 1. then finish elif factor = 0. then start else start + (finish - start) * factor
 
-    /// <summary>Frame-rate independent damped interpolation matching Anime.js utils.damp.</summary>
+    /// <summary>Frame-rate independent damped interpolation with elapsed milliseconds.</summary>
     let damp (start: float) (finish: float) (deltaTime: float) (factor: float) : float =
         if factor = 0. then start
         elif factor = 1. then finish
         else lerp start finish (1. - Math.Exp(-factor * deltaTime * 0.1))
+
+    /// <summary>Damped interpolation with elapsed time in the specified engine unit.</summary>
+    let dampInUnit timeUnit start finish deltaTime factor =
+        let milliseconds = if timeUnit = EngineTimeUnit.Seconds then deltaTime * 1000. else deltaTime
+        damp start finish milliseconds factor
 
     /// <summary>Linearly maps a value from [inLow, inHigh] to [outLow, outHigh].</summary>
     let mapRange (value: float) (inLow: float) (inHigh: float) (outLow: float) (outHigh: float) : float =
@@ -275,6 +305,18 @@ module Utils =
             let normalized = float (u2 ^^^ (u2 >>> 14)) / 4294967296.
             let m = Math.Pow(10., float dec)
             Math.Floor((normalized * (hi - lo + (1. / m)) + lo) * m) / m
+
+    /// <summary>Creates a generator whose sequence continues across draws, per-target callbacks and picks.</summary>
+    let seededRandom (seed: float) = SeededRandom(createSeededRandom (Some seed) None None None)
+
+    /// <summary>Returns a callback that draws in target evaluation order. Creating it again resets an explicit seed.</summary>
+    let randomPerTarget (options: RandomOptions) =
+        match options.Seed with
+        | Some seed -> (seededRandom seed).PerTarget options
+        | None -> fun () -> random options.Min options.Max options.Decimals
+
+    /// <summary>Draws once. The same explicit seed gives the same first value on each call.</summary>
+    let randomWith (options: RandomOptions) = randomPerTarget options ()
 
     /// <summary>Picks a random element from a nonempty array.</summary>
     let randomPick (items: 'T array) : 'T =

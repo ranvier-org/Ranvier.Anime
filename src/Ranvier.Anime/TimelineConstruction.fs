@@ -5,9 +5,11 @@ open Ranvier.Anime.ValueInterpolation
 
 /// <summary>Guarded access to timeline scheduling, insertion position, pending lifetime and staged siblings during construction.</summary>
 type internal TimelineChildContext(scheduler:Ranvier.Dom.FrameScheduler,offset:float,canWrite:unit -> bool,
-                                   attach:IDisposable -> unit,siblings:FrameSiblingRegistry) =
+                                   attach:IDisposable -> unit,siblings:FrameSiblingRegistry,isMuted:unit -> bool) =
     /// <summary>The timeline's scheduler; children share its clock thread.</summary>
     member _.Scheduler=scheduler
+    /// <summary>The persistent mute gate inherited by an owned clock before initialization.</summary>
+    member _.IsMuted()=isMuted()
     /// <summary>Resolved signed insertion position before child delay, including the zero-duration epsilon adjustment.</summary>
     member _.Offset=offset
     /// <summary>Whether the parent and construction generation still permit user effects and publication.</summary>
@@ -58,6 +60,7 @@ module internal TimelineKeyframeInstallation =
                 let driver=new KeyframePlayback(context.Scheduler,program,write,replacing,css,precision,options.Playback,
                     onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onRender=options.OnRender,
                     onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete,?siblings=nodes,finiteScalar=finiteScalar)
+                driver.Clock.InheritMute context.IsMuted
                 ScopeRegistration.run ignore (fun () -> animation.SetDriver driver)
                 driver.Clock.OnCancel<-animation.Cancel
                 driver.Clock.OnFault<-animation.Cancel

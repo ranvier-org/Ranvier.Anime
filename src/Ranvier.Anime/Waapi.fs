@@ -112,7 +112,7 @@ type WaapiAnimationOptions =
         let opts = defaultArg staggerOptions StaggerOptions.Default
         { this with
             Delay = Some (fun _ i targets ->
-                let arr = Stagger.distributeAt opts.Start value opts (uint targets.Length)
+                let arr = Stagger.distribute value opts (uint targets.Length)
                 if i < arr.Length then arr[i] else 0.) }
     /// <summary>Invariant diagnostic of WAAPI options.</summary>
     override this.ToString() =
@@ -367,7 +367,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
             let baseEasing, outerSpring = WaapiHelpers.resolveWaapiEase options.Ease el i parsedTargets
             let baseDurationMs =
                 match outerSpring with
-                | Some sp -> sp.SettlingDuration * scaleToMs
+                | Some sp -> sp.SettlingDuration
                 | None ->
                     let d =
                         match options.Duration with
@@ -411,7 +411,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
                         propEasing <- eStr
                         propDurMs <-
                             match spOpt with
-                            | Some sp -> sp.SettlingDuration * scaleToMs
+                            | Some sp -> sp.SettlingDuration
                             | None ->
                                 match tweenOpts.Duration with
                                 | Some fn -> fn el i parsedTargets * scaleToMs
@@ -695,24 +695,26 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
             | None -> ()
         this
 
-    /// <summary>Registers an optional completion callback and returns a task settling when this WAAPI animation completes.</summary>
-    member this.Then(?callback: WaapiAnimation -> unit) : Threading.Tasks.Task<WaapiAnimation> =
-        let invoke () = callback |> Option.iter (fun action -> action this)
-        if completed then
-            invoke()
-            Threading.Tasks.Task.FromResult this
-        elif cancelled then
-            Threading.Tasks.Task.FromCanceled<WaapiAnimation>(Threading.CancellationToken(true))
-        else
-            let source = Threading.Tasks.TaskCompletionSource<WaapiAnimation>()
-            completionWaiters.Add(fun anim ->
-                try
-                    invoke()
-                    source.TrySetResult anim |> ignore
-                with error -> source.TrySetException error |> ignore)
-            cancelWaiters.Add(fun () -> source.TrySetCanceled() |> ignore)
-            source.Task
+    /// <summary>Maps observable completion to the callback result.</summary>
+    member this.ThenResult<'T>(callback: WaapiAnimation -> 'T) : Threading.Tasks.Task<'T> =
+        CompletionTask.observe (fun () -> callback this) (fun complete cancel ->
+            if completed then complete()
+            elif cancelled then cancel()
+            else
+                completionWaiters.Add(fun _ -> complete())
+                cancelWaiters.Add cancel)
 
+    /// <summary>Awaits the task returned by the completion callback.</summary>
+    member this.ThenAsync<'T>(callback: WaapiAnimation -> Threading.Tasks.Task<'T>) : Threading.Tasks.Task<'T> =
+        Threading.Tasks.TaskExtensions.Unwrap(this.ThenResult(callback))
+
+    /// <summary>Awaits a completion callback that produces no result.</summary>
+    member this.ThenAsync(callback: WaapiAnimation -> Threading.Tasks.Task) : Threading.Tasks.Task =
+        Threading.Tasks.TaskExtensions.Unwrap(this.ThenResult(callback))
+
+    /// <summary>Runs the optional completion callback and returns this instance.</summary>
+    member this.Then(?callback: WaapiAnimation -> unit) : Threading.Tasks.Task<WaapiAnimation> =
+        this.ThenResult(CompletionTask.withInstance callback)
     /// <summary>Returns a task settling when this WAAPI animation completes.</summary>
     member this.AsTask() : Threading.Tasks.Task<WaapiAnimation> = this.Then()
 
