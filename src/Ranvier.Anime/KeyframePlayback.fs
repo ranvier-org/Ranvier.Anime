@@ -5,6 +5,14 @@ open System.Collections.Generic
 open Ranvier.Dom
 open Ranvier.Anime.ValueInterpolation
 
+module private KeyframePropComparer =
+    let instance =
+        { new IEqualityComparer<struct(int * string)> with
+            member _.Equals(struct(ta, na), struct(tb, nb)) =
+                ta = tb && StringComparer.Ordinal.Equals(na, nb)
+            member _.GetHashCode(struct(t, n)) =
+                HashCode.Combine(t, StringComparer.Ordinal.GetHashCode n) }
+
 /// <summary>A paused compiled keyframe sequence using the shared timer, ordered guarded writes and per-frame history.</summary>
 /// <remarks>Initialize explicitly. Shared siblings provide same-timeline replacement; precise geometry uses milliseconds.
 /// Finite scalar interpolation preserves finite endpoints when their difference overflows.</remarks>
@@ -31,7 +39,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
     let mutable offset=program.Offset
     do
         if replace && siblings.IsNone then
-            let groups=Dictionary<struct(int*string),ResizeArray<FrameSibling>>()
+            let groups=Dictionary<struct(int*string),ResizeArray<FrameSibling>>(KeyframePropComparer.instance)
             for frame in frames do frame.Start<-frame.Start+program.Delay
             for frame in frames do
                 let definition=frame.Definition
@@ -55,73 +63,103 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
         else ValueInterpolation.sample(roundNumbers,definition.First,definition.Last,progress,precision,definition.Modifier,current)
     do
         if siblings.IsSome then
-            let sampleAt=
-                Some(fun (frame:FrameSibling) parentTime current ->
-                    let time=clock.IterationTimeAt((parentTime-offset)*clock.Speed)
-                    let mutable selected=frame
-                    for candidate in frames do
-                        if candidate.Definition.Target=frame.Definition.Target && candidate.Definition.Name=frame.Definition.Name &&
-                           (candidate.Start<=time || selected.Start>time && candidate.Start<selected.Start) then selected<-candidate
-                    let progress=selected.Definition.Ease(Math.Clamp((time-selected.Start)/selected.Update,0.,1.))
-                    if current() then sampleFrame selected.Definition progress current |> Option.map(fun struct(_,output) -> output)
-                    else None)
-            for frame in frames do frame.SampleAt<-sampleAt
+            let propGroups = Dictionary<struct(int * string), ResizeArray<FrameSibling>>(KeyframePropComparer.instance)
+            for i = 0 to frames.Length - 1 do
+                let f = frames[i]
+                let key = struct(f.Definition.Target, f.Definition.Name)
+                let list =
+                    match propGroups.TryGetValue key with
+                    | true, existing -> existing
+                    | _ ->
+                        let created = ResizeArray<FrameSibling>(4)
+                        propGroups.Add(key, created)
+                        created
+                list.Add f
+            let propSlices = Dictionary<struct(int * string), FrameSibling array>(propGroups.Count, KeyframePropComparer.instance)
+            for KeyValue(k, list) in propGroups do
+                propSlices.Add(k, list.ToArray())
+            for i = 0 to frames.Length - 1 do
+                let frame = frames[i]
+                let slice = propSlices[struct(frame.Definition.Target, frame.Definition.Name)]
+                if slice.Length = 1 then
+                    frame.SampleAt <-
+                        Some(fun (f:FrameSibling) parentTime current ->
+                            let time = clock.IterationTimeAt((parentTime - offset) * clock.Speed)
+                            let progress = f.Definition.Ease(Math.Clamp((time - f.Start) / f.Update, 0., 1.))
+                            if current() then sampleFrame f.Definition progress current |> Option.map(fun struct(_,output) -> output)
+                            else None)
+                else
+                    frame.SampleAt <-
+                        Some(fun (f:FrameSibling) parentTime current ->
+                            let time = clock.IterationTimeAt((parentTime - offset) * clock.Speed)
+                            let mutable selected = f
+                            for cIdx = 0 to slice.Length - 1 do
+                                let candidate = slice[cIdx]
+                                if candidate.Start <= time || (selected.Start > time && candidate.Start < selected.Start) then
+                                    selected <- candidate
+                            let progress = selected.Definition.Ease(Math.Clamp((time - selected.Start) / selected.Update, 0., 1.))
+                            if current() then sampleFrame selected.Definition progress current |> Option.map(fun struct(_,output) -> output)
+                            else None)
+    let mutable renderToken = Int64.MinValue
+    let current = Closure.keep (fun () -> clock.IsCurrent renderToken && ownerAllowsWrite())
     let render (sample:PlaybackSample) mode muted =
-        let timerCurrent=clock.CaptureWriteGuard()
-        let current()=timerCurrent() && ownerAllowsWrite()
-        let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
-        let forced=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=clock.TickThreshold
-        let absolute=PropertyNumbers.round 1e12 (offset+clock.Delay+sample.IterationTime)
-        let parentTime=PropertyNumbers.round 1e12 (offset+(clock.Delay+sample.AbsoluteTime)/clock.Speed)
-        let mutable rendered=false
-        let mutable alive=current()
-        for index in 0..frames.Length-1 do
-            if alive then
-                let frame=frames[index]
-                let previous=frame.Previous
-                let next=frame.Next
-                let previousCross=not(isNull previous) && not(obj.ReferenceEquals(previous.Child,frame.Child))
-                let nextSame=not(isNull next) && obj.ReferenceEquals(next.Child,frame.Child)
-                let timedTakeover=Double.IsFinite frame.OwnsUntil && not(isNull next) && not nextSame
-                let previousEnd=if isNull previous then 0. else previous.AbsoluteStart+previous.Change
-                let ending=frame.AbsoluteStart+frame.Change
-                let takeover=
-                    if isNull next || next.Overridden then ending
-                    elif nextSame then ending+next.Delay
-                    elif next.AbsoluteStart<next.AbsoluteUpdateStart then next.AbsoluteStart
-                    else next.AbsoluteUpdateStart
-                let history=(frame.Time<>frame.Change || absolute<=takeover ||
-                             (not(isNull previous) && not previousCross && (isNull next || not nextSame))) &&
-                            (frame.Time<>0. || absolute>=frame.AbsoluteStart ||
-                             (previousCross && not frame.Definition.HasFrom && not previous.Overridden && absolute>=previousEnd) ||
-                             (nextSame && not next.Overridden && next.Time<>0. && sample.IterationTime<next.Start))
-                let laterAtBoundary=
-                    sample.Backwards && not clock.InternalRender && not(isNull next) && not nextSame &&
-                    not next.Overridden && next.Definition.HasFrom && parentTime=next.AbsoluteStart
-                let owns=parentTime>=frame.OwnsFrom && parentTime<frame.OwnsUntil && not laterAtBoundary
-                let eligible=owns && (forced || history || (timedTakeover && sample.Backwards)) && (isNull previous || previousCross || sample.IterationTime>=frame.Start) &&
-                             (not replace || (not frame.Overridden && (not frame.Overlapped || timedTakeover || absolute<=ending) &&
-                                              (isNull next || timedTakeover || next.Overridden || absolute<=takeover) &&
-                                              (isNull previous || previous.Overridden ||
-                                               (if not previousCross then absolute>=previousEnd+frame.Delay
-                                                else Double.IsFinite frame.OwnsFrom || absolute>=frame.AbsoluteStart || (not frame.Definition.HasFrom && absolute>=previousEnd)))))
-                if eligible then
-                    frame.Time<-Math.Clamp(sample.IterationTime-frame.Start,0.,if timedTakeover then frame.Update else frame.Change)
-                    let definition=definitions[index]
-                    let progress=definition.Ease(frame.Time/frame.Update)
-                    alive<-current()
-                    if alive then
-                        match sampleFrame definition progress current with
-                        | Some struct(_,output) when current() ->
-                            frame.Value<-output
-                            if not clock.InternalRender && not clock.EffectivelyMuted then
-                                write definition.Target definition.Name output
-                                renderVersion<-renderVersion+1L
-                                rendered<-true
-                            alive<-current()
-                        | _ -> alive<-false
-                elif frame.Time<>0. && not(isNull previous) && not previousCross && sample.IterationTime<frame.Start then frame.Time<-0.
-        if alive && current() && rendered && sample.AboveZero && not muted && not clock.EffectivelyMuted then onRender |> Option.iter(fun action -> action clock)
+        let savedToken = renderToken
+        renderToken <- clock.WriteToken
+        try
+            let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
+            let forced=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=clock.TickThreshold
+            let absolute=PropertyNumbers.round 1e12 (offset+clock.Delay+sample.IterationTime)
+            let parentTime=PropertyNumbers.round 1e12 (offset+(clock.Delay+sample.AbsoluteTime)/clock.Speed)
+            let mutable rendered=false
+            let mutable alive=current()
+            for index in 0..frames.Length-1 do
+                if alive then
+                    let frame=frames[index]
+                    let previous=frame.Previous
+                    let next=frame.Next
+                    let previousCross=not(isNull previous) && not(obj.ReferenceEquals(previous.Child,frame.Child))
+                    let nextSame=not(isNull next) && obj.ReferenceEquals(next.Child,frame.Child)
+                    let timedTakeover=Double.IsFinite frame.OwnsUntil && not(isNull next) && not nextSame
+                    let previousEnd=if isNull previous then 0. else previous.AbsoluteStart+previous.Change
+                    let ending=frame.AbsoluteStart+frame.Change
+                    let takeover=
+                        if isNull next || next.Overridden then ending
+                        elif nextSame then ending+next.Delay
+                        elif next.AbsoluteStart<next.AbsoluteUpdateStart then next.AbsoluteStart
+                        else next.AbsoluteUpdateStart
+                    let history=(frame.Time<>frame.Change || absolute<=takeover ||
+                                 (not(isNull previous) && not previousCross && (isNull next || not nextSame))) &&
+                                (frame.Time<>0. || absolute>=frame.AbsoluteStart ||
+                                 (previousCross && not frame.Definition.HasFrom && not previous.Overridden && absolute>=previousEnd) ||
+                                 (nextSame && not next.Overridden && next.Time<>0. && sample.IterationTime<next.Start))
+                    let laterAtBoundary=
+                        sample.Backwards && not clock.InternalRender && not(isNull next) && not nextSame &&
+                        not next.Overridden && next.Definition.HasFrom && parentTime=next.AbsoluteStart
+                    let owns=parentTime>=frame.OwnsFrom && parentTime<frame.OwnsUntil && not laterAtBoundary
+                    let eligible=owns && (forced || history || (timedTakeover && sample.Backwards)) && (isNull previous || previousCross || sample.IterationTime>=frame.Start) &&
+                                 (not replace || (not frame.Overridden && (not frame.Overlapped || timedTakeover || absolute<=ending) &&
+                                                  (isNull next || timedTakeover || next.Overridden || absolute<=takeover) &&
+                                                  (isNull previous || previous.Overridden ||
+                                                   (if not previousCross then absolute>=previousEnd+frame.Delay
+                                                    else Double.IsFinite frame.OwnsFrom || absolute>=frame.AbsoluteStart || (not frame.Definition.HasFrom && absolute>=previousEnd)))))
+                    if eligible then
+                        frame.Time<-Math.Clamp(sample.IterationTime-frame.Start,0.,if timedTakeover then frame.Update else frame.Change)
+                        let definition=definitions[index]
+                        let progress=definition.Ease(frame.Time/frame.Update)
+                        alive<-current()
+                        if alive then
+                            match sampleFrame definition progress current with
+                            | Some struct(_,output) when current() ->
+                                frame.Value<-output
+                                if not clock.InternalRender && not clock.EffectivelyMuted then
+                                    write definition.Target definition.Name output
+                                    renderVersion<-renderVersion+1L
+                                    rendered<-true
+                                alive<-current()
+                            | _ -> alive<-false
+                    elif frame.Time<>0. && not(isNull previous) && not previousCross && sample.IterationTime<frame.Start then frame.Time<-0.
+            if alive && current() && rendered && sample.AboveZero && not muted && not clock.EffectivelyMuted then onRender |> Option.iter(fun action -> action clock)
+        finally renderToken <- savedToken
     do
         clock.Seek(0.,muteCallbacks=true)
         clock.ConfigureRenderer(render,sampleWhenMuted=true,?totalDuration=(if program.IterationDuration=1e-11 then Some 1e-11 else None),

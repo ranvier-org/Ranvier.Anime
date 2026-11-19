@@ -113,7 +113,7 @@ type AnimationDefaultOptions =
       Autoplay: bool }
     /// <summary>1000 milliseconds, out-quad easing, identity modifier, replace composition and autoplay.</summary>
     static member Default =
-        { Duration=1000.;Ease=Ease.named "outQuad";Modifier=id;Composition=KeyframeComposition.Replace;Autoplay=true }
+        { Duration=1000.;Ease=Ease.named "outQuad";Modifier=PropertyNumbers.identityFloat;Composition=KeyframeComposition.Replace;Autoplay=true }
     /// <summary>An invariant duration, composition and startup diagnostic with callback functions omitted.</summary>
     override this.ToString()=
         "AnimationDefaultOptions(Duration="+this.Duration.ToString("R",System.Globalization.CultureInfo.InvariantCulture)+

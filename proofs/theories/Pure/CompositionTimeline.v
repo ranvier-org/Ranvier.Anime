@@ -223,3 +223,178 @@ Proof.
   destruct (Z.ltb_spec t s2); [| discriminate].
   destruct (Z.leb_spec s2 t); [lia | reflexivity].
 Qed.
+
+(** ** Batch A1 Refinement Proofs: Coalesced Frame Additive Flush, 3-Tier SIMD Channel Sum & Property-Slice Keyframe Selection *)
+
+Fixpoint update_nth_z (idx : nat) (v : Z) (xs : list Z) : list Z :=
+  match xs, idx with
+  | [], _ => []
+  | _ :: rest, 0%nat => v :: rest
+  | x :: rest, S k => x :: update_nth_z k v rest
+  end.
+
+Definition apply_blend_update (e : blend_entry) (upd : nat * Z) : blend_entry :=
+  let '(idx, v) := upd in
+  {| be_base := be_base e; be_deltas := update_nth_z idx v (be_deltas e) |}.
+
+Fixpoint eager_frame_step (out : option Z) (e : blend_entry) (upds : list (nat * Z)) : option Z * blend_entry :=
+  match upds with
+  | [] => (out, e)
+  | u :: rest =>
+    let e' := apply_blend_update e u in
+    eager_frame_step (Some (flush_additive_scalar e')) e' rest
+  end.
+
+Fixpoint stage_blend_updates (dirty : bool) (e : blend_entry) (upds : list (nat * Z)) : bool * blend_entry :=
+  match upds with
+  | [] => (dirty, e)
+  | u :: rest => stage_blend_updates true (apply_blend_update e u) rest
+  end.
+
+Definition coalesced_frame_step (out : option Z) (e : blend_entry) (upds : list (nat * Z)) : option Z * blend_entry :=
+  let '(dirty, e_final) := stage_blend_updates false e upds in
+  if dirty then (Some (flush_additive_scalar e_final), e_final)
+  else (out, e_final).
+
+Lemma stage_blend_updates_true_dirty :
+  forall upds e,
+    fst (stage_blend_updates true e upds) = true.
+Proof.
+  induction upds as [| u rest IH]; intros e; simpl; [reflexivity | apply IH].
+Qed.
+
+Lemma eager_eq_stage_nonempty :
+  forall rest u e out,
+    eager_frame_step out e (u :: rest) =
+      let e_final := snd (stage_blend_updates true (apply_blend_update e u) rest) in
+      (Some (flush_additive_scalar e_final), e_final).
+Proof.
+  induction rest as [| u2 rest' IH]; intros u e out.
+  - simpl. reflexivity.
+  - simpl. apply (IH u2 (apply_blend_update e u) (Some (flush_additive_scalar (apply_blend_update e u)))).
+Qed.
+
+(**md **Coalescing `FlushAdditive` to `AfterUpdate` via `dirtyAdditive` matches eager per-tween flushing and skips clean frames in $O(1)$.**
+Across any frame batch `upds` of `Blend` tween delta updates, deferring `FlushAdditive` until `AfterUpdate` produces the exact same target output and `blend_entry` state as flushing after each individual tween, while performing zero flush work when `upds = []`. *)
+Theorem coalesced_end_of_frame_flush_eq_eager_per_tween_flush :
+  forall out e upds,
+    coalesced_frame_step out e upds = eager_frame_step out e upds /\
+    coalesced_frame_step out e [] = (out, e).
+Proof.
+  intros out e upds.
+  split; [| reflexivity].
+  destruct upds as [| u rest].
+  - reflexivity.
+  - rewrite eager_eq_stage_nonempty.
+    unfold coalesced_frame_step. simpl.
+    pose proof (stage_blend_updates_true_dirty rest (apply_blend_update e u)) as Hdirty.
+    destruct (stage_blend_updates true (apply_blend_update e u) rest) as [d ef].
+    simpl in *. subst d. reflexivity.
+Qed.
+
+Fixpoint scalar_channel_add (dst src : list Z) : list Z :=
+  match dst, src with
+  | [], _ => []
+  | d :: drest, [] => d :: drest
+  | d :: drest, s :: srest => (d + s) :: scalar_channel_add drest srest
+  end.
+
+Fixpoint simd_channel_add_chunks (fuel chunk : nat) (dst src : list Z) : list Z :=
+  match fuel with
+  | 0%nat => scalar_channel_add dst src
+  | S fuel' =>
+    if (Nat.leb chunk 0 || Nat.ltb (length dst) chunk || Nat.ltb (length src) chunk)%bool then
+      scalar_channel_add dst src
+    else
+      scalar_channel_add (firstn chunk dst) (firstn chunk src) ++
+      simd_channel_add_chunks fuel' chunk (skipn chunk dst) (skipn chunk src)
+  end.
+
+Lemma scalar_channel_add_split :
+  forall k dst src,
+    (k <= length dst)%nat ->
+    (k <= length src)%nat ->
+    scalar_channel_add (firstn k dst) (firstn k src) ++
+    scalar_channel_add (skipn k dst) (skipn k src) =
+    scalar_channel_add dst src.
+Proof.
+  induction k as [| k' IH]; intros dst src Hdst Hsrc.
+  - simpl. reflexivity.
+  - destruct dst as [| d drest]; [simpl in Hdst; lia |].
+    destruct src as [| s srest]; [simpl in Hsrc; lia |].
+    simpl in *.
+    f_equal.
+    apply IH; lia.
+Qed.
+
+(**md **3-tier SIMD (`Vector512` / `Vector256` / `Vector128`) channel accumulation equals scalar elementwise addition.**
+For every positive SIMD lane width `chunk` (`8`, `4`, `2`) and arbitrary channel lengths `|dst|`, `|src|`, chunked vector addition followed by scalar tail accumulation equals `scalar_channel_add dst src` element-for-element. *)
+Theorem simd_channel_add_chunks_eq_scalar :
+  forall fuel chunk dst src,
+    simd_channel_add_chunks fuel chunk dst src = scalar_channel_add dst src.
+Proof.
+  induction fuel as [| fuel' IH]; intros chunk dst src.
+  - simpl. reflexivity.
+  - simpl.
+    destruct (Nat.leb_spec chunk 0) as [Hc0 | Hcpos]; [simpl; reflexivity |].
+    destruct (Nat.ltb_spec (length dst) chunk) as [Hdl | Hdge]; [simpl; reflexivity |].
+    destruct (Nat.ltb_spec (length src) chunk) as [Hsl | Hsge]; [simpl; reflexivity |].
+    simpl.
+    rewrite IH.
+    apply scalar_channel_add_split; lia.
+Qed.
+
+Record kframe := {
+  kf_id : nat;
+  kf_target : nat;
+  kf_name : nat;
+  kf_start : Z
+}.
+
+Definition same_kprop (a b : kframe) : bool :=
+  andb (Nat.eqb (kf_target a) (kf_target b)) (Nat.eqb (kf_name a) (kf_name b)).
+
+Definition step_slice_select (time : Z) (selected candidate : kframe) : kframe :=
+  if Z.leb (kf_start candidate) time ||
+     (Z.ltb time (kf_start selected) && Z.ltb (kf_start candidate) (kf_start selected))
+  then candidate
+  else selected.
+
+Definition select_kframe_full_scan (time : Z) (anchor : kframe) (frames : list kframe) : kframe :=
+  List.fold_left
+    (fun sel cand => if same_kprop cand anchor then step_slice_select time sel cand else sel)
+    frames anchor.
+
+Definition select_kframe_prop_slice (time : Z) (anchor : kframe) (frames : list kframe) : kframe :=
+  List.fold_left
+    (step_slice_select time)
+    (List.filter (fun cand => same_kprop cand anchor) frames)
+    anchor.
+
+Lemma fold_filter_same_kprop :
+  forall frames time anchor acc,
+    List.fold_left
+      (fun sel cand => if same_kprop cand anchor then step_slice_select time sel cand else sel)
+      frames acc =
+    List.fold_left
+      (step_slice_select time)
+      (List.filter (fun cand => same_kprop cand anchor) frames)
+      acc.
+Proof.
+  induction frames as [| f rest IH]; intros time anchor acc.
+  - reflexivity.
+  - simpl.
+    destruct (same_kprop f anchor); apply IH.
+Qed.
+
+(**md **Pre-grouped `(Target, Name)` property slices select the exact same active keyframe as scanning all compiled frames.**
+Restricting `KeyframePlayback` `sampleAt` to the pre-indexed `(Target, Name)` frame slice produces the identical selected `FrameSibling` as scanning the full multi-target, multi-property `frames` array. *)
+Theorem property_slice_cursor_search_eq_full_frame_scan :
+  forall time anchor frames,
+    select_kframe_prop_slice time anchor frames = select_kframe_full_scan time anchor frames.
+Proof.
+  intros time anchor frames.
+  unfold select_kframe_prop_slice, select_kframe_full_scan.
+  symmetry.
+  apply fold_filter_same_kprop.
+Qed.

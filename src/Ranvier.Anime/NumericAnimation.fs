@@ -26,8 +26,10 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
         finite "duration" duration
         if duration < 0. then invalidArg "duration" "Duration must be nonnegative."
         finite "target" target
-        for name, value in ["Delay", options.Delay; "LoopDelay", options.LoopDelay; "Speed", options.Speed; "FrameRate", options.FrameRate] do
-            finite name value
+        finite "Delay" options.Delay
+        finite "LoopDelay" options.LoopDelay
+        finite "Speed" options.Speed
+        finite "FrameRate" options.FrameRate
     let iterationDuration = PropertyNumbers.round 1e12 (if duration = 0. then 1e-11 else duration)
     do
         if iterationDuration = 0. then invalidArg "duration" "Positive duration rounds to zero at source timing precision."
@@ -61,7 +63,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
     let render (sample: PlaybackSample) mode muted =
         let iterationDuration = clock.IterationDuration
         let expected = clock.Generation
-        let canWrite () = expected = clock.Generation && not clock.Cancelled && ancestorLive() && constructionAccepted && ownerAllowsWrite()
+        let inline canWrite () = expected = clock.Generation && not clock.Cancelled && ancestorLive() && constructionAccepted && ownerAllowsWrite()
         let delta = sample.AbsoluteTime - clock.PreviousAbsoluteTime
         let force = mode = PlaybackTickMode.Force || (if sample.Backwards then -delta else delta) >= clock.TickThreshold
         let absoluteTime = PropertyNumbers.round 1e12 (clock.Delay + sample.IterationTime)

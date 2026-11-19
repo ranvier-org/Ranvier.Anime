@@ -11,6 +11,7 @@ Print Assumptions playback_generation_fences_reentrant_seek.
 Print Assumptions engine_clock_phase_drift_bounded.
 Print Assumptions priority_insert_preserves_sorted.
 Print Assumptions deferred_writes_depth_balanced.
+Print Assumptions snapshot_index_traversal_eq_reversed_copy.
 
 (** ** CurvesStagger.v *)
 Print Assumptions ease_out_reflection_endpoints_and_involution.
@@ -37,6 +38,9 @@ Print Assumptions muted_animation_defers_sibling_hijack.
 Print Assumptions stretch_preserves_host_epoch_and_validates_first.
 Print Assumptions blend_telescoping_initial_conservation_and_target_convergence.
 Print Assumptions timeline_track_intervals_disjoint.
+Print Assumptions coalesced_end_of_frame_flush_eq_eager_per_tween_flush.
+Print Assumptions simd_channel_add_chunks_eq_scalar.
+Print Assumptions property_slice_cursor_search_eq_full_frame_scan.
 
 (** ** DomScrollDragMotion.v *)
 Print Assumptions transform_clear_revert_never_resurrects_stale_cache.

@@ -4,8 +4,33 @@ namespace Ranvier.Anime
 module internal ValueInterpolation =
     open System
     open System.Globalization
+    open System.Runtime.CompilerServices
+    open System.Runtime.InteropServices
+    open System.Runtime.Intrinsics
     open System.Text.RegularExpressions
     open Ranvier.Anime
+
+    [<AbstractClass; Sealed>]
+    type private ComposeScratchTls =
+        [<ThreadStatic; DefaultValue>]
+        static val mutable private builder: System.Text.StringBuilder
+        [<ThreadStatic; DefaultValue>]
+        static val mutable private chars: char array
+        static member Acquire() =
+            let mutable sb = ComposeScratchTls.builder
+            if isNull sb then
+                sb <- System.Text.StringBuilder(128)
+                ComposeScratchTls.builder <- sb
+            else
+                sb.Clear() |> ignore
+            let mutable buf = ComposeScratchTls.chars
+            if isNull buf then
+                buf <- Array.zeroCreate<char> 64
+                ComposeScratchTls.chars <- buf
+            struct(sb, buf)
+        static member Release(sb: System.Text.StringBuilder) =
+            if sb.Capacity > 8192 then
+                ComposeScratchTls.builder <- System.Text.StringBuilder(256)
     /// <summary>The source decomposition category.</summary>
     type ValueKind = Number = 0 | Unit = 1 | Color = 2 | Complex = 3
     /// <summary>A numeric or serialized endpoint before source decomposition.</summary>
@@ -51,6 +76,19 @@ module internal ValueInterpolation =
                     (if negative then "-" else "")+result
                 else split[0]+"e"+(if exponent>=0 then "+" else "-")+string(abs exponent)
     let private numberText value=number value
+    let private appendNumber (sb: System.Text.StringBuilder) (scratch: char array) (value: float) =
+        if value = 0. then
+            sb.Append('0') |> ignore
+        elif Double.IsFinite value then
+            let span = Span<char>(scratch)
+            let mutable written = 0
+            if value.TryFormat(span, &written, "R", CultureInfo.InvariantCulture) &&
+               span.Slice(0, written).IndexOfAny('E', 'e') < 0 then
+                sb.Append(ReadOnlySpan<char>(scratch, 0, written)) |> ignore
+            else
+                sb.Append(number value) |> ignore
+        else
+            sb.Append(number value) |> ignore
     /// <summary>A composed scalar or string with the sampled component values.</summary>
     /// <remarks>Text is composed on first read: a numeric writer reads <c>Number</c> and never formats.</remarks>
     [<Sealed; AllowNullLiteral; System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
@@ -177,27 +215,184 @@ module internal ValueInterpolation =
         if template.Kind=ValueKind.Number || template.Kind=ValueKind.Unit then
             Output(template.Kind,scalar,(if template.Kind=ValueKind.Unit then template.Unit else ""),Array.Empty<float>(),null)
         else
-            let text=
+            let struct(sb, scratch) = ComposeScratchTls.Acquire()
+            let text =
                 if template.Kind=ValueKind.Color then
-                    "rgba("+String.concat "," [for i in 0..3 -> number(if i<3 then PropertyNumbers.round 1. values[i] else values[i])]+")"
+                    sb.Append("rgba(") |> ignore
+                    appendNumber sb scratch (PropertyNumbers.round 1. values[0])
+                    sb.Append(',') |> ignore
+                    appendNumber sb scratch (PropertyNumbers.round 1. values[1])
+                    sb.Append(',') |> ignore
+                    appendNumber sb scratch (PropertyNumbers.round 1. values[2])
+                    sb.Append(',') |> ignore
+                    appendNumber sb scratch values[3]
+                    sb.Append(')') |> ignore
+                    let s = sb.ToString()
+                    ComposeScratchTls.Release sb
+                    s
                 else
-                    let result=System.Text.StringBuilder(template.Strings[0])
-                    for index in 0..values.Length-1 do result.Append(number values[index]).Append(template.Strings[index+1]) |> ignore
-                    result.ToString()
+                    sb.Append(template.Strings[0]) |> ignore
+                    for index = 0 to values.Length - 1 do
+                        appendNumber sb scratch values[index]
+                        sb.Append(template.Strings[index + 1]) |> ignore
+                    let s = sb.ToString()
+                    ComposeScratchTls.Release sb
+                    s
             Output(template.Kind,0.,null,values,text)
+
+    /// <summary>Samples scalar endpoints without allocating an <see cref="Output"/> instance.</summary>
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    let trySampleScalarValue (roundNumbers: bool, kind: ValueKind, fromNumber: float, toNumber: float,
+                              progress: float, precision: int, modifier: float -> float, canWrite: unit -> bool) : struct(bool * float) =
+        finite "progress" progress
+        let precision = if progress = 0. || progress = 1. || (kind = ValueKind.Number && not roundNumbers) then -1 else precision
+        let value = if progress = 1. then toNumber elif progress = 0. then fromNumber else fromNumber + (toNumber - fromNumber) * progress
+        let value = if precision < 0 then value else PropertyNumbers.round (PropertyNumbers.pow10 precision) value
+        if not (canWrite()) then struct(false, 0.)
+        elif Object.ReferenceEquals(modifier, PropertyNumbers.identityFloat) then struct(true, value)
+        else
+            let result = modifier value
+            if canWrite() then struct(true, result) else struct(false, 0.)
+
+    let private lerpComplexSimd (first: float array) (last: float array) (dst: float array) (progress: float) (precision: int) =
+        let len = last.Length
+        if progress = 0. then
+            Array.Copy(first, 0, dst, 0, len)
+        elif progress = 1. then
+            Array.Copy(last, 0, dst, 0, len)
+        elif precision < 0 then
+            let mutable i = 0
+            let rFirst = &MemoryMarshal.GetArrayDataReference(first)
+            let rLast = &MemoryMarshal.GetArrayDataReference(last)
+            let rDst = &MemoryMarshal.GetArrayDataReference(dst)
+            if Vector512.IsHardwareAccelerated && len >= 8 then
+                let vp = Vector512.Create(progress)
+                while i <= len - 8 do
+                    let va = Vector512.LoadUnsafe(&rFirst, unativeint i)
+                    let vb = Vector512.LoadUnsafe(&rLast, unativeint i)
+                    let vr = va + (vb - va) * vp
+                    vr.StoreUnsafe(&rDst, unativeint i)
+                    i <- i + 8
+            elif Vector256.IsHardwareAccelerated && len >= 4 then
+                let vp = Vector256.Create(progress)
+                while i <= len - 4 do
+                    let va = Vector256.LoadUnsafe(&rFirst, unativeint i)
+                    let vb = Vector256.LoadUnsafe(&rLast, unativeint i)
+                    let vr = va + (vb - va) * vp
+                    vr.StoreUnsafe(&rDst, unativeint i)
+                    i <- i + 4
+            elif Vector128.IsHardwareAccelerated && len >= 2 then
+                let vp = Vector128.Create(progress)
+                while i <= len - 2 do
+                    let va = Vector128.LoadUnsafe(&rFirst, unativeint i)
+                    let vb = Vector128.LoadUnsafe(&rLast, unativeint i)
+                    let vr = va + (vb - va) * vp
+                    vr.StoreUnsafe(&rDst, unativeint i)
+                    i <- i + 2
+            while i < len do
+                let a = first[i]
+                dst[i] <- a + (last[i] - a) * progress
+                i <- i + 1
+        else
+            let scale = PropertyNumbers.pow10 precision
+            let mutable i = 0
+            let rFirst = &MemoryMarshal.GetArrayDataReference(first)
+            let rLast = &MemoryMarshal.GetArrayDataReference(last)
+            let rDst = &MemoryMarshal.GetArrayDataReference(dst)
+            if Vector512.IsHardwareAccelerated && len >= 8 then
+                let vp = Vector512.Create(progress)
+                let vScale = Vector512.Create(scale)
+                let vHalf = Vector512.Create(0.5)
+                while i <= len - 8 do
+                    let va = Vector512.LoadUnsafe(&rFirst, unativeint i)
+                    let vb = Vector512.LoadUnsafe(&rLast, unativeint i)
+                    let vScaled = (va + (vb - va) * vp) * vScale
+                    let vRound = Vector512.Round(vScaled, MidpointRounding.ToEven)
+                    let vTie = Vector512.Equals(Vector512.Abs(vScaled - vRound), vHalf)
+                    let vAdj = Vector512.ConditionalSelect(vTie, Vector512.Ceiling(vScaled), vRound)
+                    (vAdj / vScale).StoreUnsafe(&rDst, unativeint i)
+                    i <- i + 8
+            elif Vector256.IsHardwareAccelerated && len >= 4 then
+                let vp = Vector256.Create(progress)
+                let vScale = Vector256.Create(scale)
+                let vHalf = Vector256.Create(0.5)
+                while i <= len - 4 do
+                    let va = Vector256.LoadUnsafe(&rFirst, unativeint i)
+                    let vb = Vector256.LoadUnsafe(&rLast, unativeint i)
+                    let vScaled = (va + (vb - va) * vp) * vScale
+                    let vRound = Vector256.Round(vScaled, MidpointRounding.ToEven)
+                    let vTie = Vector256.Equals(Vector256.Abs(vScaled - vRound), vHalf)
+                    let vAdj = Vector256.ConditionalSelect(vTie, Vector256.Ceiling(vScaled), vRound)
+                    (vAdj / vScale).StoreUnsafe(&rDst, unativeint i)
+                    i <- i + 4
+            elif Vector128.IsHardwareAccelerated && len >= 2 then
+                let vp = Vector128.Create(progress)
+                let vScale = Vector128.Create(scale)
+                let vHalf = Vector128.Create(0.5)
+                while i <= len - 2 do
+                    let va = Vector128.LoadUnsafe(&rFirst, unativeint i)
+                    let vb = Vector128.LoadUnsafe(&rLast, unativeint i)
+                    let vScaled = (va + (vb - va) * vp) * vScale
+                    let vRound = Vector128.Round(vScaled, MidpointRounding.ToEven)
+                    let vTie = Vector128.Equals(Vector128.Abs(vScaled - vRound), vHalf)
+                    let vAdj = Vector128.ConditionalSelect(vTie, Vector128.Ceiling(vScaled), vRound)
+                    (vAdj / vScale).StoreUnsafe(&rDst, unativeint i)
+                    i <- i + 2
+            while i < len do
+                let a = first[i]
+                dst[i] <- PropertyNumbers.round scale (a + (last[i] - a) * progress)
+                i <- i + 1
+
+    /// <summary>Samples compound or color components directly into <paramref name="dst"/> without allocating <see cref="Output"/> or formatting strings.</summary>
+    let sampleComponentsInto (roundNumbers: bool, first: Data, last: Data, progress: float, precision: int,
+                              modifier: float -> float, canWrite: unit -> bool, dst: float array) : bool =
+        finite "progress" progress
+        if not (canWrite()) then false
+        else
+            let precision = if progress = 0. || progress = 1. || (first.Kind = ValueKind.Number && not roundNumbers) then -1 else precision
+            if Object.ReferenceEquals(modifier, PropertyNumbers.identityFloat) then
+                if first.Kind = ValueKind.Color then
+                    let oneMinusP = 1. - progress
+                    for index = 0 to last.Components.Length - 1 do
+                        if index < 3 then
+                            let a = first.Components[index]
+                            let b = last.Components[index]
+                            dst[index] <- Math.Sqrt(max 0. (a * a * oneMinusP + b * b * progress))
+                        else
+                            let a = first.Components[index]
+                            let b = last.Components[index]
+                            dst[index] <- if progress = 1. then b elif progress = 0. then a else a + (b - a) * progress
+                    true
+                else
+                    lerpComplexSimd first.Components last.Components dst progress precision
+                    true
+            else
+                let scale = if precision < 0 then 0. else PropertyNumbers.pow10 precision
+                let inline roundVal value = if precision < 0 then value else PropertyNumbers.round scale value
+                let inline lerp a b = if progress = 1. then b elif progress = 0. then a else a + (b - a) * progress
+                let mutable alive = true
+                let len = last.Components.Length
+                let mutable index = 0
+                while index < len && alive do
+                    let value =
+                        if first.Kind = ValueKind.Color && index < 3 then
+                            let a, b = first.Components[index], last.Components[index]
+                            Math.Sqrt(max 0. (a * a * (1. - progress) + b * b * progress))
+                        elif first.Kind = ValueKind.Color then lerp first.Components[index] last.Components[index]
+                        else roundVal (lerp first.Components[index] last.Components[index])
+                    if not (canWrite()) then alive <- false
+                    else
+                        let result = modifier value
+                        if canWrite() then dst[index] <- result else alive <- false
+                    index <- index + 1
+                alive && canWrite()
 
     /// <summary>Samples scalar endpoints held outside their template into an output, or null when the guard fails.</summary>
     /// <remarks>Allocates only the output; <c>template</c> supplies the kind and unit.</remarks>
     let sampleScalar (roundNumbers:bool, template:Data, fromNumber:float, toNumber:float, progress:float, precision:int,
                       modifier:float -> float, canWrite:unit -> bool) : Output =
-        finite "progress" progress
-        let precision=if progress=0. || progress=1. || (template.Kind=ValueKind.Number && not roundNumbers) then -1 else precision
-        let value=if progress=1. then toNumber elif progress=0. then fromNumber else fromNumber+(toNumber-fromNumber)*progress
-        let value=if precision<0 then value else PropertyNumbers.round (Math.Pow(10.,float precision)) value
-        if not(canWrite()) || not(canWrite()) then null
-        else
-            let result=modifier value
-            if canWrite() then compose(template,result,Array.Empty<float>()) else null
+        let struct(ok, result) = trySampleScalarValue(roundNumbers, template.Kind, fromNumber, toNumber, progress, precision, modifier, canWrite)
+        if ok then compose(template, result, Array.Empty<float>()) else null
 
     /// <summary>Samples normalized endpoints into a composed output, or null when the guard fails around a modifier.</summary>
     /// <remarks>The unwrapped core of <c>sample</c>.</remarks>
@@ -206,30 +401,12 @@ module internal ValueInterpolation =
             sampleScalar(roundNumbers,first,first.Number,last.Number,progress,precision,modifier,canWrite)
         else
             finite "progress" progress
-            let precision=if progress=0. || progress=1. || (first.Kind=ValueKind.Number && not roundNumbers) then -1 else precision
-            let scale=if precision<0 then 0. else Math.Pow(10.,float precision)
-            let inline round value=if precision<0 then value else PropertyNumbers.round scale value
-            let inline lerp a b = if progress=1. then b elif progress=0. then a else a+(b-a)*progress
             if not(canWrite()) then null
             else
-                let values=Array.zeroCreate last.Components.Length
-                // Custom modifiers can cancel playback between components and must run in order.
-                let mutable alive=true
-                for index in 0..values.Length-1 do
-                    if alive then
-                        let value=
-                            if first.Kind=ValueKind.Color && index<3 then
-                                let a, b = first.Components[index], last.Components[index]
-                                // Overshooting eases can extrapolate squared intensity below black.
-                                Math.Sqrt(max 0. (a*a*(1.-progress) + b*b*progress))
-                            elif first.Kind=ValueKind.Color then lerp first.Components[index] last.Components[index]
-                            else round(lerp first.Components[index] last.Components[index])
-                        if not(canWrite()) then alive<-false
-                        else
-                            let result=modifier value
-                            if canWrite() then values[index]<-result else alive<-false
-                if not alive || not(canWrite()) then null
-                else compose(last,0.,values)
+                let values = Array.zeroCreate last.Components.Length
+                if sampleComponentsInto(roundNumbers, first, last, progress, precision, modifier, canWrite, values) then
+                    compose(last, 0., values)
+                else null
 
     /// <summary>Samples normalized endpoints and returns the modified scalar cache with the composed output.</summary>
     let sample (roundNumbers:bool, first:Data, last:Data, progress:float, precision:int, modifier:float -> float, canWrite:unit -> bool) =

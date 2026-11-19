@@ -41,8 +41,11 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let mutable lastTime = 0.
     let mutable generation = 0
     let mutable previousAbsoluteTime = 0.
-    let mutable parentContext : (bool * bool * (unit -> bool)) option = None
-    let mutable writeGuard = fun () -> true
+    let mutable hasParent = false
+    let mutable parentBackwards = false
+    let mutable parentBegan = false
+    let mutable parentLive : unit -> bool = Closure.keep (fun () -> true)
+    let mutable writeGuard = Closure.keep (fun () -> true)
     let mutable completingSetter = false
     let mutable internalRender = false
     let mutable renderer : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
@@ -65,12 +68,12 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
             let wasCompleted = completed
             previousAbsoluteTime <- sample.AbsoluteTime
             let next = timing.Sample(previousAbsoluteTime, time, reversed, alternate, wasCompleted, mode,
-                                     ?parentBackwards=(match parentContext with Some(backwards,_,_) -> ValueSome backwards | None -> ValueNone),
-                                     ?child=(if parentContext.IsSome then ValueSome true else ValueNone), seconds=seconds())
+                                     ?parentBackwards=(if hasParent then ValueSome parentBackwards else ValueNone),
+                                     ?child=(if hasParent then ValueSome true else ValueNone), seconds=seconds())
             sample <- next
-            let current () = expected = generation && not cancelled && writeGuard() &&
-                             (parentContext |> Option.forall(fun (_,_,live) -> live()))
-            let parentAllowsLifecycle () = parentContext |> Option.forall(fun (_,parentBegan,_) -> not next.Backwards && parentBegan)
+            let inline current () =
+                expected = generation && not cancelled && writeGuard() && (not hasParent || parentLive())
+            let inline parentAllowsLifecycle () = not hasParent || (not next.Backwards && parentBegan)
             let emit event = if not mute && not(isMuted()) && current() then callback event
             let finish allowCallback =
                 completedSilently <- isMuted()
@@ -90,8 +93,7 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
                 if childRenderer.IsNone && current() then renderer next mode mute
                 if next.AboveZero then emit PlaybackEvent.Update
             if current() then
-                if parentContext.IsSome && timing.Duration <= 1e-11 then
-                    let _,parentBegan,_ = parentContext.Value
+                if hasParent && timing.Duration <= 1e-11 then
                     if (not mute || isMuted()) && not completingSetter &&
                        ((parentBegan && not next.Backwards && next.AbsoluteTime > 0. && not completed) ||
                         (next.Backwards && next.AbsoluteTime <= 1e-11 && completed)) then
@@ -207,15 +209,15 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     member _.CaptureWriteGuard() =
         let expected = generation
         let inherited = writeGuard
-        let parent = parentContext
-        fun () -> expected = generation && not cancelled && inherited() && (parent |> Option.forall(fun (_,_,live) -> live()))
+        if hasParent then
+            let live = parentLive
+            fun () -> expected = generation && not cancelled && inherited() && live()
+        else
+            fun () -> expected = generation && not cancelled && inherited()
     /// <summary>The non-generation half of <c>CaptureWriteGuard</c>, checked now: live, with live inherited and parent guards.</summary>
     /// <remarks>Inherited guards are scoped around synchronous calls, so checking them during a call matches capturing them.</remarks>
     member _.WriteCurrent() =
-        not cancelled && writeGuard() &&
-        (match parentContext with
-         | Some(_,_,live) -> live()
-         | None -> true)
+        not cancelled && writeGuard() && (not hasParent || parentLive())
     /// <summary>Scopes a borrowed setter's complete ancestor guard across rendering and lifecycle callbacks.</summary>
     member _.WithWriteGuard(guard: unit -> bool, action: unit -> unit) =
         let previous = writeGuard
@@ -274,9 +276,15 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     /// <summary>Samples an owned child with inherited direction, lifecycle filtering and ancestor interruption;
     /// rendering can refresh caches without target dispatch.</summary>
     /// <remarks>Initialization clears lifecycle flags only while this sample's generation and inherited guards remain current.</remarks>
-    member _.TickChild(time, mode, mute, backwards, parentBegan, canWrite, [<Struct>] ?internalRender:bool, [<Struct>] ?initialize:bool) =
-        let previous = parentContext
-        parentContext <- Some(backwards, parentBegan, canWrite)
+    member _.TickChild(time, mode, mute, backwards, childParentBegan, canWrite, [<Struct>] ?internalRender:bool, [<Struct>] ?initialize:bool) =
+        let prevHasParent = hasParent
+        let prevBackwards = parentBackwards
+        let prevBegan = parentBegan
+        let prevLive = parentLive
+        hasParent <- true
+        parentBackwards <- backwards
+        parentBegan <- childParentBegan
+        parentLive <- canWrite
         try
             live()
             let expected = change()
@@ -285,7 +293,11 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
                 paused<-true
                 began<-false
                 completed<-false
-        finally parentContext <- previous
+        finally
+            hasParent <- prevHasParent
+            parentBackwards <- prevBackwards
+            parentBegan <- prevBegan
+            parentLive <- prevLive
     /// <summary>Exposes the source constructor's zero playhead before initialization applies configured reversal.</summary>
     member _.PrepareConstruction() =
         live()

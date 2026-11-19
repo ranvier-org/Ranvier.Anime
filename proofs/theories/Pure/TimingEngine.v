@@ -249,3 +249,87 @@ Proof.
   simpl.
   lia.
 Qed.
+
+(** ** Batch A1 Refinement Proof: Cached Snapshot Indexed Traversal Without `Array.rev` Allocation *)
+
+Fixpoint collect_forward {A : Type} (xs : list A) (idx count : nat) (default : A) : list A :=
+  match count with
+  | 0%nat => []
+  | S rem => List.nth idx xs default :: collect_forward xs (S idx) rem default
+  end.
+
+Fixpoint collect_backward {A : Type} (xs : list A) (rem : nat) (default : A) : list A :=
+  match rem with
+  | 0%nat => []
+  | S idx => List.nth idx xs default :: collect_backward xs idx default
+  end.
+
+Definition traverse_snapshot_indexed {A : Type} (backwards : bool) (xs : list A) (default : A) : list A :=
+  if backwards then collect_backward xs (length xs) default
+  else collect_forward xs 0%nat (length xs) default.
+
+Lemma collect_forward_cons :
+  forall (A : Type) (x : A) (xs : list A) (idx count : nat) (default : A),
+    collect_forward (x :: xs) (S idx) count default = collect_forward xs idx count default.
+Proof.
+  intros A x xs idx count default.
+  revert idx.
+  induction count as [| rem IH]; intros idx.
+  - reflexivity.
+  - simpl. f_equal. apply IH.
+Qed.
+
+Lemma collect_forward_exact :
+  forall (A : Type) (xs : list A) (default : A),
+    collect_forward xs 0%nat (length xs) default = xs.
+Proof.
+  intros A xs default.
+  induction xs as [| x rest IH].
+  - reflexivity.
+  - simpl. rewrite collect_forward_cons. f_equal. exact IH.
+Qed.
+
+Lemma collect_backward_app_prefix :
+  forall (A : Type) (xs suffix : list A) (rem : nat) (default : A),
+    (rem <= length xs)%nat ->
+    collect_backward (xs ++ suffix) rem default = collect_backward xs rem default.
+Proof.
+  intros A xs suffix rem default Hle.
+  induction rem as [| idx IH].
+  - reflexivity.
+  - simpl.
+    rewrite app_nth1 by lia.
+    f_equal.
+    apply IH. lia.
+Qed.
+
+Lemma collect_backward_exact :
+  forall (A : Type) (xs : list A) (default : A),
+    collect_backward xs (length xs) default = List.rev xs.
+Proof.
+  intros A xs default.
+  induction xs as [| x l IH] using rev_ind.
+  - reflexivity.
+  - rewrite length_app; simpl.
+    replace (length l + 1)%nat with (S (length l)) by lia.
+    simpl.
+    rewrite nth_middle.
+    rewrite collect_backward_app_prefix by lia.
+    rewrite IH.
+    rewrite rev_unit.
+    reflexivity.
+Qed.
+
+(**md **Indexed forward (`0 .. n-1`) and backward (`n-1 downto 0`) traversal over a cached snapshot equals `ToArray()` and `Array.rev (ToArray())`.**
+Traversing a cached child snapshot by index in `Timeline` and `ComposedTimeline` visits the exact sequence `xs` forward and `List.rev xs` backward with zero per-tick array copies or reversals. *)
+Theorem snapshot_index_traversal_eq_reversed_copy :
+  forall (A : Type) (backwards : bool) (xs : list A) (default : A),
+    traverse_snapshot_indexed backwards xs default =
+      (if backwards then List.rev xs else xs).
+Proof.
+  intros A backwards xs default.
+  unfold traverse_snapshot_indexed.
+  destruct backwards.
+  - apply collect_backward_exact.
+  - apply collect_forward_exact.
+Qed.

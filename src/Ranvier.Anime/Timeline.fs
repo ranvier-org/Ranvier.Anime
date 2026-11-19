@@ -16,6 +16,13 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
     let frameSiblings=FrameSiblingRegistry()
     let pending=System.Collections.Generic.List<IDisposable>()
     let children = System.Collections.Generic.List<TimelineEntry>()
+    let mutable childrenSnapshot : TimelineEntry array = null
+    let getChildrenSnapshot () =
+        let mutable snap = childrenSnapshot
+        if isNull snap then
+            snap <- children.ToArray()
+            childrenSnapshot <- snap
+        snap
     let propertySiblings = System.Collections.Generic.Dictionary<NumericProperty, System.Collections.Generic.List<NumericPropertyTrack>>()
     let borrowedProperties = System.Collections.Generic.Dictionary<obj, NumericProperty>(System.Collections.Generic.ReferenceEqualityComparer.Instance)
     let mutable borrowedGuard = fun () -> true
@@ -54,8 +61,9 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
         stopFrame()
         let mutable firstError : Exception option = None
         try clock.Cancel() with error -> firstError <- Some error
-        for entry in children.ToArray() do
-            match entry with
+        let snapshots = getChildrenSnapshot()
+        for idx = 0 to snapshots.Length - 1 do
+            match snapshots[idx] with
             | TimelineEntry.OwnedTimer(_, timer) | TimelineEntry.OwnedAnimation(_,timer,_,_) ->
                 try timer.Cancel()
                 with error -> if firstError.IsNone then firstError <- Some error
@@ -66,6 +74,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
             try child.Dispose()
             with error -> if firstError.IsNone then firstError<-Some error
         children.Clear()
+        childrenSnapshot <- null
         frameSiblings.Clear()
         propertySiblings.Clear()
         borrowedProperties.Clear()
@@ -100,72 +109,90 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
             | TimelineEntry.Property track | TimelineEntry.Borrowed(track, _, _, _) -> track.ResetTimer()
             | TimelineEntry.OwnedTimer(_, timer) | TimelineEntry.OwnedAnimation(_,timer,_,_) -> timer.ResetChildFlags()
             | TimelineEntry.Callback(_, _, state) -> state.Completed <- false
+    let alwaysTrue = Closure.keep (fun () -> true)
+    let mutable renderExpected = -1
+    let mutable renderClockGen = -1L
+    let mutable renderAncestor : unit -> bool = alwaysTrue
+    let renderCanWrite = Closure.keep (fun () ->
+        renderExpected = generation && renderClockGen = clock.Generation && not cancelled && ancestorLive() && renderAncestor())
     let renderMode ancestor muteCallbacks mode internalRender requestedTime =
-        let force = mode = PlaybackTickMode.Force
-        let expected = generation
-        let clockGeneration = clock.Generation
-        let previous = sampledTime
-        let backwards = if internalRender && not internalRendering then requestedTime < previous else clock.Backwards
-        let canWrite () = canRender expected clockGeneration () && ancestor()
-        let prepared=playbackEase.IsNone || (canWrite() && preparePlayback())
-        let time=if internalRender || playbackEase.IsNone then requestedTime else playbackIterationTime
-        let previousChildTime=sampledChildTime
-        if prepared && canWrite() then
-            sampledTime<-requestedTime
-            sampledChildTime<-time
-        let snapshots = children.ToArray()
-        let snapshots = if backwards then Array.rev snapshots else snapshots
-        let mutable allComplete = true
-        let mutable rendered = false
-        for entry in snapshots do
-            let childTime = PropertyNumbers.round 1e12 ((time - entry.Offset) * entry.Speed)
-            let pastEnd=backwards && childTime > entry.Duration
-            if canWrite() && pastEnd then
-                match entry with
-                | TimelineEntry.OwnedAnimation(_,_,_,(:? KeyframeAnimation as animation)) ->
-                    if animation.RestoreHeld(previousChildTime,time,internalRender,canWrite) then rendered<-true
-                | _ -> ()
-            elif canWrite() then
-                match entry with
-                | TimelineEntry.Property track ->
-                    track.Sample(childTime, force, internalRender || isMuted(), muteCallbacks && not(isMuted()), backwards, clock.Began, canWrite, skipRender=(mode = PlaybackTickMode.Skip))
-                    rendered <- rendered || track.Rendered
-                    allComplete <- allComplete && track.Completed
-                | TimelineEntry.OwnedTimer(_, child) | TimelineEntry.OwnedAnimation(_,child,_,_) ->
-                    let version=match entry with TimelineEntry.OwnedAnimation(_,_,read,_) -> Some(read()) | _ -> None
-                    let childBackwards=
-                        match entry with TimelineEntry.OwnedTimer _ when internalRender -> requestedTime<previous | _ -> backwards
-                    child.SampleChild(childTime, mode, muteCallbacks, clock.Fps, childBackwards, clock.Began, canWrite,internalRender=internalRender)
-                    match entry,version with
-                    | TimelineEntry.OwnedAnimation(_,_,read,_),Some before -> rendered<-rendered || (read()<>before && child.Sample.AboveZero)
+        let savedExpected = renderExpected
+        let savedClockGen = renderClockGen
+        let savedAncestor = renderAncestor
+        renderExpected <- generation
+        renderClockGen <- clock.Generation
+        renderAncestor <- ancestor
+        try
+            let force = mode = PlaybackTickMode.Force
+            let previous = sampledTime
+            let backwards = if internalRender && not internalRendering then requestedTime < previous else clock.Backwards
+            let canWrite = renderCanWrite
+            let prepared=playbackEase.IsNone || (canWrite() && preparePlayback())
+            let time=if internalRender || playbackEase.IsNone then requestedTime else playbackIterationTime
+            let previousChildTime=sampledChildTime
+            if prepared && canWrite() then
+                sampledTime<-requestedTime
+                sampledChildTime<-time
+            let snapshots = getChildrenSnapshot()
+            let count = snapshots.Length
+            let mutable allComplete = true
+            let mutable rendered = false
+            for idx = 0 to count - 1 do
+                let entry = snapshots[if backwards then count - 1 - idx else idx]
+                let childTime = PropertyNumbers.round 1e12 ((time - entry.Offset) * entry.Speed)
+                let pastEnd=backwards && childTime > entry.Duration
+                if canWrite() && pastEnd then
+                    match entry with
+                    | TimelineEntry.OwnedAnimation(_,_,_,(:? KeyframeAnimation as animation)) ->
+                        if animation.RestoreHeld(previousChildTime,time,internalRender,canWrite) then rendered<-true
                     | _ -> ()
-                    allComplete <- allComplete && (child.Completed || child.Cancelled)
-                | TimelineEntry.Borrowed(track, _, _, _) ->
-                    let previousGuard = borrowedGuard
-                    borrowedGuard <- canWrite
-                    try
-                        track.Sample(childTime, force, internalRender, muteCallbacks && not(isMuted()), backwards, clock.Began, canWrite,
-                                     skipRender=(mode = PlaybackTickMode.Skip))
+                elif canWrite() then
+                    match entry with
+                    | TimelineEntry.Property track ->
+                        track.Sample(childTime, force, internalRender || isMuted(), muteCallbacks && not(isMuted()), backwards, clock.Began, canWrite, skipRender=(mode = PlaybackTickMode.Skip))
                         rendered <- rendered || track.Rendered
                         allComplete <- allComplete && track.Completed
-                    finally borrowedGuard <- previousGuard
-                | TimelineEntry.Callback(_, callback, state) when not internalRender ->
-                    state.Time <- childTime
-                    state.Backwards <- backwards
-                    if (not muteCallbacks || isMuted()) &&
-                       ((clock.Began && not backwards && childTime > 0. && not state.Completed) ||
-                        (backwards && childTime <= 1e-11 && state.Completed)) then
-                        state.Completed <- not backwards
-                        if not(isMuted()) then callback()
-                    allComplete <- allComplete && state.Completed
-                | _ -> allComplete <- false
-        if not internalRender && rendered && not muteCallbacks && not(isMuted()) && canWrite() then
-            onRender |> Option.iter(fun callback -> callback this)
-        allComplete
+                    | TimelineEntry.OwnedTimer(_, child) | TimelineEntry.OwnedAnimation(_,child,_,_) ->
+                        let version=match entry with TimelineEntry.OwnedAnimation(_,_,read,_) -> Some(read()) | _ -> None
+                        let childBackwards=
+                            match entry with TimelineEntry.OwnedTimer _ when internalRender -> requestedTime<previous | _ -> backwards
+                        child.SampleChild(childTime, mode, muteCallbacks, clock.Fps, childBackwards, clock.Began, canWrite,internalRender=internalRender)
+                        match entry,version with
+                        | TimelineEntry.OwnedAnimation(_,_,read,_),Some before -> rendered<-rendered || (read()<>before && child.Sample.AboveZero)
+                        | _ -> ()
+                        allComplete <- allComplete && (child.Completed || child.Cancelled)
+                    | TimelineEntry.Borrowed(track, _, _, _) ->
+                        let previousGuard = borrowedGuard
+                        borrowedGuard <- canWrite
+                        try
+                            track.Sample(childTime, force, internalRender, muteCallbacks && not(isMuted()), backwards, clock.Began, canWrite,
+                                         skipRender=(mode = PlaybackTickMode.Skip))
+                            rendered <- rendered || track.Rendered
+                            allComplete <- allComplete && track.Completed
+                        finally borrowedGuard <- previousGuard
+                    | TimelineEntry.Callback(_, callback, state) when not internalRender ->
+                        state.Time <- childTime
+                        state.Backwards <- backwards
+                        if (not muteCallbacks || isMuted()) &&
+                           ((clock.Began && not backwards && childTime > 0. && not state.Completed) ||
+                            (backwards && childTime <= 1e-11 && state.Completed)) then
+                            state.Completed <- not backwards
+                            if not(isMuted()) then callback()
+                        allComplete <- allComplete && state.Completed
+                    | _ -> allComplete <- false
+            if not internalRender && rendered && not muteCallbacks && not(isMuted()) && canWrite() then
+                onRender |> Option.iter(fun callback -> callback this)
+            allComplete
+        finally
+            renderExpected <- savedExpected
+            renderClockGen <- savedClockGen
+            renderAncestor <- savedAncestor
     let prepareLoop (sample: PlaybackSample) _ muted =
         if not internalRendering then
             let canWrite = canRender generation clock.Generation
-            for entry in children.ToArray() do
+            let snapshots = getChildrenSnapshot()
+            for sIdx = 0 to snapshots.Length - 1 do
+                let entry = snapshots[sIdx]
                 if canWrite() then
                     if not sample.Backwards then
                         match entry with
@@ -194,7 +221,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
                             callback()
                         | _ -> ()
     do clock.ConfigureChildren(prepareLoop, fun sample mode muted ->
-        renderMode (fun () -> true) muted mode internalRendering
+        renderMode alwaysTrue muted mode internalRendering
             (if internalRendering then internalTime else sample.IterationTime))
     let prepareInternal time action =
         let previousMode=internalRendering
@@ -226,6 +253,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
         | _ -> ()
         if expected = generation && not cancelled then
             children.Add entry
+            childrenSnapshot <- null
             hasEntries <- true
             duration <- Math.Max(duration, finish)
             try
@@ -271,6 +299,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
                         if not(prepared.Commit()) || not(current()) then None
                         else
                             children.Add(TimelineEntry.OwnedAnimation(offset,prepared.Clock,prepared.RenderVersion,box prepared.Result))
+                            childrenSnapshot <- null
                             restorations.Add prepared.Restore
                             published<-true
                             for child in attached do pending.Remove child |> ignore
@@ -601,6 +630,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
                     | TimelineEntry.Callback(offset, callback, state) ->
                         state.Time <- state.Time * scale
                         children[index] <- TimelineEntry.Callback(offset * scale, callback, state)
+                childrenSnapshot <- null
                 for key in Seq.toArray labels.Keys do
                     labels[key] <- labels[key] * scale
                 clock.Stretch milliseconds
@@ -648,6 +678,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
             if removed then
                 children.Clear()
                 children.AddRange remaining
+                childrenSnapshot <- null
                 if children.Count = 0 then
                     hasEntries <- false
                     duration <- 0.
