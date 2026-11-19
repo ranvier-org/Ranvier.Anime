@@ -381,16 +381,34 @@ type NodeSet() =
     member _.Count = items.Count
 
     /// <summary>Whether the node is in the set.</summary>
-    member _.Has(node: Node) : bool = items.Exists(fun item -> Portable.same item node)
+    member _.Has(node: Node) : bool =
+        let mutable found = false
+        let mutable i = 0
+        let count = items.Count
+        while i < count && not found do
+            if Portable.same items[i] node then found <- true
+            i <- i + 1
+        found
 
     /// <summary>Adds the node, unless the set has it.</summary>
     member this.Add(node: Node) : unit = if not (this.Has node) then items.Add node
 
     /// <summary>Removes the node, if the set has it.</summary>
-    member _.Remove(node: Node) : unit = items.RemoveAll(fun item -> Portable.same item node) |> ignore
+    member _.Remove(node: Node) : unit =
+        let mutable i = items.Count - 1
+        while i >= 0 do
+            if Portable.same items[i] node then items.RemoveAt i
+            i <- i - 1
 
     /// <summary>Whether <c>root</c> is, or contains, a node of the set.</summary>
-    member _.AnyUnder(root: Node) : bool = items.Exists(fun item -> root.contains item)
+    member _.AnyUnder(root: Node) : bool =
+        let mutable found = false
+        let mutable i = 0
+        let count = items.Count
+        while i < count && not found do
+            if root.contains items[i] then found <- true
+            i <- i + 1
+        found
 
 /// <summary>A FLIP layout over the live element children of a root, reused across passes.</summary>
 /// <remarks>Created by <c>Flip.create</c>.</remarks>
@@ -521,13 +539,22 @@ module Flip =
 
     /// <summary>The root's HTML element children, without those in either set.</summary>
     let children (root: Element) (leaving: NodeSet) (entering: NodeSet) : Element array =
-        let children = (unbox<ParentNode> (box root)).children
-
-        Array.init (int children.length) (fun index -> children.item (uint index))
-        |> Array.filter (fun child ->
-            match box child with
-            | :? HTMLElement -> not (leaving.Has child) && not (entering.Has child)
-            | _ -> false)
+        let collection = (unbox<ParentNode> (box root)).children
+        let len = int collection.length
+        if len = 0 then
+            [||]
+        else
+            let checkLeaving = leaving.Count > 0
+            let checkEntering = entering.Count > 0
+            let acc = List<Element>(len)
+            for index = 0 to len - 1 do
+                let child = collection.item (uint index)
+                match box child with
+                | :? HTMLElement ->
+                    if (not checkLeaving || not (leaving.Has child)) && (not checkEntering || not (entering.Has child)) then
+                        acc.Add child
+                | _ -> ()
+            acc.ToArray()
 
 /// <summary>Scroll observation over the host installed with <c>AnimeHost.Install</c>.</summary>
 [<RequireQualifiedAccess>]

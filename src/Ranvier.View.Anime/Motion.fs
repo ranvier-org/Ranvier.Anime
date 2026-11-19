@@ -123,8 +123,18 @@ module Motion =
         | Reactive.Reduced -> true
         | Reactive.Full -> false
 
-    let private animate (element: Element) (duration: float) (ease: string) (specs: PropertySpec array) =
-        Anime.animate (box element) specs { ComposedAnimationOptions.Default with Duration = duration; Ease = Ease.named ease }
+    let private easeOutQuad = Ease.named "outQuad"
+    let private easeInQuad = Ease.named "inQuad"
+    let private fadeEnterSpecs = [| PropertySpec.Scalar("opacity", 1., fromValue = 0.) |]
+    let private fadeExitSpecs = [| PropertySpec.Scalar("opacity", 0.) |]
+    let private riseEnterSpecs = [| PropertySpec.Scalar("y", 0., fromValue = 12.); PropertySpec.Scalar("opacity", 1., fromValue = 0.) |]
+    let private riseExitSpecs = [| PropertySpec.Scalar("y", -12.); PropertySpec.Scalar("opacity", 0.) |]
+    let private scaleEnterSpecs = [| PropertySpec.Scalar("scale", 1., fromValue = 0.92); PropertySpec.Scalar("opacity", 1., fromValue = 0.) |]
+    let private scaleExitSpecs = [| PropertySpec.Scalar("scale", 0.92); PropertySpec.Scalar("opacity", 0.) |]
+    let private foldSpecs = [| PropertySpec.Scalar("height", 0.) |]
+
+    let private animateWithEase (element: Element) (duration: float) (ease: float -> float) (specs: PropertySpec array) =
+        Anime.animate (box element) specs { ComposedAnimationOptions.Default with Duration = duration; Ease = ease }
 
     // The cleanup of a part's animation: paused while the element's exit follows, reverted otherwise.
     let private settle (context: MotionContext) (revertible: IRevertible) =
@@ -226,27 +236,25 @@ module Motion =
     /// <summary>Presence that fades the element in over 240 ms and out over 180 ms.</summary>
     let fade<'native, 'inst> : Part<'native, 'inst> =
         presence
-            (fun (_: 'inst) element -> animate element 240. "outQuad" [| PropertySpec.Scalar("opacity", 1., fromValue = 0.) |])
-            (fun _ element -> animate element 180. "inQuad" [| PropertySpec.Scalar("opacity", 0.) |])
+            (fun (_: 'inst) element -> animateWithEase element 240. easeOutQuad fadeEnterSpecs)
+            (fun _ element -> animateWithEase element 180. easeInQuad fadeExitSpecs)
 
     /// <summary>Presence that fades the element in while rising 12 px, and out while rising a further 12 px.</summary>
     let rise<'native, 'inst> : Part<'native, 'inst> =
         presence
-            (fun (_: 'inst) element ->
-                animate element 240. "outQuad" [| PropertySpec.Scalar("y", 0., fromValue = 12.); PropertySpec.Scalar("opacity", 1., fromValue = 0.) |])
-            (fun _ element -> animate element 180. "inQuad" [| PropertySpec.Scalar("y", -12.); PropertySpec.Scalar("opacity", 0.) |])
+            (fun (_: 'inst) element -> animateWithEase element 240. easeOutQuad riseEnterSpecs)
+            (fun _ element -> animateWithEase element 180. easeInQuad riseExitSpecs)
 
     /// <summary>Presence that fades the element in from 92 % scale and out to it.</summary>
     let scale<'native, 'inst> : Part<'native, 'inst> =
         presence
-            (fun (_: 'inst) element ->
-                animate element 240. "outQuad" [| PropertySpec.Scalar("scale", 1., fromValue = 0.92); PropertySpec.Scalar("opacity", 1., fromValue = 0.) |])
-            (fun _ element -> animate element 180. "inQuad" [| PropertySpec.Scalar("scale", 0.92); PropertySpec.Scalar("opacity", 0.) |])
+            (fun (_: 'inst) element -> animateWithEase element 240. easeOutQuad scaleEnterSpecs)
+            (fun _ element -> animateWithEase element 180. easeInQuad scaleExitSpecs)
 
     let private unfold (_: 'inst) (element: Element) =
         DomKit.setStyle element "overflow" "hidden"
         let height = DomKit.scrollHeight element
-        let animation = animate element 240. "outQuad" [| PropertySpec.Scalar("height", height, fromValue = 0.) |]
+        let animation = animateWithEase element 240. easeOutQuad [| PropertySpec.Scalar("height", height, fromValue = 0.) |]
 
         (animation :> ITickable).WhenCompleted(fun () ->
             DomKit.removeStyle element "height"
@@ -256,7 +264,7 @@ module Motion =
 
     let private fold (_: 'inst) (element: Element) =
         DomKit.setStyle element "overflow" "hidden"
-        animate element 180. "inQuad" [| PropertySpec.Scalar("height", 0.) |]
+        animateWithEase element 180. easeInQuad foldSpecs
 
     /// <summary>
     /// Presence that unfolds the element's height from 0 and folds it back to 0, in flow, with its overflow hidden while
