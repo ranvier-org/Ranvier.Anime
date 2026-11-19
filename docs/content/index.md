@@ -1,10 +1,8 @@
 ---
 title: Ranvier.Anime
 description: Typed anime.js bindings for Fable, with owners and signals from Ranvier
-layout: bare
+toc: false
 ---
-
-# Ranvier.Anime
 
 Animation for [Ranvier](https://ranvier-org.github.io/Ranvier/).
 
