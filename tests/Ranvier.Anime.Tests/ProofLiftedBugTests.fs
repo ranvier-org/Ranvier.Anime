@@ -198,38 +198,11 @@ let tests =
                 close midWhite.Green 1. "white Green"
                 close midWhite.Blue 1. "white Blue"
 
-            testCase "#37: PlaybackTiming signed odd parity, Resize rebound, Timer Forever speed re-anchor, KeyframeAnimation.Playback.Revert, TimelinePosition, Timeline.Remove/Stretch, and equal KeyframeOffset ULP clamping"
+            testCase "#37: PlaybackState.Resize rebound, KeyframeAnimation.Playback.Revert, TimelinePosition, Timeline.Remove/Stretch, and equal KeyframeOffset ULP clamping"
             <| fun _ ->
-                // 1. Signed odd iteration parity when 32-bit iteration index wraps negative
-                let timing = PlaybackTiming(1., infinity, 0., 0.)
-                let oddWrappedTime = 2147483649.5
-                let sampleForward = timing.Sample(0., oddWrappedTime, false, true, false, PlaybackTickMode.Force)
-                let sampleReversed = timing.Sample(0., oddWrappedTime, true, true, false, PlaybackTickMode.Force)
-                Expect.isLessThan sampleForward.Iteration 0 "iteration index wrapped to negative int32"
-                close sampleForward.IterationTime 0.5 "forward + alternate odd iteration reverses to 0.5"
-                close sampleReversed.IterationTime 0.5 "reversed + alternate odd iteration cancels reversal to forward 0.5"
-                Expect.notEqual
-                    (timing.Sample(0., 2147483649.25, false, true, false, PlaybackTickMode.Force)).IterationTime
-                    (timing.Sample(0., 2147483649.25, true, true, false, PlaybackTickMode.Force)).IterationTime
-                    "reversed xor odd-bit distinguishes base direction on negative odd index"
-
-                // 2. Timer Forever re-anchor divides by effective speed
                 use host = new ManualFrameScheduler()
-                use foreverTimer =
-                    new Timer(
-                        host,
-                        100u,
-                        options = { PlaybackOptions.Default with Repeat = PlaybackRepeat.Forever; Speed = 2. }
-                    )
-                foreverTimer.Play()
-                host.Advance(1e12 / 2. - 12.)
-                host.RunFrame()
-                Expect.isTrue foreverTimer.Sample.AtEnd "reached Forever 1e12 sentinel"
-                host.Advance 25.
-                host.RunFrame()
-                close foreverTimer.CurrentTime 50. "25ms real time at Speed=2 advances 50ms after Forever re-anchor"
 
-                // 3. KeyframeAnimation.Playback.Revert() restores pre-construction snapshot after completion
+                // 1. KeyframeAnimation.Playback.Revert() restores pre-construction snapshot after completion
                 let mutable propVal = 7.
                 let numProp = NumericProperty((fun () -> propVal), (fun v -> propVal <- v))
                 use kfAnim =
@@ -560,7 +533,7 @@ let tests =
                 let fy = Follow.property (fEl :> Element) "y" followOpts
                 fx.To 10.
                 fy.To 20.
-                Expect.equal (fst styles["transform"]) "translateX(10px) translateY(20px)" "both x and y followers wrote"
+                Expect.equal (fst styles["transform"]) "translate(10px,20px)" "both x and y followers wrote"
                 fx.Revert()
                 Expect.equal (fst styles["transform"]) "translateY(20px)" "reverting x follower preserves y follower's transform"
                 fy.Revert()

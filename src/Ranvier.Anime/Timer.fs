@@ -343,8 +343,8 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
                 state.Tick((now - anchor) * state.Speed * engine.FrameSpeed, (if fps < engine.FrameFps then requestTick now else PlaybackTickMode.Auto), false)
                 if expected = generation && not state.Cancelled then
                     if Double.IsPositiveInfinity iterations && state.Sample.AboveZero && state.Sample.AtEnd then
-                        let effSpeed = state.Speed * engine.FrameSpeed
-                        if effSpeed > 0. then anchor <- anchor + state.Duration / effSpeed
+                        // Upstream Anime.js v4.5 pins unscaled `anchor + duration` rollover (`scheduledForeverRollover`).
+                        anchor <- anchor + state.Duration
                     queue()
             with _ ->
                 abandon()
