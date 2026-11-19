@@ -64,8 +64,8 @@ type DraggableScroll(controller:Draggable,scheduler:FrameScheduler,target:HTMLEl
                 let b=scrollBounds()
                 let padding=config.Padding
                 let struct(oldX,oldY)=position()
-                let newWidth=float container.scrollWidth
-                let newHeight=float container.scrollHeight
+                let newWidth=if config.UseWindow then max areaWidth (float container.scrollWidth) else float container.scrollWidth
+                let newHeight=if config.UseWindow then max areaHeight (float container.scrollHeight) else float container.scrollHeight
                 let lostX=max 0. (viewWidth-newWidth)
                 let lostY=max 0. (viewHeight-newHeight)
                 if lostX>0. || lostY>0. then

@@ -255,6 +255,16 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         change() |> ignore
         duration <- value
         timing <- next
+        sample <- timing.Rebound sample
+    /// <summary>Updates iteration and initial-delay geometry while retaining the most recent sample until the next render.</summary>
+    member _.ResizeWithDelay(value: float, newDelay: float) =
+        let next = PlaybackTiming(value, iterations, newDelay, loopDelay)
+        live()
+        change() |> ignore
+        duration <- value
+        delay <- newDelay
+        timing <- next
+        sample <- timing.Rebound sample
     /// <summary>Overrides total geometry for source animation setter durations while preserving iteration count.</summary>
     member _.OverrideDuration(value: float) =
         if not(System.Double.IsFinite value) then invalidArg "value" "Expected finite total milliseconds."

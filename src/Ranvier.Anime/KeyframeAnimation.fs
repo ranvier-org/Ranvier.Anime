@@ -57,7 +57,7 @@ type KeyframeAnimation internal(targetCount:int) =
     /// <summary>Installs the prepared shared driver before initialization.</summary>
     member internal this.SetDriver(value)=
         driver<-Some value
-        value.Clock.OnSoftRevert <- fun () -> this.Revert(false)
+        value.Clock.OnRevert <- this.Revert
         if ScopeRegistration.canConstruct() && ownerAllowsWrite() then
             constructionComplete<-true
             ScopeRegistration.register this.Revert

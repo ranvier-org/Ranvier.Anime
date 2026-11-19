@@ -581,3 +581,39 @@ Proof.
   unfold winner.
   destruct (Z.ltb_spec (Z.abs (hi_val - target)) (Z.abs (lo_val - target))); lia.
 Qed.
+
+(** ** Pass-2 Correctness Proof (#40): CSS Color 4 §8.2 `hwb()` Proportional Gray Scale Invariance *)
+
+Definition hwb_gray_num_den (w b : Z) : Z * Z :=
+  let w' := Z.max 0 w in
+  let b' := Z.max 0 b in
+  (w', w' + b').
+
+Definition hwb_preclamped_num_den (S w b : Z) : Z * Z :=
+  let w' := Z.min S (Z.max 0 w) in
+  let b' := Z.min S (Z.max 0 b) in
+  (w', w' + b').
+
+(**md **Unclamped CSS Color 4 §8.2 `hwb()` gray ratio `W / (W + B)` is scale-invariant for `W + B >= 100%`, unlike `[0, 100%]`-preclamped inputs (#40).**
+For any non-negative `w, b` with `w + b > 0` and positive scale `k > 0`, `hwb_gray_num_den (k * w) (k * b)` preserves the exact cross-multiplied gray ratio `num1 * den2 = num2 * den1`, whereas preclamping `(300, 100)` to `(100, 100)` shifts `75%` gray (`150 / 200`) to `50%` gray (`100 / 200`). *)
+Theorem hwb_proportional_gray_scale_invariant :
+  (forall k w b,
+    0 < k ->
+    0 <= w ->
+    0 <= b ->
+    let '(n1, d1) := hwb_gray_num_den w b in
+    let '(n2, d2) := hwb_gray_num_den (k * w) (k * b) in
+    n2 * d1 = n1 * d2) /\
+  (let '(nc, dc) := hwb_preclamped_num_den 100 300 100 in
+   let '(ne, de) := hwb_gray_num_den 300 100 in
+   nc * de <> ne * dc).
+Proof.
+  split.
+  - intros k w b Hk Hw Hb.
+    unfold hwb_gray_num_den.
+    assert (Hkw : 0 <= k * w) by nia.
+    assert (Hkb : 0 <= k * b) by nia.
+    rewrite !Z.max_r by lia.
+    nia.
+  - simpl. lia.
+Qed.

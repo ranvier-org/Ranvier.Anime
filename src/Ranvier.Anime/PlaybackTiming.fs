@@ -126,7 +126,7 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
                 let elapsed = bounded - float rawIndex * period
                 index, (if System.Double.IsNaN elapsed || elapsed = 0. then 0. else elapsed)
             else 0, absolute
-        let isReversed = ((if reversed then 1 else 0) ^^^ (if alternate then index % 2 else 0)) <> 0
+        let isReversed = reversed <> (alternate && (index &&& 1 <> 0))
         let iterationTime =
             if atEnd then (if isReversed then 0. else duration)
             elif isReversed then iterationDuration - iterationElapsed

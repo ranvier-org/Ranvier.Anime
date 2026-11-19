@@ -495,6 +495,7 @@ module Stagger =
 
     /// <summary>Returns an offset per target, adding Start to the distributed step or range.</summary>
     let distribute value (options: StaggerOptions) targetCount =
+        if isNull (box options) then nullArg "options"
         match value, options.Grid, options.Origin with
         | StaggerValue.Step step, StaggerGrid.Flat,
           (StaggerOrigin.First | StaggerOrigin.Last | StaggerOrigin.Center | StaggerOrigin.Index _)
@@ -518,6 +519,7 @@ module Stagger =
     /// <remarks>Reads each relevant element once and retains no host resources. Missing elements use flat index fallback.</remarks>
     let autoElements value (options: StaggerOptions) (targets: Element array) =
         if isNull targets then nullArg "targets"
+        if isNull (box options) then nullArg "options"
         let total = options.Total |> Option.defaultValue (uint targets.Length) |> count "Total"
         let positions = Array.create (min targets.Length total) None
         let mutable index = 0

@@ -2,6 +2,16 @@ namespace Ranvier.Anime
 
 open System
 
+module private SpringMath =
+    let inline scaledExp factor exponent =
+        if factor = 0. then 0. else factor * System.Math.Exp exponent
+
+    let inline clampFinite value =
+        if System.Double.IsPositiveInfinity value then System.Double.MaxValue
+        elif System.Double.IsNegativeInfinity value then -System.Double.MaxValue
+        elif System.Double.IsNaN value then 1.
+        else value
+
 /// <summary>A stateful Anime.js spring easing with physical or perceived-duration parameters.</summary>
 /// <remarks>Duration values are milliseconds; Solve accepts seconds. Supplying bounce or duration resets mass to one and velocity to zero.</remarks>
 type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, ?bounce: float, ?duration: float,
@@ -21,11 +31,17 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
     let mutable velocityValue = Math.Clamp(parameter "velocity" 0. velocity, -10000., 10000.)
     let mutable bounceValue = Math.Clamp(parameter "bounce" 0.5 bounce, -1., 1.)
     let mutable durationValue = Math.Clamp(parameter "duration" 628. duration, 10., 10000.)
+    do
+        match onComplete with
+        | Some cb when isNull (box cb) -> nullArg "onComplete"
+        | _ -> ()
     let onComplete = defaultArg onComplete ignore
     let mutable naturalFrequency = 0.
     let mutable dampingRatio = 0.
     let mutable dampedFrequency = 0.
     let mutable coefficient = 0.
+    let mutable overdampedSlowRate = 0.
+    let mutable overdampedFastRate = 0.
     let mutable solverDuration = 0.
     let mutable naturalSettlingDuration = 0.
     let mutable settlingDuration = 0.
@@ -35,14 +51,15 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
     let solve time =
         let displacement =
             if dampingRatio < 1. then
-                Math.Exp(-time * dampingRatio * naturalFrequency) *
-                    (Math.Cos(dampedFrequency * time) + coefficient * Math.Sin(dampedFrequency * time))
+                let env = Math.Exp(-time * dampingRatio * naturalFrequency)
+                let osc = Math.Cos(dampedFrequency * time) + (if coefficient = 0. then 0. else coefficient * Math.Sin(dampedFrequency * time))
+                if osc = 0. then 0. else env * osc
             elif dampingRatio = 1. then
-                (1. + coefficient * time) * Math.Exp(-time * naturalFrequency)
+                SpringMath.scaledExp (1. + coefficient * time) (-time * naturalFrequency)
             else
-                ((1. + coefficient) * Math.Exp((-dampingRatio * naturalFrequency + dampedFrequency) * time) +
-                 (1. - coefficient) * Math.Exp((-dampingRatio * naturalFrequency - dampedFrequency) * time)) / 2.
-        1. - displacement
+                (SpringMath.scaledExp (1. + coefficient) (overdampedSlowRate * time) +
+                 SpringMath.scaledExp (1. - coefficient) (overdampedFastRate * time)) * 0.5
+        SpringMath.clampFinite (1. - displacement)
 
     let physicalFromPerceived () =
         let seconds = durationValue / 1000.
@@ -77,6 +94,9 @@ type Spring(?mass: float, ?stiffness: float, ?damping: float, ?velocity: float, 
         else
             dampedFrequency <- naturalFrequency * Math.Sqrt(dampingRatio * dampingRatio - 1.)
             coefficient <- (dampingRatio * naturalFrequency - velocityValue) / dampedFrequency
+            let sum = dampingRatio * naturalFrequency + dampedFrequency
+            overdampedFastRate <- -sum
+            overdampedSlowRate <- if sum > 0. then -(naturalFrequency * naturalFrequency) / sum else 0.
         let mutable time = 0.
         let mutable restSteps = 0
         let mutable iterations = 0

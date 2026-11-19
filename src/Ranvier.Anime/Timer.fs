@@ -291,11 +291,14 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let mutable frameCallback : float -> unit = ignore
     do state.Speed <- options.Speed
     let mutable stretchRenderer : float -> unit = ignore
+    let mutable stretchValidator : float -> unit = ignore
+    let mutable zeroStretchRenderer : float -> float -> unit = fun _ _ -> ()
+    let mutable zeroStretchValidator : float -> float -> unit = fun _ _ -> ()
     let mutable renderingEnabled = true
     let mutable parented = false
     let mutable onFault = fun () -> ()
     let mutable onCancel = fun () -> ()
-    let mutable softRestore : (unit -> unit) option = None
+    let mutable revertRestore : (bool -> unit) option = None
 
     let live () =
         if state.Cancelled then raise(ObjectDisposedException(nameof Timer))
@@ -340,7 +343,8 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
                 state.Tick((now - anchor) * state.Speed * engine.FrameSpeed, (if fps < engine.FrameFps then requestTick now else PlaybackTickMode.Auto), false)
                 if expected = generation && not state.Cancelled then
                     if Double.IsPositiveInfinity iterations && state.Sample.AboveZero && state.Sample.AtEnd then
-                        anchor <- anchor + state.Duration
+                        let effSpeed = state.Speed * engine.FrameSpeed
+                        if effSpeed > 0. then anchor <- anchor + state.Duration / effSpeed
                     queue()
             with _ ->
                 abandon()
@@ -458,17 +462,16 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Ends the disposable lifetime; repeated cancellation is harmless.</summary>
     member _.Cancel() = cancel true
     /// <summary>Rewinds to zero with muted render callbacks and cancels this timer.</summary>
-    member _.Revert() =
-        if not state.Cancelled then this.RewindForRevert()
+    member this.Revert() = this.Revert(true)
     /// <summary>Optionally skips the rewind, retaining the playhead while restoring any attached property snapshot.</summary>
     member _.Revert(seekToStart: bool) =
-        if seekToStart then this.Revert()
-        else
-            match softRestore with
-            | Some restore -> restore()
-            | None when not explicitlyCancelled -> this.StopForRevert(false)
-            | None -> ()
-    member internal _.OnSoftRevert with set value = softRestore <- Some value
+        match revertRestore with
+        | Some restore -> restore seekToStart
+        | None when seekToStart ->
+            if not state.Cancelled then this.RewindForRevert()
+        | None when not explicitlyCancelled -> this.StopForRevert(false)
+        | None -> ()
+    member internal _.OnRevert with set value = revertRestore <- Some value
     /// <summary>Maps observable completion to the callback result.</summary>
     member this.ThenResult<'T>(callback: Timer -> 'T) : Threading.Tasks.Task<'T> =
         CompletionTask.observe (fun () -> callback this) (fun complete cancel ->
@@ -588,12 +591,21 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Raw time immediately before the current sample.</summary>
     member internal _.PreviousAbsoluteTime = state.PreviousAbsoluteTime
     /// <summary>Installs an animation renderer and an optional source setter-duration override before sampling.</summary>
-    member internal _.ConfigureRenderer(renderer, ?totalDuration: float, ?onStretch: (float -> unit), ?sampleWhenMuted: bool) =
+    member internal _.ConfigureRenderer(renderer, ?totalDuration: float, ?onStretch: (float -> unit), ?sampleWhenMuted: bool,
+                                        ?validateStretch: (float -> unit), ?onZeroStretch: (float -> float -> unit),
+                                        ?validateZeroStretch: (float -> float -> unit)) =
         let sampleWhenMuted = defaultArg sampleWhenMuted false
         state.Renderer <- fun sample mode muteCallbacks ->
             if renderingEnabled && (sampleWhenMuted || not(effectivelyMuted())) then renderer sample mode muteCallbacks
         onStretch |> Option.iter(fun hook -> stretchRenderer <- hook)
+        validateStretch |> Option.iter(fun hook -> stretchValidator <- hook)
+        onZeroStretch |> Option.iter(fun hook -> zeroStretchRenderer <- hook)
+        validateZeroStretch |> Option.iter(fun hook -> zeroStretchValidator <- hook)
         totalDuration |> Option.iter state.OverrideDuration
+    member internal _.PrepareStretch(milliseconds: float) = state.PrepareStretch milliseconds
+    member internal _.ValidateStretch(scale: float) = stretchValidator scale
+    member internal _.ValidateZeroStretch(scale: float, nextOffset: float) = zeroStretchValidator scale nextOffset
+    member internal _.ApplyZeroStretch(scale: float, nextOffset: float) = zeroStretchRenderer scale nextOffset
     /// <summary>Assigns current time with pause/seek/resume semantics while every ancestor remains live.</summary>
     member internal _.SetTimeGuarded(time, canWrite) = setTimeGuarded canWrite time
     /// <summary>Captures rounded iteration progress, direction policy and the scheduling anchor before scope reversion.</summary>
@@ -649,6 +661,12 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     member internal _.Resize(value: float) =
         operate (fun current ->
             state.Resize value
+            duration <- value
+            if current() then state.Reset()) ignore
+    /// <summary>Updates iteration and initial-delay geometry and resets with muted callbacks.</summary>
+    member internal _.ResizeWithDelay(value: float, newDelay: float) =
+        operate (fun current ->
+            state.ResizeWithDelay(value, newDelay)
             duration <- value
             if current() then state.Reset()) ignore
     /// <summary>Updates timeline iteration geometry after child removal while retaining the current playhead.</summary>

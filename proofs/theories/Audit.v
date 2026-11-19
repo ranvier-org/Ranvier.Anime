@@ -12,6 +12,9 @@ Print Assumptions engine_clock_phase_drift_bounded.
 Print Assumptions priority_insert_preserves_sorted.
 Print Assumptions deferred_writes_depth_balanced.
 Print Assumptions snapshot_index_traversal_eq_reversed_copy.
+Print Assumptions forever_reanchor_divides_effective_speed.
+Print Assumptions signed_odd_bit_xor_involution.
+Print Assumptions resize_rebounds_sample_within_new_duration.
 
 (** ** CurvesStagger.v *)
 Print Assumptions ease_out_reflection_endpoints_and_involution.
@@ -22,6 +25,8 @@ Print Assumptions stagger_flat_step_simd_eq_scalar.
 Print Assumptions bounce_4branch_eq_pow_loop.
 Print Assumptions monotone_lower_bound_bsearch_eq_linear_scan.
 Print Assumptions dyadic_lut_bisection_eq_direct_bisection.
+Print Assumptions nondecreasing_offsets_clamped_delta_nonneg.
+Print Assumptions rationalized_overdamped_decay_avoids_cancellation.
 
 (** ** InterpolationColor.v *)
 Print Assumptions js_half_ceil_round_ties_toward_pos_inf.
@@ -37,6 +42,7 @@ Print Assumptions fixed4_int_decomposition_exact.
 Print Assumptions simd_snap_to_first_tie_eq_reduce.
 Print Assumptions simd_snap_lane_lex_min_eq_reduce.
 Print Assumptions strictly_sorted_bracket_snap_eq_reduce.
+Print Assumptions hwb_proportional_gray_scale_invariant.
 
 (** ** CompositionTimeline.v *)
 Print Assumptions timeline_position_relative_ops_sound.
@@ -50,6 +56,7 @@ Print Assumptions coalesced_end_of_frame_flush_eq_eager_per_tween_flush.
 Print Assumptions simd_channel_add_chunks_eq_scalar.
 Print Assumptions property_slice_cursor_search_eq_full_frame_scan.
 Print Assumptions soa_multi_target_scalar_simd_eq_per_tween.
+Print Assumptions blend_midflight_cancel_folds_residual_without_jump.
 
 (** ** DomScrollDragMotion.v *)
 Print Assumptions transform_clear_revert_never_resurrects_stale_cache.
@@ -63,3 +70,4 @@ Print Assumptions draggable_numeric_sentinel_cache_eq_eager_text.
 Print Assumptions css_balanced_delimiter_single_pass_eq_two_pass.
 Print Assumptions parallel_snapshot_restore_eq_frozendict.
 Print Assumptions char_buffer_scramble_eq_string_cache.
+Print Assumptions layout_zero_duration_seek_reaches_target_after_delay.

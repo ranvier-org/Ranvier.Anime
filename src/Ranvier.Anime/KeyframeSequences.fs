@@ -106,7 +106,8 @@ type KeyframeSequence<'Target,'Value> private(rows:KeyframeRow<'Target,'Value> a
                         | true,value -> value
                         | _ -> names.Add name;ResizeArray<Keyframe<'Target,'Value>>(),0.,None
                     let elapsedEnd=position*duration
-                    let frameDuration=elapsedEnd-elapsed
+                    let rawDelta=elapsedEnd-elapsed
+                    let frameDuration=if frames.Count>0 && rawDelta<0. then 0. else rawDelta
                     let mutable frame=value.WithDurationPrecise(frameDuration)
                     if frames.Count=1 then frame<-frame.WithFromDestination frames[0]
                     previousEase |> Option.iter(fun ease -> frame<-frame.WithEase ease)

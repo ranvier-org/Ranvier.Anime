@@ -56,5 +56,5 @@ module Anime =
     /// Pauses the object at its current values when it is a tickable, or an animatable, whose property animations are
     /// paused; any other revertible is left as it is.
     /// </summary>
-    [<Emit("(r => { if (typeof r.pause === 'function') r.pause(); else if (r.animations) for (const k in r.animations) r.animations[k].pause(); })($0)")>]
+    [<Emit("(r => { if (r) { if (typeof r.pause === 'function') r.pause(); else if (r.animations) for (const k in r.animations) r.animations[k].pause(); } })($0)")>]
     let pause (revertible: IRevertible) : unit = jsNative

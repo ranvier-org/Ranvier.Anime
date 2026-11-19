@@ -216,7 +216,9 @@ module Follow =
 
     /// <summary>A follower of the shape of an SVG path (<c>d</c>) or polygon (<c>points</c>): each later shape is morphed to.</summary>
     let morph (element: Element) (options: ComposedAnimationOptions) : Follower<string> =
-        let converted: Raw.Anim = unbox (BrowserParams.animation [||] options false)
+        let converted: Raw.Anim =
+            unbox (BrowserParams.animation [||] { options with Autoplay = true } false)
+
         let attribute = Raw.shapeAttribute element
         let restore = Raw.keepAttributes element [| attribute |]
         let current: Raw.JSAnimation ref = ref null
@@ -231,13 +233,16 @@ module Follow =
                     first.Value <- false
                     Raw.setShape element attribute shape
                 else
+                    if not (isNull current.Value) then
+                        current.Value.cancel ()
+
                     let target =
                         Raw.Svg.morphTo (Raw.Targets.op_Implicit (Raw.shapeLike element attribute shape))
 
                     let morphing =
                         Raw.Anime.animate (Raw.Targets.op_Implicit element, Raw.withKey converted attribute target)
 
-                    Js.chain morphing "onComplete" (fun _ -> Raw.setShape element attribute shape)
+                    ((box morphing :?> ITickable)).WhenCompleted(fun () -> Raw.setShape element attribute shape)
                     current.Value <- morphing
 
             member _.Pause() =

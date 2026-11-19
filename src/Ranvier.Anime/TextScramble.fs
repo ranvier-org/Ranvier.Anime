@@ -214,7 +214,6 @@ module internal ScrambleImpl =
 
     let writeTargetHtml (target: obj) (value: string) =
         match target with
-        | :? HTMLElement as htmlEl -> htmlEl.innerHTML <- value
         | :? Element as el -> (el :> Node).textContent <- value
         | :? AnimatedObject as bag -> bag.SetText("innerHTML", value)
         | _ -> ()

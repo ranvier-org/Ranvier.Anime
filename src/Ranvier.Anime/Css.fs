@@ -255,7 +255,7 @@ module CssAnimation =
         lifetime.Bind(clock,clock.Cancel,(fun () ->
             let admitted = not clock.Cancelled || clock.Completed
             fun () -> admitted))
-        clock.OnSoftRevert <- fun () -> lifetime.Revert(false)
+        clock.OnRevert <- lifetime.Revert
         clock.OnCancel <- lifetime.Cancelled
         clock.OnFault <- lifetime.Faulted
         let mutable renderToken = Int64.MinValue
@@ -269,7 +269,7 @@ module CssAnimation =
             try
                 let iterationDuration=clock.IterationDuration
                 let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
-                let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=200.
+                let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=clock.TickThreshold
                 let absolute=PropertyNumbers.round 1e12 (clock.Delay+sample.IterationTime)
                 let start=PropertyNumbers.round 1e12 clock.Delay
                 let eligible=force || ((tweenTime<>iterationDuration || absolute<=start+iterationDuration) &&

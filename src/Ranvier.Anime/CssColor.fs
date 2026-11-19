@@ -170,7 +170,8 @@ module internal CssColor =
                 hsl (hue x) (magnitude y) (magnitude z)
             | "hwb" ->
                 let h = hue x
-                let w,b = magnitude y, magnitude z
+                let w = max 0. (scaled 100. y / 100.)
+                let b = max 0. (scaled 100. z / 100.)
                 if w+b >= 1. then let grey = w/(w+b) in grey,grey,grey
                 else hsl h 1. 0.5 |> map3 (fun c -> c*(1.-w-b)+w)
             | "oklab" | "oklch" | "lab" | "lch" ->
@@ -227,20 +228,16 @@ module internal CssColor =
             let span = value.AsSpan().Trim()
             if span.IsEmpty then None
             elif span[0] = '#' then
-                if span.Length > 9 then
-                    let mutable hasWs = false
+                if span.Length = 4 || span.Length = 5 || span.Length = 7 || span.Length = 9 then
+                    let mutable allHex = true
                     for i = 1 to span.Length - 1 do
-                        if Char.IsWhiteSpace span[i] then hasWs <- true
-                    if hasWs then None else invalid ()
-                else
-                    let mutable hasWs = false
-                    for i = 1 to span.Length - 1 do
-                        if Char.IsWhiteSpace span[i] then hasWs <- true
-                    if hasWs then None
+                        if not (Char.IsAsciiHexDigit span[i]) then allHex <- false
+                    if not allHex then None
                     else
                         let result = hex (span.ToString())
                         if forInterpolation then result[3] <- Math.Round(result[3],3,MidpointRounding.AwayFromZero)
                         Some result
+                else None
             else
                 // Fast zero-alloc scan: CSS color functions have a 3..5 letter prefix before '(';
                 // CSS named colors consist solely of ASCII letters (<= 24 chars).

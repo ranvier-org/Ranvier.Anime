@@ -2,17 +2,23 @@ module Ranvier.Anime.Tests.ProofLiftedBugTests
 
 open System
 open System.Collections.Generic
+open System.Reflection
 open Expecto
 open Ranvier
 open Ranvier.Dom
 open Ranvier.Anime
+
+let private domProxy<'t> handler =
+    let value = DispatchProxy.Create<'t, PortableTests.PortableProxy>()
+    (box value :?> PortableTests.PortableProxy).Handler <- handler
+    value
 
 let private close actual expected msg =
     Expect.isLessThanOrEqual (abs (actual - expected)) 1e-6 msg
 
 let tests =
     testList
-        "proof-lifted regression suite (#24-#29)"
+        "proof-lifted regression suite (#24-#29, #37-#41)"
         [
             testCase "#24: clock-muted ComposedAnimation does not hijack Replace writers or corrupt Blend baselines, and Alternate/Complete guard fullyReplaced"
             <| fun _ ->
@@ -191,4 +197,382 @@ let tests =
                 close midWhite.Red 1. "white Red"
                 close midWhite.Green 1. "white Green"
                 close midWhite.Blue 1. "white Blue"
+
+            testCase "#37: PlaybackTiming signed odd parity, Resize rebound, Timer Forever speed re-anchor, KeyframeAnimation.Playback.Revert, TimelinePosition, Timeline.Remove/Stretch, and equal KeyframeOffset ULP clamping"
+            <| fun _ ->
+                // 1. Signed odd iteration parity when 32-bit iteration index wraps negative
+                let timing = PlaybackTiming(1., infinity, 0., 0.)
+                let oddWrappedTime = 2147483649.5
+                let sampleForward = timing.Sample(0., oddWrappedTime, false, true, false, PlaybackTickMode.Force)
+                let sampleReversed = timing.Sample(0., oddWrappedTime, true, true, false, PlaybackTickMode.Force)
+                Expect.isLessThan sampleForward.Iteration 0 "iteration index wrapped to negative int32"
+                close sampleForward.IterationTime 0.5 "forward + alternate odd iteration reverses to 0.5"
+                close sampleReversed.IterationTime 0.5 "reversed + alternate odd iteration cancels reversal to forward 0.5"
+                Expect.notEqual
+                    (timing.Sample(0., 2147483649.25, false, true, false, PlaybackTickMode.Force)).IterationTime
+                    (timing.Sample(0., 2147483649.25, true, true, false, PlaybackTickMode.Force)).IterationTime
+                    "reversed xor odd-bit distinguishes base direction on negative odd index"
+
+                // 2. Timer Forever re-anchor divides by effective speed
+                use host = new ManualFrameScheduler()
+                use foreverTimer =
+                    new Timer(
+                        host,
+                        100u,
+                        options = { PlaybackOptions.Default with Repeat = PlaybackRepeat.Forever; Speed = 2. }
+                    )
+                foreverTimer.Play()
+                host.Advance(1e12 / 2. - 12.)
+                host.RunFrame()
+                Expect.isTrue foreverTimer.Sample.AtEnd "reached Forever 1e12 sentinel"
+                host.Advance 25.
+                host.RunFrame()
+                close foreverTimer.CurrentTime 50. "25ms real time at Speed=2 advances 50ms after Forever re-anchor"
+
+                // 3. KeyframeAnimation.Playback.Revert() restores pre-construction snapshot after completion
+                let mutable propVal = 7.
+                let numProp = NumericProperty((fun () -> propVal), (fun v -> propVal <- v))
+                use kfAnim =
+                    Keyframes.Numeric(
+                        host,
+                        numProp,
+                        [| Keyframe.between 20. 120. |],
+                        duration = 100u,
+                        options = { KeyframeAnimationOptions.Default with Autoplay = false; Ease = id }
+                    )
+                kfAnim.Playback.Seek 100.
+                close propVal 120. "completed at 120"
+                kfAnim.Playback.Revert()
+                close propVal 7. "Playback.Revert() restores pre-construction snapshot 7 even after completion"
+
+                // 4. TimelinePosition '<label' and double-operator rejection
+                use tl = new Timeline(host)
+                let mutable pVal = 0.
+                let p = NumericProperty((fun () -> pVal), (fun v -> pVal <- v))
+                tl.Animate(p, 100., 100u).Label("<tag", TimelinePosition.At 40.) |> ignore
+                close (tl.ResolvePosition(TimelinePosition.Expression "<tag")) 40. "'<tag' resolves label instead of '<' sibling"
+                close (tl.ResolvePosition(TimelinePosition.Expression "<tag+=15")) 55. "'<tag+=15' resolves relative to label '<tag'"
+                Expect.throwsT<ArgumentException>
+                    (fun () -> tl.ResolvePosition(TimelinePosition.Expression "<missing+=10") |> ignore)
+                    "'<missing+=10' rejects missing label"
+                Expect.throwsT<ArgumentException>
+                    (fun () -> tl.ResolvePosition(TimelinePosition.Expression "+=10+=20") |> ignore)
+                    "chained relative operators rejected"
+
+                // 5. Timeline.Remove(property) removes OwnedAnimation from Timeline.Animate and rebounds Progress
+                use tlRem = new Timeline(host)
+                let mutable v1, v2 = 0., 0.
+                let prop1 = NumericProperty((fun () -> v1), (fun v -> v1 <- v))
+                let prop2 = NumericProperty((fun () -> v2), (fun v -> v2 <- v))
+                tlRem.Animate(prop1, 100., 100u).Animate(prop2, 200., 200u, position = TimelinePosition.At 0.) |> ignore
+                tlRem.Seek 100.
+                close tlRem.Progress 0.5 "100 / 200 = 0.5 before removing prop2"
+                tlRem.Remove(box prop2) |> ignore
+                close tlRem.Duration 100. "removing prop2 shrinks duration to 100"
+                close tlRem.Progress 1.0 "ResizeWithoutReset immediately rebounds Progress to 1.0"
+
+                // 6. Timeline.Stretch preserves zero-duration setter duration and validates atomically
+                use tlSet = new Timeline(host)
+                let mutable setV = 0.
+                let setProp = NumericProperty((fun () -> setV), (fun v -> setV <- v))
+                tlSet.Set(setProp, 42., position = TimelinePosition.At 50.).Animate(prop1, 100., 100u, position = TimelinePosition.At 0.) |> ignore
+                tlSet.Stretch 200. |> ignore
+                tlSet.Seek 99.
+                close setV 0. "stretched setter at 100ms has not fired at 99ms"
+                tlSet.Seek 100.
+                close setV 42. "stretched setter fires cleanly at 100ms"
+
+                // 7. Equal KeyframeOffset positions (0.07, 0.9, 0.9) do not throw on 1-ULP sum drift
+                let seqOffsets =
+                    KeyframeSequence<NumericProperty, float>.Offsets
+                        [| KeyframeOffset.at 0.07 [| "x", 10. |]
+                           KeyframeOffset.at 0.9 [| "x", 50. |]
+                           KeyframeOffset.at 0.9 [| "x", 90. |] |]
+                use seqAnim = Keyframes.Numeric(host, [| "x", prop1 |], seqOffsets, duration = 1000u)
+                seqAnim.Playback.Seek 1000.
+                close v1 90. "equal 0.9 offsets compile and reach final endpoint 90"
+
+            testCase "#38: Spring overdamped slow-root rationalization & finite Ease, Reactive.drive ambient-isolation, Animatable idle Pause, and Stagger/CssStagger null guards"
+            <| fun _ ->
+                // 1. Extreme overdamped spring settles below 60s cap and negative-time Solve/Ease stay finite
+                let extremeOver = Spring(mass = 1., stiffness = 1e-6, damping = 10000.)
+                Expect.isTrue (Double.IsFinite (extremeOver.Solve -10.)) "negative time Solve finite"
+                let zeroCoeffSpring = Spring(mass = 1., stiffness = 100., damping = 40., velocity = 40.)
+                Expect.isFalse (Double.IsNaN (zeroCoeffSpring.Solve -5.)) "0 * exp(+large) does not produce NaN"
+                Expect.isTrue (Double.IsFinite (extremeOver.Ease -1000.)) "Ease clamps extreme extrapolation to finite float"
+
+                // 2. Reactive.drive ignores ambient Reversed/Forever scope playback defaults and validates duration early
+                use graph = new Graph()
+                use _act = graph.Activate()
+                use host = new ManualFrameScheduler()
+                let owner = Api.createRoot id
+                try
+                    let mutable reads = 0
+                    Expect.throwsT<ArgumentException>
+                        (fun () ->
+                            Api.runWithOwner owner (fun () ->
+                                Reactive.drive host -5. (fun () -> reads <- reads + 1; 1.) ignore |> ignore))
+                        "negative duration rejected before reading source"
+                    Expect.equal reads 0 "read callback not invoked when duration is invalid"
+
+                    let sigVal = Api.createSignal 0.
+                    let mutable driven = -1.
+                    let disp =
+                        Api.runWithOwner owner (fun () ->
+                            ScopePlaybackContext.run
+                                (ScopeClockDefaults({ PlaybackOptions.Default with Reversed = true; Repeat = PlaybackRepeat.Forever }))
+                                (fun () -> Reactive.drive host 100. (fun () -> sigVal.Value) (fun v -> driven <- v)))
+                    use _d = disp
+                    close driven 0. "seeded to 0"
+                    sigVal.Value <- 100.
+                    host.Advance 88.
+                    host.RunFrame()
+                    close driven 100. "Reactive.drive reaches 100 forward despite ambient Reversed=true"
+                finally
+                    owner.Dispose()
+
+                // 3. Animatable with onComplete does not fire onComplete when idle before any property begins
+                let mutable completes = 0
+                use animGroup = new Animatable(host, onComplete = (fun _ -> completes <- completes + 1))
+                let mutable ax = 0.
+                let track = animGroup.Numeric(NumericProperty((fun () -> ax), (fun v -> ax <- v)), duration = 100u)
+                track.Playback.Pause()
+                Expect.equal completes 0 "pausing idle track before any retarget does not fire group onComplete"
+
+                // 4. Stagger.distribute and CssStagger.step null guards
+                Expect.throwsT<ArgumentNullException>
+                    (fun () -> Stagger.distribute (StaggerValue.Step 10.) Unchecked.defaultof<StaggerOptions> 3u |> ignore)
+                    "null StaggerOptions throws ArgumentNullException"
+                Expect.throwsT<ArgumentNullException>
+                    (fun () -> CssStagger.step Unchecked.defaultof<_> (Ranvier.Css.Css.px 10.) StaggerOptions.Default 0u |> ignore)
+                    "null create in CssStagger.step throws ArgumentNullException even when targetCount = 0"
+
+            testCase "#39: Composition Complex rgba preservation, Blend mid-flight cancel & Restart, RemoveMatching duration/timeline sync, ComposedTimeline speed/Refresh, and Utils zero-span safety"
+            <| fun _ ->
+                use host = new ManualFrameScheduler()
+                // 1. Complex string starting with rgba(..., 1) is not truncated to 3-channel rgb(...)
+                let styles = Dictionary<string, string>(StringComparer.Ordinal)
+                let mockStyle =
+                    domProxy<CSSStyleProperties> (fun m args ->
+                        match m.Name with
+                        | "get_length" -> box (uint32 styles.Count)
+                        | "item" -> box ""
+                        | "getPropertyValue" ->
+                            match styles.TryGetValue(unbox<string> args[0]) with
+                            | true, v -> box v
+                            | _ -> box ""
+                        | "getPropertyPriority" -> box ""
+                        | "setProperty" ->
+                            styles[unbox<string> args[0]] <- unbox<string> args[1]
+                            null
+                        | "removeProperty" ->
+                            styles.Remove(unbox<string> args[0]) |> ignore
+                            box ""
+                        | other -> failwith other)
+                let mockEl =
+                    domProxy<HTMLElement> (fun m _ ->
+                        match m.Name with
+                        | "get_style" -> box mockStyle
+                        | "getAttribute" -> null
+                        | "removeAttribute" -> null
+                        | other -> failwith other)
+                use shadowAnim =
+                    Composed.animate
+                        host
+                        (box mockEl)
+                        [| PropertySpec.Text("boxShadow", "rgba(255, 0, 0, 1) 10px 20px", fromValue = "rgba(0, 0, 0, 1) 0px 0px") |]
+                        (Some { ComposedAnimationOptions.Default with Duration = 100.; Ease = id; Autoplay = false })
+                shadowAnim.Seek 100. |> ignore
+                Expect.isTrue (styles["box-shadow"].Contains "10px 20px") "box-shadow preserves trailing offsets when leading color has alpha=1"
+
+                // 2. Blend mid-flight Cancel folds residual without jump, and Restart replays Blend delta
+                let blendBag = AnimatedObject [ "x", AdaptedValue.Scalar 0. ]
+                let blendOpts =
+                    { ComposedAnimationOptions.Default with
+                        Duration = 100.
+                        Ease = id
+                        Autoplay = false
+                        Composition = KeyframeComposition.Blend }
+                use b1 = Composed.animate host blendBag [| PropertySpec.Scalar("x", 100.) |] (Some blendOpts)
+                b1.Seek 50. |> ignore
+                use b2 = Composed.animate host blendBag [| PropertySpec.Scalar("x", 200.) |] (Some blendOpts)
+                b2.Seek 50. |> ignore
+                // At b1=50% (-50) and b2=50% (-50) with FromNumber=200, blended x = 100.
+                close (blendBag.GetNumber "x") 100. "combined blend at 50%/50% is 100"
+                b2.Cancel()
+                b1.Seek 50. |> ignore
+                close (blendBag.GetNumber "x") 100. "cancelling b2 mid-flight preserves live blended value 100 without +50 jump"
+                b1.Seek 100. |> ignore
+                close (blendBag.GetNumber "x") 150. "b1 finishes at 150 (100 + b2's half-completed +50)"
+
+                let restartBag = AnimatedObject [ "x", AdaptedValue.Scalar 0. ]
+                use br1 = Composed.animate host restartBag [| PropertySpec.Scalar("x", 100.) |] (Some blendOpts)
+                use br2 = Composed.animate host restartBag [| PropertySpec.Scalar("x", 100.) |] (Some blendOpts)
+                br1.Seek 100. |> ignore
+                br2.Seek 100. |> ignore
+                br1.Restart() |> ignore
+                br1.Seek 50. |> ignore
+                close (restartBag.GetNumber "x") 50. "restarted completed Blend animation replays from 0 -> 100"
+
+                // 3. ComposedTimeline child Speed division & Utils.remove on timeline child
+                let tlBag1 = AnimatedObject [ "x", AdaptedValue.Scalar 0. ]
+                let tlBag2 = AnimatedObject [ "x", AdaptedValue.Scalar 0. ]
+                use ctl = Composed.createTimeline host None (Some false)
+                ctl.Add(
+                    [| box tlBag1 |],
+                    [| PropertySpec.Scalar("x", 100.) |],
+                    options = { ComposedAnimationOptions.Default with Duration = 100.; Playback = { PlaybackOptions.Default with Speed = 2. } }
+                ) |> ignore
+                close ctl.Duration 50. "100ms child at Speed=2 contributes 50ms to ComposedTimeline duration"
+                ctl.Add([| box tlBag2 |], [| PropertySpec.Scalar("x", 100.) |], options = { ComposedAnimationOptions.Default with Duration = 100. }) |> ignore
+                close ctl.Duration 150. "second 100ms child placed at '<'/end starts at 50ms -> total 150ms"
+                ctl.Seek 75. |> ignore
+                Utils.remove (Some host) [| box tlBag2 |] None None |> ignore
+                close ctl.Duration 50. "Utils.remove prunes cancelled ComposedTimeline child and updates duration"
+
+                // 4. Utils.wrap and Utils.mapRange zero-span safety
+                close (Utils.wrap 42. 10. 10.) 10. "Utils.wrap with min=max returns min instead of NaN"
+                close ((Utils.Chain.wrap 10. 10.).Apply 42.) 10. "ValueChain.Wrap with min=max returns min"
+                close (Utils.mapRange 5. 10. 10. 20. 80.) 20. "Utils.mapRange with inLow=inHigh returns outLow instead of NaN"
+                close ((Utils.Chain.mapRange 10. 10. 20. 80.).Apply 5.) 20. "ValueChain.MapRange with inLow=inHigh returns outLow"
+
+            testCase "#40: ElementTransforms external cache sync, CssColor HWB proportional gray & '#'-prefixed complex decomposition, Waapi custom-prop Revert, and Scramble text safety"
+            <| fun _ ->
+                // 1. ElementTransforms clears stale cached components when inline style.transform is externally overwritten
+                let mutable inlineTf = ""
+                let tfStyle =
+                    domProxy<CSSStyleProperties> (fun m args ->
+                        match m.Name with
+                        | "getPropertyValue" -> box (if unbox<string> args[0] = "transform" then inlineTf else "")
+                        | "getPropertyPriority" -> box ""
+                        | "setProperty" ->
+                            if unbox<string> args[0] = "transform" then inlineTf <- unbox<string> args[1]
+                            null
+                        | "removeProperty" ->
+                            if unbox<string> args[0] = "transform" then inlineTf <- ""
+                            box ""
+                        | other -> failwith other)
+                let tfEl =
+                    domProxy<HTMLElement> (fun m _ ->
+                        match m.Name with
+                        | "get_style" -> box tfStyle
+                        | other -> failwith other)
+                ElementTransforms.set (tfEl :> Element) [ "x", TransformValue.Scalar 20.; "rotate", TransformValue.Scalar 45. ]
+                Expect.equal inlineTf "translateX(20px) rotate(45deg)" "both staged"
+                // External caller overwrites inline transform removing rotate(45deg)
+                inlineTf <- "translateX(10px)"
+                Expect.equal (ElementTransforms.get (tfEl :> Element) "rotate") "0deg" "stale rotate(45deg) cleared when absent from live inline transform"
+
+                // 2. CssColor HWB proportional gray normalization when w > 100% and '#'-prefixed complex decomposition
+                let hwbGrey = Utils.parseColor "hwb(0 150% 50%)"
+                close hwbGrey[0] (255. * 0.75) "hwb(0 150% 50%) normalizes 1.5 / (1.5 + 0.5) = 0.75 gray"
+                let complexHex = ValueInterpolation.decompose (ValueInterpolation.Text "#ff0000,#00ff00")
+                Expect.equal complexHex.Kind ValueInterpolation.ValueKind.Complex "'#ff0000,#00ff00' falls through to Complex without throwing"
+
+                // 3. TextScramble writes textContent on HTMLElement (no HTML tag injection) and restores original innerHTML on Revert
+                use host = new ManualFrameScheduler()
+                let mutable innerHtml = "<span>Keep</span>"
+                let mutable textContent = "Keep"
+                let scramEl =
+                    domProxy<HTMLElement> (fun m args ->
+                        match m.Name with
+                        | "get_innerHTML" -> box innerHtml
+                        | "set_innerHTML" ->
+                            innerHtml <- unbox<string> args[0]
+                            textContent <- innerHtml
+                            null
+                        | "get_textContent" -> box textContent
+                        | "set_textContent" ->
+                            textContent <- unbox<string> args[0]
+                            null
+                        | other -> failwith other)
+                use scramTimer =
+                    Text.animateScramble
+                        host
+                        (box scramEl)
+                        (Some { ScrambleTextOptions.Default with Text = Some "<b&>"; Duration = Some 100. })
+                        None
+                        (Some false)
+                        None
+                scramTimer.Seek 100.
+                Expect.equal textContent "<b&>" "settled text written via textContent without HTML parsing"
+                Expect.equal innerHtml "<span>Keep</span>" "innerHTML setter was not used during scramble frames"
+                scramTimer.Revert()
+                Expect.equal innerHtml "<span>Keep</span>" "Revert restores pre-scramble innerHTML"
+
+            testCase "#41: NativeDraggable muted X/Y setters, Follow.property component-scoped transform Revert & Autoplay override, and Scroll.observe ComposedTimeline link"
+            <| fun _ ->
+                use host = new ManualFrameScheduler()
+                // 1. NativeDraggable X/Y setters move coordinates without firing OnUpdate
+                let mutable xVal, yVal = 0., 0.
+                let mutable updates = 0
+                let xProp = NumericProperty((fun () -> xVal), (fun v -> xVal <- v))
+                let yProp = NumericProperty((fun () -> yVal), (fun v -> yVal <- v))
+                use ctrl = new Draggable(host, xProp, yProp, onUpdate = (fun _ -> updates <- updates + 1))
+                use nativeDrag = new NativeDraggable(ctrl, None, None, [||])
+                nativeDrag.X <- 42.
+                nativeDrag.Y <- 84.
+                close xVal 42. "NativeDraggable.X moved xProp"
+                close yVal 84. "NativeDraggable.Y moved yProp"
+                Expect.equal updates 0 "NativeDraggable.X/Y setters mute OnUpdate per portable contract"
+
+                // 2. Follow.property forces Autoplay=true and reverts only its own transform component
+                let styles = Dictionary<string, string * string>(StringComparer.Ordinal)
+                let fStyle =
+                    domProxy<CSSStyleProperties> (fun m args ->
+                        match m.Name with
+                        | "get_length" -> box (uint32 styles.Count)
+                        | "item" -> box ""
+                        | "getPropertyValue" ->
+                            match styles.TryGetValue(unbox<string> args[0]) with
+                            | true, (v, _) -> box v
+                            | _ -> box ""
+                        | "getPropertyPriority" ->
+                            match styles.TryGetValue(unbox<string> args[0]) with
+                            | true, (_, p) -> box p
+                            | _ -> box ""
+                        | "setProperty" ->
+                            let prio =
+                                match args[2] with
+                                | :? string as s -> s
+                                | :? (string option) as opt -> defaultArg opt ""
+                                | _ -> ""
+                            styles[unbox<string> args[0]] <- (unbox<string> args[1], prio)
+                            null
+                        | "removeProperty" ->
+                            styles.Remove(unbox<string> args[0]) |> ignore
+                            box ""
+                        | other -> failwith other)
+                let fEl =
+                    domProxy<HTMLElement> (fun m _ ->
+                        match m.Name with
+                        | "get_style" -> box fStyle
+                        | "getAttribute" ->
+                            if styles.Count = 0 then box "" else box "nonempty"
+                        | "removeAttribute" -> null
+                        | other -> failwith other)
+                let computedSvc =
+                    { new ComputedStyleService with
+                        member _.Get(_, _) = fStyle :> CSSStyleDeclaration }
+                use _installed = AnimeHost.Install { Scheduler = host; Computed = computedSvc }
+                let followOpts = { ComposedAnimationOptions.Default with Duration = 100.; Ease = id; Autoplay = false }
+                let fx = Follow.property (fEl :> Element) "x" followOpts
+                let fy = Follow.property (fEl :> Element) "y" followOpts
+                fx.To 10.
+                fy.To 20.
+                Expect.equal (fst styles["transform"]) "translateX(10px) translateY(20px)" "both x and y followers wrote"
+                fx.Revert()
+                Expect.equal (fst styles["transform"]) "translateY(20px)" "reverting x follower preserves y follower's transform"
+                fy.Revert()
+                Expect.isFalse (styles.ContainsKey "transform") "reverting y follower removes empty transform"
+
+                // Opacity follower with Autoplay=false on options still autoplays on second To
+                let fOp = Follow.property (fEl :> Element) "opacity" followOpts
+                fOp.To 0.2
+                fOp.To 1.0
+                for _ in 1..15 do
+                    host.Advance 10.
+                    host.RunFrame()
+                close (Double.Parse(fst styles["opacity"], Globalization.CultureInfo.InvariantCulture)) 1.0 "ComposedFollower overrides Autoplay=false so follower animates"
+                fOp.Revert()
         ]

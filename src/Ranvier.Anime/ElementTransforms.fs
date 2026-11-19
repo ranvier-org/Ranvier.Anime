@@ -155,6 +155,7 @@ module ElementTransforms =
         if not (String.IsNullOrEmpty inlineTransforms) then
             let parsed = ParsedScratchTls.Acquire()
             let fullTranslate = TransformCache.parseInto inlineTransforms parsed
+            state.Cache.Clear()
             for KeyValue(k, v) in parsed do state.Cache[k] <- v
             state.FullTranslate <- fullTranslate
             if canonical = "translate3d" && fullTranslate.IsSome then
@@ -237,6 +238,7 @@ module ElementTransforms =
         let priority = style.getPropertyPriority "transform"
         let inlineTransforms = style.getPropertyValue "transform"
         if not (String.IsNullOrEmpty inlineTransforms) then
+            state.Cache.Clear()
             state.FullTranslate <- TransformCache.parseInto inlineTransforms state.Cache
         else
             state.Cache.Clear()

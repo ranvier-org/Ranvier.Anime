@@ -487,3 +487,28 @@ Proof.
     destruct (Nat.ltb_spec (length tos) chunk); [simpl; reflexivity |].
     simpl. rewrite IH. apply eval_soa_scalar_split; lia.
 Qed.
+
+(** ** Pass-2 Correctness Proof (#39): Mid-Flight `Blend` Sibling Cancel Folds Residual Delta Without Discontinuity *)
+
+Definition blend_total_before_cancel (base d_cancelled d_surviving : Z) : Z :=
+  base + (d_cancelled + d_surviving).
+
+Definition blend_fold_cancel_base (base d_cancelled : Z) : Z :=
+  base + d_cancelled.
+
+Definition blend_total_after_cancel (base' d_surviving : Z) : Z :=
+  base' + d_surviving.
+
+(**md **Folding a mid-flight cancelled `Blend` sibling's residual delta into `entry.FromNumber` preserves instantaneous blended output (#39).**
+Updating `base' := base + d_cancelled` when detaching an unfinished `Blend` sibling keeps the rendered sum `base' + d_surviving` continuous (`0` jump) at the instant of cancellation and converges to `base + d_cancelled` when surviving siblings finish (`d_surviving = 0`). *)
+Theorem blend_midflight_cancel_folds_residual_without_jump :
+  forall base d_cancelled d_surviving,
+    let base' := blend_fold_cancel_base base d_cancelled in
+    blend_total_after_cancel base' d_surviving =
+      blend_total_before_cancel base d_cancelled d_surviving /\
+    blend_total_after_cancel base' 0 = base + d_cancelled.
+Proof.
+  intros base d_cancelled d_surviving.
+  unfold blend_fold_cancel_base, blend_total_after_cancel, blend_total_before_cancel.
+  lia.
+Qed.

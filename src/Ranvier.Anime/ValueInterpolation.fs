@@ -148,6 +148,8 @@ module internal ValueInterpolation =
     [<Sealed; AllowNullLiteral; System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
     type Output internal (kind:ValueKind, number:float, unitSuffix:string, components:float array, text:string) =
         let mutable text=text
+        /// <summary>The source decomposition category of this output.</summary>
+        member _.Kind=kind
         /// <summary>Whether the value is a unitless number, so <c>Number</c> is its scalar.</summary>
         member _.HasScalar=kind=ValueKind.Number
         /// <summary>The composed scalar; zero for color and compound values.</summary>

@@ -71,7 +71,8 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
         ticker.Resume()),onComplete=(fun _ -> ticker.Pause()))
     let resizeTicker = new Timer(scheduler,250. * engine.TimeScale,onComplete=(fun _ -> this.Refresh()))
     let eventTarget = match viewport with Some(provider,_) -> provider.Window | None -> element:>EventTarget
-    let readCoords () =
+    let readCoords updateDirection =
+        let prevX, prevY = x, y
         match viewport with
         | Some(_,scroll) ->
             let position = scroll.Position()
@@ -80,6 +81,12 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
         | None ->
             x <- float element.scrollLeft
             y <- float element.scrollTop
+        if updateDirection then
+            let dx, dy = prevX - x, prevY - y
+            if dx <> 0. then backwardX <- dx > 0.
+            if dy <> 0. then backwardY <- dy > 0.
+            if dy <> 0. then lastBackward <- dy > 0.
+            elif dx <> 0. then lastBackward <- dx > 0.
     let number (value:string) =
         let token = value.AsSpan().Trim().TrimEnd("px".AsSpan())
         match Double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture) with
@@ -95,7 +102,14 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
             let probe = provider.Document.createElement("div") :?> HTMLElement
             let node = probe:>Node
             try
-                (probe:>ElementCSSInlineStyle).style.setProperty("height","100lvh")
+                let probeStyle = (probe:>ElementCSSInlineStyle).style
+                probeStyle.setProperty("position","fixed")
+                probeStyle.setProperty("top","0")
+                probeStyle.setProperty("left","0")
+                probeStyle.setProperty("width","0")
+                probeStyle.setProperty("height","100lvh")
+                probeStyle.setProperty("visibility","hidden")
+                probeStyle.setProperty("pointer-events","none")
                 provider.Document.body.appendChild node |> ignore
                 height <- float probe.offsetHeight
             finally
@@ -108,11 +122,14 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
         scrollHeight <- float element.scrollHeight + number(style.getPropertyValue "margin-top") + number(style.getPropertyValue "margin-bottom")
     let listener =
         { new EventListenerObject with
-            member _.handleEvent _ = if not disposed then readCoords(); wake.Restart() }
+            member _.handleEvent _ = if not disposed then readCoords true; wake.Restart() }
     let observer = resize.Create(fun _ -> if not disposed then resizeTicker.Restart())
     do
         try
-            readCoords(); bounds()
+            readCoords false
+            previousX <- x
+            previousY <- y
+            bounds()
             eventTarget.addEventListener("scroll",listener,false)
             observer.Observe(element)
             wake.Restart()
@@ -209,7 +226,7 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
             for i = 0 to snap.Length - 1 do
                 let child = snap[i]
                 if not disposed && child.Ready then child.Resize()
-            if not disposed then readCoords(); wake.Restart()
+            if not disposed then readCoords true; wake.Restart()
     /// <summary>Current Euclidean velocity in CSS pixels per engine time unit.</summary>
     member _.Velocity = velocity / engine.TimeScale
     /// <summary>Whether the last changed horizontal sample moved backward.</summary>
