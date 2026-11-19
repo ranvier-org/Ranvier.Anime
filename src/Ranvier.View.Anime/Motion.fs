@@ -489,7 +489,10 @@ module Motion =
                     | None -> element
 
                 let write (signal: Signal<'v> voption) (value: 'v) =
-                    signal |> ValueOption.iter (fun signal -> graph.Batch(fun () -> signal.Value <- value))
+                    signal
+                    |> ValueOption.iter (fun signal ->
+                        if Api.untrack (fun () -> signal.Value) <> value then
+                            graph.Batch(fun () -> signal.Value <- value))
 
                 let onEvent (event: ScrollEvent) (progress: float) =
                     match event with
@@ -528,10 +531,16 @@ module Motion =
                 let callbacks = parameters.Callbacks
 
                 let publish (draggable: NativeDraggable) =
-                    graph.Batch(fun () -> binding.Position.Value <- struct (draggable.X, draggable.Y))
+                    let next = struct (draggable.X, draggable.Y)
+
+                    if Api.untrack (fun () -> binding.Position.Value) <> next then
+                        graph.Batch(fun () -> binding.Position.Value <- next)
 
                 let dragging (value: bool) =
-                    binding.Dragging |> ValueOption.iter (fun signal -> graph.Batch(fun () -> signal.Value <- value))
+                    binding.Dragging
+                    |> ValueOption.iter (fun signal ->
+                        if Api.untrack (fun () -> signal.Value) <> value then
+                            graph.Batch(fun () -> signal.Value <- value))
 
                 let chained =
                     { callbacks with

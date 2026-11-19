@@ -402,37 +402,52 @@ module Follow =
 /// <summary>An identity set of nodes.</summary>
 [<Sealed>]
 type NodeSet() =
-    let perThread = new System.Threading.ThreadLocal<List<Node>>(fun () -> List<Node>())
+    let perThread =
+        new System.Threading.ThreadLocal<struct (HashSet<Node> * List<Node>)>(fun () ->
+            struct (HashSet<Node>(HashIdentity.Reference), List<Node>()))
     let items () = perThread.Value
 
     /// <summary>The number of nodes in the set.</summary>
-    member _.Count = (items ()).Count
+    member _.Count =
+        let struct (_, list) = items ()
+        list.Count
 
     /// <summary>Whether the node is in the set.</summary>
     member _.Has(node: Node) : bool =
-        let list = items ()
-        let mutable found = false
-        let mutable i = 0
-        let count = list.Count
-        while i < count && not found do
-            if Portable.same list[i] node then found <- true
-            i <- i + 1
-        found
+        let struct (refSet, list) = items ()
+        if list.Count = 0 then false
+        elif refSet.Contains node then true
+        else
+            let mutable found = false
+            let mutable i = 0
+            let count = list.Count
+            while i < count && not found do
+                if list[i].isSameNode node then found <- true
+                i <- i + 1
+            found
 
     /// <summary>Adds the node, unless the set has it.</summary>
-    member this.Add(node: Node) : unit = if not (this.Has node) then (items ()).Add node
+    member this.Add(node: Node) : unit =
+        if not (this.Has node) then
+            let struct (refSet, list) = items ()
+            refSet.Add node |> ignore
+            list.Add node
 
     /// <summary>Removes the node, if the set has it.</summary>
     member _.Remove(node: Node) : unit =
-        let list = items ()
-        let mutable i = list.Count - 1
-        while i >= 0 do
-            if Portable.same list[i] node then list.RemoveAt i
-            i <- i - 1
+        let struct (refSet, list) = items ()
+        if list.Count > 0 then
+            let mutable i = list.Count - 1
+            while i >= 0 do
+                let candidate = list[i]
+                if Portable.same candidate node then
+                    refSet.Remove candidate |> ignore
+                    list.RemoveAt i
+                i <- i - 1
 
     /// <summary>Whether <c>root</c> is, or contains, a node of the set.</summary>
     member _.AnyUnder(root: Node) : bool =
-        let list = items ()
+        let struct (_, list) = items ()
         let mutable found = false
         let mutable i = 0
         let count = list.Count

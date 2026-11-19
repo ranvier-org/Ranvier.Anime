@@ -80,3 +80,6 @@ Print Assumptions css_balanced_delimiter_single_pass_eq_two_pass.
 Print Assumptions parallel_snapshot_restore_eq_frozendict.
 Print Assumptions char_buffer_scramble_eq_string_cache.
 Print Assumptions layout_zero_duration_seek_reaches_target_after_delay.
+Print Assumptions indexed_style_map_eq_linear_styles.
+Print Assumptions flat_prop_index_values_eq_frozendict.
+Print Assumptions empty_inline_style_fast_snapshot_eq_full.

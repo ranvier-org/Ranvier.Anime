@@ -522,3 +522,209 @@ Proof.
   unfold layout_zero_dur_seek.
   destruct (Z.ltb_spec local_t 0); lia.
 Qed.
+
+(** ** Batch B3 Refinement Proofs: Indexed `AutoLayout` Style Tracking, Flat Property Ordinal Array & Empty-Inline-Style Fast Snapshot *)
+
+Definition style_key := (nat * nat)%type.
+
+Definition style_key_eqb (a b : style_key) : bool :=
+  let '(e1, p1) := a in
+  let '(e2, p2) := b in
+  andb (Nat.eqb e1 e2) (Nat.eqb p1 p2).
+
+Lemma style_key_eqb_eq :
+  forall a b, style_key_eqb a b = true <-> a = b.
+Proof.
+  intros [e1 p1] [e2 p2]. unfold style_key_eqb.
+  destruct (Nat.eqb_spec e1 e2); destruct (Nat.eqb_spec p1 p2); simpl; split; intros Heq;
+    try congruence; try inversion Heq; subst; auto.
+Qed.
+
+Fixpoint linear_find_style {V : Type} (k : style_key) (entries : list (style_key * V)) : option V :=
+  match entries with
+  | [] => None
+  | (k', v) :: rest => if style_key_eqb k k' then Some v else linear_find_style k rest
+  end.
+
+Definition track_style_linear {V : Type} (mk : style_key -> V) (entries : list (style_key * V)) (k : style_key)
+    : list (style_key * V) * V :=
+  match linear_find_style k entries with
+  | Some existing => (entries, existing)
+  | None =>
+    let fresh := mk k in
+    (entries ++ [(k, fresh)], fresh)
+  end.
+
+Definition indexed_style_state (V : Type) := (list (style_key * V) * (style_key -> option V))%type.
+
+Definition track_style_indexed {V : Type} (mk : style_key -> V) (st : indexed_style_state V) (k : style_key)
+    : indexed_style_state V * V :=
+  let '(order_log, idx_map) := st in
+  match idx_map k with
+  | Some existing => (st, existing)
+  | None =>
+    let fresh := mk k in
+    ((order_log ++ [(k, fresh)], fun q => if style_key_eqb q k then Some fresh else idx_map q), fresh)
+  end.
+
+Lemma linear_find_app_fresh :
+  forall {V : Type} (entries : list (style_key * V)) (k q : style_key) (fresh : V),
+    linear_find_style k entries = None ->
+    linear_find_style q (entries ++ [(k, fresh)]) =
+    (if style_key_eqb q k then Some fresh else linear_find_style q entries).
+Proof.
+  induction entries as [| [k' v'] rest IH]; intros k q fresh Hnone; simpl in *.
+  - destruct (style_key_eqb q k); reflexivity.
+  - destruct (style_key_eqb k k') eqn:Hkk'; [discriminate |].
+    destruct (style_key_eqb q k') eqn:Hqk'.
+    + destruct (style_key_eqb q k) eqn:Hqk.
+      * apply style_key_eqb_eq in Hqk'. apply style_key_eqb_eq in Hqk. subst.
+        assert (Hrefl : style_key_eqb k k = true) by (apply style_key_eqb_eq; reflexivity).
+        congruence.
+      * reflexivity.
+    + apply IH. exact Hnone.
+Qed.
+
+Fixpoint run_linear_tracks {V : Type} (mk : style_key -> V) (ks : list style_key) (entries : list (style_key * V))
+    : list (style_key * V) * list V :=
+  match ks with
+  | [] => (entries, [])
+  | k :: rest =>
+    let '(entries', v) := track_style_linear mk entries k in
+    let '(final_entries, vs) := run_linear_tracks mk rest entries' in
+    (final_entries, v :: vs)
+  end.
+
+Fixpoint run_indexed_tracks {V : Type} (mk : style_key -> V) (ks : list style_key) (st : indexed_style_state V)
+    : indexed_style_state V * list V :=
+  match ks with
+  | [] => (st, [])
+  | k :: rest =>
+    let '(st', v) := track_style_indexed mk st k in
+    let '(final_st, vs) := run_indexed_tracks mk rest st' in
+    (final_st, v :: vs)
+  end.
+
+Lemma run_indexed_tracks_inv :
+  forall {V : Type} (mk : style_key -> V) (ks : list style_key)
+         (entries : list (style_key * V)) (idx_map : style_key -> option V),
+    (forall q, idx_map q = linear_find_style q entries) ->
+    let '((idx_log, final_map), vs_idx) := run_indexed_tracks mk ks (entries, idx_map) in
+    let '(lin_log, vs_lin) := run_linear_tracks mk ks entries in
+    idx_log = lin_log /\ vs_idx = vs_lin /\ (forall q, final_map q = linear_find_style q lin_log).
+Proof.
+  intros V mk ks.
+  induction ks as [| k rest IH]; intros entries idx_map Hinv; simpl.
+  - repeat split; auto.
+  - unfold track_style_indexed, track_style_linear.
+    rewrite Hinv.
+    destruct (linear_find_style k entries) as [existing | ] eqn:Hfind.
+    + specialize (IH entries idx_map Hinv).
+      destruct (run_indexed_tracks mk rest (entries, idx_map)) as [[idx_log final_map] vs_idx].
+      destruct (run_linear_tracks mk rest entries) as [lin_log vs_lin].
+      destruct IH as [Hlog [Hvs Hmap]].
+      repeat split; congruence.
+    + assert (Hinv' : forall q,
+                (if style_key_eqb q k then Some (mk k) else idx_map q) =
+                linear_find_style q (entries ++ [(k, mk k)])).
+      { intro q. rewrite Hinv. symmetry. apply linear_find_app_fresh. exact Hfind. }
+      specialize (IH (entries ++ [(k, mk k)])
+                     (fun q => if style_key_eqb q k then Some (mk k) else idx_map q)
+                     Hinv').
+      destruct (run_indexed_tracks mk rest
+                  (entries ++ [(k, mk k)], fun q => if style_key_eqb q k then Some (mk k) else idx_map q))
+        as [[idx_log final_map] vs_idx].
+      destruct (run_linear_tracks mk rest (entries ++ [(k, mk k)])) as [lin_log vs_lin].
+      destruct IH as [Hlog [Hvs Hmap]].
+      repeat split; congruence.
+Qed.
+
+(**md **Indexing `(HTMLElement, propName)` style writes in `AutoLayout` yields the exact snapshot handles and reverse-restoration log as linear `styles` scans.**
+Starting from an empty style table, tracking any sequence of `(element, property)` writes `ks` via an $O(1)$ key map + append-only order log produces the exact sequence of `LayoutStyleWrite` handles and the exact reverse-insertion restoration list `List.rev lin_log` as scanning `styles` linearly on every `write`, `track`, and `updateLast`. *)
+Theorem indexed_style_map_eq_linear_styles :
+  forall {V : Type} (mk : style_key -> V) (ks : list style_key),
+    let '((idx_log, _), vs_idx) := run_indexed_tracks mk ks ([], fun _ => None) in
+    let '(lin_log, vs_lin) := run_linear_tracks mk ks [] in
+    vs_idx = vs_lin /\ List.rev idx_log = List.rev lin_log.
+Proof.
+  intros V mk ks.
+  pose proof (run_indexed_tracks_inv mk ks [] (fun _ => None) (fun _ => eq_refl)) as Hres.
+  destruct (run_indexed_tracks mk ks ([], fun _ => None)) as [[idx_log final_map] vs_idx].
+  destruct (run_linear_tracks mk ks []) as [lin_log vs_lin].
+  destruct Hres as [Hlog [Hvs _]].
+  split; congruence.
+Qed.
+
+Fixpoint assoc_lookup_prop (p : nat) (m : list (nat * Z)) : option Z :=
+  match m with
+  | [] => None
+  | (q, v) :: rest => if Nat.eqb p q then Some v else assoc_lookup_prop p rest
+  end.
+
+Fixpoint prop_ordinal (p : nat) (props : list nat) : option nat :=
+  match props with
+  | [] => None
+  | q :: rest =>
+    if Nat.eqb p q then Some 0%nat
+    else option_map S (prop_ordinal p rest)
+  end.
+
+Definition flat_values_lookup (p : nat) (props : list nat) (vals : list Z) : option Z :=
+  match prop_ordinal p props with
+  | Some idx => List.nth_error vals idx
+  | None => None
+  end.
+
+(**md **Storing `LayoutMeasurement.Values` as a flat `string[]` indexed by `props` ordinal equals per-node `FrozenDictionary` lookup.**
+For any property list `props` and computed-style reader `read_css`, resolving `p`'s ordinal once in `props` and indexing `List.map read_css props` returns the exact `option` value produced by constructing and querying a per-node dictionary `List.map (fun q => (q, read_css q)) props`, eliminating `FrozenDictionary.ToFrozenDictionary` allocations on every measured DOM node. *)
+Theorem flat_prop_index_values_eq_frozendict :
+  forall (props : list nat) (read_css : nat -> Z) (p : nat),
+    flat_values_lookup p props (List.map read_css props) =
+    assoc_lookup_prop p (List.map (fun q => (q, read_css q)) props).
+Proof.
+  unfold flat_values_lookup.
+  induction props as [| q rest IH]; intros read_css p; simpl.
+  - reflexivity.
+  - destruct (Nat.eqb p q) eqn:Heq; simpl.
+    + reflexivity.
+    + rewrite <- IH.
+      destruct (prop_ordinal p rest) as [idx | ]; simpl; reflexivity.
+Qed.
+
+Definition opt_style_eqb (a b : option (Z * Z)) : bool :=
+  match a, b with
+  | None, None => true
+  | Some p1, Some p2 => style_pair_eqb p1 p2
+  | _, _ => false
+  end.
+
+Definition full_snapshot_restore_leaf
+    (orig : nat -> option (Z * Z))
+    (last_written : nat -> option (Z * Z))
+    (live : nat -> option (Z * Z))
+    (leaf : nat) : option (Z * Z) :=
+  if opt_style_eqb (live leaf) (last_written leaf) then orig leaf else live leaf.
+
+Definition empty_origin_fast_restore_leaf
+    (last_written : nat -> option (Z * Z))
+    (live : nat -> option (Z * Z))
+    (leaf : nat) : option (Z * Z) :=
+  if opt_style_eqb (live leaf) (last_written leaf) then None else live leaf.
+
+(**md **Fast empty-inline-style snapshot capture and direct `removeProperty` restoration equal full `CssPropertySnapshot` capture and guarded `Restore`.**
+When an element's inline `style` has zero declarations at capture (`orig leaf = None` for all `leaf` and no live logical counterparts), removing each leaf whose current inline value still matches `last_written leaf` (`None`) and leaving concurrently edited leaves untouched (`live leaf`) yields the exact post-restoration inline style for every leaf as full `CssPropertySnapshot` capture and guarded `Restore`. *)
+Theorem empty_inline_style_fast_snapshot_eq_full :
+  forall (orig last_written live : nat -> option (Z * Z)) (leaves : list nat),
+    (forall leaf, In leaf leaves -> orig leaf = None) ->
+    List.map (empty_origin_fast_restore_leaf last_written live) leaves =
+    List.map (full_snapshot_restore_leaf orig last_written live) leaves.
+Proof.
+  intros orig last_written live leaves Hempty.
+  induction leaves as [| l rest IH]; simpl.
+  - reflexivity.
+  - f_equal.
+    + unfold empty_origin_fast_restore_leaf, full_snapshot_restore_leaf.
+      rewrite (Hempty l (or_introl eq_refl)).
+      reflexivity.
+    + apply IH. intros leaf Hin. apply Hempty. right; exact Hin.
+Qed.
