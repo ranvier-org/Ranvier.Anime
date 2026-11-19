@@ -827,3 +827,38 @@ Proof.
       * unfold step_slice_select.
         destruct (Z.leb_spec (kf_start f0) time); [reflexivity | lia].
 Qed.
+
+(** ** Pass-2 Batch B2 Refinement Proof: Multi-Target Leader Component & Formatted-String Sharing *)
+
+Definition eval_per_target_component_fmt
+    {TOut : Type} (sample_fn : Z -> list Z) (fmt_fn : list Z -> TOut)
+    (n : nat) (t : Z) : list (list Z * TOut) :=
+  List.map (fun _ => let comps := sample_fn t in (comps, fmt_fn comps)) (seq 0 n).
+
+Definition eval_shared_leader_component_fmt
+    {TOut : Type} (sample_fn : Z -> list Z) (fmt_fn : list Z -> TOut)
+    (n : nat) (t : Z) : list (list Z * TOut) :=
+  match n with
+  | 0%nat => []
+  | S k =>
+    let leader_comps := sample_fn t in
+    let leader_txt := fmt_fn leader_comps in
+    (leader_comps, leader_txt) :: List.repeat (leader_comps, leader_txt) k
+  end.
+
+(**md **Leader-memoized component sampling and string formatting across identical multi-target non-`Blend` tweens equals per-target evaluation.**
+Sampling `leader_comps = sample_fn t` and formatting `leader_txt = fmt_fn leader_comps` once on the leader tween and sharing `(leader_comps, leader_txt)` across all `n` identical-endpoint follower targets produces the exact `(components, formatted_text)` sequence as running `sample_fn` and `fmt_fn` `n` separate times. *)
+Theorem multi_target_shared_component_text_eq_per_target :
+  forall (TOut : Type) (sample_fn : Z -> list Z) (fmt_fn : list Z -> TOut) n t,
+    eval_shared_leader_component_fmt sample_fn fmt_fn n t =
+    eval_per_target_component_fmt sample_fn fmt_fn n t.
+Proof.
+  intros TOut sample_fn fmt_fn [| k] t.
+  - reflexivity.
+  - unfold eval_shared_leader_component_fmt, eval_per_target_component_fmt.
+    simpl.
+    f_equal.
+    rewrite map_const_repeat.
+    rewrite length_seq.
+    reflexivity.
+Qed.

@@ -295,8 +295,7 @@ module internal DomTargetHelpers =
             | _ -> TweenTargetKind.Object, rawName, None
 
     let defaultCssScalarText (kebabName: string) (value: float) =
-        let num = ValueInterpolation.number value
-        if commonPxCss.Contains kebabName then num + "px" else num
+        ValueInterpolation.formatNumberWithUnit value (if commonPxCss.Contains kebabName then "px" else "")
 
     let readOriginal (computed: ComputedStyleService option) (target: obj) (kind: TweenTargetKind) (canonical: string) (adapter: TargetAdapterEntry option) : ValueInterpolation.Literal * string option =
         match adapter with
@@ -418,6 +417,31 @@ module internal DomTargetHelpers =
                 | None -> bag.SetText(canonical, output.Text)
             | _ -> ()
 
+    let writeComponentText (target: obj) (kind: TweenTargetKind) (canonical: string)
+                           (text: string) (flushTransform: bool) (priority: string) =
+        match kind, target with
+        | TweenTargetKind.Transform, (:? Element as el) ->
+            ElementTransforms.stageComponent el canonical text
+            if flushTransform then ElementTransforms.commit el priority
+        | (TweenTargetKind.Css | TweenTargetKind.CssVar), (:? Element as el) ->
+            let style = (tryStyle el).Value
+            style.setProperty(canonical, text, priority = priority)
+        | TweenTargetKind.Attribute, (:? Element as el) ->
+            el.setAttribute(canonical, text)
+        | TweenTargetKind.Object, (:? AnimatedObject as bag) ->
+            bag.SetText(canonical, text)
+        | TweenTargetKind.Object, (:? Element as el) ->
+            match canonical with
+            | "innerHTML" -> (el :?> HTMLElement).innerHTML <- text
+            | "textContent" -> (el :> Node).textContent <- text
+            | "value" -> el.setAttribute("value", text)
+            | "scrollTop" -> el.scrollTop <- 0
+            | "scrollLeft" -> el.scrollLeft <- 0
+            | _ -> ()
+        | TweenTargetKind.Object, (:? NumericProperty as prop) ->
+            prop.Value <- 0.
+        | _ -> ()
+
     let writeScalar (target: obj) (kind: TweenTargetKind) (canonical: string) (adapter: TargetAdapterEntry option)
                     (valueKind: ValueInterpolation.ValueKind) (unitSuffix: string) (scalar: float)
                     (flushTransform: bool) (priority: string) =
@@ -433,26 +457,26 @@ module internal DomTargetHelpers =
                 if Double.IsFinite scalar then
                     ElementTransforms.stageNumber el canonical scalar suffix
                 else
-                    ElementTransforms.stageComponent el canonical ((ValueInterpolation.number scalar) + suffix)
+                    ElementTransforms.stageComponent el canonical (ValueInterpolation.formatNumberWithUnit scalar suffix)
                 if flushTransform then ElementTransforms.commit el priority
             | (TweenTargetKind.Css | TweenTargetKind.CssVar), (:? Element as el) ->
                 let style = (tryStyle el).Value
-                style.setProperty(canonical, (ValueInterpolation.number scalar) + suffix, priority = priority)
+                style.setProperty(canonical, ValueInterpolation.formatNumberWithUnit scalar suffix, priority = priority)
             | TweenTargetKind.Attribute, (:? Element as el) ->
-                el.setAttribute(canonical, (ValueInterpolation.number scalar) + suffix)
+                el.setAttribute(canonical, ValueInterpolation.formatNumberWithUnit scalar suffix)
             | TweenTargetKind.Object, (:? NumericProperty as prop) ->
                 prop.Value <- scalar
             | TweenTargetKind.Object, (:? AnimatedObject as bag) ->
                 if valueKind = ValueInterpolation.ValueKind.Number then
                     bag.SetNumber(canonical, scalar)
                 else
-                    bag.SetText(canonical, (ValueInterpolation.number scalar) + suffix)
+                    bag.SetText(canonical, ValueInterpolation.formatNumberWithUnit scalar suffix)
             | TweenTargetKind.Object, (:? Element as el) ->
                 match canonical with
                 | "scrollTop" -> el.scrollTop <- int (Math.Round scalar)
                 | "scrollLeft" -> el.scrollLeft <- int (Math.Round scalar)
                 | _ ->
-                    let text = (ValueInterpolation.number scalar) + suffix
+                    let text = ValueInterpolation.formatNumberWithUnit scalar suffix
                     match canonical with
                     | "innerHTML" -> (el :?> HTMLElement).innerHTML <- text
                     | "textContent" -> (el :> Node).textContent <- text
@@ -579,6 +603,10 @@ and [<AllowNullLiteral>] internal ComposedTween
     member val NextRep : ComposedTween = null with get, set
     member val PrevAdd : ComposedTween = null with get, set
     member val NextAdd : ComposedTween = null with get, set
+    member val SharedLeader : ComposedTween = null with get, set
+    member val SharedFrameStamp : int64 = -1L with get, set
+    member val SharedProgress : float = Double.NaN with get, set
+    member val SharedText : string = null with get, set
     member _.StepSource = stepSource
     member this.Override() =
         this.Overlapped <- true
@@ -659,10 +687,15 @@ and internal CompositionManager(queue: EngineFrameQueue) =
 #else
                                 BlendSimd.addChannels scratch tw.CurrentNumbers
 #endif
-                            let outArr = if entry.Adapter.IsSome then Array.copy scratch else scratch
-                            let composed = ValueInterpolation.compose(entry.Template, 0., outArr)
                             let isTransform = entry.Kind = TweenTargetKind.Transform
-                            DomTargetHelpers.writeOutput entry.Target entry.Kind entry.Property entry.Adapter 0. composed false entry.Priority
+                            match entry.Adapter with
+                            | Some _ ->
+                                let composed = ValueInterpolation.compose(entry.Template, 0., Array.copy scratch)
+                                DomTargetHelpers.writeOutput entry.Target entry.Kind entry.Property entry.Adapter 0. composed false entry.Priority
+                            | None ->
+                                let isCss = entry.Kind = TweenTargetKind.Css || entry.Kind = TweenTargetKind.CssVar
+                                let text = ValueInterpolation.formatComponentsText entry.Template scratch isCss
+                                DomTargetHelpers.writeComponentText entry.Target entry.Kind entry.Property text false entry.Priority
                             if isTransform then
                                 match entry.Target with
                                 | :? Element as el ->
@@ -901,6 +934,8 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
     let ownerAllowsWrite = ScopeRegistration.captureWriteGuard()
     let tweens = ResizeArray<ComposedTween>()
     let mutable soaBatch : SoaScalarBatch voption = ValueNone
+    let mutable hasSharedLeaders = false
+    let mutable renderFrameCounter = 0L
     let mutable siblingsAttached = false
     let mutable cancelled = false
     let mutable restoreVersion = 0
@@ -1029,16 +1064,14 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                     let endComposed =
                         if normLast.Kind = ValueInterpolation.ValueKind.Number || normLast.Kind = ValueInterpolation.ValueKind.Unit then
                             let m = modifier normLast.Number
-                            ValueInterpolation.compose(normLast, m, [||]).Text
+                            ValueInterpolation.formatNumberWithUnit m (if normLast.Kind = ValueInterpolation.ValueKind.Unit then normLast.Unit else "")
                         elif normLast.Kind = ValueInterpolation.ValueKind.Color then
-                            let d = normLast.Components
-                            "rgba(" + ValueInterpolation.number (PropertyNumbers.round 1. d[0]) + "," +
-                            ValueInterpolation.number (PropertyNumbers.round 1. d[1]) + "," +
-                            ValueInterpolation.number (PropertyNumbers.round 1. d[2]) + "," +
-                            ValueInterpolation.number d[3] + ")"
+                            ValueInterpolation.formatComponentsText normLast normLast.Components false
                         else
-                            let vals = normLast.Components |> Array.map modifier
-                            ValueInterpolation.compose(normLast, 0., vals).Text
+                            let vals =
+                                if Object.ReferenceEquals(modifier, PropertyNumbers.identityFloat) then normLast.Components
+                                else normLast.Components |> Array.map modifier
+                            ValueInterpolation.formatComponentsText normLast vals false
                     tw.CachedEnd <- endComposed
                     if sIdx = 0 && stepStart < minDelay then minDelay <- stepStart
                     let stepFinish = PropertyNumbers.round 1e12 (stepStart + stepUpdateDur)
@@ -1072,7 +1105,30 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         assignRenderTransforms()
         effectiveDelay, iterDuration
 
+    let sameFloatBits (a: float array) (b: float array) =
+        Object.ReferenceEquals(a, b) ||
+        (a.Length = b.Length &&
+         MemoryMarshal.Cast<float, int64>(ReadOnlySpan<float>(a)).SequenceEqual(
+             MemoryMarshal.Cast<float, int64>(ReadOnlySpan<float>(b))))
+
+    let sameStringsOrdinal (a: string array) (b: string array) =
+        Object.ReferenceEquals(a, b) ||
+        (a.Length = b.Length &&
+         (let mutable eq = true
+          let mutable idx = 0
+          while idx < a.Length && eq do
+              if not (StringComparer.Ordinal.Equals(a[idx], b[idx])) then eq <- false
+              idx <- idx + 1
+          eq))
+
+    let clearSharedLeaders () =
+        if hasSharedLeaders then
+            hasSharedLeaders <- false
+            for k = 0 to tweens.Count - 1 do
+                tweens[k].SharedLeader <- null
+
     let rebuildSoaBatch () =
+        clearSharedLeaders()
         let n = tweens.Count
         if n < 8 || parentTimelineRef.IsSome then
             soaBatch <- ValueNone
@@ -1134,8 +1190,46 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                                 tw0.Start, tw0.UpdateDuration, tw0.ChangeDuration, tw0.AbsoluteStart,
                                 tw0.Ease, tw0.Kind, vKind, froms, tos, outVals,
                                 null, prop0, tgts, props, units, prios, rts))
+        if soaBatch.IsNone && n >= 2 && parentTimelineRef.IsNone then
+            let leaders = ResizeArray<ComposedTween>(4)
+            for k = 0 to n - 1 do
+                let tw = tweens[k]
+                let vk = tw.First.Kind
+                if (vk = ValueInterpolation.ValueKind.Color || vk = ValueInterpolation.ValueKind.Complex) &&
+                   tw.Last.Kind = vk &&
+                   tw.Composition <> KeyframeComposition.Blend &&
+                   tw.Adapter.IsNone &&
+                   Object.ReferenceEquals(tw.Modifier, PropertyNumbers.identityFloat) &&
+                   not tw.Removed && not tw.StepSource.Muted && not tw.Replaced && not tw.Overridden && not tw.Overlapped &&
+                   isNull tw.PrevRep && isNull tw.NextRep && isNull tw.TrackHead &&
+                   isNull tw.AfterMuted && isNull tw.BeforeMuted then
+                    let twCss = tw.Kind = TweenTargetKind.Css || tw.Kind = TweenTargetKind.CssVar
+                    let twRound = tw.Kind <> TweenTargetKind.Object
+                    let mutable matched : ComposedTween = null
+                    let mutable li = 0
+                    while li < leaders.Count && isNull matched do
+                        let cand = leaders[li]
+                        if cand.First.Kind = vk &&
+                           (cand.Kind = TweenTargetKind.Css || cand.Kind = TweenTargetKind.CssVar) = twCss &&
+                           (cand.Kind <> TweenTargetKind.Object) = twRound &&
+                           cand.Start = tw.Start &&
+                           cand.UpdateDuration = tw.UpdateDuration &&
+                           cand.ChangeDuration = tw.ChangeDuration &&
+                           cand.AbsoluteStart = tw.AbsoluteStart &&
+                           Object.ReferenceEquals(cand.Ease, tw.Ease) &&
+                           sameFloatBits cand.First.Components tw.First.Components &&
+                           sameFloatBits cand.Last.Components tw.Last.Components &&
+                           (vk = ValueInterpolation.ValueKind.Color || sameStringsOrdinal cand.Last.Strings tw.Last.Strings) then
+                            matched <- cand
+                        li <- li + 1
+                    if not (isNull matched) then
+                        tw.SharedLeader <- matched
+                        hasSharedLeaders <- true
+                    elif leaders.Count < 16 then
+                        leaders.Add tw
 
     let invalidateSoaBatch () =
+        clearSharedLeaders()
         match soaBatch with
         | ValueNone -> ()
         | ValueSome batch ->
@@ -1186,6 +1280,12 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
             assignRenderTransforms()
         let savedToken = renderToken
         renderToken <- clock.WriteToken
+        let frameStamp =
+            if hasSharedLeaders then
+                let nextStamp = renderFrameCounter + 1L
+                renderFrameCounter <- nextStamp
+                nextStamp
+            else -1L
         try
             let delta = sample.AbsoluteTime - clock.PreviousAbsoluteTime
             let forced = mode = PlaybackTickMode.Force || (if sample.Backwards then -delta else delta) >= clock.TickThreshold
@@ -1317,7 +1417,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                                     if not clock.InternalRender then
                                         hasBlend <- true
                                         rendered <- true
-                            else
+                            elif tw.Adapter.IsSome then
                                 let output = ValueInterpolation.sampleOutput(roundNumbers, tw.First, tw.Last, progress, precision, tw.Modifier, canWrite)
                                 if not (isNull output) && not tw.Replaced && canWrite() then
                                     let scalar = output.Number
@@ -1337,6 +1437,62 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                                              not (last.TrackHead.OwnsTimelineTime(parentTimelineRef.Value.SampleTime)))
                                         DomTargetHelpers.writeOutput tw.Target tw.Kind tw.Property tw.Adapter scalar output flush tw.Priority
                                         rendered <- true
+                            else
+                                let ldr = tw.SharedLeader
+                                if not initialFrom && not (isNull ldr) && ldr.SharedFrameStamp = frameStamp &&
+                                   ldr.SharedProgress = progress && not ldr.Replaced && not ldr.Removed && not ldr.Overlapped then
+                                    if not (Double.IsFinite progress) then invalidArg "progress" "Expected finite input."
+                                    if not tw.Replaced && canWrite() then
+                                        tw.CurrentNumber <- 0.
+                                        let src = ldr.CurrentNumbers
+                                        if tw.CurrentNumbers.Length = src.Length then
+                                            Array.Copy(src, 0, tw.CurrentNumbers, 0, src.Length)
+                                        else
+                                            tw.CurrentNumbers <- Array.copy src
+                                        if not clock.InternalRender then
+                                            let last = tw.LastTransform
+                                            let flush =
+                                                tw.RenderTransforms ||
+                                                (not (isNull last) && not (isNull last.TrackHead) &&
+                                                 not (last.TrackHead.OwnsTimelineTime(parentTimelineRef.Value.SampleTime)))
+                                            DomTargetHelpers.writeComponentText tw.Target tw.Kind tw.Property ldr.SharedText flush tw.Priority
+                                            rendered <- true
+                                else
+                                    let dst =
+                                        if Object.ReferenceEquals(tw.Modifier, PropertyNumbers.identityFloat) then
+                                            if tw.CurrentNumbers.Length <> tw.Last.Components.Length then
+                                                tw.CurrentNumbers <- Array.zeroCreate<float> tw.Last.Components.Length
+                                            tw.CurrentNumbers
+                                        else
+                                            let mutable s = tw.ScratchNumbers
+                                            if isNull s || s.Length <> tw.Last.Components.Length then
+                                                s <- Array.zeroCreate<float> tw.Last.Components.Length
+                                                tw.ScratchNumbers <- s
+                                            s
+                                    if ValueInterpolation.sampleComponentsInto(roundNumbers, tw.First, tw.Last, progress, precision, tw.Modifier, canWrite, dst) &&
+                                       not tw.Replaced && canWrite() then
+                                        tw.CurrentNumber <- 0.
+                                        if not (Object.ReferenceEquals(dst, tw.CurrentNumbers)) then
+                                            if tw.CurrentNumbers.Length <> dst.Length then
+                                                tw.CurrentNumbers <- Array.copy dst
+                                            else
+                                                Array.Copy(dst, 0, tw.CurrentNumbers, 0, dst.Length)
+                                        let isCss = tw.Kind = TweenTargetKind.Css || tw.Kind = TweenTargetKind.CssVar
+                                        let text = ValueInterpolation.formatComponentsText tw.Last tw.CurrentNumbers isCss
+                                        if not initialFrom && hasSharedLeaders then
+                                            tw.SharedProgress <- progress
+                                            tw.SharedText <- text
+                                            tw.SharedFrameStamp <- frameStamp
+                                        if initialFrom then
+                                            DomTargetHelpers.writeComponentText tw.Target tw.Kind tw.Property text true tw.Priority
+                                        elif not clock.InternalRender then
+                                            let last = tw.LastTransform
+                                            let flush =
+                                                tw.RenderTransforms ||
+                                                (not (isNull last) && not (isNull last.TrackHead) &&
+                                                 not (last.TrackHead.OwnsTimelineTime(parentTimelineRef.Value.SampleTime)))
+                                            DomTargetHelpers.writeComponentText tw.Target tw.Kind tw.Property text flush tw.Priority
+                                            rendered <- true
                     elif tw.TweenTime <> 0. && not (isNull prev) && sample.IterationTime < tw.Start then
                         tw.TweenTime <- 0.
             if hasBlend && not clock.InternalRender then

@@ -4,7 +4,6 @@ open System
 open System.Collections.Generic
 open System.Globalization
 open System.Text
-open System.Text.RegularExpressions
 open Ranvier.Dom
 
 /// <summary>Clone offset direction for split text elements.</summary>
@@ -105,10 +104,19 @@ type TextSplitterOptions =
         "; Lines=" + this.Lines.ToString() + ")"
 
 module internal TextSplitHelpers =
-    let valueRgx = Regex(@"\{value\}", RegexOptions.CultureInvariant)
-    let indexRgx = Regex(@"\{i\}", RegexOptions.CultureInvariant)
-    let whiteSpaceGroupRgx = Regex(@"(\s+)", RegexOptions.CultureInvariant)
-    let whiteSpaceOnlyRgx = Regex(@"^\s+$", RegexOptions.CultureInvariant)
+    let hasAnyWhiteSpace (s: string) =
+        if String.IsNullOrEmpty s then false
+        else
+            let span = s.AsSpan()
+            let mutable i = 0
+            let mutable found = false
+            while i < span.Length && not found do
+                if Char.IsWhiteSpace span[i] then found <- true
+                i <- i + 1
+            found
+
+    let isNonEmptyWhiteSpace (s: string) =
+        not (String.IsNullOrEmpty s) && String.IsNullOrWhiteSpace s
 
     let generateTemplate (kind: string) (opts: SplitTemplateOptions) : string =
         let sb = StringBuilder()
@@ -179,14 +187,19 @@ module internal TextSplitHelpers =
             | SegmentationResult.Segmented res -> res.Segments
             | SegmentationResult.NotSupported _ -> [||]
         | None ->
-            let parts = whiteSpaceGroupRgx.Split text
-            let out = ResizeArray<TextSegment>()
-            let mutable offset = 0
-            for part in parts do
-                if part.Length > 0 then
-                    out.Add { Index = offset; Segment = part; IsWordLike = not (whiteSpaceOnlyRgx.IsMatch part) }
-                    offset <- offset + part.Length
-            out.ToArray()
+            if String.IsNullOrEmpty text then Array.Empty<TextSegment>()
+            else
+                let out = ResizeArray<TextSegment>()
+                let len = text.Length
+                let mutable i = 0
+                while i < len do
+                    let start = i
+                    let isWs = Char.IsWhiteSpace text[i]
+                    i <- i + 1
+                    while i < len && Char.IsWhiteSpace text[i] = isWs do
+                        i <- i + 1
+                    out.Add { Index = start; Segment = text.Substring(start, i - start); IsWordLike = not isWs }
+                out.ToArray()
 
     let segmentGraphemes (segmenterOpt: TextSegmenter option) (text: string) : string array =
         match segmenterOpt with
@@ -228,11 +241,9 @@ module internal TextSplitHelpers =
             let prev = (el :> Node).previousSibling
             let next = (el :> Node).nextSibling
             if not (isNull (box prev)) && prev.nodeType = 3us then
-                let pv = prev.textContent
-                if not (isNull pv) && whiteSpaceOnlyRgx.IsMatch pv then bin.Add prev |> ignore
+                if isNonEmptyWhiteSpace prev.textContent then bin.Add prev |> ignore
             if not (isNull (box next)) && next.nodeType = 3us then
-                let nv = next.textContent
-                if not (isNull nv) && whiteSpaceOnlyRgx.IsMatch nv then bin.Add next |> ignore
+                if isNonEmptyWhiteSpace next.textContent then bin.Add next |> ignore
         let children = (el :> ParentNode).children
         let mutable i = int children.length - 1
         while i >= 0 do
@@ -253,9 +264,9 @@ module internal TextSplitHelpers =
         let rawTemplate = templateFn node
         let idxValue = if isChar then charIndex elif isLine then lineIndex else wordIndex
         let html =
-            indexRgx.Replace(
-                valueRgx.Replace(rawTemplate, "<i class=\"" + className + "\"></i>"),
-                idxValue.ToString(CultureInfo.InvariantCulture))
+            rawTemplate
+                .Replace("{value}", "<i class=\"" + className + "\"></i>", StringComparison.Ordinal)
+                .Replace("{i}", idxValue.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)
         (templateEl :> HTMLElement).innerHTML <- html
         let content = templateEl.content
         let firstChild = (content :> ParentNode).firstElementChild
@@ -369,8 +380,8 @@ type TextSplitter(target: HTMLElement, ?options: TextSplitterOptions) as this =
                     else
                         let lastIdx = tempWords.Count - 1
                         let lastWord = tempWords[lastIdx]
-                        if not (TextSplitHelpers.whiteSpaceGroupRgx.IsMatch lastWord) &&
-                           not (TextSplitHelpers.whiteSpaceGroupRgx.IsMatch segText) then
+                        if not (TextSplitHelpers.hasAnyWhiteSpace lastWord) &&
+                           not (TextSplitHelpers.hasAnyWhiteSpace segText) then
                             tempWords[lastIdx] <- lastWord + segText
                         else
                             tempWords.Add segText

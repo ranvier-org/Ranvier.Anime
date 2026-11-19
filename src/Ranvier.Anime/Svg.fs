@@ -199,9 +199,9 @@ module Svg =
                             mutated<-true
                             style.setProperty("stroke-linecap",nextCap)
                             if current() then currentCap<-nextCap
-                    if current() then mutated<-true;path.setAttribute("stroke-dashoffset",SvgMath.number offset)
-                    if current() then path.setAttribute("stroke-dasharray",SvgMath.number first+" "+SvgMath.number last)
-                    if current() then path.setAttribute("draw",SvgMath.number start+" "+SvgMath.number finish)
+                    if current() then mutated<-true;path.setAttribute("stroke-dashoffset",ValueInterpolation.formatNumberWithUnit offset "")
+                    if current() then path.setAttribute("stroke-dasharray",ValueInterpolation.formatPairSpace first last)
+                    if current() then path.setAttribute("draw",ValueInterpolation.formatPairSpace start finish)
                     current()
                 with
                 | :? SvgSupersededOperation -> false

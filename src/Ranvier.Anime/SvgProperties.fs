@@ -8,7 +8,7 @@ type SvgMorph internal (source:SVGGeometryElement,destination:SVGGeometryElement
     let lifetime=SvgOperationLifetime()
     let attribute=if lifetime.ReadConstruction(fun()->source.tagName)="path" then "d" else "points"
     let original=lifetime.ReadConstruction(fun()->source.getAttribute attribute)
-    let mutable interpolate:(float -> (unit -> bool) -> ValueInterpolation.Output option) option=None
+    let mutable interpolate:(float -> (unit -> bool) -> string voption) option=None
     let mutable currentValue=0.
     let mutable mutated=false
     let progress=NumericProperty((fun()->currentValue),(fun value->
@@ -18,9 +18,9 @@ type SvgMorph internal (source:SVGGeometryElement,destination:SVGGeometryElement
                 match interpolate with
                 | Some prepare ->
                     match prepare value current with
-                    | Some output when current() ->
+                    | ValueSome text when current() ->
                         mutated<-true
-                        source.setAttribute(attribute,output.Text)
+                        source.setAttribute(attribute,text)
                         if current() then currentValue<-value
                     | _ -> ()
                 | None -> ()
@@ -35,7 +35,7 @@ type SvgMorph internal (source:SVGGeometryElement,destination:SVGGeometryElement
             lifetime.EnsureConstruction()
             let first,last=Svg.morphEndpoints source destination precision previous (fun()->lifetime.ConstructionCurrent) (fun()->mutated<-true)
             lifetime.EnsureConstruction()
-            interpolate<-Some(ValueInterpolation.prepareMorph first last)
+            interpolate<-Some(ValueInterpolation.prepareMorphText first last)
             lifetime.EnsureConstruction()
             lifetime.Commit()
         with _ ->
