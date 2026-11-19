@@ -13,10 +13,11 @@ module internal KeyframeSequenceBinding =
     let private defaults duration (options:Ranvier.Anime.KeyframeAnimationOptions) =
         {FrameDefaults.Default with Duration=duration;Delay=options.Playback.Delay;Ease=options.Ease;Modifier=options.Modifier}
 
-    let private install scheduler (animation:KeyframeAnimation) program write css precision (options:Ranvier.Anime.KeyframeAnimationOptions) current =
+    let private install scheduler (animation:KeyframeAnimation) program write writeScalarOpt css precision (options:Ranvier.Anime.KeyframeAnimationOptions) current =
         let driver=new KeyframePlayback(scheduler,program,write,options.Composition=KeyframeComposition.Replace,css,precision,options.Playback,
                                        onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onRender=options.OnRender,
-                                       onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete)
+                                       onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete,
+                                       ?writeScalar=writeScalarOpt)
         animation.SetDriver driver
         driver.Clock.OnFault<-animation.Cancel
         driver.Clock.OnCancel<-animation.Cancel
@@ -88,7 +89,8 @@ module internal KeyframeSequenceBinding =
             animation.EnsureLive()
             let program=program |> Option.defaultWith(fun () -> invalidOp "Keyframe construction was superseded.")
             let write target name (output:Output)=handles[name].[target].Value<-output.Number
-            install scheduler animation program write false precision options current
+            let writeScalar target name value=handles[name].[target].Value<-value
+            install scheduler animation program write (Some writeScalar) false precision options current
         with _ ->
             try animation.Cancel() with _ -> ()
             reraise()
@@ -195,7 +197,7 @@ module internal KeyframeSequenceBinding =
                 let property=target*definitions.Length+names[name]
                 let value=Declaration.create name output.Text
                 StyleDeclaration.apply styles[target] (if important[property] then Declaration.important value else value)
-            install scheduler animation program write true precision options current
+            install scheduler animation program write None true precision options current
         with _ ->
             try animation.Cancel() with _ -> ()
             reraise()

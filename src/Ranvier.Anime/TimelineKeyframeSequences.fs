@@ -69,8 +69,9 @@ module internal TimelineKeyframeSequenceBinding =
                     let _,_,_,handle,_=cells[index]
                     Number handle.Value
                 let write target name (output:Output)=handles[name].[target].Value<-output.Number
+                let writeScalar target name value=handles[name].[target].Value<-value
                 let keys=cells |> Array.map(fun (_,_,_,handle,_) -> struct(box handle,"value"))
-                TimelineKeyframeBinding.install(context,animation,defaults,properties,keys,resolve,original,write,false,precision,options,current)),
+                TimelineKeyframeInstallation.installWithScalar writeScalar (context,animation,defaults,properties,keys,resolve,original,write,false,precision,options,current)),
             ?position=position,zeroDuration=(duration<=1e-11))
         |> Option.defaultWith(fun () -> invalidOp "Owned keyframe construction was superseded.")
 

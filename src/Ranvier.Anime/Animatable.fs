@@ -27,8 +27,9 @@ module private AnimatableInputs =
         if not(Double.IsFinite duration) || duration<0. then invalidArg "duration" "Expected finite nonnegative milliseconds."
         if duration>0. && PropertyNumbers.round 1e12 duration=0. then
             invalidArg "duration" "Positive duration rounds to zero at source timing precision."
-        for value in [options.Playback.Delay;options.Playback.LoopDelay;options.Playback.Speed;options.Playback.FrameRate] do
-            if not(Double.IsFinite value) then invalidArg "options" "Playback inputs must be finite."
+        if not(Double.IsFinite options.Playback.Delay && Double.IsFinite options.Playback.LoopDelay &&
+               Double.IsFinite options.Playback.Speed && Double.IsFinite options.Playback.FrameRate) then
+            invalidArg "options" "Playback inputs must be finite."
         if isNull(box options.Ease) || isNull(box options.Modifier) then invalidArg "options" "Easing and modifier callbacks are required."
         match options.Precision with
         | None -> -1
@@ -98,13 +99,15 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
     /// <summary>Validates adapter settings before property reads or contextual measurements.</summary>
     member internal _.Prepare(duration,options)=live();AnimatableInputs.validate duration options
     /// <summary>Registers restoration before initializing a typed adapter's guarded property track.</summary>
-    member internal _.Register(kernels,write,restore,duration,options:AnimatablePropertyOptions,precision) =
+    member internal _.Register(kernels,write,restore,duration,options:AnimatablePropertyOptions,precision,?writeScalar:int -> float -> unit) =
         live()
         let registration=AnimatableRegistration(restore,options.Playback.Muted)
         registrations.Add registration
         try
+            let guardedScalar =
+                writeScalar |> Option.map(fun ws -> fun index value -> if state<>2 && ownerAllowsWrite() then ws index value)
             let track=group.Add(kernels,(fun index output -> if state<>2 && ownerAllowsWrite() then write index output),
-                                duration,options.Playback,options.Ease,options.Modifier,precision)
+                                duration,options.Playback,options.Ease,options.Modifier,precision,?writeScalar=guardedScalar)
             registration.Track<-Some track
             live()
             track
@@ -126,11 +129,12 @@ type Animatable(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBe
             live()
             originals[index]<-properties[index].Value
             live()
-        let kernels=originals |> Array.map(fun value -> AnimatableValue(ValueInterpolation.Number value,None,false,None))
+        let kernels=originals |> Array.map AnimatableValue.CreateNumber
         let restore current =
             cleanupAll (seq {for index in 0..properties.Length-1 do
                                 yield fun () -> if current() then properties[index].Value<-originals[index]})
-        let track=this.Register(kernels,(fun index output -> properties[index].Value<-output.Number),restore,duration,options,precision)
+        let track=this.Register(kernels,(fun index output -> properties[index].Value<-output.Number),restore,duration,options,precision,
+                                writeScalar=(fun index value -> properties[index].Value<-value))
         AnimatableNumber(track,live)
     /// <summary>Captures one borrowed numeric target with precise milliseconds and optional property settings.</summary>
     member _.NumericPrecise(property:NumericProperty,duration:float,?options:AnimatablePropertyOptions) =

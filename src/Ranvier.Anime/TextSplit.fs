@@ -796,7 +796,7 @@ module Text =
             prevSettled <- Some tween.SettledText
         let totalDur = max 1e-11 cursor
         let timer = ScopeRegistration.run ignore (fun () -> new Timer(scheduler, totalDur, ?onComplete = onComplete))
-        timer.ConfigureRenderer(fun sample _ _ ->
+        timer.ConfigureRenderer(PlaybackRenderer(fun sample _ _ ->
             let t = sample.IterationTime
             let mutable idx = compiled.Count - 1
             let mutable found = false
@@ -808,7 +808,7 @@ module Text =
                         found <- true
             let st, dur, tw = compiled[idx]
             let localProgress = if dur <= 1e-11 then 1. else Math.Clamp((t - st) / dur, 0., 1.)
-            ScrambleImpl.writeTargetHtml target (tw.Modifier localProgress))
+            ScrambleImpl.writeTargetHtml target (tw.Modifier localProgress)))
         let mutable revertedScramble = false
         let restoreScramble (seekToStart: bool) =
             if not revertedScramble then
@@ -854,8 +854,8 @@ module TextTimelineExtensions =
             let tw = (ScrambleImpl.createFactory effectiveOpts) target 0 1 prevVal
             chainMap[target] <- tw.SettledText
             let child = ScopeRegistration.run ignore (fun () -> new Timer(scheduler, tw.Duration, options = { PlaybackOptions.Default with Delay = tw.Delay }))
-            child.ConfigureRenderer(fun sample _ _ ->
+            child.ConfigureRenderer(PlaybackRenderer(fun sample _ _ ->
                 let progress = if tw.Duration <= 1e-11 then 1. else Math.Clamp(sample.IterationTime / tw.Duration, 0., 1.)
-                ScrambleImpl.writeTargetHtml target (tw.Modifier progress))
+                ScrambleImpl.writeTargetHtml target (tw.Modifier progress)))
             child.Reset()
             this.Sync(child, ?position = position)

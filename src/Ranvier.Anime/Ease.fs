@@ -194,88 +194,114 @@ module Ease =
         elif s.StartsWith("out", StringComparison.Ordinal) then ValueSome(struct(3, Out))
         else ValueNone
 
-    /// <summary>Resolves an Anime.js family name with default parameters; unknown names raise an argument error.</summary>
-    let named (name: string) =
-        if name = "linear" || name = "none" then create (Power 1.) In
+    let private linearEase = create (Power 1.) In
+    let private namedCache = Collections.Concurrent.ConcurrentDictionary<string, float -> float>(StringComparer.Ordinal)
+
+    let private tryBuildNamedUncached (name: string) : (float -> float) voption =
+        if isNull name then ValueNone
+        elif name = "linear" || name = "none" then ValueSome linearEase
         else
             match tryDirectionPrefix name with
-            | ValueNone -> invalidArg "name" "Unknown easing name."
+            | ValueNone -> ValueNone
             | ValueSome struct(prefixLen, direction) ->
-                let family =
-                    match name.Substring prefixLen with
-                    | "" -> Power 1.68
-                    | "Quad" -> Power 2.
-                    | "Cubic" -> Power 3.
-                    | "Quart" -> Power 4.
-                    | "Quint" -> Power 5.
-                    | "Sine" -> Sine
-                    | "Circ" -> Circular
-                    | "Expo" -> Exponential
-                    | "Bounce" -> Bounce
-                    | "Back" -> Back 1.7
-                    | "Elastic" -> Elastic (1., 0.3)
-                    | _ -> invalidArg "name" "Unknown easing name."
-                create family direction
+                let suffix = name.AsSpan(prefixLen)
+                let familyOpt =
+                    if suffix.Length = 0 then ValueSome(Power 1.68)
+                    elif suffix.SequenceEqual("Quad".AsSpan()) then ValueSome(Power 2.)
+                    elif suffix.SequenceEqual("Cubic".AsSpan()) then ValueSome(Power 3.)
+                    elif suffix.SequenceEqual("Quart".AsSpan()) then ValueSome(Power 4.)
+                    elif suffix.SequenceEqual("Quint".AsSpan()) then ValueSome(Power 5.)
+                    elif suffix.SequenceEqual("Sine".AsSpan()) then ValueSome Sine
+                    elif suffix.SequenceEqual("Circ".AsSpan()) then ValueSome Circular
+                    elif suffix.SequenceEqual("Expo".AsSpan()) then ValueSome Exponential
+                    elif suffix.SequenceEqual("Bounce".AsSpan()) then ValueSome Bounce
+                    elif suffix.SequenceEqual("Back".AsSpan()) then ValueSome(Back 1.7)
+                    elif suffix.SequenceEqual("Elastic".AsSpan()) then ValueSome(Elastic(1., 0.3))
+                    else ValueNone
+                match familyOpt with
+                | ValueSome family -> ValueSome(create family direction)
+                | ValueNone -> ValueNone
+
+    let private tryResolveNamedCached (name: string) : (float -> float) voption =
+        if isNull name then ValueNone
+        else
+            match namedCache.TryGetValue name with
+            | true, cached -> ValueSome cached
+            | _ ->
+                match tryBuildNamedUncached name with
+                | ValueSome created ->
+                    namedCache.GetOrAdd(name, created) |> ValueSome
+                | ValueNone -> ValueNone
+
+    /// <summary>Resolves an Anime.js family name with default parameters; unknown names raise an argument error.</summary>
+    let named (name: string) =
+        match tryResolveNamedCached name with
+        | ValueSome ease -> ease
+        | ValueNone -> invalidArg "name" "Unknown easing name."
+
+    let private tryEaseNumber (raw: ReadOnlySpan<char>, fallback: float) =
+        let trimmed = raw.Trim()
+        if trimmed.Length = 0 then Some fallback
+        else
+            match Double.TryParse(trimmed, Globalization.NumberStyles.Float, Globalization.CultureInfo.InvariantCulture) with
+            | true, value when Double.IsFinite value -> Some value
+            | _ -> None
 
     /// <summary>Parses a named or parameterized Anime.js easing string, returning None for unknown or non-family syntax.</summary>
     let tryParseString (text: string) : (float -> float) option =
         if isNull text then None
-        elif text = "linear" || text = "none" then Some(create (Power 1.) In)
         else
-            let tryNumber (raw: string) fallback =
-                let trimmed = raw.Trim()
-                if String.IsNullOrEmpty trimmed then Some fallback
-                else
-                    match Double.TryParse(trimmed, Globalization.NumberStyles.Float, Globalization.CultureInfo.InvariantCulture) with
-                    | true, value when Double.IsFinite value -> Some value
-                    | _ -> None
             let paren = text.IndexOf '('
             if paren < 0 then
-                match tryDirectionPrefix text with
+                match tryResolveNamedCached text with
+                | ValueSome ease -> Some ease
                 | ValueNone -> None
-                | ValueSome struct(prefixLen, direction) ->
-                    match text.Substring prefixLen with
-                    | "" -> Some(create (Power 1.68) direction)
-                    | "Quad" -> Some(create (Power 2.) direction)
-                    | "Cubic" -> Some(create (Power 3.) direction)
-                    | "Quart" -> Some(create (Power 4.) direction)
-                    | "Quint" -> Some(create (Power 5.) direction)
-                    | "Sine" -> Some(create Sine direction)
-                    | "Circ" -> Some(create Circular direction)
-                    | "Expo" -> Some(create Exponential direction)
-                    | "Bounce" -> Some(create Bounce direction)
-                    | "Back" -> Some(create (Back 1.7) direction)
-                    | "Elastic" -> Some(create (Elastic (1., 0.3)) direction)
-                    | _ -> None
             elif not (text.EndsWith(")", StringComparison.Ordinal)) || text.IndexOf('(', paren + 1) >= 0 then None
             else
-                let head = text.Substring(0, paren)
-                let body = text.Substring(paren + 1, text.Length - paren - 2)
-                let parts = body.Split ','
-                match tryDirectionPrefix head with
+                let headSpan = text.AsSpan(0, paren)
+                let dirOpt =
+                    if headSpan.StartsWith("inOut".AsSpan(), StringComparison.Ordinal) then ValueSome(struct(5, InOut))
+                    elif headSpan.StartsWith("outIn".AsSpan(), StringComparison.Ordinal) then ValueSome(struct(5, OutIn))
+                    elif headSpan.StartsWith("in".AsSpan(), StringComparison.Ordinal) then ValueSome(struct(2, In))
+                    elif headSpan.StartsWith("out".AsSpan(), StringComparison.Ordinal) then ValueSome(struct(3, Out))
+                    else ValueNone
+                match dirOpt with
                 | ValueNone -> None
                 | ValueSome struct(prefixLen, direction) ->
-                    match head.Substring prefixLen with
-                    | "" ->
-                        tryNumber parts[0] 1.68 |> Option.map (fun exp -> create (Power exp) direction)
-                    | "Back" ->
-                        tryNumber parts[0] 1.7 |> Option.map (fun overshoot -> create (Back overshoot) direction)
-                    | "Elastic" ->
-                        match tryNumber parts[0] 1. with
+                    let familySpan = headSpan.Slice(prefixLen)
+                    let bodySpan = text.AsSpan(paren + 1, text.Length - paren - 2)
+                    let comma = bodySpan.IndexOf ','
+                    let firstPart = if comma < 0 then bodySpan else bodySpan.Slice(0, comma)
+                    if familySpan.Length = 0 then
+                        tryEaseNumber(firstPart, 1.68) |> Option.map (fun exp -> create (Power exp) direction)
+                    elif familySpan.SequenceEqual("Back".AsSpan()) then
+                        tryEaseNumber(firstPart, 1.7) |> Option.map (fun overshoot -> create (Back overshoot) direction)
+                    elif familySpan.SequenceEqual("Elastic".AsSpan()) then
+                        match tryEaseNumber(firstPart, 1.) with
                         | None -> None
                         | Some amp ->
-                            let periodOpt = if parts.Length > 1 then tryNumber parts[1] 0.3 else Some 0.3
+                            let periodOpt =
+                                if comma >= 0 then
+                                    let rest = bodySpan.Slice(comma + 1)
+                                    let comma2 = rest.IndexOf ','
+                                    let secondPart = if comma2 < 0 then rest else rest.Slice(0, comma2)
+                                    tryEaseNumber(secondPart, 0.3)
+                                else Some 0.3
                             periodOpt |> Option.map (fun per -> create (Elastic (amp, per)) direction)
-                    | _ -> None
+                    else None
 
     /// <summary>Parses a named or parameterized Anime.js easing string, falling back to linear identity like source parseEase.</summary>
     let parse (text: string) : float -> float =
         if isNull text then nullArg "text"
-        let deprecated = [| "steps("; "irregular("; "linear("; "cubicBezier(" |]
-        if deprecated |> Array.exists (fun prefix -> text.StartsWith(prefix, StringComparison.Ordinal)) then
-            create (Power 1.) In
+        if text.StartsWith("steps(", StringComparison.Ordinal) ||
+           text.StartsWith("irregular(", StringComparison.Ordinal) ||
+           text.StartsWith("linear(", StringComparison.Ordinal) ||
+           text.StartsWith("cubicBezier(", StringComparison.Ordinal) then
+            linearEase
         else
-            tryParseString text |> Option.defaultWith (fun () -> create (Power 1.) In)
+            match tryParseString text with
+            | Some ease -> ease
+            | None -> linearEase
 
     /// <summary>Parses a named or parameterized Anime.js easing string, raising ArgumentException when unrecognized.</summary>
     let parseStrict (text: string) : float -> float =

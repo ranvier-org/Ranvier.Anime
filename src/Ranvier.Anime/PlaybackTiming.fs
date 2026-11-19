@@ -3,10 +3,10 @@ namespace Ranvier.Anime
 /// <summary>The source engine's skipped, automatic and forced sampling modes.</summary>
 type internal PlaybackTickMode = Skip = 0 | Auto = 1 | Force = 2
 
-/// <summary>One clock sample, separating raw time, public rounded getters and render eligibility.</summary>
+/// <summary>One clock sample, separating raw time, lazy public rounded getters and render eligibility.</summary>
 [<Struct>]
-type internal PlaybackSample(absoluteTime: float, previousTime: float, time: float, currentTime: float, iteration: int,
-                             iterationTime: float, iterationCurrentTime: float, progress: float, iterationProgress: float,
+type internal PlaybackSample(absoluteTime: float, previousTime: float, time: float, lower: float, duration: float,
+                             iterationDuration: float, iteration: int, iterationTime: float,
                              backwards: bool, aboveZero: bool, atEnd: bool, shouldRender: bool) =
     /// <summary>Unclamped time after subtracting the initial delay, in milliseconds.</summary>
     member _.AbsoluteTime = absoluteTime
@@ -15,17 +15,23 @@ type internal PlaybackSample(absoluteTime: float, previousTime: float, time: flo
     /// <summary>Current unrounded time bounded to the timer's delay and duration.</summary>
     member _.Time = time
     /// <summary>Current time rounded to the source's default four decimal places.</summary>
-    member _.CurrentTime = currentTime
+    member _.CurrentTime =
+        let rounded = PropertyNumbers.round 1e4 absoluteTime
+        if lower > duration then (if rounded < lower then lower else duration)
+        else System.Math.Clamp(rounded, lower, duration)
     /// <summary>The source iteration index, including its signed 32-bit truncation behavior.</summary>
     member _.Iteration = iteration
     /// <summary>Unclamped directional time inside the current iteration, in milliseconds.</summary>
     member _.IterationTime = iterationTime
     /// <summary>Directional iteration time rounded and bounded to the iteration duration.</summary>
-    member _.IterationCurrentTime = iterationCurrentTime
+    member _.IterationCurrentTime =
+        System.Math.Clamp(PropertyNumbers.round 1e4 iterationTime, 0., iterationDuration)
     /// <summary>Overall progress rounded to ten decimal places and bounded to zero through one.</summary>
-    member _.Progress = progress
+    member _.Progress =
+        System.Math.Clamp(PropertyNumbers.round 1e10 (absoluteTime / duration), 0., 1.)
     /// <summary>Iteration progress rounded and bounded as source, including undefined zero-duration ratios.</summary>
-    member _.IterationProgress = iterationProgress
+    member _.IterationProgress =
+        System.Math.Clamp(PropertyNumbers.round 1e10 (iterationTime / iterationDuration), 0., 1.)
     /// <summary>Whether sampling direction and iteration reversal combine into backward playback.</summary>
     member _.Backwards = backwards
     /// <summary>Whether bounded current time is positive.</summary>
@@ -34,6 +40,12 @@ type internal PlaybackSample(absoluteTime: float, previousTime: float, time: flo
     member _.AtEnd = atEnd
     /// <summary>Whether source render gates admit this sample before callback muting or lifetime checks.</summary>
     member _.ShouldRender = shouldRender
+
+/// <summary>Uncurried renderer delegate avoiding multi-argument FSharpFunc partial-application allocations per tick.</summary>
+type internal PlaybackRenderer = delegate of sample: PlaybackSample * mode: PlaybackTickMode * muteCallbacks: bool -> unit
+
+/// <summary>Uncurried timeline child-renderer delegate avoiding multi-argument FSharpFunc partial-application allocations per tick.</summary>
+type internal PlaybackChildRenderer = delegate of sample: PlaybackSample * mode: PlaybackTickMode * muteCallbacks: bool -> bool
 
 /// <summary>Standalone timer geometry shared by playback controllers; input time includes the initial delay.</summary>
 [<Sealed>]
@@ -85,16 +97,8 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
             PlaybackTiming(iteration,iterationCount,delay*scale,loopDelay*scale,totalDuration=total)
     /// <summary>Refreshes bounded getters after a geometry change while retaining raw playhead and lifecycle samples.</summary>
     member _.Rebound(sample:PlaybackSample) =
-        let lower = -delay
-        let rounded=PropertyNumbers.round 1e4 sample.AbsoluteTime
-        let current=
-            if lower>duration then (if rounded<lower then lower else duration)
-            else System.Math.Clamp(rounded,lower,duration)
-        let iteration=System.Math.Clamp(PropertyNumbers.round 1e4 sample.IterationTime,0.,iterationDuration)
-        let progress=System.Math.Clamp(PropertyNumbers.round 1e10 (sample.AbsoluteTime/duration),0.,1.)
-        let iterationProgress=System.Math.Clamp(PropertyNumbers.round 1e10 (sample.IterationTime/iterationDuration),0.,1.)
-        PlaybackSample(sample.AbsoluteTime,sample.PreviousTime,sample.Time,current,sample.Iteration,sample.IterationTime,
-                       iteration,progress,iterationProgress,sample.Backwards,sample.AboveZero,sample.AtEnd,sample.ShouldRender)
+        PlaybackSample(sample.AbsoluteTime, sample.PreviousTime, sample.Time, -delay, duration, iterationDuration,
+                       sample.Iteration, sample.IterationTime, sample.Backwards, sample.AboveZero, sample.AtEnd, sample.ShouldRender)
     /// <summary>Samples raw time without mutating callback, scheduler or ownership state.</summary>
     member _.Sample(previousAbsoluteTime: float, time: float, reversed: bool, alternate: bool, completed: bool,
                     mode: PlaybackTickMode, [<Struct>] ?parentBackwards: bool, [<Struct>] ?child: bool,
@@ -143,12 +147,5 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
             (iterationTime <= delay && previous > 0. && not atEnd) ||
             (time <= previous && previous = duration && completed) ||
             (atEnd && not completed && duration <= 1e-11)
-        let rounded = PropertyNumbers.round 1e4 absolute
-        let currentTime =
-            if lower > duration then (if rounded < lower then lower else duration)
-            else System.Math.Clamp(rounded, lower, duration)
-        let iterationCurrent = System.Math.Clamp(PropertyNumbers.round 1e4 iterationTime, 0., iterationDuration)
-        let progress = System.Math.Clamp(PropertyNumbers.round 1e10 (absolute / duration), 0., 1.)
-        let iterationProgress = System.Math.Clamp(PropertyNumbers.round 1e10 (iterationTime / iterationDuration), 0., 1.)
-        PlaybackSample(absolute, previous, bounded, currentTime, index, iterationTime, iterationCurrent, progress,
-                       iterationProgress, backwards, aboveZero, atEnd, shouldRender)
+        PlaybackSample(absolute, previous, bounded, lower, duration, iterationDuration, index, iterationTime,
+                       backwards, aboveZero, atEnd, shouldRender)

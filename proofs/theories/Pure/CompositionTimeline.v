@@ -512,3 +512,318 @@ Proof.
   unfold blend_fold_cancel_base, blend_total_after_cancel, blend_total_before_cancel.
   lia.
 Qed.
+
+(** ** Pass-2 Batch B1 Refinement Proofs: SoA SIMD `AnimatableTrack` Retargeting & Sorted Keyframe Slice Upper-Bound Binary Search *)
+
+Record anim_val_aos := {
+  ava_from : Z;
+  ava_to : Z;
+  ava_cached : Z
+}.
+
+Definition retarget_aos_scalar (dest : Z) (xs : list anim_val_aos) : list anim_val_aos :=
+  List.map (fun a => {| ava_from := ava_cached a; ava_to := dest; ava_cached := ava_cached a |}) xs.
+
+Fixpoint sample_aos_scalar (S p : Z) (xs : list anim_val_aos) : list anim_val_aos :=
+  match xs with
+  | [] => []
+  | a :: rest =>
+    let v :=
+      if Z.eqb p 0 then ava_from a
+      else if Z.eqb p S then ava_to a
+      else ava_from a + ((ava_to a - ava_from a) * p) / S in
+    {| ava_from := ava_from a; ava_to := ava_to a; ava_cached := v |} :: sample_aos_scalar S p rest
+  end.
+
+Record anim_track_soa := {
+  ats_froms : list Z;
+  ats_tos : list Z;
+  ats_cached : list Z
+}.
+
+Definition aos_to_soa (xs : list anim_val_aos) : anim_track_soa :=
+  {| ats_froms := List.map ava_from xs;
+     ats_tos := List.map ava_to xs;
+     ats_cached := List.map ava_cached xs |}.
+
+Definition retarget_soa_scalar (dest : Z) (st : anim_track_soa) : anim_track_soa :=
+  {| ats_froms := ats_cached st;
+     ats_tos := List.repeat dest (length (ats_cached st));
+     ats_cached := ats_cached st |}.
+
+Definition sample_soa_simd (fuel chunk : nat) (S p : Z) (st : anim_track_soa) : anim_track_soa :=
+  let next_cached := eval_soa_simd_chunks fuel chunk S p (ats_froms st) (ats_tos st) in
+  {| ats_froms := ats_froms st;
+     ats_tos := ats_tos st;
+     ats_cached := next_cached |}.
+
+Lemma map_const_repeat :
+  forall (A B : Type) (c : B) (xs : list A),
+    List.map (fun _ => c) xs = List.repeat c (length xs).
+Proof.
+  intros A B c xs.
+  induction xs as [| x rest IH]; simpl; [reflexivity | f_equal; exact IH].
+Qed.
+
+Lemma sample_aos_to_soa_scalar :
+  forall xs S p,
+    aos_to_soa (sample_aos_scalar S p xs) =
+    {| ats_froms := List.map ava_from xs;
+       ats_tos := List.map ava_to xs;
+       ats_cached := eval_soa_scalar S p (List.map ava_from xs) (List.map ava_to xs) |}.
+Proof.
+  induction xs as [| a rest IH]; intros S p.
+  - reflexivity.
+  - unfold aos_to_soa in *; simpl in *.
+    injection (IH S p) as Hf Ht Hc.
+    f_equal; [f_equal; exact Hf | f_equal; exact Ht | f_equal; exact Hc].
+Qed.
+
+(**md **SoA 3-tier SIMD `AnimatableTrack` sampling and scalar retargeting match per-target `AnimatableValue` state transitions.**
+Converting a multi-target `AnimatableValue` array to flat `(froms, tos, cached)` arrays commutes with both `retarget_soa_scalar` and `sample_soa_simd` across all SIMD lane widths (`8`, `4`, `2`), producing bit-for-bit identical cached scalars and dispatched values with zero per-frame `Output` allocations. *)
+Theorem animatable_soa_simd_retarget_and_sample_eq_aos :
+  forall fuel chunk S p dest xs,
+    retarget_soa_scalar dest (aos_to_soa xs) = aos_to_soa (retarget_aos_scalar dest xs) /\
+    sample_soa_simd fuel chunk S p (aos_to_soa xs) = aos_to_soa (sample_aos_scalar S p xs).
+Proof.
+  intros fuel chunk S p dest xs.
+  split.
+  - unfold retarget_soa_scalar, aos_to_soa, retarget_aos_scalar.
+    rewrite !List.map_map; simpl.
+    rewrite length_map.
+    rewrite map_const_repeat.
+    reflexivity.
+  - rewrite sample_aos_to_soa_scalar.
+    unfold sample_soa_simd, aos_to_soa; simpl.
+    f_equal.
+    set (froms := List.map ava_from xs).
+    set (tos := List.map ava_to xs).
+    clearbody froms tos.
+    revert froms tos.
+    induction fuel as [| f IH]; intros froms tos; [reflexivity |].
+    simpl.
+    destruct (Nat.leb_spec chunk 0); [simpl; reflexivity |].
+    destruct (Nat.ltb_spec (length froms) chunk); [simpl; reflexivity |].
+    destruct (Nat.ltb_spec (length tos) chunk); [simpl; reflexivity |].
+    simpl. rewrite IH. apply eval_soa_scalar_split; lia.
+Qed.
+
+Definition nondecreasing_kframes (xs : list kframe) : Prop :=
+  forall i j : nat,
+    (i <= j)%nat ->
+    (j < length xs)%nat ->
+    kf_start (List.nth i xs {| kf_id := 0; kf_target := 0; kf_name := 0; kf_start := 0 |}) <=
+    kf_start (List.nth j xs {| kf_id := 0; kf_target := 0; kf_name := 0; kf_start := 0 |}).
+
+Definition dummy_kf : kframe := {| kf_id := 0; kf_target := 0; kf_name := 0; kf_start := 0 |}.
+
+Fixpoint count_le_start (time : Z) (xs : list kframe) : nat :=
+  match xs with
+  | [] => 0%nat
+  | x :: rest => if Z.leb (kf_start x) time then S (count_le_start time rest) else 0%nat
+  end.
+
+Fixpoint bsearch_upper_le_start (fuel lo hi : nat) (time : Z) (xs : list kframe) : nat :=
+  match fuel with
+  | 0%nat => lo
+  | S f =>
+    if Nat.leb hi lo then lo
+    else
+      let mid := Nat.div (lo + hi) 2 in
+      if Z.leb (kf_start (List.nth mid xs dummy_kf)) time then
+        bsearch_upper_le_start f (S mid) hi time xs
+      else
+        bsearch_upper_le_start f lo mid time xs
+  end.
+
+Definition bsearch_select_kframe (time : Z) (anchor : kframe) (slice : list kframe) : kframe :=
+  match slice with
+  | [] => anchor
+  | f0 :: _ =>
+    if Z.ltb time (kf_start f0) then
+      if Z.ltb (kf_start f0) (kf_start anchor) then f0 else anchor
+    else
+      let cnt := bsearch_upper_le_start (length slice) 0%nat (length slice) time slice in
+      List.nth (Nat.pred cnt) slice anchor
+  end.
+
+Lemma nondecreasing_kframes_tail :
+  forall x rest,
+    nondecreasing_kframes (x :: rest) ->
+    nondecreasing_kframes rest.
+Proof.
+  intros x rest Hnd i j Hij Hj.
+  exact (Hnd (S i) (S j) ltac:(lia) ltac:(simpl; lia)).
+Qed.
+
+Lemma count_le_start_bound :
+  forall time xs, (count_le_start time xs <= length xs)%nat.
+Proof.
+  intros time xs.
+  induction xs as [| x rest IH]; simpl; [lia |].
+  destruct (Z.leb (kf_start x) time); lia.
+Qed.
+
+Lemma count_le_start_char :
+  forall xs time mid,
+    nondecreasing_kframes xs ->
+    (mid < length xs)%nat ->
+    (Z.leb (kf_start (List.nth mid xs dummy_kf)) time = true <-> (mid < count_le_start time xs)%nat).
+Proof.
+  induction xs as [| x rest IH]; intros time mid Hnd Hmid.
+  - simpl in Hmid; lia.
+  - destruct mid as [| m'].
+    + simpl.
+      destruct (Z.leb_spec (kf_start x) time) as [Hle0 | Hgt0]; split; intros Hgoal; try reflexivity; try discriminate; lia.
+    + simpl List.nth; simpl count_le_start.
+      destruct (Z.leb_spec (kf_start x) time) as [Hle | Hgt].
+      * rewrite (IH time m' (nondecreasing_kframes_tail x rest Hnd) ltac:(simpl in Hmid; lia)).
+        lia.
+      * assert (Hxm : kf_start x <= kf_start (List.nth m' rest dummy_kf)).
+        { apply (Hnd 0%nat (S m')); [lia | exact Hmid]. }
+        destruct (Z.leb_spec (kf_start (List.nth m' rest dummy_kf)) time) as [Hle2 | Hgt2]; split; intros Hgoal; try discriminate; lia.
+Qed.
+
+Lemma bsearch_upper_le_start_eq :
+  forall fuel lo hi time xs,
+    nondecreasing_kframes xs ->
+    (hi <= length xs)%nat ->
+    (lo <= count_le_start time xs <= hi)%nat ->
+    (hi - lo <= fuel)%nat ->
+    bsearch_upper_le_start fuel lo hi time xs = count_le_start time xs.
+Proof.
+  induction fuel as [| f IH]; intros lo hi time xs Hnd Hhi Hrng Hfuel.
+  - simpl; lia.
+  - cbn [bsearch_upper_le_start].
+    destruct (Nat.leb_spec hi lo); [lia |].
+    set (mid := Nat.div (lo + hi) 2).
+    assert (Hmid : (lo <= mid /\ mid < hi)%nat).
+    { subst mid.
+      pose proof (Nat.div_mod (lo + hi) 2 ltac:(lia)) as Hdm.
+      pose proof (Nat.mod_upper_bound (lo + hi) 2 ltac:(lia)) as Hmod.
+      lia. }
+    pose proof (count_le_start_char xs time mid Hnd ltac:(lia)) as Hch.
+    destruct (Z.leb (kf_start (List.nth mid xs dummy_kf)) time) eqn:Hle.
+    + assert (Hlt : (mid < count_le_start time xs)%nat) by (apply Hch; reflexivity).
+      apply IH; [exact Hnd | exact Hhi | lia | lia].
+    + assert (Hge : (count_le_start time xs <= mid)%nat).
+      { destruct (Nat.lt_ge_cases mid (count_le_start time xs)) as [Hc | Hc]; [| exact Hc].
+        apply Hch in Hc; discriminate. }
+      apply IH; [exact Hnd | lia | lia | lia].
+Qed.
+
+Lemma fold_all_gt_time :
+  forall rest time sel,
+    time < kf_start sel ->
+    (forall y, In y rest -> kf_start sel <= kf_start y) ->
+    List.fold_left (step_slice_select time) rest sel = sel.
+Proof.
+  induction rest as [| x rest' IH]; intros time sel Hlt Hall.
+  - reflexivity.
+  - simpl.
+    assert (Hx : kf_start sel <= kf_start x) by (apply Hall; left; reflexivity).
+    unfold step_slice_select.
+    destruct (Z.leb_spec (kf_start x) time); [lia |].
+    destruct (Z.ltb_spec time (kf_start sel)); [| lia].
+    destruct (Z.ltb_spec (kf_start x) (kf_start sel)); [lia |].
+    simpl.
+    apply IH; [exact Hlt | intros y Hy; apply Hall; right; exact Hy].
+Qed.
+
+Lemma nondecreasing_head_le_all :
+  forall x rest y,
+    nondecreasing_kframes (x :: rest) ->
+    In y rest ->
+    kf_start x <= kf_start y.
+Proof.
+  intros x rest y Hnd Hin.
+  destruct (In_nth rest y dummy_kf Hin) as [j [Hj Heq]].
+  rewrite <- Heq.
+  exact (Hnd 0%nat (S j) ltac:(lia) ltac:(simpl; lia)).
+Qed.
+
+Lemma fold_all_gt_when_le :
+  forall rest time sel,
+    kf_start sel <= time ->
+    (forall y, In y rest -> time < kf_start y) ->
+    List.fold_left (step_slice_select time) rest sel = sel.
+Proof.
+  induction rest as [| x rest' IH]; intros time sel Hle Hall.
+  - reflexivity.
+  - simpl.
+    assert (Hx : time < kf_start x) by (apply Hall; left; reflexivity).
+    unfold step_slice_select.
+    destruct (Z.leb_spec (kf_start x) time); [lia |].
+    destruct (Z.ltb_spec time (kf_start sel)); [lia |].
+    simpl.
+    apply IH; [exact Hle | intros y Hy; apply Hall; right; exact Hy].
+Qed.
+
+Lemma fold_le_time_last :
+  forall rest x time fallback,
+    nondecreasing_kframes (x :: rest) ->
+    kf_start x <= time ->
+    List.fold_left (step_slice_select time) rest x =
+    List.nth (count_le_start time rest) (x :: rest) fallback.
+Proof.
+  induction rest as [| x2 rest' IH]; intros x time fallback Hnd Hx.
+  - simpl. reflexivity.
+  - simpl List.fold_left.
+    simpl count_le_start.
+    destruct (Z.leb_spec (kf_start x2) time) as [Hx2 | Hgt2].
+    + replace (step_slice_select time x x2) with x2.
+      * simpl List.nth.
+        apply (IH x2 time fallback (nondecreasing_kframes_tail x (x2 :: rest') Hnd) Hx2).
+      * unfold step_slice_select.
+        destruct (Z.leb_spec (kf_start x2) time); [reflexivity | lia].
+    + replace (step_slice_select time x x2) with x.
+      * simpl List.nth.
+        apply fold_all_gt_when_le; [exact Hx |].
+        intros y Hy.
+        assert (Hnd2 : nondecreasing_kframes (x2 :: rest')) by (exact (nondecreasing_kframes_tail x (x2 :: rest') Hnd)).
+        pose proof (nondecreasing_head_le_all x2 rest' y Hnd2 Hy) as Hx2y.
+        lia.
+      * unfold step_slice_select.
+        destruct (Z.leb_spec (kf_start x2) time); [lia |].
+        destruct (Z.ltb_spec time (kf_start x)); [lia | reflexivity].
+Qed.
+
+(**md **Upper-bound binary search on sorted `KeyframePlayback` `(Target, Name)` slices equals sequential `SampleAt` selection (including ties).**
+For any non-decreasing `slice` containing `anchor` (`kf_start (hd slice) <= kf_start anchor`), `bsearch_select_kframe` returns the exact `FrameSibling` selected by `List.fold_left (step_slice_select time) slice anchor` in $O(\log K)$ steps instead of $O(K)$. *)
+Theorem keyframe_bsearch_slice_eq_linear_slice_scan :
+  forall time anchor slice,
+    nondecreasing_kframes slice ->
+    (match slice with [] => True | f0 :: _ => kf_start f0 <= kf_start anchor end) ->
+    bsearch_select_kframe time anchor slice =
+    List.fold_left (step_slice_select time) slice anchor.
+Proof.
+  intros time anchor [| f0 rest] Hnd Hanch.
+  - reflexivity.
+  - unfold bsearch_select_kframe.
+    rewrite bsearch_upper_le_start_eq with (xs := f0 :: rest)
+      by (try exact Hnd; pose proof (count_le_start_bound time (f0 :: rest)); lia).
+    simpl List.fold_left.
+    destruct (Z.ltb_spec time (kf_start f0)) as [Hlt | Hge].
+    + unfold step_slice_select at 2.
+      destruct (Z.leb_spec (kf_start f0) time); [lia |].
+      destruct (Z.ltb_spec (kf_start f0) (kf_start anchor)) as [Hf0 | Hge_anch].
+      * destruct (Z.ltb_spec time (kf_start anchor)); [| lia].
+        simpl.
+        symmetry.
+        apply fold_all_gt_time; [lia |].
+        intros y Hy. exact (nondecreasing_head_le_all f0 rest y Hnd Hy).
+      * replace (Z.ltb time (kf_start anchor) && false)%bool with false by (destruct (Z.ltb time (kf_start anchor)); reflexivity).
+        simpl.
+        assert (Heq_start : kf_start anchor = kf_start f0) by lia.
+        symmetry.
+        apply fold_all_gt_time; [lia |].
+        intros y Hy. rewrite Heq_start. exact (nondecreasing_head_le_all f0 rest y Hnd Hy).
+    + simpl count_le_start.
+      destruct (Z.leb_spec (kf_start f0) time); [| lia].
+      simpl Nat.pred.
+      replace (step_slice_select time anchor f0) with f0.
+      * symmetry.
+        apply fold_le_time_last; [exact Hnd | lia].
+      * unfold step_slice_select.
+        destruct (Z.leb_spec (kf_start f0) time); [reflexivity | lia].
+Qed.

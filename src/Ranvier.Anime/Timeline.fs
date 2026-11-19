@@ -152,14 +152,14 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
                         track.Sample(childTime, force, internalRender || isMuted(), muteCallbacks && not(isMuted()), backwards, clock.Began, canWrite, skipRender=(mode = PlaybackTickMode.Skip))
                         rendered <- rendered || track.Rendered
                         allComplete <- allComplete && track.Completed
-                    | TimelineEntry.OwnedTimer(_, child, _) | TimelineEntry.OwnedAnimation(_,child,_,_,_,_) ->
-                        let version=match entry with TimelineEntry.OwnedAnimation(_,_,read,_,_,_) -> Some(read()) | _ -> None
-                        let childBackwards=
-                            match entry with TimelineEntry.OwnedTimer _ when internalRender -> requestedTime<previous | _ -> backwards
-                        child.SampleChild(childTime, mode, muteCallbacks, clock.Fps, childBackwards, clock.Began, canWrite,internalRender=internalRender)
-                        match entry,version with
-                        | TimelineEntry.OwnedAnimation(_,_,read,_,_,_),Some before -> rendered<-rendered || (read()<>before && child.Sample.AboveZero)
-                        | _ -> ()
+                    | TimelineEntry.OwnedTimer(_, child, _) ->
+                        let childBackwards = if internalRender then requestedTime < previous else backwards
+                        child.SampleChild(childTime, mode, muteCallbacks, clock.Fps, childBackwards, clock.Began, canWrite, internalRender=internalRender)
+                        allComplete <- allComplete && (child.Completed || child.Cancelled)
+                    | TimelineEntry.OwnedAnimation(_, child, read, _, _, _) ->
+                        let before = read()
+                        child.SampleChild(childTime, mode, muteCallbacks, clock.Fps, backwards, clock.Began, canWrite, internalRender=internalRender)
+                        rendered <- rendered || (read() <> before && child.Sample.AboveZero)
                         allComplete <- allComplete && (child.Completed || child.Cancelled)
                     | TimelineEntry.Borrowed(track, _, _, _) ->
                         let previousGuard = borrowedGuard
@@ -187,7 +187,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
             renderExpected <- savedExpected
             renderClockGen <- savedClockGen
             renderAncestor <- savedAncestor
-    let prepareLoop (sample: PlaybackSample) _ muted =
+    let prepareLoop = PlaybackRenderer(fun (sample: PlaybackSample) _ muted ->
         if not internalRendering then
             let canWrite = canRender generation clock.Generation
             let snapshots = getChildrenSnapshot()
@@ -219,10 +219,10 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
                             child.NotifyBoundaryCompletion()
                         | TimelineEntry.Callback(offset, callback, _) when not muted && not(isMuted()) && (offset = 0. || offset + 1e-11 = duration) ->
                             callback()
-                        | _ -> ()
-    do clock.ConfigureChildren(prepareLoop, fun sample mode muted ->
+                        | _ -> ())
+    do clock.ConfigureChildren(prepareLoop, PlaybackChildRenderer(fun sample mode muted ->
         renderMode alwaysTrue muted mode internalRendering
-            (if internalRendering then internalTime else sample.IterationTime))
+            (if internalRendering then internalTime else sample.IterationTime)))
     let prepareInternal time action =
         let previousMode=internalRendering
         let previousTime=internalTime
@@ -239,10 +239,20 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
         ensureLive()
         finite "milliseconds" milliseconds
         stopFrame()
-        let previous = ancestorLive
-        ancestorLive <- fun () -> previous() && ancestor()
-        try externalControl(fun () -> clock.Seek(milliseconds, muteCallbacks=muteCallbacks))
-        finally ancestorLive <- previous
+        if Object.ReferenceEquals(ancestor, alwaysTrue) then
+            let previousMode = internalRendering
+            internalRendering <- false
+            try clock.Seek(milliseconds, muteCallbacks=muteCallbacks)
+            finally internalRendering <- previousMode
+        else
+            let previous = ancestorLive
+            ancestorLive <- fun () -> previous() && ancestor()
+            let previousMode = internalRendering
+            internalRendering <- false
+            try clock.Seek(milliseconds, muteCallbacks=muteCallbacks)
+            finally
+                internalRendering <- previousMode
+                ancestorLive <- previous
     let addChild (entry: TimelineEntry) =
         let finish = entry.Offset + entry.Duration
         finite "position" finish
@@ -287,7 +297,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
         try
             try
                 clock.Pause()
-                if current() && not hasEntries then clock.ConfigureRenderer((fun _ _ _ -> ()),totalDuration=0.)
+                if current() && not hasEntries then clock.ConfigureRenderer(null,totalDuration=0.)
                 if current() then prepareInternal offset (fun () -> clock.Seek(offset,muteCallbacks=true))
                 if not(current()) then None
                 else
@@ -327,10 +337,9 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
     member _.ResolvePosition(?position: TimelinePosition) =
         ensureLive()
         let previous =
-            if children.Count = 0 then None
-            else let entry = children[children.Count - 1] in Some(entry.Offset, entry.Offset + entry.Duration)
-        TimelinePositions.resolve duration previous
-            (fun label -> match labels.TryGetValue label with true, value -> Some value | _ -> None) position
+            if children.Count = 0 then ValueNone
+            else let entry = children[children.Count - 1] in ValueSome(struct(entry.Offset, entry.Offset + entry.Duration))
+        TimelinePositions.resolve duration previous labels position
 
     /// <summary>Records a label at an explicit position or the current timeline end.</summary>
     member this.Label(name: string, ?position: TimelinePosition) =
@@ -462,10 +471,22 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
             if from.IsSome then captureOriginal() |> ignore
             let frame={FrameInput.Default with From=from |> Option.map ValueInterpolation.Number;To=Some(ValueInterpolation.Number target)}
             let properties=[|{FrameProperty.Target=0;Name="value";Original=ValueInterpolation.Number 0.;Frames=[|frame|];ConvertUnit=None}|]
-            let defaults={FrameDefaults.Default with Duration=milliseconds;Ease=guarded "ease" (defaultArg ease id);Modifier=guarded "modifier" (defaultArg modifier id)}
+            let resolvedEase =
+                match ease with
+                | None -> PropertyNumbers.identityFloat
+                | Some e ->
+                    if isNull (box e) then nullArg "ease"
+                    guarded "ease" e
+            let resolvedModifier =
+                match modifier with
+                | None -> PropertyNumbers.identityFloat
+                | Some m ->
+                    if isNull (box m) then nullArg "modifier"
+                    guarded "modifier" m
+            let defaults={FrameDefaults.Default with Duration=milliseconds;Ease=resolvedEase;Modifier=resolvedModifier}
             let options={Ranvier.Anime.KeyframeAnimationOptions.Default with Ease=defaults.Ease;Modifier=defaults.Modifier;Precision=None}
             let original _=ValueInterpolation.Number(captureOriginal())
-            let prepared=TimelineKeyframeInstallation.scalar(context,animation,defaults,properties,[|struct(box property,"value")|],
+            let prepared=TimelineKeyframeInstallation.scalarDirect (fun _ _ value -> property.Value<-value) (context,animation,defaults,properties,[|struct(box property,"value")|],
                 (fun _ _ _ -> if current() then Some frame else None),original,(fun _ _ output -> property.Value<-output.Number),
                 false,-1,options,current)
             if prepared.IsSome then capture<-(fun () -> animation.Playback.CaptureWriteGuard())
@@ -571,7 +592,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
     member _.Fps with get() = clock.Fps and set value = clock.Fps <- value
     /// <summary>Samples milliseconds after initial delay, optionally muting direct callbacks.</summary>
     member _.Seek(milliseconds: float, ?muteCallbacks: bool) =
-        seek (fun () -> true) (defaultArg muteCallbacks false) milliseconds
+        seek alwaysTrue (defaultArg muteCallbacks false) milliseconds
     /// <summary>Samples a borrowed controller with every ancestor's write guard.</summary>
     member internal _.SeekGuarded(milliseconds: float, canWrite: unit -> bool) = seek canWrite false milliseconds
     /// <summary>Assigns borrowed current time with source setter callbacks and all ancestor write guards.</summary>

@@ -111,9 +111,10 @@ type AnimationDefaultOptions =
       Modifier: float -> float
       Composition: KeyframeComposition
       Autoplay: bool }
-    /// <summary>1000 milliseconds, out-quad easing, identity modifier, replace composition and autoplay.</summary>
-    static member Default =
+    static member val private DefaultInstance =
         { Duration=1000.;Ease=Ease.named "outQuad";Modifier=PropertyNumbers.identityFloat;Composition=KeyframeComposition.Replace;Autoplay=true }
+    /// <summary>1000 milliseconds, out-quad easing, identity modifier, replace composition and autoplay.</summary>
+    static member Default = AnimationDefaultOptions.DefaultInstance
     /// <summary>An invariant duration, composition and startup diagnostic with callback functions omitted.</summary>
     override this.ToString()=
         "AnimationDefaultOptions(Duration="+this.Duration.ToString("R",System.Globalization.CultureInfo.InvariantCulture)+
@@ -232,8 +233,8 @@ type internal ScopeClockSnapshot =
 type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions,
            ?onBegin: Timer -> unit, ?onBeforeUpdate: Timer -> unit, ?onUpdate: Timer -> unit,
            ?onLoop: Timer -> unit, ?onPause: Timer -> unit, ?onComplete: Timer -> unit) as this =
-    let scheduler = EngineFrames.createRoot scheduler
-    let engine = EngineFrames.forScheduler scheduler
+    let struct(scheduler, root) = EngineFrames.acquireRoot scheduler
+    let engine = root.Queue
     let mutable duration = duration
     let options = ScopePlaybackContext.resolve options
     let iterations = match options.Repeat with PlaybackRepeat.Count count -> float count + 1. | PlaybackRepeat.Forever -> infinity
@@ -280,10 +281,9 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     do finite "FrameRate" options.FrameRate
     let mutable fps = Math.Max(1e-11, options.FrameRate)
     do EngineDefaults.raiseFrameRate fps
-    let mutable lastTick = EngineFrames.initialTick scheduler
+    let mutable lastTick = root.InitialTick
     let mutable anchor = lastTick
     let mutable generation = 0
-    let root = EngineFrames.rootOf scheduler
     // Whether a frame is requested from the engine root, and the generation that requested it; the request has no
     // lease, so a retarget every frame re-requests without allocating.
     let mutable pending = false
@@ -294,7 +294,6 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     let mutable stretchValidator : float -> unit = ignore
     let mutable zeroStretchRenderer : float -> float -> unit = fun _ _ -> ()
     let mutable zeroStretchValidator : float -> float -> unit = fun _ _ -> ()
-    let mutable renderingEnabled = true
     let mutable parented = false
     let mutable onFault = fun () -> ()
     let mutable onCancel = fun () -> ()
@@ -326,7 +325,7 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         explicitlyCancelled <- true
         stopFrame() |> ignore
         try state.Cancel() with _ -> ()
-        try EngineFrames.terminate scheduler with _ -> ()
+        try root.Terminate() with _ -> ()
         try settleCancelled() with _ -> ()
         try onFault() with _ -> ()
 
@@ -380,9 +379,17 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             state.SoftReset()
             if current() then state.Resume()
     let noFinish = Closure.keep (fun () -> ())
+    let reanchorZero = Closure.keep (fun () -> reanchor 0.)
     let pauseAction = Closure.keep (fun (_: unit -> bool) -> state.Pause())
+    let resetAction = Closure.keep (fun (_: unit -> bool) -> state.Reset())
+    let restartAction = Closure.keep (fun (_: unit -> bool) -> state.Restart())
+    let alternateAction = Closure.keep (fun (_: unit -> bool) -> state.Alternate())
     let completeAction = Closure.keep (fun (_: unit -> bool) -> state.Complete false)
     let completeMutedAction = Closure.keep (fun (_: unit -> bool) -> state.Complete true)
+    let mutable seekTime = 0.
+    let mutable seekMute = false
+    let seekAction = Closure.keep (fun (_: unit -> bool) -> state.Seek(seekTime, seekMute))
+    let seekFinish = Closure.keep (fun () -> if not state.Paused then reanchor 12.)
 
     let resume action changedDirection =
         let wasPaused = state.Paused
@@ -409,11 +416,11 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         let attempt action =
             try action() with error -> if failure.IsNone then failure<-Some error
         attempt state.Cancel
-        attempt(fun () -> EngineFrames.terminate scheduler)
+        attempt root.Terminate
         if not deliveringCompletion then attempt settleCancelled
         if notify then attempt onCancel
         failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
-    do EngineFrames.configure scheduler (fun () -> reanchor 0.) 1.
+    do root.Configure (fun () -> reanchor 0.) 1.
     do ScopeRegistration.register (fun () -> if not softlyReverted then this.RewindForRevert())
     /// <summary>Accepts an unsigned whole-millisecond iteration duration.</summary>
     new(scheduler: FrameScheduler, duration: uint, ?options: PlaybackOptions,
@@ -428,19 +435,25 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Resumes reversed playback.</summary>
     member _.Reverse() = resume state.Reverse (not state.Reversed)
     /// <summary>Mirrors time and direction according to iteration parity.</summary>
-    member _.Alternate() = operate (fun _ -> state.Alternate()) (fun () -> reanchor 0.)
+    member _.Alternate() = operate alternateAction reanchorZero
     /// <summary>Stops scheduled frames and emits pause once when active.</summary>
     member _.Pause() =
         if not state.Cancelled then operate pauseAction noFinish
     /// <summary>Seeks in milliseconds after the initial delay; callbacks can be muted.</summary>
     member _.Seek(time: float, ?muteCallbacks: bool) =
         finite "time" time
-        operate (fun _ -> state.Seek(time, defaultArg muteCallbacks false))
-                (fun () -> if not state.Paused then reanchor 12.)
+        let savedTime = seekTime
+        let savedMute = seekMute
+        seekTime <- time
+        seekMute <- defaultArg muteCallbacks false
+        try operate seekAction seekFinish
+        finally
+            seekTime <- savedTime
+            seekMute <- savedMute
     /// <summary>Resets time and flags with muted render callbacks.</summary>
-    member _.Reset() = operate (fun _ -> state.Reset()) ignore
+    member _.Reset() = operate resetAction noFinish
     /// <summary>Resets and resumes playback.</summary>
-    member _.Restart() = operate (fun _ -> state.Restart()) (fun () -> reanchor 12.)
+    member _.Restart() = operate restartAction reanchorLead
     /// <summary>Completes then cancels unless a callback supersedes the operation.</summary>
     member _.Complete(?muteCallbacks: bool) =
         operate (if defaultArg muteCallbacks false then completeMutedAction else completeAction) noFinish
@@ -591,12 +604,10 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
     /// <summary>Raw time immediately before the current sample.</summary>
     member internal _.PreviousAbsoluteTime = state.PreviousAbsoluteTime
     /// <summary>Installs an animation renderer and an optional source setter-duration override before sampling.</summary>
-    member internal _.ConfigureRenderer(renderer, ?totalDuration: float, ?onStretch: (float -> unit), ?sampleWhenMuted: bool,
+    member internal _.ConfigureRenderer(renderer: PlaybackRenderer, ?totalDuration: float, ?onStretch: (float -> unit), ?sampleWhenMuted: bool,
                                         ?validateStretch: (float -> unit), ?onZeroStretch: (float -> float -> unit),
                                         ?validateZeroStretch: (float -> float -> unit)) =
-        let sampleWhenMuted = defaultArg sampleWhenMuted false
-        state.Renderer <- fun sample mode muteCallbacks ->
-            if renderingEnabled && (sampleWhenMuted || not(effectivelyMuted())) then renderer sample mode muteCallbacks
+        state.ConfigureRenderer(renderer, defaultArg sampleWhenMuted false)
         onStretch |> Option.iter(fun hook -> stretchRenderer <- hook)
         validateStretch |> Option.iter(fun hook -> stretchValidator <- hook)
         onZeroStretch |> Option.iter(fun hook -> zeroStretchRenderer <- hook)
@@ -722,8 +733,8 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             state.Pause()
             if current() then prepare()
             if current() then
-                renderingEnabled <- false
-                try state.Reset() finally renderingEnabled <- true
+                state.RenderingEnabled <- false
+                try state.Reset() finally state.RenderingEnabled <- true
             if current() then state.Resume()) (fun () -> reanchor 12.)
     interface ITickable with
         member this.Revert() = this.Revert() |> ignore

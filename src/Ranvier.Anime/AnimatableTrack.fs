@@ -8,7 +8,7 @@ open Ranvier.Anime.ValueInterpolation
 /// <remarks>Initialize explicitly. Precise duration is finite and nonnegative; cancellation is terminal.</remarks>
 type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue array,write:int -> Output -> unit,duration:float,
                               options:PlaybackOptions,initialEase:float -> float,modifier:float -> float,precision:int,
-                              ?onBegin:Timer -> unit,?onPause:Timer -> unit,?onComplete:Timer -> unit) =
+                              ?onBegin:Timer -> unit,?onPause:Timer -> unit,?onComplete:Timer -> unit,?writeScalar:int -> float -> unit) =
     let finite name value = if not(Double.IsFinite value) then invalidArg name "Expected finite input."
     do
         if isNull kernels || kernels.Length=0 then invalidArg "kernels" "Expected at least one captured target."
@@ -19,7 +19,28 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
         if precision < -1 || precision>308 then invalidArg "precision" "Expected disabled rounding or at most 308 decimal places."
     let iterationDuration=PropertyNumbers.round 1e12 (if duration=0. then 1e-11 else duration)
     do if iterationDuration=0. then invalidArg "duration" "Positive duration rounds to zero at source timing precision."
-    let mutable values=kernels |> Array.map(fun value -> value.Fork())
+    let writeScalarOpt = match writeScalar with Some ws -> ValueSome ws | None -> ValueNone
+    let targetCount = kernels.Length
+    let firstKind = kernels[0].Kind
+    let firstRound = kernels[0].RoundNumbers
+    let allScalar, allComponents, sameScalarConfig =
+        let mutable s = true
+        let mutable c = true
+        let mutable same = true
+        for i = 0 to targetCount - 1 do
+            let k = kernels[i]
+            let isComp = k.Kind = ValueKind.Color || k.Kind = ValueKind.Complex
+            if isComp then s <- false else c <- false
+            if k.Kind <> firstKind || k.RoundNumbers <> firstRound then same <- false
+        s, c, same
+    let useSoaSimd =
+        allScalar && sameScalarConfig && writeScalarOpt.IsSome && Object.ReferenceEquals(modifier, PropertyNumbers.identityFloat)
+    let soaTemplates = if useSoaSimd then kernels |> Array.map _.Template else Array.Empty<Data>()
+    let soaFrom = if useSoaSimd then Array.init targetCount (fun i -> let struct(f, _) = kernels[i].Numbers in f) else Array.Empty<float>()
+    let soaTo = if useSoaSimd then Array.init targetCount (fun i -> let struct(_, t) = kernels[i].Numbers in t) else Array.Empty<float>()
+    let soaCached = if useSoaSimd then Array.init targetCount (fun i -> kernels[i].CachedScalar) else Array.Empty<float>()
+    let soaScratch = if useSoaSimd then Array.zeroCreate<float> targetCount else Array.Empty<float>()
+    let mutable values = if useSoaSimd then Array.Empty<AnimatableValue>() else kernels |> Array.map(fun value -> value.Fork())
     let mutable ease=initialEase
     let mutable tweenTime=0.
     let ownerAllowsWrite=ScopeRegistration.captureWriteGuard()
@@ -32,7 +53,7 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
     let mutable readToken=Int64.MinValue
     let readCurrent=Closure.keep (fun () -> readToken=clock.Generation)
     let renderCurrent=Closure.keep (fun () -> clock.IsCurrent renderToken && ownerAllowsWrite())
-    let render (sample:PlaybackSample) mode muted =
+    let render = PlaybackRenderer(fun (sample:PlaybackSample) mode _muted ->
         let savedToken=renderToken
         renderToken<-clock.WriteToken
         try
@@ -42,18 +63,47 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
             let absolute=PropertyNumbers.round 1e12 (clock.Delay+sample.IterationTime)
             let start=PropertyNumbers.round 1e12 clock.Delay
             let eligible=force || ((tweenTime<>iteration || absolute<=start+iteration) && (tweenTime<>0. || absolute>=start))
-            if eligible && renderCurrent() then
+            if eligible && clock.IsCurrent renderToken && ownerAllowsWrite() then
                 tweenTime<-Math.Clamp(sample.IterationTime,0.,iteration)
-                let progress=ease(tweenTime/iteration)
-                let mutable alive=renderCurrent()
-                for index in 0..values.Length-1 do
+                let rawRatio = tweenTime / iteration
+                let progress =
+                    if Object.ReferenceEquals(ease, PropertyNumbers.identityFloat) then rawRatio
+                    else ease rawRatio
+                let mutable alive = clock.IsCurrent renderToken && ownerAllowsWrite()
+                if useSoaSimd then
                     if alive then
-                        let output=values[index].TrySample(progress,precision,modifier,renderCurrent)
-                        if not(isNull output) && renderCurrent() then
-                            if not clock.InternalRender && not clock.EffectivelyMuted then write index output
-                            alive<-renderCurrent()
-                        else alive<-false
-        finally renderToken<-savedToken
+                        finite "progress" progress
+                        let effPrecision = if progress = 0. || progress = 1. || (firstKind = ValueKind.Number && not firstRound) then -1 else precision
+                        ValueInterpolation.lerpComplexSimd soaFrom soaTo soaScratch progress effPrecision
+                        if clock.InternalRender || clock.EffectivelyMuted then
+                            Array.Copy(soaScratch, 0, soaCached, 0, targetCount)
+                        else
+                            let ws = writeScalarOpt.Value
+                            let mutable i = 0
+                            while i < targetCount && alive do
+                                let v = soaScratch[i]
+                                soaCached[i] <- v
+                                ws i v
+                                alive <- clock.IsCurrent renderToken && ownerAllowsWrite()
+                                i <- i + 1
+                elif allScalar && writeScalarOpt.IsSome then
+                    let ws = writeScalarOpt.Value
+                    for index in 0..values.Length-1 do
+                        if alive then
+                            let struct(ok, scalarVal) = values[index].TrySampleScalar(progress,precision,modifier,renderCurrent)
+                            if ok && clock.IsCurrent renderToken && ownerAllowsWrite() then
+                                if not clock.InternalRender && not clock.EffectivelyMuted then ws index scalarVal
+                                alive <- clock.IsCurrent renderToken && ownerAllowsWrite()
+                            else alive<-false
+                else
+                    for index in 0..values.Length-1 do
+                        if alive then
+                            let output=values[index].TrySample(progress,precision,modifier,renderCurrent)
+                            if not(isNull output) && clock.IsCurrent renderToken && ownerAllowsWrite() then
+                                if not clock.InternalRender && not clock.EffectivelyMuted then write index output
+                                alive <- clock.IsCurrent renderToken && ownerAllowsWrite()
+                            else alive<-false
+        finally renderToken<-savedToken)
     do clock.ConfigureRenderer(render,sampleWhenMuted=true,?totalDuration=(if iterationDuration=1e-11 then Some 1e-11 else None),
                                onStretch=(fun scale -> tweenTime<-tweenTime*scale))
     // A retarget's arguments, read by the cached prepare closure: mode 0 is one scalar for every target, 1 one scalar
@@ -73,47 +123,63 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
         let savedToken=prepareToken
         operationCurrent<-current
         prepareToken<-clock.WriteToken
-        // A nested retarget stages into fresh forks; the outermost reuses the spare array.
-        let nested=staging
-        let staged=
-            if nested || isNull spare then values |> Array.map(fun value -> value.Fork())
-            else
-                for index in 0..values.Length-1 do spare[index].CopyFrom values[index]
-                spare
-        staging<-true
-        try
-            let mutable alive=prepareCurrent()
-            for index in 0..staged.Length-1 do
-                if alive then
-                    alive <-
-                        match pendingMode with
-                        | 0 -> staged[index].RetargetScalar(pendingScalar,modifier,prepareCurrent)
-                        | 1 -> staged[index].RetargetScalar(pendingTargets[index],modifier,prepareCurrent)
-                        | _ -> staged[index].RetargetComponents(pendingTargets,modifier,prepareCurrent)
-            if alive && prepareCurrent() then
-                let previous=values
-                values<-staged
-                if not nested then spare<-previous
-                if not(isNull(box pendingEase)) then ease<-pendingEase
-                tweenTime<-0.
-                if not(isNull(box pendingCommit)) then pendingCommit()
-                true
-            else false
-        finally
-            staging<-nested
-            operationCurrent<-savedCurrent
-            prepareToken<-savedToken
+        if useSoaSimd then
+            try
+                if prepareCurrent() then
+                    Array.Copy(soaCached, 0, soaFrom, 0, targetCount)
+                    if pendingMode = 0 then Array.Fill(soaTo, pendingScalar)
+                    else Array.Copy(pendingTargets, 0, soaTo, 0, targetCount)
+                    if not(isNull(box pendingEase)) then ease<-pendingEase
+                    tweenTime<-0.
+                    if not(isNull(box pendingCommit)) then pendingCommit()
+                    true
+                else false
+            finally
+                operationCurrent<-savedCurrent
+                prepareToken<-savedToken
+        else
+            // A nested retarget stages into fresh forks; the outermost reuses the spare array.
+            let nested=staging
+            let staged=
+                if nested || isNull spare then values |> Array.map(fun value -> value.Fork())
+                else
+                    for index in 0..values.Length-1 do spare[index].CopyFrom values[index]
+                    spare
+            staging<-true
+            try
+                let mutable alive=prepareCurrent()
+                for index in 0..staged.Length-1 do
+                    if alive then
+                        alive <-
+                            match pendingMode with
+                            | 0 -> staged[index].RetargetScalar(pendingScalar,modifier,prepareCurrent)
+                            | 1 -> staged[index].RetargetScalar(pendingTargets[index],modifier,prepareCurrent)
+                            | _ -> staged[index].RetargetComponents(pendingTargets,modifier,prepareCurrent)
+                if alive && prepareCurrent() then
+                    let previous=values
+                    values<-staged
+                    if not nested then spare<-previous
+                    if not(isNull(box pendingEase)) then ease<-pendingEase
+                    tweenTime<-0.
+                    if not(isNull(box pendingCommit)) then pendingCommit()
+                    true
+                else false
+            finally
+                staging<-nested
+                operationCurrent<-savedCurrent
+                prepareToken<-savedToken
     let retarget mode scalar (targets:float array) (newDuration:float) (newEase:float -> float) (commit:unit -> unit) =
         live()
         if mode=0 then finite "value" scalar
         elif mode=1 then
-            if targets.Length<>values.Length then invalidArg "targets" "Expected one scalar destination per captured target."
+            if targets.Length<>targetCount then invalidArg "targets" "Expected one scalar destination per captured target."
             for target in targets do finite "value" target
         else for value in targets do finite "components" value
         let components=mode=2
-        for value in values do
-            let componentTrack=value.Kind=ValueKind.Color || value.Kind=ValueKind.Complex
-            if componentTrack<>components then invalidArg "value" "Destination shape must match every captured property."
+        if components then
+            if not allComponents then invalidArg "value" "Destination shape must match every captured property."
+        else
+            if not allScalar then invalidArg "value" "Destination shape must match every captured property."
         let savedMode=pendingMode
         let savedScalar=pendingScalar
         let savedTargets=pendingTargets
@@ -146,7 +212,7 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
     /// <summary>The property's shared playback controller.</summary>
     member _.Clock=clock
     /// <summary>Number of captured targets.</summary>
-    member _.Count=values.Length
+    member _.Count=targetCount
     /// <summary>Renders the initial directional cache and property values with muted callbacks.</summary>
     member _.Initialize()=clock.Reset()
     /// <summary>Reads a cached scalar through its getter modifier; cached reads remain available after cancellation.</summary>
@@ -156,18 +222,26 @@ type internal AnimatableTrack(scheduler:FrameScheduler,kernels:AnimatableValue a
         | ValueNone -> None
     /// <summary>Reads a cached scalar without allocating; ValueNone when a getter modifier superseded the read.</summary>
     member _.TryScalarValue(index)=
-        let savedToken=readToken
-        readToken<-clock.Generation
-        try values[index].TryScalarValue(modifier,readCurrent)
-        finally readToken<-savedToken
+        if useSoaSimd then ValueSome soaCached[index]
+        else
+            let savedToken=readToken
+            readToken<-clock.Generation
+            try values[index].TryScalarValue(modifier,readCurrent)
+            finally readToken<-savedToken
     /// <summary>Returns an independent snapshot of cached color or compound components.</summary>
-    member _.Components(index)=values[index].ComponentValues
+    member _.Components(index)=
+        if useSoaSimd then Array.Empty<float>()
+        else values[index].ComponentValues
     /// <summary>Returns a composed cached snapshot, applying only the scalar getter modifier.</summary>
     member _.Snapshot(index)=
-        let expected=clock.Generation
-        values[index].Snapshot(modifier,fun () -> expected=clock.Generation)
+        if useSoaSimd then Some(compose(soaTemplates[index],soaCached[index],Array.Empty<float>()))
+        else
+            let expected=clock.Generation
+            values[index].Snapshot(modifier,fun () -> expected=clock.Generation)
     /// <summary>The captured scalar/unit/color/compound category.</summary>
-    member _.Kind(index)=values[index].Kind
+    member _.Kind(index)=
+        if useSoaSimd then soaTemplates[index].Kind
+        else values[index].Kind
     /// <summary>Retargets a finite scalar, retaining omitted duration and easing.</summary>
     member _.RetargetScalar(value,?newDuration:float,?newEase:float -> float)=
         let newEase=easeOrNull newEase

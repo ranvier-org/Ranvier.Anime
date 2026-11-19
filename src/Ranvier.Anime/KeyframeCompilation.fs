@@ -20,8 +20,9 @@ type internal FrameInput =
 [<NoEquality; NoComparison; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type internal FrameDefaults =
     { Duration:float; Delay:float; Offset:float; Ease:float -> float; Modifier:float -> float }
+    static member val private DefaultInstance = {Duration=1000.;Delay=0.;Offset=0.;Ease=Ease.named "outQuad";Modifier=PropertyNumbers.identityFloat}
     /// <summary>1000 milliseconds, zero delay/offset, source out-quad easing and identity modification.</summary>
-    static member Default={Duration=1000.;Delay=0.;Offset=0.;Ease=Ease.named "outQuad";Modifier=id}
+    static member Default=FrameDefaults.DefaultInstance
     /// <summary>An invariant duration diagnostic.</summary>
     override this.ToString()="FrameDefaults("+this.Duration.ToString("R",Globalization.CultureInfo.InvariantCulture)+")"
 

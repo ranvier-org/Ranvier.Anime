@@ -66,7 +66,8 @@ module internal KeyframeBinding =
             let driver=new KeyframePlayback(scheduler,program,(fun target _ output -> targets[target].Value<-output.Number),
                                            options.Composition=KeyframeComposition.Replace,false,precision,options.Playback,
                                            onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onRender=options.OnRender,
-                                           onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete)
+                                           onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete,
+                                           writeScalar=(fun target _ value -> targets[target].Value<-value))
             animation.SetDriver driver
             driver.Clock.OnFault<-animation.Cancel
             driver.Clock.OnCancel<-animation.Cancel
