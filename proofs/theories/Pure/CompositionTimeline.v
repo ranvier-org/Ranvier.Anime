@@ -398,3 +398,92 @@ Proof.
   symmetry.
   apply fold_filter_same_kprop.
 Qed.
+
+(** ** Batch A3 Refinement Proof: Multi-Target Homogeneous Scalar SoA 3-Tier SIMD Batch Equivalence *)
+
+Record scalar_tween_aos := {
+  sta_from : Z;
+  sta_to : Z
+}.
+
+Definition eval_scalar_tween_aos (S : Z) (ease_fn : Z -> Z) (norm_t : Z) (tw : scalar_tween_aos) : Z :=
+  let p := ease_fn norm_t in
+  if Z.eqb p 0 then sta_from tw
+  else if Z.eqb p S then sta_to tw
+  else sta_from tw + ((sta_to tw - sta_from tw) * p) / S.
+
+Fixpoint eval_aos_list (S : Z) (ease_fn : Z -> Z) (norm_t : Z) (tws : list scalar_tween_aos) : list Z :=
+  match tws with
+  | [] => []
+  | tw :: rest => eval_scalar_tween_aos S ease_fn norm_t tw :: eval_aos_list S ease_fn norm_t rest
+  end.
+
+Fixpoint eval_soa_scalar (S p : Z) (froms tos : list Z) : list Z :=
+  match froms, tos with
+  | f :: frest, t :: trest =>
+    let v :=
+      if Z.eqb p 0 then f
+      else if Z.eqb p S then t
+      else f + ((t - f) * p) / S in
+    v :: eval_soa_scalar S p frest trest
+  | _, _ => []
+  end.
+
+Fixpoint eval_soa_simd_chunks (fuel chunk : nat) (S p : Z) (froms tos : list Z) : list Z :=
+  match fuel with
+  | 0%nat => eval_soa_scalar S p froms tos
+  | S f =>
+    if (Nat.leb chunk 0 || Nat.ltb (length froms) chunk || Nat.ltb (length tos) chunk)%bool then
+      eval_soa_scalar S p froms tos
+    else
+      eval_soa_scalar S p (firstn chunk froms) (firstn chunk tos) ++
+      eval_soa_simd_chunks f chunk S p (skipn chunk froms) (skipn chunk tos)
+  end.
+
+Lemma eval_soa_scalar_split :
+  forall k S p froms tos,
+    (k <= length froms)%nat ->
+    (k <= length tos)%nat ->
+    eval_soa_scalar S p (firstn k froms) (firstn k tos) ++
+    eval_soa_scalar S p (skipn k froms) (skipn k tos) =
+    eval_soa_scalar S p froms tos.
+Proof.
+  induction k as [| k' IH]; intros S p froms tos Hf Ht.
+  - reflexivity.
+  - destruct froms as [| f frest]; [simpl in Hf; lia |].
+    destruct tos as [| t trest]; [simpl in Ht; lia |].
+    simpl in *. f_equal. apply IH; lia.
+Qed.
+
+Lemma eval_soa_scalar_eq_aos :
+  forall tws S ease_fn norm_t,
+    eval_soa_scalar S (ease_fn norm_t) (List.map sta_from tws) (List.map sta_to tws) =
+    eval_aos_list S ease_fn norm_t tws.
+Proof.
+  induction tws as [| tw rest IH]; intros S ease_fn norm_t.
+  - reflexivity.
+  - simpl. unfold eval_scalar_tween_aos. f_equal. apply IH.
+Qed.
+
+(**md **Homogeneous multi-target SoA 3-tier SIMD (`Vector512` / `Vector256` / `Vector128`) batch interpolation equals per-tween AoS evaluation.**
+Evaluating shared timing and `ease_fn` once per frame and interpolating packed `(froms, tos)` arrays in `chunk`-wide SIMD lanes produces the exact target value sequence as evaluating each `ComposedTween` independently. *)
+Theorem soa_multi_target_scalar_simd_eq_per_tween :
+  forall fuel chunk S ease_fn norm_t tws,
+    eval_soa_simd_chunks fuel chunk S (ease_fn norm_t) (List.map sta_from tws) (List.map sta_to tws) =
+    eval_aos_list S ease_fn norm_t tws.
+Proof.
+  intros fuel chunk S ease_fn norm_t tws.
+  rewrite <- eval_soa_scalar_eq_aos.
+  set (froms := List.map sta_from tws).
+  set (tos := List.map sta_to tws).
+  set (p := ease_fn norm_t).
+  clearbody froms tos p.
+  revert froms tos.
+  induction fuel as [| f IH]; intros froms tos.
+  - reflexivity.
+  - simpl.
+    destruct (Nat.leb_spec chunk 0); [simpl; reflexivity |].
+    destruct (Nat.ltb_spec (length froms) chunk); [simpl; reflexivity |].
+    destruct (Nat.ltb_spec (length tos) chunk); [simpl; reflexivity |].
+    simpl. rewrite IH. apply eval_soa_scalar_split; lia.
+Qed.

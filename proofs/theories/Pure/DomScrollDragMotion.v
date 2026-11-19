@@ -259,3 +259,160 @@ Proof.
   unfold slot_close, slot_play; simpl.
   repeat split; auto.
 Qed.
+
+(** ** Batch A3 Refinement Proofs: Deferred Numeric Transform Sentinel & Single-Pass CSS Declaration Scanner *)
+
+Inductive tf_entry :=
+  | TfText (txt_id : Z)
+  | TfNumericSentinel.
+
+Definition resolve_tf_entry (fmt : Z -> Z) (numbers : nat -> Z) (key : nat) (entry : tf_entry) : Z :=
+  match entry with
+  | TfText txt => txt
+  | TfNumericSentinel => fmt (numbers key)
+  end.
+
+Fixpoint assoc_set_entry (k : nat) (e : tf_entry) (m : list (nat * tf_entry)) : list (nat * tf_entry) :=
+  match m with
+  | [] => [(k, e)]
+  | (k', e') :: rest =>
+    if Nat.eqb k k' then (k, e) :: rest else (k', e') :: assoc_set_entry k e rest
+  end.
+
+Definition update_num_table (key : nat) (v : Z) (tbl : nat -> Z) : nat -> Z :=
+  fun q => if Nat.eqb q key then v else tbl q.
+
+Definition serialize_tf_cache (fmt : Z -> Z) (tbl : nat -> Z) (cache : list (nat * tf_entry)) : list (nat * Z) :=
+  List.map (fun '(k, e) => (k, resolve_tf_entry fmt tbl k e)) cache.
+
+Fixpoint no_key_in (key : nat) (cache : list (nat * tf_entry)) : Prop :=
+  match cache with
+  | [] => True
+  | (k', _) :: rest => k' <> key /\ no_key_in key rest
+  end.
+
+Inductive unique_tf_keys : list (nat * tf_entry) -> Prop :=
+  | UtfNil : unique_tf_keys []
+  | UtfCons k e rest : no_key_in k rest -> unique_tf_keys rest -> unique_tf_keys ((k, e) :: rest).
+
+Lemma serialize_untouched_table :
+  forall rest fmt tbl key v,
+    no_key_in key rest ->
+    serialize_tf_cache fmt (update_num_table key v tbl) rest =
+    serialize_tf_cache fmt tbl rest.
+Proof.
+  induction rest as [| [k' e'] r IH]; intros fmt tbl key v Hnk; simpl.
+  - reflexivity.
+  - destruct Hnk as [Hne Hrest].
+    f_equal.
+    + destruct e'; simpl; [reflexivity |].
+      unfold update_num_table.
+      destruct (Nat.eqb_spec k' key); [lia | reflexivity].
+    + apply IH. exact Hrest.
+Qed.
+
+(**md **Storing `TransformCache.numeric` sentinels in `DraggableTransformTarget` serializes identically to eager per-write string formatting.**
+For any unique-keyed transform cache `cache`, updating `numbers[key] := v` and marking `cache[key] := TfNumericSentinel` produces the exact serialized declaration list at `Flush()` as eagerly formatting `TfText (fmt v)` on every axis write, with zero intermediate string allocations. *)
+Theorem draggable_numeric_sentinel_cache_eq_eager_text :
+  forall cache fmt tbl key v,
+    unique_tf_keys cache ->
+    serialize_tf_cache fmt (update_num_table key v tbl) (assoc_set_entry key TfNumericSentinel cache) =
+    serialize_tf_cache fmt tbl (assoc_set_entry key (TfText (fmt v)) cache).
+Proof.
+  induction cache as [| [k' e'] rest IH]; intros fmt tbl key v Huniq; simpl.
+  - unfold update_num_table. rewrite Nat.eqb_refl. reflexivity.
+  - inversion Huniq as [| k0 e0 r0 Hnk Hurest]; subst.
+    destruct (Nat.eqb_spec key k') as [Heq | Hneq].
+    + subst k'. simpl. unfold update_num_table at 1. rewrite Nat.eqb_refl.
+      f_equal. apply serialize_untouched_table. exact Hnk.
+    + simpl. f_equal.
+      * destruct e'; simpl; [reflexivity |].
+        unfold update_num_table.
+        destruct (Nat.eqb_spec k' key); [lia | reflexivity].
+      * apply IH. exact Hurest.
+Qed.
+
+Inductive css_punct :=
+  | TokColon
+  | TokBang
+  | TokOther.
+
+Fixpoint find_first_colon_tail (toks : list (nat * css_punct)) : option (nat * list (nat * css_punct)) :=
+  match toks with
+  | [] => None
+  | (pos, TokColon) :: rest => Some (pos, rest)
+  | _ :: rest => find_first_colon_tail rest
+  end.
+
+Fixpoint find_last_bang (toks : list (nat * css_punct)) : option nat :=
+  match toks with
+  | [] => None
+  | (pos, TokBang) :: rest =>
+    match find_last_bang rest with
+    | Some later => Some later
+    | None => Some pos
+    end
+  | _ :: rest => find_last_bang rest
+  end.
+
+Definition two_pass_decl_markers (toks : list (nat * css_punct)) : option (nat * option nat) :=
+  match find_first_colon_tail toks with
+  | None => None
+  | Some (c, tail) => Some (c, find_last_bang tail)
+  end.
+
+Fixpoint single_pass_decl_markers_aux
+    (toks : list (nat * css_punct))
+    (first_colon : option nat)
+    (last_bang : option nat) : option (nat * option nat) :=
+  match toks with
+  | [] =>
+    match first_colon with
+    | None => None
+    | Some c => Some (c, last_bang)
+    end
+  | (pos, TokColon) :: rest =>
+    match first_colon with
+    | None => single_pass_decl_markers_aux rest (Some pos) None
+    | Some c => single_pass_decl_markers_aux rest (Some c) last_bang
+    end
+  | (pos, TokBang) :: rest =>
+    match first_colon with
+    | None => single_pass_decl_markers_aux rest None None
+    | Some c => single_pass_decl_markers_aux rest (Some c) (Some pos)
+    end
+  | (_, TokOther) :: rest =>
+    single_pass_decl_markers_aux rest first_colon last_bang
+  end.
+
+Lemma single_pass_after_colon :
+  forall rest c acc_bang,
+    single_pass_decl_markers_aux rest (Some c) acc_bang =
+    Some (c, match find_last_bang rest with
+             | Some later => Some later
+             | None => acc_bang
+             end).
+Proof.
+  induction rest as [| [pos tok] r IH]; intros c acc_bang.
+  - simpl. reflexivity.
+  - destruct tok; simpl.
+    + apply IH.
+    + rewrite IH.
+      destruct (find_last_bang r); reflexivity.
+    + apply IH.
+Qed.
+
+(**md **Single-pass streaming CSS declaration marker tracking matches two-pass token-list `tryFind` + `tryFindBack`.**
+Streaming `(first_colon, last_bang)` in a single pass across top-level CSS tokens produces the exact `(colon, bang)` boundary indices as materializing `ResizeArray<int * char>` and scanning forward for `':'` and backward for `'!'`. *)
+Theorem css_balanced_delimiter_single_pass_eq_two_pass :
+  forall toks,
+    single_pass_decl_markers_aux toks None None = two_pass_decl_markers toks.
+Proof.
+  induction toks as [| [pos tok] rest IH].
+  - reflexivity.
+  - destruct tok; unfold two_pass_decl_markers in *; simpl.
+    + rewrite single_pass_after_colon.
+      destruct (find_last_bang rest); reflexivity.
+    + exact IH.
+    + exact IH.
+Qed.

@@ -13,7 +13,7 @@ module private CssSnapshotValues =
             let declarations=CssSerialization.declarations(read())
             let covered=HashSet<string>(StringComparer.Ordinal)
             for struct(name,value,_) in declarations do
-                let leaves=CssPropertyMetadata.leafNames name
+                let leaves=CssPropertyMetadata.leafNamesReadOnly name
                 if leaves |> Array.exists missing.Contains then
                     if value="" then
                         raise(NotSupportedException("Native CSS serialization omitted a pending shorthand value: "+name))
@@ -25,7 +25,7 @@ module private CssSnapshotValues =
             Array.append
                 (values |> Array.filter(fun struct(name,_,_,_) -> not(covered.Contains name)))
                 (declarations |> Array.choose(fun struct(name,value,priority) ->
-                    let leaves=CssPropertyMetadata.leafNames name
+                    let leaves=CssPropertyMetadata.leafNamesReadOnly name
                     if leaves |> Array.exists covered.Contains then
                         if leaves |> Array.exists(fun leaf -> not(allowed.Contains leaf)) then
                             raise(NotSupportedException("Pending CSS shorthand overrides cross the captured property scope: "+name))
@@ -52,7 +52,7 @@ type internal CssPropertySnapshot private
             else None
         let restore=ResizeArray<struct(string*string*string*bool)>(values)
         let liveValues=ResizeArray<struct(string*string*string*bool)>()
-        let affected=HashSet<string>(values |> Array.collect(fun struct(name,_,_,_) -> CssPropertyMetadata.leafNames name),StringComparer.Ordinal)
+        let affected=HashSet<string>(values |> Array.collect(fun struct(name,_,_,_) -> CssPropertyMetadata.leafNamesReadOnly name),StringComparer.Ordinal)
         if counterparts.Count>0 then
             attempt(fun () ->
                 match read(fun () -> style.length) with
@@ -61,7 +61,7 @@ type internal CssPropertySnapshot private
                     while current() && index<length do
                         match read(fun () -> style.item index) with
                         | Some name ->
-                            for leaf in CssPropertyMetadata.leafNames name do
+                            for leaf in CssPropertyMetadata.leafNamesReadOnly name do
                                 if current() && counterparts.Contains leaf && affected.Add leaf then
                                     match read(fun () -> style.getPropertyValue leaf) with
                                     | Some value ->
@@ -84,7 +84,7 @@ type internal CssPropertySnapshot private
             |> Array.mapi(fun index value ->
                 let struct(name,_,_,_)=value
                 let position=
-                    CssPropertyMetadata.leafNames name
+                    CssPropertyMetadata.leafNamesReadOnly name
                     |> Array.map(fun leaf -> match order.TryGetValue leaf with true,value -> value | _ -> Int32.MaxValue)
                     |> Array.min
                 (position,index),value)
@@ -103,14 +103,14 @@ type internal CssPropertySnapshot private
             let value=action()
             ensureLive()
             value
-        let leaves=CssPropertyMetadata.leafNames name
+        let leaves=CssPropertyMetadata.leafNamesReadOnly name
         let priority=read(fun () -> style.getPropertyPriority name)
         let order=Dictionary<string,int>(StringComparer.Ordinal)
         let length=read(fun () -> style.length)
         let mutable index=0u
         while index<length do
             let name=read(fun () -> style.item index)
-            for leaf in CssPropertyMetadata.leafNames name do order[leaf]<-int index
+            for leaf in CssPropertyMetadata.leafNamesReadOnly name do order[leaf]<-int index
             index<-index+1u
         let values=leaves |> Array.map(fun name ->
             let value=read(fun () -> style.getPropertyValue name)

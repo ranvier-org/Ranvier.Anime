@@ -31,15 +31,17 @@ type internal DraggableTransformTarget(element:HTMLElement) as this =
     let mutable state=0
     let live ()=if state<>0 || not(ownerAllowsWrite()) then raise(ObjectDisposedException(nameof DraggableTransformTarget))
     let snapshot=CssPropertySnapshot.Capture(style,"transform",live)
-    let struct(initial,full)=TransformCache.parse(style.getPropertyValue "transform")
-    let cache=Dictionary<string,string>(initial)
+    let initial=Dictionary<string,string>(8, StringComparer.Ordinal)
+    let full=TransformCache.parseInto (style.getPropertyValue "transform") initial
+    let cache=Dictionary<string,string>(initial, StringComparer.Ordinal)
+    let numbers=Dictionary<string,struct(float * string)>(4, StringComparer.Ordinal)
     let properties=Dictionary<string,NumericProperty>(StringComparer.Ordinal)
     let mutable written:string=null
     let mutable pending=false
     let priority=TransformCache.priorityOption(if snapshot.Important then "important" else "")
     let apply () =
         pending<-false
-        let text=TransformCache.buildDeclaration cache null
+        let text=TransformCache.buildDeclaration cache numbers
         style.setProperty("transform",text,?priority=priority)
         written<-style.getPropertyValue "transform"
     let property name =
@@ -57,12 +59,13 @@ type internal DraggableTransformTarget(element:HTMLElement) as this =
                 if not pending then
                     let inlineText=style.getPropertyValue "transform"
                     if not(String.Equals(inlineText,written,StringComparison.Ordinal)) then
-                        let struct(inlineNow,_)=TransformCache.parse inlineText
-                        let owned=[| for KeyValue(key,text) in cache do if properties.ContainsKey key then struct(key,text) |]
                         cache.Clear()
-                        for KeyValue(key,text) in inlineNow do cache[key]<-text
-                        for struct(key,text) in owned do cache[key]<-text
-                cache[name]<-TransformCache.numberText value unit
+                        TransformCache.parseInto inlineText cache |> ignore
+                        for ownedKey in properties.Keys do
+                            if numbers.ContainsKey ownedKey then
+                                cache[ownedKey] <- TransformCache.numeric
+                numbers[name] <- struct(value, unit)
+                cache[name] <- TransformCache.numeric
                 current<-value
                 if DeferredWrites.Deferring then
                     if not pending then
