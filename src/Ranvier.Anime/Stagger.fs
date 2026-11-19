@@ -1,7 +1,9 @@
 namespace Ranvier.Anime
 
 open System
-open System.Numerics
+open System.Runtime.CompilerServices
+open System.Runtime.InteropServices
+open System.Runtime.Intrinsics
 open Ranvier.Dom
 
 /// <summary>The origin of a stagger distribution. Position coordinates are relative to grid dimensions.</summary>
@@ -86,6 +88,7 @@ module Stagger =
         if value > uint Int32.MaxValue then invalidArg name "Count exceeds the supported array length."
         int value
 
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     let private roundDistance value =
         let scaled = value * 100.
         let nearest = Math.Round(scaled, MidpointRounding.ToEven)
@@ -96,44 +99,179 @@ module Stagger =
         match options.Grid with
         | StaggerGrid.Automatic positions ->
             if isNull positions then nullArg "positions"
-            let points = Array.init totalLength (fun index -> if index < positions.Length then positions[index] else None)
-            if points |> Array.exists (function None -> true | Some point -> isNull point) then None
-            elif totalLength = 0 then Some [||]
+            if totalLength = 0 then
+                Some [||]
+            elif totalLength > positions.Length then
+                None
             else
-                let coordinates = points |> Array.map(fun point ->
-                    let point = Option.get point
-                    let x, y, z = point.x, point.y, point.z
-                    if not(System.Double.IsFinite x && System.Double.IsFinite y && System.Double.IsFinite z) then
-                        invalidArg "positions" "Position coordinates must be finite."
-                    x, y, z)
-                let minimum selector = coordinates |> Array.map selector |> Array.min
-                let maximum selector = coordinates |> Array.map selector |> Array.max
-                let minX, maxX = minimum (fun(x, _, _) -> x), maximum (fun(x, _, _) -> x)
-                let minY, maxY = minimum (fun(_, y, _) -> y), maximum (fun(_, y, _) -> y)
-                let minZ, maxZ = minimum (fun(_, _, z) -> z), maximum (fun(_, _, z) -> z)
-                let originX, originY, originZ =
-                    match options.Origin with
-                    | StaggerOrigin.Position2D(x, y) ->
-                        minX + x * (maxX - minX), minY + y * (maxY - minY), (minZ + maxZ) / 2.
-                    | StaggerOrigin.Position3D(x, y, z) ->
-                        minX + x * (maxX - minX), minY + y * (maxY - minY), minZ + z * (maxZ - minZ)
-                    | StaggerOrigin.Center -> (minX + maxX) / 2., (minY + maxY) / 2., (minZ + maxZ) / 2.
-                    | _ ->
-                        if originIndex >= 0. && originIndex < float totalLength then coordinates[int originIndex]
-                        else System.Double.NaN, System.Double.NaN, System.Double.NaN
-                let distances = coordinates |> Array.map(fun(x, y, z) ->
-                    let dx, dy, dz = originX - x, originY - y, originZ - z
+                let mutable missing = false
+                let mutable idx = 0
+                while idx < totalLength && not missing do
+                    match positions[idx] with
+                    | None -> missing <- true
+                    | Some p when isNull p -> missing <- true
+                    | _ -> idx <- idx + 1
+                if missing then None
+                else
+                    let mutable minX = Double.PositiveInfinity
+                    let mutable maxX = Double.NegativeInfinity
+                    let mutable minY = Double.PositiveInfinity
+                    let mutable maxY = Double.NegativeInfinity
+                    let mutable minZ = Double.PositiveInfinity
+                    let mutable maxZ = Double.NegativeInfinity
+                    for i = 0 to totalLength - 1 do
+                        let point = positions[i].Value
+                        let x, y, z = point.x, point.y, point.z
+                        if not (Double.IsFinite x && Double.IsFinite y && Double.IsFinite z) then
+                            invalidArg "positions" "Position coordinates must be finite."
+                        if x < minX then minX <- x
+                        if x > maxX then maxX <- x
+                        if y < minY then minY <- y
+                        if y > maxY then maxY <- y
+                        if z < minZ then minZ <- z
+                        if z > maxZ then maxZ <- z
+                    let originX, originY, originZ =
+                        match options.Origin with
+                        | StaggerOrigin.Position2D(x, y) ->
+                            minX + x * (maxX - minX), minY + y * (maxY - minY), (minZ + maxZ) * 0.5
+                        | StaggerOrigin.Position3D(x, y, z) ->
+                            minX + x * (maxX - minX), minY + y * (maxY - minY), minZ + z * (maxZ - minZ)
+                        | StaggerOrigin.Center ->
+                            (minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5
+                        | _ ->
+                            if originIndex >= 0. && originIndex < float totalLength then
+                                let p = positions[int originIndex].Value
+                                p.x, p.y, p.z
+                            else
+                                Double.NaN, Double.NaN, Double.NaN
+                    let distances = Array.zeroCreate<float> totalLength
+                    let mutable minimumDistance = Double.PositiveInfinity
                     match options.Axis with
-                    | Some StaggerAxis.X -> -dx
-                    | Some StaggerAxis.Y -> -dy
-                    | Some StaggerAxis.Z -> -dz
-                    | None -> System.Math.Sqrt(dx * dx + dy * dy + dz * dz))
-                let minimumDistance = distances |> Array.fold(fun smallest distance ->
-                    let distance = abs distance
-                    if distance > 0. && distance < smallest then distance else smallest) System.Double.PositiveInfinity
-                if System.Double.IsFinite minimumDistance then
-                    for index in 0 .. distances.Length - 1 do distances[index] <- distances[index] / minimumDistance
-                Some distances
+                    | Some axis ->
+                        for i = 0 to totalLength - 1 do
+                            let p = positions[i].Value
+                            let d =
+                                match axis with
+                                | StaggerAxis.X -> p.x - originX
+                                | StaggerAxis.Y -> p.y - originY
+                                | StaggerAxis.Z -> p.z - originZ
+                            distances[i] <- d
+                            let ad = abs d
+                            if ad > 0. && ad < minimumDistance then minimumDistance <- ad
+                    | None ->
+                        let mutable i = 0
+                        let rDist = &MemoryMarshal.GetArrayDataReference(distances)
+                        if Vector512.IsHardwareAccelerated && totalLength >= 8 then
+                            let vOx = Vector512.Create(originX)
+                            let vOy = Vector512.Create(originY)
+                            let vOz = Vector512.Create(originZ)
+                            let vZero = Vector512<float>.Zero
+                            let mutable vMin = Vector512.Create(Double.PositiveInfinity)
+                            while i <= totalLength - 8 do
+                                let p0 = positions[i].Value
+                                let p1 = positions[i + 1].Value
+                                let p2 = positions[i + 2].Value
+                                let p3 = positions[i + 3].Value
+                                let p4 = positions[i + 4].Value
+                                let p5 = positions[i + 5].Value
+                                let p6 = positions[i + 6].Value
+                                let p7 = positions[i + 7].Value
+                                let vx = Vector512.Create(p0.x, p1.x, p2.x, p3.x, p4.x, p5.x, p6.x, p7.x)
+                                let vy = Vector512.Create(p0.y, p1.y, p2.y, p3.y, p4.y, p5.y, p6.y, p7.y)
+                                let vz = Vector512.Create(p0.z, p1.z, p2.z, p3.z, p4.z, p5.z, p6.z, p7.z)
+                                let dx = vOx - vx
+                                let dy = vOy - vy
+                                let dz = vOz - vz
+                                let vd = Vector512.Sqrt(dx * dx + dy * dy + dz * dz)
+                                vd.StoreUnsafe(&rDist, unativeint i)
+                                let vPos = Vector512.GreaterThan(vd, vZero)
+                                let vCand = Vector512.ConditionalSelect(vPos, vd, vMin)
+                                vMin <- Vector512.ConditionalSelect(Vector512.LessThan(vCand, vMin), vCand, vMin)
+                                i <- i + 8
+                            for lane = 0 to 7 do
+                                let lv = vMin.GetElement(lane)
+                                if lv < minimumDistance then minimumDistance <- lv
+                        elif Vector256.IsHardwareAccelerated && totalLength >= 4 then
+                            let vOx = Vector256.Create(originX)
+                            let vOy = Vector256.Create(originY)
+                            let vOz = Vector256.Create(originZ)
+                            let vZero = Vector256<float>.Zero
+                            let mutable vMin = Vector256.Create(Double.PositiveInfinity)
+                            while i <= totalLength - 4 do
+                                let p0 = positions[i].Value
+                                let p1 = positions[i + 1].Value
+                                let p2 = positions[i + 2].Value
+                                let p3 = positions[i + 3].Value
+                                let vx = Vector256.Create(p0.x, p1.x, p2.x, p3.x)
+                                let vy = Vector256.Create(p0.y, p1.y, p2.y, p3.y)
+                                let vz = Vector256.Create(p0.z, p1.z, p2.z, p3.z)
+                                let dx = vOx - vx
+                                let dy = vOy - vy
+                                let dz = vOz - vz
+                                let vd = Vector256.Sqrt(dx * dx + dy * dy + dz * dz)
+                                vd.StoreUnsafe(&rDist, unativeint i)
+                                let vPos = Vector256.GreaterThan(vd, vZero)
+                                let vCand = Vector256.ConditionalSelect(vPos, vd, vMin)
+                                vMin <- Vector256.ConditionalSelect(Vector256.LessThan(vCand, vMin), vCand, vMin)
+                                i <- i + 4
+                            for lane = 0 to 3 do
+                                let lv = vMin.GetElement(lane)
+                                if lv < minimumDistance then minimumDistance <- lv
+                        elif Vector128.IsHardwareAccelerated && totalLength >= 2 then
+                            let vOx = Vector128.Create(originX)
+                            let vOy = Vector128.Create(originY)
+                            let vOz = Vector128.Create(originZ)
+                            let vZero = Vector128<float>.Zero
+                            let mutable vMin = Vector128.Create(Double.PositiveInfinity)
+                            while i <= totalLength - 2 do
+                                let p0 = positions[i].Value
+                                let p1 = positions[i + 1].Value
+                                let vx = Vector128.Create(p0.x, p1.x)
+                                let vy = Vector128.Create(p0.y, p1.y)
+                                let vz = Vector128.Create(p0.z, p1.z)
+                                let dx = vOx - vx
+                                let dy = vOy - vy
+                                let dz = vOz - vz
+                                let vd = Vector128.Sqrt(dx * dx + dy * dy + dz * dz)
+                                vd.StoreUnsafe(&rDist, unativeint i)
+                                let vPos = Vector128.GreaterThan(vd, vZero)
+                                let vCand = Vector128.ConditionalSelect(vPos, vd, vMin)
+                                vMin <- Vector128.ConditionalSelect(Vector128.LessThan(vCand, vMin), vCand, vMin)
+                                i <- i + 2
+                            for lane = 0 to 1 do
+                                let lv = vMin.GetElement(lane)
+                                if lv < minimumDistance then minimumDistance <- lv
+                        while i < totalLength do
+                            let p = positions[i].Value
+                            let dx = originX - p.x
+                            let dy = originY - p.y
+                            let dz = originZ - p.z
+                            let d = Math.Sqrt(dx * dx + dy * dy + dz * dz)
+                            distances[i] <- d
+                            if d > 0. && d < minimumDistance then minimumDistance <- d
+                            i <- i + 1
+                    if Double.IsFinite minimumDistance then
+                        let mutable i = 0
+                        let rDist = &MemoryMarshal.GetArrayDataReference(distances)
+                        if Vector512.IsHardwareAccelerated && totalLength >= 8 then
+                            let vDiv = Vector512.Create(minimumDistance)
+                            while i <= totalLength - 8 do
+                                (Vector512.LoadUnsafe(&rDist, unativeint i) / vDiv).StoreUnsafe(&rDist, unativeint i)
+                                i <- i + 8
+                        elif Vector256.IsHardwareAccelerated && totalLength >= 4 then
+                            let vDiv = Vector256.Create(minimumDistance)
+                            while i <= totalLength - 4 do
+                                (Vector256.LoadUnsafe(&rDist, unativeint i) / vDiv).StoreUnsafe(&rDist, unativeint i)
+                                i <- i + 4
+                        elif Vector128.IsHardwareAccelerated && totalLength >= 2 then
+                            let vDiv = Vector128.Create(minimumDistance)
+                            while i <= totalLength - 2 do
+                                (Vector128.LoadUnsafe(&rDist, unativeint i) / vDiv).StoreUnsafe(&rDist, unativeint i)
+                                i <- i + 2
+                        while i < totalLength do
+                            distances[i] <- distances[i] / minimumDistance
+                            i <- i + 1
+                    Some distances
         | _ -> None
 
     /// <summary>Computes offsets before applying modifiers.</summary>
@@ -221,17 +359,25 @@ module Stagger =
             match automaticDistances options totalLength originIndex with
             | Some distances -> distances
             | None -> indexedDistances()
-        let maximum = if distances.Length = 0 then 0. else Array.max distances
-        for index in 0 .. distances.Length - 1 do
-            let mutable distance = distances[index]
-            match options.Ease with
-            | Some ease ->
-                let normalized = if maximum = 0. then 0. else distance / maximum
-                distance <- ease normalized * maximum
-            | None -> ()
-            if options.Reversed then
-                distance <- if options.Axis.IsSome then -distance else abs(maximum - distance)
-            distances[index] <- distance
+        let maximum =
+            if distances.Length = 0 then 0.
+            else
+                let mutable m = distances[0]
+                for i = 1 to distances.Length - 1 do
+                    let v = distances[i]
+                    if Double.IsNaN v || v > m then m <- v
+                m
+        if options.Ease.IsSome || options.Reversed then
+            for index = 0 to distances.Length - 1 do
+                let mutable distance = distances[index]
+                match options.Ease with
+                | Some ease ->
+                    let normalized = if maximum = 0. then 0. else distance / maximum
+                    distance <- ease normalized * maximum
+                | None -> ()
+                if options.Reversed then
+                    distance <- if options.Axis.IsSome then -distance else abs(maximum - distance)
+                distances[index] <- distance
         let jitterSamples = jitter |> Option.map(fun _ -> Array.init totalLength (fun _ -> random -1. 1. 4))
         if options.Origin = StaggerOrigin.Random then
             for last in totalLength - 1 .. -1 .. 0 do
@@ -241,36 +387,107 @@ module Stagger =
                 distances[index] <- previous
         let start = first + Option.defaultValue 0. options.Start
         let spacing = if isRange then (finish - first) / maximum else step
-        Array.init length (fun index ->
-            let mapped = options.IndexMap |> Option.map(fun mapping -> mapping (uint index) total) |> Option.defaultValue index
-            let mapped = if mapped >= 0 && mapped < totalLength then mapped else index
-            let distance = if mapped < totalLength then distances[mapped] else Double.NaN
-            let term = spacing * roundDistance distance
-            let output = start + (if Double.IsNaN term || term = 0. then 0. else term)
-            let output =
-                match jitter, jitterSamples with
-                | Some(first, last), Some samples ->
-                    let progress = if maximum = 0. then 0. else distance / maximum
-                    let magnitude = first + (last - first) * progress
-                    let sample = if mapped < samples.Length then samples[mapped] else Double.NaN
-                    output + sample * magnitude
-                | _ -> output
-            match options.Modifier with Some modify -> modify output | None -> output)
+        if length = totalLength && options.IndexMap.IsNone && jitter.IsNone && options.Modifier.IsNone then
+            // In-place SIMD output pass: reuses `distances` directly with zero extra array allocation!
+            let mutable i = 0
+            let rDist = &MemoryMarshal.GetArrayDataReference(distances)
+            if Double.IsFinite spacing && Vector512.IsHardwareAccelerated && length >= 8 then
+                let v100 = Vector512.Create(100.)
+                let vHalf = Vector512.Create(0.5)
+                let vSpacing = Vector512.Create(spacing)
+                let vStart = Vector512.Create(start)
+                let vZero = Vector512<float>.Zero
+                while i <= length - 8 do
+                    let vd = Vector512.LoadUnsafe(&rDist, unativeint i)
+                    let vScaled = vd * v100
+                    let vNear = Vector512.Round(vScaled, MidpointRounding.ToEven)
+                    let vTie = Vector512.Equals(Vector512.Abs(vScaled - vNear), vHalf)
+                    let vRound = Vector512.ConditionalSelect(vTie, Vector512.Ceiling(vScaled), vNear) / v100
+                    let vTerm = vSpacing * vRound
+                    // Preserve +0.0 on NaN or -0.0 term: !(vTerm == vTerm) || vTerm == 0 -> vZero
+                    let vFiniteNonZero = Vector512.AndNot(Vector512.Equals(vTerm, vTerm), Vector512.Equals(vTerm, vZero))
+                    let vCleanTerm = Vector512.ConditionalSelect(vFiniteNonZero, vTerm, vZero)
+                    (vStart + vCleanTerm).StoreUnsafe(&rDist, unativeint i)
+                    i <- i + 8
+            elif Double.IsFinite spacing && Vector256.IsHardwareAccelerated && length >= 4 then
+                let v100 = Vector256.Create(100.)
+                let vHalf = Vector256.Create(0.5)
+                let vSpacing = Vector256.Create(spacing)
+                let vStart = Vector256.Create(start)
+                let vZero = Vector256<float>.Zero
+                while i <= length - 4 do
+                    let vd = Vector256.LoadUnsafe(&rDist, unativeint i)
+                    let vScaled = vd * v100
+                    let vNear = Vector256.Round(vScaled, MidpointRounding.ToEven)
+                    let vTie = Vector256.Equals(Vector256.Abs(vScaled - vNear), vHalf)
+                    let vRound = Vector256.ConditionalSelect(vTie, Vector256.Ceiling(vScaled), vNear) / v100
+                    let vTerm = vSpacing * vRound
+                    let vFiniteNonZero = Vector256.AndNot(Vector256.Equals(vTerm, vTerm), Vector256.Equals(vTerm, vZero))
+                    let vCleanTerm = Vector256.ConditionalSelect(vFiniteNonZero, vTerm, vZero)
+                    (vStart + vCleanTerm).StoreUnsafe(&rDist, unativeint i)
+                    i <- i + 4
+            while i < length do
+                let distance = distances[i]
+                let term = spacing * roundDistance distance
+                distances[i] <- start + (if Double.IsNaN term || term = 0. then 0. else term)
+                i <- i + 1
+            distances
+        else
+            Array.init length (fun index ->
+                let mapped = options.IndexMap |> Option.map(fun mapping -> mapping (uint index) total) |> Option.defaultValue index
+                let mapped = if mapped >= 0 && mapped < totalLength then mapped else index
+                let distance = if mapped < totalLength then distances[mapped] else Double.NaN
+                let term = spacing * roundDistance distance
+                let output = start + (if Double.IsNaN term || term = 0. then 0. else term)
+                let output =
+                    match jitter, jitterSamples with
+                    | Some(first, last), Some samples ->
+                        let progress = if maximum = 0. then 0. else distance / maximum
+                        let magnitude = first + (last - first) * progress
+                        let sample = if mapped < samples.Length then samples[mapped] else Double.NaN
+                        output + sample * magnitude
+                    | _ -> output
+                match options.Modifier with Some modify -> modify output | None -> output)
 
-    let private flatStep vectorize length (origin: float) (step: float) (start: float) =
+    let private flatStep length (origin: float) (step: float) (start: float) =
         // Flat origins are integral or half-integral, so roundDistance leaves every distance exact.
         let offsets = Array.zeroCreate<float> length
         let mutable index = 0
-        if vectorize then
-            let width = Vector<float>.Count
-            let stride = Vector<float>(float width)
-            let origin, step, start = Vector<float>(origin), Vector<float>(step), Vector<float>(start)
-            let mutable indices = Vector<float>.Indices
-            while index <= length - width do
-                let values = start + Vector.Abs(origin - indices) * step
-                values.CopyTo(offsets, index)
-                indices <- indices + stride
-                index <- index + width
+        if length > 0 then
+            let rOut = &MemoryMarshal.GetArrayDataReference(offsets)
+            if Vector512.IsHardwareAccelerated && length >= 8 then
+                let vStride = Vector512.Create(8.)
+                let vOrigin = Vector512.Create(origin)
+                let vStep = Vector512.Create(step)
+                let vStart = Vector512.Create(start)
+                let mutable vIndices = Vector512.Create(0., 1., 2., 3., 4., 5., 6., 7.)
+                while index <= length - 8 do
+                    let vValues = vStart + Vector512.Abs(vOrigin - vIndices) * vStep
+                    vValues.StoreUnsafe(&rOut, unativeint index)
+                    vIndices <- vIndices + vStride
+                    index <- index + 8
+            elif Vector256.IsHardwareAccelerated && length >= 4 then
+                let vStride = Vector256.Create(4.)
+                let vOrigin = Vector256.Create(origin)
+                let vStep = Vector256.Create(step)
+                let vStart = Vector256.Create(start)
+                let mutable vIndices = Vector256.Create(0., 1., 2., 3.)
+                while index <= length - 4 do
+                    let vValues = vStart + Vector256.Abs(vOrigin - vIndices) * vStep
+                    vValues.StoreUnsafe(&rOut, unativeint index)
+                    vIndices <- vIndices + vStride
+                    index <- index + 4
+            elif Vector128.IsHardwareAccelerated && length >= 2 then
+                let vStride = Vector128.Create(2.)
+                let vOrigin = Vector128.Create(origin)
+                let vStep = Vector128.Create(step)
+                let vStart = Vector128.Create(start)
+                let mutable vIndices = Vector128.Create(0., 1.)
+                while index <= length - 2 do
+                    let vValues = vStart + Vector128.Abs(vOrigin - vIndices) * vStep
+                    vValues.StoreUnsafe(&rOut, unativeint index)
+                    vIndices <- vIndices + vStride
+                    index <- index + 2
         while index < length do
             offsets[index] <- start + abs (origin - float index) * step
             index <- index + 1
@@ -294,7 +511,7 @@ module Stagger =
                 | StaggerOrigin.Center -> (float length - 1.) / 2.
                 | StaggerOrigin.Index index -> float index
                 | _ -> 0.
-            flatStep (Vector.IsHardwareAccelerated && length >= 32) length origin step (if start = 0. then 0. else start)
+            flatStep length origin step (if start = 0. then 0. else start)
         | _ -> distributeGeneral value options targetCount
 
     /// <summary>Distributes offsets using element bounding-box centers measured on the caller's owning host thread.</summary>

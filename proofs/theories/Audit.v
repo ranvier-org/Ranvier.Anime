@@ -19,6 +19,9 @@ Print Assumptions ease_inout_midpoint_and_symmetry.
 Print Assumptions spring_stretch_preserves_completion_ratio.
 Print Assumptions stagger_grid3d_bijection.
 Print Assumptions stagger_flat_step_simd_eq_scalar.
+Print Assumptions bounce_4branch_eq_pow_loop.
+Print Assumptions monotone_lower_bound_bsearch_eq_linear_scan.
+Print Assumptions dyadic_lut_bisection_eq_direct_bisection.
 
 (** ** InterpolationColor.v *)
 Print Assumptions js_half_ceil_round_ties_toward_pos_inf.
@@ -29,6 +32,8 @@ Print Assumptions hcl_shortest_hue_arc_bounded.
 Print Assumptions achromatic_hue_borrowing_constant.
 Print Assumptions lab_white_snap_preserves_in_gamut.
 Print Assumptions angle_grad_turn_deg_homomorphism.
+Print Assumptions morph_simd_chunks_eq_scalar.
+Print Assumptions fixed4_int_decomposition_exact.
 
 (** ** CompositionTimeline.v *)
 Print Assumptions timeline_position_relative_ops_sound.
