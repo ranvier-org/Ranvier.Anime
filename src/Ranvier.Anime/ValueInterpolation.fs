@@ -312,7 +312,7 @@ module internal ValueInterpolation =
             let result = modifier value
             if canWrite() then struct(true, result) else struct(false, 0.)
 
-    let private lerpComplexSimd (first: float array) (last: float array) (dst: float array) (progress: float) (precision: int) =
+    let lerpComplexSimd (first: float array) (last: float array) (dst: float array) (progress: float) (precision: int) =
         let len = last.Length
         if progress = 0. then
             Array.Copy(first, 0, dst, 0, len)

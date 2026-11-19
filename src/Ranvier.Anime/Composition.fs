@@ -73,43 +73,55 @@ type TweenTargetKind =
 /// <summary>Mutable key/value property bag representing a plain JS-style animatable object target.</summary>
 [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type AnimatedObject(?initial: seq<string * AdaptedValue>) =
-    let values = Dictionary<string, AdaptedValue>(StringComparer.Ordinal)
+    // Unboxed struct(isText, number, text) avoids allocating an AdaptedValue heap DU on every per-frame SetNumber / SetText.
+    let values = Dictionary<string, struct(bool * float * string)>(StringComparer.Ordinal)
     do
         match initial with
-        | Some pairs -> for k, v in pairs do values[k] <- v
+        | Some pairs ->
+            for k, v in pairs do
+                match v with
+                | AdaptedValue.Scalar n -> values[k] <- struct(false, n, null)
+                | AdaptedValue.Text s -> values[k] <- struct(true, 0., s)
         | None -> ()
 
     /// <summary>Gets or sets a named property value on this object.</summary>
     member _.Item
-        with get(name: string) = values[name]
-        and set (name: string) (value: AdaptedValue) = values[name] <- value
+        with get(name: string) =
+            let struct(isText, n, s) = values[name]
+            if isText then AdaptedValue.Text s else AdaptedValue.Scalar n
+        and set (name: string) (value: AdaptedValue) =
+            match value with
+            | AdaptedValue.Scalar n -> values[name] <- struct(false, n, null)
+            | AdaptedValue.Text s -> values[name] <- struct(true, 0., s)
 
     /// <summary>Attempts to read a named property value.</summary>
     member _.TryGet(name: string) =
         match values.TryGetValue name with
-        | true, v -> Some v
+        | true, struct(isText, n, s) -> Some (if isText then AdaptedValue.Text s else AdaptedValue.Scalar n)
         | _ -> None
 
     /// <summary>Sets a scalar numeric property.</summary>
-    member _.SetNumber(name: string, value: float) = values[name] <- AdaptedValue.Scalar value
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    member _.SetNumber(name: string, value: float) = values[name] <- struct(false, value, null)
 
     /// <summary>Gets a scalar numeric property, parsing numeric strings when needed.</summary>
     member _.GetNumber(name: string) =
         match values.TryGetValue name with
-        | true, AdaptedValue.Scalar v -> v
-        | true, AdaptedValue.Text s -> Double.Parse(s, CultureInfo.InvariantCulture)
+        | true, struct(false, v, _) -> v
+        | true, struct(true, _, s) -> Double.Parse(s, CultureInfo.InvariantCulture)
         | _ -> 0.
 
     /// <summary>Sets a text/unit/compound property.</summary>
-    member _.SetText(name: string, value: string) = values[name] <- AdaptedValue.Text value
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    member _.SetText(name: string, value: string) = values[name] <- struct(true, 0., value)
 
     member internal _.Remove(name: string) = values.Remove name |> ignore
 
     /// <summary>Gets the string representation of a property.</summary>
     member _.GetText(name: string) =
         match values.TryGetValue name with
-        | true, AdaptedValue.Text s -> s
-        | true, AdaptedValue.Scalar v -> ValueInterpolation.number v
+        | true, struct(true, _, s) -> s
+        | true, struct(false, v, _) -> ValueInterpolation.number v
         | _ -> ""
 
     /// <summary>Number of stored properties.</summary>
@@ -223,8 +235,31 @@ module internal DomTargetHelpers =
     let private domObjectProps = System.Collections.Frozen.FrozenSet.ToFrozenSet([| "innerHTML"; "textContent"; "value"; "scrollTop"; "scrollLeft" |], StringComparer.Ordinal)
 
     let toKebab (name: string) =
-        if String.IsNullOrEmpty name || name.StartsWith("--", StringComparison.Ordinal) then name
-        else lowerCaseRgx.Replace(name, "$1-$2").ToLowerInvariant()
+        if String.IsNullOrEmpty name || name.StartsWith("--", StringComparison.Ordinal) then
+            name
+        else
+            let span = name.AsSpan()
+            if span.IndexOfAnyInRange('\u0080', '\uFFFF') >= 0 then
+                lowerCaseRgx.Replace(name, "$1-$2").ToLowerInvariant()
+            elif span.IndexOfAnyInRange('A', 'Z') < 0 then
+                name
+            else
+                let buf = Array.zeroCreate<char> (span.Length * 2)
+                let mutable outPos = 0
+                for i = 0 to span.Length - 1 do
+                    let c = span[i]
+                    if c >= 'A' && c <= 'Z' then
+                        if i > 0 then
+                            let prev = span[i - 1]
+                            if (prev >= 'a' && prev <= 'z') || (prev >= '0' && prev <= '9') then
+                                buf[outPos] <- '-'
+                                outPos <- outPos + 1
+                        buf[outPos] <- char (int c + 32)
+                        outPos <- outPos + 1
+                    else
+                        buf[outPos] <- c
+                        outPos <- outPos + 1
+                String(ReadOnlySpan<char>(buf, 0, outPos))
 
     let tryStyle (target: obj) : CSSStyleDeclaration option =
         match target with
@@ -710,8 +745,14 @@ and internal CompositionManager(queue: EngineFrameQueue) =
             let next = if insertIdx < list.Count then list[insertIdx] else null
             tween.PrevRep <- prev
             tween.NextRep <- next
-            if not (isNull prev) then prev.NextRep <- tween
-            if not (isNull next) then next.PrevRep <- tween
+            if not (isNull prev) then
+                prev.NextRep <- tween
+                prev.Parent.InvalidateSoaBatch()
+                tween.Parent.InvalidateSoaBatch()
+            if not (isNull next) then
+                next.PrevRep <- tween
+                next.Parent.InvalidateSoaBatch()
+                tween.Parent.InvalidateSoaBatch()
             list.Insert(insertIdx, tween)
             if obj.ReferenceEquals(tween.TrackHead, tween) then
                 let mutable before : ComposedTween = null
@@ -801,6 +842,32 @@ and internal CompositionManager(queue: EngineFrameQueue) =
                 tween.NextAdd <- null
             | _ -> ()
 
+and [<Sealed>] private SoaScalarBatch
+    (start: float, updateDuration: float, changeDuration: float, absStart: float,
+     ease: float -> float, targetKind: TweenTargetKind, valueKind: ValueInterpolation.ValueKind,
+     froms: float array, tos: float array, outValues: float array,
+     bagTargets: AnimatedObject array, sharedProperty: string,
+     targets: obj array, properties: string array, units: string array, priorities: string array, renderTransforms: bool array) =
+    member val Start = start with get, set
+    member val UpdateDuration = updateDuration with get, set
+    member val ChangeDuration = changeDuration with get, set
+    member val AbsoluteStart = absStart with get, set
+    member _.Ease = ease
+    member _.TargetKind = targetKind
+    member _.ValueKind = valueKind
+    member _.Froms = froms
+    member _.Tos = tos
+    member _.OutValues = outValues
+    member _.BagTargets = bagTargets
+    member _.SharedProperty = sharedProperty
+    member _.Targets = targets
+    member _.Properties = properties
+    member _.Units = units
+    member _.Priorities = priorities
+    member _.RenderTransforms = renderTransforms
+    member val LastTweenTime = 0. with get, set
+    member val HasSampled = false with get, set
+
 /// <summary>Multi-target, multi-property animation supporting None, Replace and Blend (additive) composition.</summary>
 and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
     internal (scheduler: FrameScheduler, targets: obj array, specs: PropertySpec array,
@@ -811,6 +878,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
     let registry = defaultArg options.Registry Adapters.DefaultRegistry
     let ownerAllowsWrite = ScopeRegistration.captureWriteGuard()
     let tweens = ResizeArray<ComposedTween>()
+    let mutable soaBatch : SoaScalarBatch voption = ValueNone
     let mutable siblingsAttached = false
     let mutable cancelled = false
     let mutable restoreVersion = 0
@@ -982,6 +1050,83 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         assignRenderTransforms()
         effectiveDelay, iterDuration
 
+    let rebuildSoaBatch () =
+        let n = tweens.Count
+        if n < 8 || parentTimelineRef.IsSome then
+            soaBatch <- ValueNone
+        else
+            let tw0 = tweens[0]
+            let vKind = tw0.First.Kind
+            let mutable ok =
+                (vKind = ValueInterpolation.ValueKind.Number || vKind = ValueInterpolation.ValueKind.Unit) &&
+                tw0.Last.Kind = vKind &&
+                tw0.Composition <> KeyframeComposition.Blend &&
+                tw0.Adapter.IsNone &&
+                Object.ReferenceEquals(tw0.Modifier, PropertyNumbers.identityFloat)
+            let mutable allBagsSameProp = ok && tw0.Kind = TweenTargetKind.Object && vKind = ValueInterpolation.ValueKind.Number && (tw0.Target :? AnimatedObject)
+            let prop0 = tw0.Property
+            let mutable i = 0
+            while i < n && ok do
+                let tw = tweens[i]
+                if tw.Removed || tw.StepSource.Muted || tw.Replaced || tw.Overridden || tw.Overlapped ||
+                   not (isNull tw.PrevRep) || not (isNull tw.NextRep) || not (isNull tw.TrackHead) ||
+                   not (isNull tw.AfterMuted) || not (isNull tw.BeforeMuted) ||
+                   tw.First.Kind <> vKind || tw.Last.Kind <> vKind ||
+                   tw.Kind <> tw0.Kind || tw.Composition <> tw0.Composition || tw.Adapter.IsSome ||
+                   tw.Start <> tw0.Start || tw.UpdateDuration <> tw0.UpdateDuration ||
+                   tw.ChangeDuration <> tw0.ChangeDuration || tw.AbsoluteStart <> tw0.AbsoluteStart ||
+                   not (Object.ReferenceEquals(tw.Ease, tw0.Ease)) ||
+                   not (Object.ReferenceEquals(tw.Modifier, PropertyNumbers.identityFloat)) then
+                    ok <- false
+                elif allBagsSameProp && (not (tw.Target :? AnimatedObject) || not (StringComparer.Ordinal.Equals(tw.Property, prop0))) then
+                    allBagsSameProp <- false
+                i <- i + 1
+            if not ok then
+                soaBatch <- ValueNone
+            else
+                let froms = Array.zeroCreate<float> n
+                let tos = Array.zeroCreate<float> n
+                let outVals = Array.zeroCreate<float> n
+                for k = 0 to n - 1 do
+                    let tw = tweens[k]
+                    froms[k] <- tw.First.Number
+                    tos[k] <- tw.Last.Number
+                    outVals[k] <- tw.CurrentNumber
+                if allBagsSameProp then
+                    let bags = Array.init n (fun k -> tweens[k].Target :?> AnimatedObject)
+                    soaBatch <-
+                        ValueSome(
+                            SoaScalarBatch(
+                                tw0.Start, tw0.UpdateDuration, tw0.ChangeDuration, tw0.AbsoluteStart,
+                                tw0.Ease, tw0.Kind, vKind, froms, tos, outVals,
+                                bags, prop0, null, null, null, null, null))
+                else
+                    let tgts = Array.init n (fun k -> tweens[k].Target)
+                    let props = Array.init n (fun k -> tweens[k].Property)
+                    let units = Array.init n (fun k -> if vKind = ValueInterpolation.ValueKind.Unit then tweens[k].Last.Unit else "")
+                    let prios = Array.init n (fun k -> tweens[k].Priority)
+                    let rts = Array.init n (fun k -> tweens[k].RenderTransforms)
+                    soaBatch <-
+                        ValueSome(
+                            SoaScalarBatch(
+                                tw0.Start, tw0.UpdateDuration, tw0.ChangeDuration, tw0.AbsoluteStart,
+                                tw0.Ease, tw0.Kind, vKind, froms, tos, outVals,
+                                null, prop0, tgts, props, units, prios, rts))
+
+    let invalidateSoaBatch () =
+        match soaBatch with
+        | ValueNone -> ()
+        | ValueSome batch ->
+            soaBatch <- ValueNone
+            if batch.HasSampled then
+                let tt = batch.LastTweenTime
+                let outVals = batch.OutValues
+                let count = min tweens.Count outVals.Length
+                for k = 0 to count - 1 do
+                    let tw = tweens[k]
+                    tw.TweenTime <- tt
+                    tw.CurrentNumber <- outVals[k]
+
     let initialDelay, initialIterDuration = buildTweens()
     let effectivePlayback =
         { options.Playback with
@@ -998,6 +1143,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                         tw.Override()
                         tw.Replaced <- true
                     else manager.ComposeTween tw
+            rebuildSoaBatch()
 
     let detachSiblings () =
         if siblingsAttached then
@@ -1025,7 +1171,47 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
             let precision = match options.Precision with Some p -> int p | None -> -1
             let mutable rendered = false
             let mutable hasBlend = false
-            for i in 0 .. tweens.Count - 1 do
+            let mutable startIdx = 0
+            match soaBatch with
+            | ValueSome batch when clock.IsCurrent renderToken ->
+                startIdx <- tweens.Count
+                let ending = batch.AbsoluteStart + batch.ChangeDuration
+                let history =
+                    (batch.LastTweenTime <> batch.ChangeDuration || absolute <= ending) &&
+                    (batch.LastTweenTime <> 0. || absolute >= batch.AbsoluteStart)
+                if forced || history then
+                    let tt = Math.Clamp(sample.IterationTime - batch.Start, 0., batch.ChangeDuration)
+                    batch.LastTweenTime <- tt
+                    batch.HasSampled <- true
+                    if not clock.EffectivelyMuted then
+                        let progress = batch.Ease (tt / batch.UpdateDuration)
+                        if not (Double.IsFinite progress) then invalidArg "progress" "Expected finite input."
+                        if canWrite() && soaBatch.IsSome then
+                            let roundNumbers = batch.TargetKind <> TweenTargetKind.Object
+                            let effPrecision =
+                                if progress = 0. || progress = 1. || (batch.ValueKind = ValueInterpolation.ValueKind.Number && not roundNumbers) then -1
+                                else precision
+                            let outVals = batch.OutValues
+                            ValueInterpolation.lerpComplexSimd batch.Froms batch.Tos outVals progress effPrecision
+                            if not clock.InternalRender then
+                                let bags = batch.BagTargets
+                                if not (isNull bags) then
+                                    let prop = batch.SharedProperty
+                                    for i = 0 to bags.Length - 1 do
+                                        bags[i].SetNumber(prop, outVals[i])
+                                else
+                                    let tgts = batch.Targets
+                                    let props = batch.Properties
+                                    let units = batch.Units
+                                    let prios = batch.Priorities
+                                    let rts = batch.RenderTransforms
+                                    let tKind = batch.TargetKind
+                                    let vKind = batch.ValueKind
+                                    for i = 0 to tgts.Length - 1 do
+                                        DomTargetHelpers.writeScalar tgts[i] tKind props[i] None vKind units[i] outVals[i] rts[i] prios[i]
+                                rendered <- true
+            | _ -> ()
+            for i in startIdx .. tweens.Count - 1 do
                 let tw = tweens[i]
                 if not tw.Removed && not tw.StepSource.Muted && clock.IsCurrent renderToken then
                     tw.InWriteRange <-
@@ -1194,7 +1380,9 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
     member internal _.RegainsTrack(previousTime:float, time:float) =
         tweens.Exists(fun tw -> obj.ReferenceEquals(tw.TrackHead,tw) && not tw.Replaced &&
                                 tw.OwnsTimelineTime(time) && not (tw.OwnsTimelineTime(previousTime)))
+    member internal _.InvalidateSoaBatch() = invalidateSoaBatch()
     member internal _.OnPropertyReplaced() =
+        invalidateSoaBatch()
         if tweens.TrueForAll(fun tw -> tw.Removed || tw.StepSource.Muted || tw.Replaced) then
             fullyReplaced <- true
             match parentTimelineRef with
@@ -1299,11 +1487,13 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         if not cancelled then
             if clock.Cancelled || (not siblingsAttached && not pendingInitialAttach) then this.Reset() |> ignore
             elif tweens.Exists(fun tw -> tw.Replaced && not tw.Removed) then
+                invalidateSoaBatch()
                 for tw in tweens do
                     if not tw.Removed && tw.Replaced then
                         tw.RestoreOwnership()
                         manager.ComposeTween tw
                 assignRenderTransforms()
+                rebuildSoaBatch()
         clock.Play()
         this
 
@@ -1319,6 +1509,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
 
     /// <summary>Resets to zero, re-linking siblings if previously completed.</summary>
     member this.Reset() =
+        invalidateSoaBatch()
         restoreVersion <- restoreVersion + 1
         cancelled <- false
         fullyReplaced <- false
@@ -1353,6 +1544,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         let previousDelay = clock.Delay
         clock.Stretch newDuration
         if previousDuration > 0. && (clock.Duration <> previousDuration || clock.Delay <> previousDelay) then
+            invalidateSoaBatch()
             let scale = clock.Duration / previousDuration
             if parentTimelineRef.IsSome then
                 offset <- parentTimelineRef.Value.AbsoluteOffset + timelineOffset * scale
@@ -1368,10 +1560,12 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                 if not (isNull tw.TrackHead) && obj.ReferenceEquals(tw.TrackHead, tw) then
                     tw.TrackStart <- timelineOffset * scale + (scaledClockDelay + tw.Start) / clock.Speed
                 tw.TweenTime <- if tw.Overridden then 1e-11 else tw.TweenTime * scale
+            rebuildSoaBatch()
         this
 
     /// <summary>Re-evaluates dynamic endpoints and target originals in place.</summary>
     member this.Refresh() =
+        invalidateSoaBatch()
         let wasPlaying = not clock.Paused
         let savedTime = clock.CurrentTime
         detachSiblings()
@@ -1398,8 +1592,10 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                     manager.RemoveTweenSiblings tw
                     matched <- true
         if matched then
+            invalidateSoaBatch()
             assignRenderTransforms()
             if this.ActiveTweenCount = 0 then this.Cancel()
+            else rebuildSoaBatch()
         matched
 
     /// <summary>Cancels playback while retaining current rendered target values.</summary>

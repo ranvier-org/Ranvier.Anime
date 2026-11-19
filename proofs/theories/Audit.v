@@ -46,6 +46,7 @@ Print Assumptions timeline_track_intervals_disjoint.
 Print Assumptions coalesced_end_of_frame_flush_eq_eager_per_tween_flush.
 Print Assumptions simd_channel_add_chunks_eq_scalar.
 Print Assumptions property_slice_cursor_search_eq_full_frame_scan.
+Print Assumptions soa_multi_target_scalar_simd_eq_per_tween.
 
 (** ** DomScrollDragMotion.v *)
 Print Assumptions transform_clear_revert_never_resurrects_stale_cache.
@@ -55,3 +56,5 @@ Print Assumptions scroll_observer_forced_boundary_once.
 Print Assumptions flip_reparent_delta_preserves_viewport_origin.
 Print Assumptions motion_animate_on_reverse_revert_restores_initial_style.
 Print Assumptions motion_slot_close_is_terminal.
+Print Assumptions draggable_numeric_sentinel_cache_eq_eager_text.
+Print Assumptions css_balanced_delimiter_single_pass_eq_two_pass.

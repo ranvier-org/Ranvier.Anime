@@ -26,7 +26,7 @@ type DeclarationAnimationOptions =
       OnComplete: Timer -> unit }
     /// <summary>Active scope clock, easing and modifier defaults with engine decimal precision and silent callbacks.</summary>
     static member Default =
-        { Playback=PlaybackDefaults.current(); Ease=AnimationDefaults.ease id; Modifier=AnimationDefaults.modifier id; Precision=EngineDefaults.precision()
+        { Playback=PlaybackDefaults.current(); Ease=AnimationDefaults.ease id; Modifier=AnimationDefaults.modifier PropertyNumbers.identityFloat; Precision=EngineDefaults.precision()
           OnBegin=ignore; OnBeforeUpdate=ignore; OnRender=ignore; OnUpdate=ignore
           OnLoop=ignore; OnPause=ignore; OnComplete=ignore }
     /// <summary>An invariant clock/precision diagnostic; callback functions are omitted.</summary>
@@ -211,12 +211,20 @@ module CssAnimation =
         let finite name value = if not(Double.IsFinite value) then invalidArg name "Expected a finite value."
         finite "duration" duration
         if duration<0. then invalidArg "duration" "Expected nonnegative milliseconds."
-        for name,value in ["Delay",options.Playback.Delay;"LoopDelay",options.Playback.LoopDelay;"Speed",options.Playback.Speed;"FrameRate",options.Playback.FrameRate] do
-            finite name value
-        for name,callback in ["Ease",box options.Ease;"Modifier",box options.Modifier;"OnBegin",box options.OnBegin
-                              "OnBeforeUpdate",box options.OnBeforeUpdate;"OnRender",box options.OnRender;"OnUpdate",box options.OnUpdate
-                              "OnLoop",box options.OnLoop;"OnPause",box options.OnPause;"OnComplete",box options.OnComplete] do
-            if isNull callback then invalidArg "options" (name+" callback is required.")
+        finite "Delay" options.Playback.Delay
+        finite "LoopDelay" options.Playback.LoopDelay
+        finite "Speed" options.Playback.Speed
+        finite "FrameRate" options.Playback.FrameRate
+        let inline checkCb name cb = if isNull cb then invalidArg "options" (name+" callback is required.")
+        checkCb "Ease" (box options.Ease)
+        checkCb "Modifier" (box options.Modifier)
+        checkCb "OnBegin" (box options.OnBegin)
+        checkCb "OnBeforeUpdate" (box options.OnBeforeUpdate)
+        checkCb "OnRender" (box options.OnRender)
+        checkCb "OnUpdate" (box options.OnUpdate)
+        checkCb "OnLoop" (box options.OnLoop)
+        checkCb "OnPause" (box options.OnPause)
+        checkCb "OnComplete" (box options.OnComplete)
         let precision=
             match options.Precision with
             | None -> -1
@@ -250,28 +258,36 @@ module CssAnimation =
         clock.OnSoftRevert <- fun () -> lifetime.Revert(false)
         clock.OnCancel <- lifetime.Cancelled
         clock.OnFault <- lifetime.Faulted
+        let mutable renderToken = Int64.MinValue
+        let mutable renderResGuard : unit -> bool = Closure.keep (fun () -> false)
+        let canWrite = Closure.keep (fun () -> clock.IsCurrent renderToken && renderResGuard())
         let render (sample:PlaybackSample) mode muted =
-            let iterationDuration=clock.IterationDuration
-            let clockCurrent=clock.CaptureWriteGuard()
-            let resourceCurrent=lifetime.CaptureGuard()
-            let canWrite () = clockCurrent() && resourceCurrent()
-            let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
-            let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=200.
-            let absolute=PropertyNumbers.round 1e12 (clock.Delay+sample.IterationTime)
-            let start=PropertyNumbers.round 1e12 clock.Delay
-            let eligible=force || ((tweenTime<>iterationDuration || absolute<=start+iterationDuration) &&
-                                  (tweenTime<>0. || absolute>=start))
-            if eligible && canWrite() then
-                tweenTime<-Math.Clamp(sample.IterationTime,0.,iterationDuration)
-                lifetime.Invoke(fun () ->
-                    let progress=options.Ease(tweenTime/iterationDuration)
-                    if canWrite() then
-                        match interpolate progress precision options.Modifier canWrite with
-                        | Some output when canWrite() ->
-                            let declaration=Declaration.create name output.Text
-                            StyleDeclaration.apply style (if important then Declaration.important declaration else declaration)
-                            if canWrite() && sample.AboveZero && not muted then options.OnRender clock
-                        | _ -> ())
+            let savedToken = renderToken
+            let savedRes = renderResGuard
+            renderToken <- clock.WriteToken
+            renderResGuard <- lifetime.CaptureGuard()
+            try
+                let iterationDuration=clock.IterationDuration
+                let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
+                let force=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=200.
+                let absolute=PropertyNumbers.round 1e12 (clock.Delay+sample.IterationTime)
+                let start=PropertyNumbers.round 1e12 clock.Delay
+                let eligible=force || ((tweenTime<>iterationDuration || absolute<=start+iterationDuration) &&
+                                      (tweenTime<>0. || absolute>=start))
+                if eligible && canWrite() then
+                    tweenTime<-Math.Clamp(sample.IterationTime,0.,iterationDuration)
+                    lifetime.Invoke(fun () ->
+                        let progress=options.Ease(tweenTime/iterationDuration)
+                        if canWrite() then
+                            match interpolate progress precision options.Modifier canWrite with
+                            | Some output when canWrite() ->
+                                let declaration=Declaration.create name output.Text
+                                StyleDeclaration.apply style (if important then Declaration.important declaration else declaration)
+                                if canWrite() && sample.AboveZero && not muted then options.OnRender clock
+                            | _ -> ())
+            finally
+                renderToken <- savedToken
+                renderResGuard <- savedRes
         try
             clock.ConfigureRenderer(render,?totalDuration=(if iterationDuration=1e-11 then Some 1e-11 else None),
                                     onStretch=(fun scale -> tweenTime<-tweenTime*scale))

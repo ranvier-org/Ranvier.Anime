@@ -64,6 +64,19 @@ type TransformValue =
         | FromTo(a, b) -> "FromTo(" + a.ToString() + ", " + b.ToString() + ")"
         | Sequence items -> "Sequence(" + items.Length.ToString(CultureInfo.InvariantCulture) + ")"
 
+[<AbstractClass; Sealed>]
+type private ParsedScratchTls =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private dict: Dictionary<string, string>
+    static member Acquire() =
+        let mutable d = ParsedScratchTls.dict
+        if isNull d then
+            d <- Dictionary<string, string>(8, StringComparer.Ordinal)
+            ParsedScratchTls.dict <- d
+        else
+            d.Clear()
+        d
+
 /// <summary>Individual CSS transform property parsing, caching, canonical ordering and partial restoration.</summary>
 [<RequireQualifiedAccess>]
 module ElementTransforms =
@@ -140,18 +153,24 @@ module ElementTransforms =
         settle state element
         let inlineTransforms = style.getPropertyValue "transform"
         if not (String.IsNullOrEmpty inlineTransforms) then
-            let struct(parsed, fullTranslate) = TransformCache.parse inlineTransforms
+            let parsed = ParsedScratchTls.Acquire()
+            let fullTranslate = TransformCache.parseInto inlineTransforms parsed
             for KeyValue(k, v) in parsed do state.Cache[k] <- v
             state.FullTranslate <- fullTranslate
             if canonical = "translate3d" && fullTranslate.IsSome then
-                fullTranslate.Value, Some fullTranslate.Value
+                let res = fullTranslate.Value
+                parsed.Clear()
+                res, Some res
             else
-                match state.Cache.TryGetValue canonical with
-                | true, cached ->
-                    let fromInline = if parsed.ContainsKey canonical then Some cached else None
-                    cached, fromInline
-                | _ ->
-                    TransformCache.read parsed fullTranslate canonical, None
+                let res =
+                    match state.Cache.TryGetValue canonical with
+                    | true, cached ->
+                        let fromInline = if parsed.ContainsKey canonical then Some cached else None
+                        cached, fromInline
+                    | _ ->
+                        TransformCache.read parsed fullTranslate canonical, None
+                parsed.Clear()
+                res
         else
             state.Cache.Clear()
             state.FullTranslate <- None
@@ -218,9 +237,7 @@ module ElementTransforms =
         let priority = style.getPropertyPriority "transform"
         let inlineTransforms = style.getPropertyValue "transform"
         if not (String.IsNullOrEmpty inlineTransforms) then
-            let struct(parsed, fullTranslate) = TransformCache.parse inlineTransforms
-            for KeyValue(k, v) in parsed do state.Cache[k] <- v
-            state.FullTranslate <- fullTranslate
+            state.FullTranslate <- TransformCache.parseInto inlineTransforms state.Cache
         else
             state.Cache.Clear()
             state.FullTranslate <- None
@@ -243,10 +260,8 @@ module ElementTransforms =
         settle state element
         let currentInline = style.getPropertyValue "transform"
         if not (String.IsNullOrEmpty currentInline) then
-            let struct(parsed, fullTranslate) = TransformCache.parse currentInline
             state.Cache.Clear()
-            for KeyValue(k, v) in parsed do state.Cache[k] <- v
-            state.FullTranslate <- fullTranslate
+            state.FullTranslate <- TransformCache.parseInto currentInline state.Cache
         else
             state.Cache.Clear()
             state.FullTranslate <- None
