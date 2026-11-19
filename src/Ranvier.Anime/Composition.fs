@@ -4,8 +4,46 @@ open System
 open System.Collections.Generic
 open System.Globalization
 open System.Runtime.CompilerServices
+open System.Runtime.InteropServices
+open System.Runtime.Intrinsics
 open System.Text.RegularExpressions
 open Ranvier.Dom
+
+module private CompositionTargetComparer =
+    let instance =
+        { new IEqualityComparer<struct(obj * string)> with
+            member _.Equals(struct(a, pa), struct(b, pb)) =
+                Object.ReferenceEquals(a, b) && StringComparer.Ordinal.Equals(pa, pb)
+            member _.GetHashCode(struct(t, p)) =
+                HashCode.Combine(RuntimeHelpers.GetHashCode t, StringComparer.Ordinal.GetHashCode p) }
+
+module private BlendSimd =
+    let addChannels (dst: float array) (src: float array) =
+        let count = min dst.Length src.Length
+        let mutable i = 0
+        let rDst = &MemoryMarshal.GetArrayDataReference(dst)
+        let rSrc = &MemoryMarshal.GetArrayDataReference(src)
+        if Vector512.IsHardwareAccelerated && count >= 8 then
+            while i <= count - 8 do
+                let vd = Vector512.LoadUnsafe(&rDst, unativeint i)
+                let vs = Vector512.LoadUnsafe(&rSrc, unativeint i)
+                (vd + vs).StoreUnsafe(&rDst, unativeint i)
+                i <- i + 8
+        elif Vector256.IsHardwareAccelerated && count >= 4 then
+            while i <= count - 4 do
+                let vd = Vector256.LoadUnsafe(&rDst, unativeint i)
+                let vs = Vector256.LoadUnsafe(&rSrc, unativeint i)
+                (vd + vs).StoreUnsafe(&rDst, unativeint i)
+                i <- i + 4
+        elif Vector128.IsHardwareAccelerated && count >= 2 then
+            while i <= count - 2 do
+                let vd = Vector128.LoadUnsafe(&rDst, unativeint i)
+                let vs = Vector128.LoadUnsafe(&rSrc, unativeint i)
+                (vd + vs).StoreUnsafe(&rDst, unativeint i)
+                i <- i + 2
+        while i < count do
+            dst[i] <- dst[i] + src[i]
+            i <- i + 1
 
 module private CompositionRestoration =
     let run restore =
@@ -336,6 +374,44 @@ module internal DomTargetHelpers =
                 | None -> bag.SetText(canonical, output.Text)
             | _ -> ()
 
+    let writeScalar (target: obj) (kind: TweenTargetKind) (canonical: string) (adapter: TargetAdapterEntry option)
+                    (valueKind: ValueInterpolation.ValueKind) (unitSuffix: string) (scalar: float)
+                    (flushTransform: bool) (priority: string) =
+        match adapter with
+        | Some entry ->
+            let scalarOpt = if valueKind = ValueInterpolation.ValueKind.Number then Some scalar else None
+            let info = AdaptedTweenInfo(target, canonical, scalar, Array.Empty<float>())
+            entry.Set target scalarOpt info
+        | None ->
+            let suffix = if valueKind = ValueInterpolation.ValueKind.Unit then unitSuffix else ""
+            match kind, target with
+            | TweenTargetKind.Transform, (:? Element as el) ->
+                if Double.IsFinite scalar then
+                    ElementTransforms.stageNumber el canonical scalar suffix
+                else
+                    ElementTransforms.stageComponent el canonical ((ValueInterpolation.number scalar) + suffix)
+                if flushTransform then ElementTransforms.commit el priority
+            | (TweenTargetKind.Css | TweenTargetKind.CssVar), (:? Element as el) ->
+                let style = (tryStyle el).Value
+                style.setProperty(canonical, (ValueInterpolation.number scalar) + suffix, priority = priority)
+            | TweenTargetKind.Attribute, (:? Element as el) ->
+                el.setAttribute(canonical, (ValueInterpolation.number scalar) + suffix)
+            | TweenTargetKind.Object, (:? NumericProperty as prop) ->
+                prop.Value <- scalar
+            | TweenTargetKind.Object, (:? AnimatedObject as bag) ->
+                if valueKind = ValueInterpolation.ValueKind.Number then
+                    bag.SetNumber(canonical, scalar)
+                else
+                    bag.SetText(canonical, (ValueInterpolation.number scalar) + suffix)
+            | TweenTargetKind.Object, (:? Element as el) ->
+                let text = (ValueInterpolation.number scalar) + suffix
+                match canonical with
+                | "innerHTML" -> (el :?> HTMLElement).innerHTML <- text
+                | "textContent" -> (el :> Node).textContent <- text
+                | "value" -> el.setAttribute("value", text)
+                | _ -> ()
+            | _ -> ()
+
 /// <summary>Options controlling <see cref="T:Ranvier.Anime.ComposedAnimation"/> construction and playback.</summary>
 [<NoEquality; NoComparison; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
 type ComposedAnimationOptions =
@@ -375,7 +451,7 @@ type ComposedAnimationOptions =
           Duration = (AnimationDefaults.current()).Duration
           DurationBy = None
           Ease = (AnimationDefaults.current()).Ease
-          Modifier = AnimationDefaults.modifier id
+          Modifier = AnimationDefaults.modifier PropertyNumbers.identityFloat
           Composition = AnimationDefaults.composition KeyframeComposition.Replace
           Precision = EngineDefaults.precision()
           Autoplay = AnimationDefaults.autoplay true
@@ -430,6 +506,7 @@ and [<AllowNullLiteral>] internal ComposedTween
     member val AuthoredLast = last with get, set
     member val CurrentNumber = first.Number with get, set
     member val CurrentNumbers = Array.copy first.Components with get, set
+    member val ScratchNumbers : float array = null with get, set
     member val CachedEnd = "" with get, set
     member val RenderTransforms = false with get, set
     member val LastTransform : ComposedTween = null with get, set
@@ -477,75 +554,106 @@ and internal AdditiveLookupEntry
     member val Template = template with get, set
     member val FromNumber = fromNumber with get, set
     member val FromNumbers = fromNumbers with get, set
+    member val ScratchNumbers = Array.zeroCreate<float> fromNumbers.Length with get, set
     member _.Priority = priority
     member val Tweens = ResizeArray<ComposedTween>()
 
-and internal CompositionManager(queue: EngineFrameQueue) as this =
-    static let comparer =
-        { new IEqualityComparer<struct(obj * string)> with
-            member _.Equals(struct(a, pa), struct(b, pb)) =
-                Object.ReferenceEquals(a, b) && StringComparer.Ordinal.Equals(pa, pb)
-            member _.GetHashCode(struct(t, p)) =
-                HashCode.Combine(RuntimeHelpers.GetHashCode t, StringComparer.Ordinal.GetHashCode p) }
-
-    let replaceMap = Dictionary<struct(obj * string), ResizeArray<ComposedTween>>(comparer)
+and internal CompositionManager(queue: EngineFrameQueue) =
+    let replaceMap = Dictionary<struct(obj * string), ResizeArray<ComposedTween>>(CompositionTargetComparer.instance)
     // A completed owner detaches its tweens. Keep its identity while the target lives
     // without retaining the animation, timeline or their other targets.
     let lastOwners = ConditionalWeakTable<obj, Dictionary<string, obj>>()
-    let additiveMap = Dictionary<struct(obj * string), AdditiveLookupEntry>(comparer)
+    let additiveMap = Dictionary<struct(obj * string), AdditiveLookupEntry>(CompositionTargetComparer.instance)
     let activeAnimations = HashSet<ComposedAnimation>()
+    let flushTransforms = HashSet<Element>(HashIdentity.Reference)
+    let flushPriorities = Dictionary<Element, string>(HashIdentity.Reference)
+    let mutable dirtyAdditive = false
+
+    let hasOtherOwner (tween: ComposedTween) =
+        if tween.Composition <> KeyframeComposition.Replace then false
+        else
+            match lastOwners.TryGetValue tween.Target with
+            | true, properties ->
+                match properties.TryGetValue tween.Property with
+                | true, owner -> not (obj.ReferenceEquals(owner, tween.Parent.OwnerToken))
+                | _ -> false
+            | _ -> false
+
+    let flushAdditive () =
+        dirtyAdditive <- false
+        if additiveMap.Count > 0 then
+            flushTransforms.Clear()
+            flushPriorities.Clear()
+            try
+                for KeyValue(_, entry) in additiveMap do
+                    let tweens = entry.Tweens
+                    let mutable anyActive = false
+                    let mutable idx = 0
+                    while idx < tweens.Count && not anyActive do
+                        let tw = tweens[idx]
+                        if tw.InWriteRange && not tw.Parent.EffectivelyMuted then anyActive <- true
+                        idx <- idx + 1
+                    if anyActive then
+                        let isCompound = entry.Template.Kind = ValueInterpolation.ValueKind.Complex || entry.Template.Kind = ValueInterpolation.ValueKind.Color
+                        if isCompound then
+                            let fromNums = entry.FromNumbers
+                            let mutable scratch = entry.ScratchNumbers
+                            if isNull scratch || scratch.Length <> fromNums.Length then
+                                scratch <- Array.zeroCreate<float> fromNums.Length
+                                entry.ScratchNumbers <- scratch
+                            Array.Copy(fromNums, 0, scratch, 0, fromNums.Length)
+                            for i = tweens.Count - 1 downto 0 do
+                                let tw = tweens[i]
+#if BLEND_BENCHMARK
+                                if BlendKernel.useVector then BlendKernel.add scratch tw.CurrentNumbers else
+                                for c in 0 .. min (scratch.Length - 1) (tw.CurrentNumbers.Length - 1) do
+                                    scratch[c] <- scratch[c] + tw.CurrentNumbers[c]
+#else
+                                BlendSimd.addChannels scratch tw.CurrentNumbers
+#endif
+                            let outArr = if entry.Adapter.IsSome then Array.copy scratch else scratch
+                            let composed = ValueInterpolation.compose(entry.Template, 0., outArr)
+                            let isTransform = entry.Kind = TweenTargetKind.Transform
+                            DomTargetHelpers.writeOutput entry.Target entry.Kind entry.Property entry.Adapter 0. composed false entry.Priority
+                            if isTransform then
+                                match entry.Target with
+                                | :? Element as el ->
+                                    flushTransforms.Add el |> ignore
+                                    flushPriorities[el] <- entry.Priority
+                                | _ -> ()
+                        else
+                            let mutable sum = entry.FromNumber
+                            for i = tweens.Count - 1 downto 0 do
+                                sum <- sum + tweens[i].CurrentNumber
+                            let precision = match EngineDefaults.precision() with Some p -> int p | None -> -1
+                            let rounded =
+                                if precision < 0 || (entry.Template.Kind = ValueInterpolation.ValueKind.Number && entry.Kind = TweenTargetKind.Object) then sum
+                                else PropertyNumbers.round (PropertyNumbers.pow10 precision) sum
+                            let isTransform = entry.Kind = TweenTargetKind.Transform
+                            DomTargetHelpers.writeScalar entry.Target entry.Kind entry.Property entry.Adapter entry.Template.Kind entry.Template.Unit rounded false entry.Priority
+                            if isTransform then
+                                match entry.Target with
+                                | :? Element as el ->
+                                    flushTransforms.Add el |> ignore
+                                    flushPriorities[el] <- entry.Priority
+                                | _ -> ()
+                if flushTransforms.Count > 0 then
+                    for el in flushTransforms do
+                        ElementTransforms.flush el flushPriorities[el]
+            finally
+                flushTransforms.Clear()
+                flushPriorities.Clear()
+
     do
         let prev = queue.AfterUpdate
-        queue.AfterUpdate <- (fun () -> prev(); this.FlushAdditive())
+        queue.AfterUpdate <- (fun () -> prev(); if dirtyAdditive then flushAdditive())
 
     member _.RegisterAnimation(anim: ComposedAnimation) = activeAnimations.Add anim |> ignore
     member _.UnregisterAnimation(anim: ComposedAnimation) = activeAnimations.Remove anim |> ignore
     member _.ActiveAnimations = activeAnimations |> Seq.toArray
-
-    member _.FlushAdditive() =
-        if additiveMap.Count > 0 then
-            let transformTargets = HashSet<Element>(HashIdentity.Reference)
-            let priorities = Dictionary<Element, string>(HashIdentity.Reference)
-            for KeyValue(_, entry) in additiveMap do
-                if entry.Tweens.Exists(fun tw -> tw.InWriteRange && not tw.Parent.EffectivelyMuted) then
-                    let isCompound = entry.Template.Kind = ValueInterpolation.ValueKind.Complex || entry.Template.Kind = ValueInterpolation.ValueKind.Color
-                    if isCompound then
-                        let values = Array.copy entry.FromNumbers
-                        for i in entry.Tweens.Count - 1 .. -1 .. 0 do
-                            let tw = entry.Tweens[i]
-#if BLEND_BENCHMARK
-                            if BlendKernel.useVector then BlendKernel.add values tw.CurrentNumbers else
-#endif
-                            for c in 0 .. min (values.Length - 1) (tw.CurrentNumbers.Length - 1) do
-                                values[c] <- values[c] + tw.CurrentNumbers[c]
-                        let composed = ValueInterpolation.compose(entry.Template, 0., values)
-                        let isTransform = entry.Kind = TweenTargetKind.Transform
-                        DomTargetHelpers.writeOutput entry.Target entry.Kind entry.Property entry.Adapter 0. composed false entry.Priority
-                        if isTransform then
-                            match entry.Target with
-                            | :? Element as el ->
-                                transformTargets.Add el |> ignore
-                                priorities[el] <- entry.Priority
-                            | _ -> ()
-                    else
-                        let mutable sum = entry.FromNumber
-                        for i in entry.Tweens.Count - 1 .. -1 .. 0 do
-                            sum <- sum + entry.Tweens[i].CurrentNumber
-                        let precision = match EngineDefaults.precision() with Some p -> int p | None -> -1
-                        let rounded =
-                            if precision < 0 || (entry.Template.Kind = ValueInterpolation.ValueKind.Number && entry.Kind = TweenTargetKind.Object) then sum
-                            else PropertyNumbers.round (Math.Pow(10., float precision)) sum
-                        let composed = ValueInterpolation.compose(entry.Template, rounded, [||])
-                        let isTransform = entry.Kind = TweenTargetKind.Transform
-                        DomTargetHelpers.writeOutput entry.Target entry.Kind entry.Property entry.Adapter rounded composed false entry.Priority
-                        if isTransform then
-                            match entry.Target with
-                            | :? Element as el ->
-                                transformTargets.Add el |> ignore
-                                priorities[el] <- entry.Priority
-                            | _ -> ()
-            for el in transformTargets do
-                ElementTransforms.flush el priorities[el]
+    member _.MarkAdditiveDirty() = if additiveMap.Count > 0 then dirtyAdditive <- true
+    member _.IsAdditiveDirty = dirtyAdditive
+    member _.FlushAdditive() = flushAdditive()
 
     member _.PreviousTimelineTrack(target: obj, property: string, timeline:ComposedTimeline, time:float) =
         match replaceMap.TryGetValue(struct(target, property)) with
@@ -559,15 +667,7 @@ and internal CompositionManager(queue: EngineFrameQueue) as this =
             if isNull best then None else Some best
         | _ -> None
 
-    member _.HasOtherOwner(tween: ComposedTween) =
-        if tween.Composition <> KeyframeComposition.Replace then false
-        else
-            match lastOwners.TryGetValue tween.Target with
-            | true, properties ->
-                match properties.TryGetValue tween.Property with
-                | true, owner -> not (obj.ReferenceEquals(owner, tween.Parent.OwnerToken))
-                | _ -> false
-            | _ -> false
+    member _.HasOtherOwner(tween: ComposedTween) = hasOtherOwner tween
 
     member _.ReleaseOwner(target: obj, property: string, token: obj) =
         match lastOwners.TryGetValue target with
@@ -584,7 +684,7 @@ and internal CompositionManager(queue: EngineFrameQueue) as this =
         | KeyframeComposition.Replace ->
             // Independent playheads cannot recover ownership by seeking into each other's history.
             match replaceMap.TryGetValue key with
-            | true, existing when this.HasOtherOwner tween ->
+            | true, existing when hasOtherOwner tween ->
                 replaceMap.Remove key |> ignore
                 let owners = HashSet<ComposedAnimation>()
                 for prior in existing do
@@ -958,31 +1058,82 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                         tw.TweenTime <- Math.Clamp(sample.IterationTime - tw.Start, 0., tw.ChangeDuration)
                         let progress = tw.Ease (tw.TweenTime / tw.UpdateDuration)
                         let roundNumbers = tw.Kind <> TweenTargetKind.Object
-                        let output = ValueInterpolation.sampleOutput(roundNumbers, tw.First, tw.Last, progress, precision, tw.Modifier, canWrite)
-                        if not (isNull output) && not tw.Replaced && canWrite() then
-                            let scalar = output.Number
-                            tw.CurrentNumber <- scalar
-                            if output.Components.Length > 0 then tw.CurrentNumbers <- Array.copy output.Components
+                        let vKind = tw.First.Kind
+                        if vKind = ValueInterpolation.ValueKind.Number || vKind = ValueInterpolation.ValueKind.Unit then
+                            let struct(ok, scalar) =
+                                ValueInterpolation.trySampleScalarValue(
+                                    roundNumbers, vKind, tw.First.Number, tw.Last.Number, progress, precision, tw.Modifier, canWrite)
+                            if ok && not tw.Replaced && canWrite() then
+                                tw.CurrentNumber <- scalar
+                                let initialFrom =
+                                    clock.InternalRender && tw.HasFrom && obj.ReferenceEquals(tw.TrackHead, tw) &&
+                                    isNull tw.PreviousTrack && parentTimelineRef.Value.SampleTime <= tw.TrackStart
+                                if initialFrom then
+                                    DomTargetHelpers.writeScalar tw.Target tw.Kind tw.Property tw.Adapter tw.Last.Kind tw.Last.Unit scalar true tw.Priority
+                                elif not clock.InternalRender then
+                                    if tw.Composition = KeyframeComposition.Blend then
+                                        hasBlend <- true
+                                        rendered <- true
+                                    else
+                                        let last = tw.LastTransform
+                                        let flush =
+                                            tw.RenderTransforms ||
+                                            (not (isNull last) && not (isNull last.TrackHead) &&
+                                             not (last.TrackHead.OwnsTimelineTime(parentTimelineRef.Value.SampleTime)))
+                                        DomTargetHelpers.writeScalar tw.Target tw.Kind tw.Property tw.Adapter tw.Last.Kind tw.Last.Unit scalar flush tw.Priority
+                                        rendered <- true
+                        else
                             let initialFrom =
                                 clock.InternalRender && tw.HasFrom && obj.ReferenceEquals(tw.TrackHead, tw) &&
                                 isNull tw.PreviousTrack && parentTimelineRef.Value.SampleTime <= tw.TrackStart
-                            if initialFrom then
-                                DomTargetHelpers.writeOutput tw.Target tw.Kind tw.Property tw.Adapter scalar output true tw.Priority
-                            elif not clock.InternalRender then
-                                if tw.Composition = KeyframeComposition.Blend then
-                                    hasBlend <- true
-                                    rendered <- true
-                                else
-                                    let last = tw.LastTransform
-                                    let flush =
-                                        tw.RenderTransforms ||
-                                        (not (isNull last) && not (isNull last.TrackHead) &&
-                                         not (last.TrackHead.OwnsTimelineTime(parentTimelineRef.Value.SampleTime)))
-                                    DomTargetHelpers.writeOutput tw.Target tw.Kind tw.Property tw.Adapter scalar output flush tw.Priority
-                                    rendered <- true
+                            if not initialFrom && (clock.InternalRender || tw.Composition = KeyframeComposition.Blend) then
+                                let dst =
+                                    if Object.ReferenceEquals(tw.Modifier, PropertyNumbers.identityFloat) then
+                                        if tw.CurrentNumbers.Length <> tw.Last.Components.Length then
+                                            tw.CurrentNumbers <- Array.zeroCreate<float> tw.Last.Components.Length
+                                        tw.CurrentNumbers
+                                    else
+                                        let mutable s = tw.ScratchNumbers
+                                        if isNull s || s.Length <> tw.Last.Components.Length then
+                                            s <- Array.zeroCreate<float> tw.Last.Components.Length
+                                            tw.ScratchNumbers <- s
+                                        s
+                                if ValueInterpolation.sampleComponentsInto(roundNumbers, tw.First, tw.Last, progress, precision, tw.Modifier, canWrite, dst) &&
+                                   not tw.Replaced && canWrite() then
+                                    tw.CurrentNumber <- 0.
+                                    if not (Object.ReferenceEquals(dst, tw.CurrentNumbers)) then
+                                        if tw.CurrentNumbers.Length <> dst.Length then
+                                            tw.CurrentNumbers <- Array.copy dst
+                                        else
+                                            Array.Copy(dst, 0, tw.CurrentNumbers, 0, dst.Length)
+                                    if not clock.InternalRender then
+                                        hasBlend <- true
+                                        rendered <- true
+                            else
+                                let output = ValueInterpolation.sampleOutput(roundNumbers, tw.First, tw.Last, progress, precision, tw.Modifier, canWrite)
+                                if not (isNull output) && not tw.Replaced && canWrite() then
+                                    let scalar = output.Number
+                                    tw.CurrentNumber <- scalar
+                                    if output.Components.Length > 0 then
+                                        if tw.CurrentNumbers.Length = output.Components.Length then
+                                            Array.Copy(output.Components, 0, tw.CurrentNumbers, 0, output.Components.Length)
+                                        else
+                                            tw.CurrentNumbers <- Array.copy output.Components
+                                    if initialFrom then
+                                        DomTargetHelpers.writeOutput tw.Target tw.Kind tw.Property tw.Adapter scalar output true tw.Priority
+                                    elif not clock.InternalRender then
+                                        let last = tw.LastTransform
+                                        let flush =
+                                            tw.RenderTransforms ||
+                                            (not (isNull last) && not (isNull last.TrackHead) &&
+                                             not (last.TrackHead.OwnsTimelineTime(parentTimelineRef.Value.SampleTime)))
+                                        DomTargetHelpers.writeOutput tw.Target tw.Kind tw.Property tw.Adapter scalar output flush tw.Priority
+                                        rendered <- true
                     elif tw.TweenTime <> 0. && not (isNull prev) && sample.IterationTime < tw.Start then
                         tw.TweenTime <- 0.
-            if hasBlend && not clock.InternalRender then manager.FlushAdditive()
+            if hasBlend && not clock.InternalRender then
+                if queue.Pumping || parentTimelineRef.IsSome then manager.MarkAdditiveDirty()
+                else manager.FlushAdditive()
             if rendered && sample.AboveZero && not muted && canWrite() then
                 options.OnRender this
         finally renderToken <- savedToken
@@ -1192,6 +1343,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
     member this.Complete(?muteCallbacks: bool) =
         if not fullyReplaced && not cancelled then
             clock.Complete(?muteCallbacks = muteCallbacks)
+            if manager.IsAdditiveDirty then manager.FlushAdditive()
             detachSiblings()
         this
 
@@ -1404,6 +1556,13 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     let absoluteOffset = queue.OffsetTick() * (if queue.Seconds then 0.001 else 1.)
     let ownerToken = obj()
     let entries = ResizeArray<float * ComposedAnimation>()
+    let mutable entriesSnapshot : (float * ComposedAnimation) array = null
+    let getEntriesSnapshot () =
+        let mutable snap = entriesSnapshot
+        if isNull snap then
+            snap <- entries.ToArray()
+            entriesSnapshot <- snap
+        snap
     let labels = Dictionary<string, float>(StringComparer.Ordinal)
     let mutable iterDuration = 0.
     let mutable lastSampleTime = 0.
@@ -1412,6 +1571,8 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     let mutable defaultComputed: ComputedStyleService option = None
     let clock = ScopeRegistration.run ignore (fun () ->
         new Timer(scheduler, 0., ?options = options, onComplete = (fun _ -> onComplete |> Option.iter (fun cb -> cb this))))
+    let mutable renderToken = Int64.MinValue
+    let live = Closure.keep (fun () -> clock.IsCurrent renderToken)
 
     let recalcDuration () =
         let mutable maxEnd = 0.
@@ -1425,25 +1586,31 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     do
         clock.ConfigureChildren(
             (fun _ _ _ ->
-                for _, child in entries do
+                for i = 0 to entries.Count - 1 do
+                    let _, child = entries[i]
                     if not child.Cancelled then child.Clock.ResetChildFlags()),
             (fun sample mode muted ->
-                let backwards = sample.Backwards
-                let previousTime = lastSampleTime
-                lastSampleTime <- sample.IterationTime
-                let live = clock.CaptureWriteGuard()
-                let ordered = if backwards then entries.ToArray() |> Array.rev else entries.ToArray()
-                let mutable allDone = true
-                for childOffset, child in ordered do
-                    if not child.Cancelled && live() then
-                        let localTime = PropertyNumbers.round 1e12 ((sample.IterationTime - childOffset) * child.Speed)
-                        let regained = sample.IterationTime < previousTime && child.RegainsTrack(previousTime, sample.IterationTime)
-                        if regained || not (backwards && localTime > child.Clock.Delay + child.Duration) then
-                            let childMode = if regained then PlaybackTickMode.Force else mode
-                            child.Clock.SampleChild(localTime, childMode, muted, clock.Fps, backwards, clock.Began, live, applyFrameRate = not regained)
-                        allDone <- allDone && (child.Completed || child.Cancelled)
-                manager.FlushAdditive()
-                allDone))
+                let savedToken = renderToken
+                renderToken <- clock.WriteToken
+                try
+                    let backwards = sample.Backwards
+                    let previousTime = lastSampleTime
+                    lastSampleTime <- sample.IterationTime
+                    let snapshot = getEntriesSnapshot()
+                    let count = snapshot.Length
+                    let mutable allDone = true
+                    for idx = 0 to count - 1 do
+                        let childOffset, child = snapshot[if backwards then count - 1 - idx else idx]
+                        if not child.Cancelled && live() then
+                            let localTime = PropertyNumbers.round 1e12 ((sample.IterationTime - childOffset) * child.Speed)
+                            let regained = sample.IterationTime < previousTime && child.RegainsTrack(previousTime, sample.IterationTime)
+                            if regained || not (backwards && localTime > child.Clock.Delay + child.Duration) then
+                                let childMode = if regained then PlaybackTickMode.Force else mode
+                                child.Clock.SampleChild(localTime, childMode, muted, clock.Fps, backwards, clock.Began, live, applyFrameRate = not regained)
+                            allDone <- allDone && (child.Completed || child.Cancelled)
+                    if not queue.Pumping && manager.IsAdditiveDirty then manager.FlushAdditive()
+                    allDone
+                finally renderToken <- savedToken))
         ScopeRegistration.register (fun () -> this.Revert() |> ignore)
 
     member internal _.AllChildrenOverlapped() =
@@ -1473,6 +1640,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
             child.Cancel()
             invalidOp "The timeline was cancelled during child construction."
         entries.Add(resolvedOffset, child)
+        entriesSnapshot <- null
         recalcDuration()
         if auto && not cancelled then clock.Resume()
         this
@@ -1500,6 +1668,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
         if anyRemoved then
             entries.Clear()
             entries.AddRange remaining
+            entriesSnapshot <- null
             if entries.Count = 0 then this.Cancel()
             else recalcDuration()
         this
@@ -1529,7 +1698,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     /// <summary>Seeks to milliseconds and flushes any additive blend updates.</summary>
     member this.Seek(time: float, ?muteCallbacks: bool) =
         clock.Seek(time, ?muteCallbacks = muteCallbacks)
-        manager.FlushAdditive()
+        if manager.IsAdditiveDirty then manager.FlushAdditive()
         this
 
     /// <summary>Pauses scheduling.</summary>
@@ -1571,7 +1740,8 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
                     for index = children.Length - 1 downto 0 do
                         let _, child = children[index]
                         attempt (fun () -> child.Revert(false) |> ignore)
-                    entries.Clear())
+                    entries.Clear()
+                    entriesSnapshot <- null)
             this
 
     /// <summary>Cancels this timeline and all owned children.</summary>
@@ -1579,6 +1749,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
         cancelled <- true
         for _, child in entries do child.Cancel()
         entries.Clear()
+        entriesSnapshot <- null
         clock.Cancel()
 
     /// <summary>Maps observable completion to the callback result.</summary>

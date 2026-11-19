@@ -1,13 +1,31 @@
 namespace Ranvier.Anime
 
+open System.Runtime.CompilerServices
+
 /// <summary>Scalar arithmetic preserving source rounding and finite-endpoint interpolation.</summary>
 module internal PropertyNumbers =
+    /// <summary>Shared canonical identity modifier reference enabling fast reference-equality bypass on hot tween loops.</summary>
+    let identityFloat : float -> float = id
+
+    let private pow10Table =
+        [| 1e0; 1e1; 1e2; 1e3; 1e4; 1e5; 1e6; 1e7; 1e8; 1e9; 1e10; 1e11
+           1e12; 1e13; 1e14; 1e15; 1e16; 1e17; 1e18; 1e19; 1e20; 1e21; 1e22 |]
+
+    /// <summary>Exact IEEE-754 power-of-ten lookup for non-negative decimal precisions.</summary>
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    let pow10 (precision: int) =
+        if uint precision < uint pow10Table.Length then pow10Table[precision]
+        else System.Math.Pow(10., float precision)
+
     /// <summary>Rounds scaled values with JavaScript's positive half ties.</summary>
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     let round (factor: float) (value: float) =
         let scaled = value * factor
         let rounded = System.Math.Round(scaled, System.MidpointRounding.ToEven)
         (if abs(scaled - rounded) = 0.5 then System.Math.Ceiling scaled else rounded) / factor
+
     /// <summary>Interpolates finite endpoints without overflowing their difference.</summary>
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     let interpolate first last progress =
         if progress = 0. then first
         elif progress = 1. then last

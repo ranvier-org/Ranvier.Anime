@@ -7,7 +7,7 @@ open Ranvier.Anime.ValueInterpolation
 /// <summary>Retargetable property tracks with a separate source-compatible callback animation and shared root ordering.</summary>
 type internal AnimatableGroup(scheduler:FrameScheduler,?onBegin:NumericAnimation -> unit,?onBeforeUpdate:NumericAnimation -> unit,
                               ?onRender:NumericAnimation -> unit,?onUpdate:NumericAnimation -> unit,?onLoop:NumericAnimation -> unit,
-                              ?onPause:NumericAnimation -> unit,?onComplete:NumericAnimation -> unit) as this =
+                              ?onPause:NumericAnimation -> unit,?onComplete:NumericAnimation -> unit) =
     let tracks=ResizeArray<AnimatableTrack>()
     let roots=ResizeArray<FrameScheduler>()
     let mutable disposed=false
@@ -22,6 +22,17 @@ type internal AnimatableGroup(scheduler:FrameScheduler,?onBegin:NumericAnimation
     let mutable callbacks:NumericAnimation=Unchecked.defaultof<_>
     let created () = not(isNull(box callbacks))
     let live () = if disposed then raise(ObjectDisposedException(nameof AnimatableGroup))
+    let cancelGroup () =
+        if not disposed then
+            disposed<-true
+            let mutable failure:exn option=None
+            let cleanup action = try action() with error -> if failure.IsNone then failure<-Some error
+            for track in tracks do cleanup track.Cancel
+            if created() then cleanup callbacks.Cancel
+            for root in roots do cleanup root.Dispose
+            tracks.Clear()
+            roots.Clear()
+            failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     let createCallbacks () =
         let animation=ScopeRegistration.run ignore (fun () ->
             ScopePlaybackContext.run clockDefaults (fun () ->
@@ -29,7 +40,7 @@ type internal AnimatableGroup(scheduler:FrameScheduler,?onBegin:NumericAnimation
                                      ?onBegin=onBegin,?onBeforeUpdate=onBeforeUpdate,?onRender=onRender,?onUpdate=onUpdate,
                                      ?onLoop=onLoop,?onPause=onPause,?onComplete=onComplete)))
         callbacks<-animation
-        animation.PlaybackClock.OnFault <- fun () -> this.Cancel()
+        animation.PlaybackClock.OnFault <- cancelGroup
         animation
     let anyRunning () =
         let mutable running=false
@@ -70,7 +81,7 @@ type internal AnimatableGroup(scheduler:FrameScheduler,?onBegin:NumericAnimation
             created<-Some track
             roots.Add root
             tracks.Add track
-            track.Clock.OnFault <- fun () -> this.Cancel()
+            track.Clock.OnFault <- cancelGroup
             track.Initialize()
             live()
             track
@@ -82,15 +93,5 @@ type internal AnimatableGroup(scheduler:FrameScheduler,?onBegin:NumericAnimation
             try root.Dispose() with _ -> ()
             reraise()
     /// <summary>Cancels every property, callback animation and root lease, preserving the first cleanup error.</summary>
-    member _.Cancel() =
-        if not disposed then
-            disposed<-true
-            let mutable failure:exn option=None
-            let cleanup action = try action() with error -> if failure.IsNone then failure<-Some error
-            for track in tracks do cleanup track.Cancel
-            if created() then cleanup callbacks.Cancel
-            for root in roots do cleanup root.Dispose
-            tracks.Clear()
-            roots.Clear()
-            failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
-    interface IDisposable with member _.Dispose()=this.Cancel()
+    member _.Cancel() = cancelGroup()
+    interface IDisposable with member _.Dispose() = cancelGroup()

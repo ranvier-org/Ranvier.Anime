@@ -198,6 +198,8 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
     member _.PauseOnDocumentHidden with get()=pauseOnDocumentHidden and set value=pauseOnDocumentHidden<-value
     /// <summary>Post-root pass invoked at the end of each admitted engine frame (used by additive blend composition).</summary>
     member _.AfterUpdate with get()=afterUpdate and set value=afterUpdate<-value
+    /// <summary>Whether the engine queue is currently pumping an admitted frame pass.</summary>
+    member _.Pumping=pumping
     /// <summary>Underlying host scheduler for this engine queue.</summary>
     member _.HostScheduler=scheduler
     /// <summary>Samples the host's current time through the shared gate, including when the automatic loop is paused.</summary>
