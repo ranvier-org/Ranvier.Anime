@@ -609,7 +609,8 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
         this.SeekIteration(uint(Math.Max(0,snapshot.Iteration)))
         if not state.Cancelled then
             let backwards = snapshot.Reversed <> (snapshot.Alternate && snapshot.Iteration % 2 <> 0)
-            this.IterationProgress <- if backwards then 1. - snapshot.IterationProgress else snapshot.IterationProgress
+            let rawProgress = if Double.IsNaN snapshot.IterationProgress then 0. else snapshot.IterationProgress
+            this.IterationProgress <- if backwards then 1. - rawProgress else rawProgress
             if not state.Cancelled then anchor <- snapshot.Anchor
     /// <summary>Installs cleanup invoked after callback/render faults cancel this driver.</summary>
     member internal _.OnFault with set value = onFault <- value
@@ -650,6 +651,10 @@ type Timer(scheduler: FrameScheduler, duration: float, ?options: PlaybackOptions
             state.Resize value
             duration <- value
             if current() then state.Reset()) ignore
+    /// <summary>Updates timeline iteration geometry after child removal while retaining the current playhead.</summary>
+    member internal _.ResizeWithoutReset(value: float) =
+        state.Resize value
+        duration <- value
     /// <summary>Revives the internal animatable callback controller and resets its retained clock history.</summary>
     member internal _.ReviveReset() =
         softlyReverted <- false

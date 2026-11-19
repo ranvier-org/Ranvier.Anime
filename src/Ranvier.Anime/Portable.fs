@@ -408,21 +408,37 @@ type FlipLayout =
     /// <summary>Cancels the running pass and restores the declarations it owns.</summary>
     abstract Revert: unit -> unit
 
+[<AbstractClass; Sealed>]
+type private FlipBoxTls =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private boxes: List<struct (WeakReference<Node> * float * float)>
+
+    static member Boxes =
+        let current = FlipBoxTls.boxes
+        if obj.ReferenceEquals(current, null) then
+            let created = List<struct (WeakReference<Node> * float * float)>()
+            FlipBoxTls.boxes <- created
+            created
+        else
+            current
+
 /// <summary>FLIP layout transitions over the host installed with <c>AnimeHost.Install</c>.</summary>
 [<RequireQualifiedAccess>]
 module Flip =
-    // Visual boxes kept by `keepBox` for the next pass that measures the element.
-    let private boxes = List<struct (Node * float * float)>()
-
     let private takeBox (node: Node) =
-        let index = boxes.FindIndex(fun (struct (kept, _, _)) -> Portable.same kept node)
-
-        if index < 0 then
-            ValueNone
-        else
-            let struct (_, left, top) = boxes[index]
-            boxes.RemoveAt index
-            ValueSome (struct (left, top))
+        let boxes = FlipBoxTls.Boxes
+        let mutable found = ValueNone
+        let mutable i = boxes.Count - 1
+        while i >= 0 do
+            let struct (weak, left, top) = boxes[i]
+            let mutable kept = Unchecked.defaultof<Node>
+            if not (weak.TryGetTarget(&kept)) then
+                boxes.RemoveAt i
+            elif found.IsNone && Portable.same kept node then
+                boxes.RemoveAt i
+                found <- ValueSome(struct (left, top))
+            i <- i - 1
+        found
 
     // The layout properties other animations change themselves; an owned pass leaves them alone.
     let private visual =
@@ -431,6 +447,7 @@ module Flip =
     [<Sealed>]
     type private Layouts(root: HTMLElement, options: LayoutOptions) =
         let mutable layout: AutoLayout voption = ValueNone
+        let mutable visualsOwned = false
 
         let release () =
             match layout with
@@ -442,11 +459,8 @@ module Flip =
         interface FlipLayout with
             member _.Record(children: Element array, owned: bool) =
                 release ()
+                visualsOwned <- owned
                 let services = AnimeHost.Current
-
-                let properties =
-                    if owned then options.Properties |> Array.filter (visual.Contains >> not)
-                    else options.Properties
 
                 let targets =
                     children
@@ -456,7 +470,7 @@ module Flip =
                         | _ -> None)
 
                 let created =
-                    Layout.create root services.Computed services.Scheduler (Some { options with Targets = Some targets; Properties = properties }) None
+                    Layout.create root services.Computed services.Scheduler (Some { options with Targets = Some targets }) None
 
                 for child in targets do
                     match takeBox child with
@@ -465,9 +479,18 @@ module Flip =
 
                 layout <- ValueSome created
 
-            member _.SetOwned(_: bool) = ()
+            member _.SetOwned(owned: bool) =
+                visualsOwned <- owned
 
-            member _.Animate() = layout |> ValueOption.iter (fun current -> current.Animate() |> ignore)
+            member _.Animate() =
+                layout
+                |> ValueOption.iter (fun current ->
+                    let overrideOpts =
+                        if visualsOwned then
+                            Some { options with Properties = options.Properties |> Array.filter (visual.Contains >> not) }
+                        else
+                            None
+                    current.Animate(?animationOptions = overrideOpts) |> ignore)
 
             member _.Revert() = release ()
 
@@ -486,8 +509,15 @@ module Flip =
     let keepBox (element: Element) : unit =
         let rect = element.getBoundingClientRect()
         let node = element :> Node
-        boxes.RemoveAll(fun (struct (kept, _, _)) -> Portable.same kept node) |> ignore
-        boxes.Add(struct (node, rect.left, rect.top))
+        let boxes = FlipBoxTls.Boxes
+        let mutable i = boxes.Count - 1
+        while i >= 0 do
+            let struct (weak, _, _) = boxes[i]
+            let mutable kept = Unchecked.defaultof<Node>
+            if not (weak.TryGetTarget(&kept)) || Portable.same kept node then
+                boxes.RemoveAt i
+            i <- i - 1
+        boxes.Add(struct (WeakReference<Node>(node), rect.left, rect.top))
 
     /// <summary>The root's HTML element children, without those in either set.</summary>
     let children (root: Element) (leaving: NodeSet) (entering: NodeSet) : Element array =

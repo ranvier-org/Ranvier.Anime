@@ -1,0 +1,11 @@
+-Q theories RanvierAnime
+
+theories/Pure/TimingEngine.v
+theories/Pure/CurvesStagger.v
+theories/Pure/InterpolationColor.v
+theories/Pure/CompositionTimeline.v
+theories/Pure/DomScrollDragMotion.v
+theories/Extract.v
+theories/Conformance/Expected.v
+theories/Conformance/Check.v
+theories/Audit.v

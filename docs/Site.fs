@@ -7,12 +7,16 @@ open Nacara.Theme
 
 let versions = [ SiteVersion.root "1.0" ]
 
+/// The Rocq proofs of the animation engine and motion parts, deployed at /proofs/ of this site by the Docs workflow.
+let proofs = "https://ranvier-org.github.io/Ranvier.Anime/proofs/"
+
 let theme =
     Theme.defaults
     |> Theme.navbar
         [
             NavbarSection ("Guide", "guide", "/guide/introduction/")
             NavbarSection ("Animation", "anime", "/anime/bindings/")
+            NavbarLink ("Proofs", proofs)
         ]
     |> Theme.navbarEnd
         [ // NavbarDynamicWidget Search.trigger

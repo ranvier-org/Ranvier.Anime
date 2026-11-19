@@ -29,3 +29,21 @@ test-results/
 !.SageFs/init.fsx
 tests/Ranvier.View.Anime.Browser/generated/
 tests/Ranvier.View.Anime.Browser/generated-size/
+# Rocq proofs & Navigator site build outputs
+proofs/Makefile.rocq*
+proofs/.Makefile.rocq*
+proofs/.*.cache
+proofs/engine.ml
+proofs/engine.mli
+proofs/theories/**/*.vo
+proofs/theories/**/*.vos
+proofs/theories/**/*.vok
+proofs/theories/**/*.glob
+proofs/theories/**/.*.aux
+proofs/site/.work/
+proofs/site/output/
+proofs/differential/.run.*
+proofs/differential/*.cmi
+proofs/differential/*.cmx
+proofs/differential/*.o
+proofs/conformance/.Expected.*

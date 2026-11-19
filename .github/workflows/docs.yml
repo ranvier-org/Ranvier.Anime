@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -31,6 +32,20 @@ jobs:
       # Builds the site.
       - name: Generate the documentation
         run: dotnet fsi build.fsx -- docs
+      # A failure leaves the documentation deployable, without the proofs.
+      - name: Add the proofs site
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          run_id="$(gh run list --workflow proofs-site.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+          name=""
+          if [ -n "$run_id" ]; then
+            name="$(gh api "repos/$GH_REPO/actions/runs/$run_id/artifacts" --jq '[.artifacts[].name | select(startswith("proofs-site"))][0] // empty')"
+          fi
+          if [ -z "$name" ] || ! gh run download "$run_id" --name "$name" --dir docs/output/proofs; then
+            echo "::warning::This deployment has no proofs site: no Proofs site artifact from main was available."
+          fi
       # Upload the static files
       - name: Upload documentation
         uses: actions/upload-pages-artifact@v5

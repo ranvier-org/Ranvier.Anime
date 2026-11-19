@@ -32,7 +32,7 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
     let children = ResizeArray<ScrollObserver>()
     let mutable disposed = false
     let mutable x,y,previousX,previousY,velocity = 0.,0.,0.,0.,0.
-    let mutable backwardX,backwardY = false,false
+    let mutable backwardX,backwardY,lastBackward = false,false,false
     let mutable left,top,width,height,scrollWidth,scrollHeight,scale = 0.,0.,0.,0.,0.,0.,1.
     let engine = EngineFrames.forScheduler scheduler
     let mutable lastVelocitySample = scheduler.Now()
@@ -42,13 +42,15 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
         previousX <- x; previousY <- y
         if dx <> 0. then backwardX <- dx > 0.
         if dy <> 0. then backwardY <- dy > 0.
+        if dy <> 0. then lastBackward <- dy > 0.
+        elif dx <> 0. then lastBackward <- dx > 0.
         let now = scheduler.Now()
         let elapsed = now - lastVelocitySample
         lastVelocitySample <- now
         velocity <- ScrollMath.round 5 (if elapsed > 0. then sqrt(dx*dx+dy*dy)/elapsed else 0.)))
     let ticker = new Timer(scheduler,infinity,onBegin=(fun _ -> data.Resume()),onUpdate=(fun _ ->
         let ordered = children.ToArray()
-        if backwardX || backwardY then Array.Reverse ordered
+        if lastBackward then Array.Reverse ordered
         let now = scheduler.Now()
         let elapsed = now - lastScrollSample
         lastScrollSample <- now

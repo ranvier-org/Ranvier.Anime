@@ -147,6 +147,7 @@ module Motion =
                 let node = nodeOf native
                 let tickable = play inst (elementOf native) :> ITickable
                 arriving.Add node
+                tickable.WhenCompleted(fun () -> arriving.Remove node)
                 let stop = settle context tickable
 
                 owning node (fun () ->
@@ -368,14 +369,20 @@ module Motion =
     let animateOn (read: 'inst -> 'v) (play: 'inst -> Element -> 'v -> #ITickable) : Part<'native, 'inst> =
         TemplateParts.motion (
             Func<_, _, _, _>(fun inst native context ->
-                let mutable current: ITickable = null
+                let history = System.Collections.Generic.List<ITickable>()
 
                 Api.createEffectOn (fun () -> read inst) (fun value ->
                     let tickable = play inst (elementOf native) value :> ITickable
-                    if isNull current then tickable.Complete()
-                    current <- tickable)
+                    if history.Count = 0 then tickable.Complete()
+                    history.Add tickable)
 
-                owning (nodeOf native) (fun () -> if not (isNull current) then settle context current ()))
+                owning (nodeOf native) (fun () ->
+                    if context.ExitPending() then
+                        for i = history.Count - 1 downto 0 do
+                            Anime.pause history[i]
+                    else
+                        for i = history.Count - 1 downto 0 do
+                            history[i].Revert()))
         )
 
     /// <summary>
@@ -388,7 +395,7 @@ module Motion =
             Func<_, _, _, _>(fun inst native context ->
                 let follower = Follow.draw (elementOf native) parameters (Api.untrack (fun () -> read inst))
                 Api.createEffectOn (fun () -> read inst) (fun fraction -> follower.To fraction)
-                settleFollower context follower)
+                owning (nodeOf native) (settleFollower context follower))
         )
 
     /// <summary>
@@ -401,7 +408,7 @@ module Motion =
             Func<_, _, _, _>(fun inst native context ->
                 let follower = Follow.morph (elementOf native) parameters
                 Api.createEffectOn (fun () -> read inst) (fun shape -> follower.To shape)
-                settleFollower context follower)
+                owning (nodeOf native) (settleFollower context follower))
         )
 
     /// <summary>
@@ -438,9 +445,9 @@ module Motion =
                 let observer = Scroll.observe parameters.Container target parameters.Options tickable onEvent
                 let stop = settle context tickable
 
-                fun () ->
+                owning (nodeOf native) (fun () ->
                     stop ()
-                    observer.Revert())
+                    observer.Revert()))
         )
 
     /// <summary>
@@ -490,7 +497,7 @@ module Motion =
                     if x <> draggable.X then draggable.X <- x
                     if y <> draggable.Y then draggable.Y <- y)
 
-                fun () -> if context.ExitPending() then draggable.Cancel() else draggable.Revert())
+                owning (nodeOf native) (fun () -> if context.ExitPending() then draggable.Cancel() else draggable.Revert()))
         )
 
     /// <summary>
@@ -504,11 +511,11 @@ module Motion =
                 let splitter = Text.split (elementOf native) parameters
                 let tickable = play inst splitter :> ITickable
 
-                fun () ->
+                owning (nodeOf native) (fun () ->
                     if context.ExitPending() then
                         tickable.Pause()
                         splitter.Freeze()
                     else
                         tickable.Revert()
-                        splitter.Revert() |> ignore)
+                        splitter.Revert() |> ignore))
         )

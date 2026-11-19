@@ -35,12 +35,12 @@ module TransformCache =
         let mutable position=0
         let length=inlineText.Length
         while position<length do
-            while position<length && inlineText[position]=' ' do position<-position+1
+            while position<length && Char.IsWhiteSpace inlineText[position] do position<-position+1
             if position<length then
                 let nameStart=position
                 while position<length && inlineText[position]<>'(' do position<-position+1
                 if position<length then
-                    let name=inlineText.Substring(nameStart,position-nameStart)
+                    let name=inlineText.Substring(nameStart,position-nameStart).Trim()
                     let mutable depth=1
                     let valueStart=position+1
                     let mutable comma1= -1
@@ -53,7 +53,7 @@ module TransformCache =
                         | ',' when depth=1 -> if comma1= -1 then comma1<-position elif comma2= -1 then comma2<-position
                         | _ -> ()
                         position<-position+1
-                    let valueEnd=position-1
+                    let valueEnd=if depth=0 then position-1 else position
                     let body=inlineText.Substring(valueStart,max 0 (valueEnd-valueStart))
                     let axis prefix =
                         if comma1= -1 then cache[if prefix="translate" then "translateX" else "scale"]<-body.Trim()

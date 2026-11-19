@@ -88,6 +88,7 @@
     <Compile Include="PortableTests.fs" />
     <Compile Include="../Portable/Surface.fs" Link="Portable/Surface.fs" />
     <Compile Include="ColorSpaceTests.fs" />
+    <Compile Include="ProofLiftedBugTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

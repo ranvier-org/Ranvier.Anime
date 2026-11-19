@@ -569,6 +569,14 @@ and internal CompositionManager(queue: EngineFrameQueue) as this =
                 | _ -> false
             | _ -> false
 
+    member _.ReleaseOwner(target: obj, property: string, token: obj) =
+        match lastOwners.TryGetValue target with
+        | true, properties ->
+            match properties.TryGetValue property with
+            | true, owner when obj.ReferenceEquals(owner, token) -> properties.Remove property |> ignore
+            | _ -> ()
+        | _ -> ()
+
     member _.ComposeTween(tween: ComposedTween) =
         let key = struct(tween.Target, tween.Property)
         match tween.Composition with
@@ -899,10 +907,15 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
 
     let mutable clock : Timer = Unchecked.defaultof<Timer>
     let mutable fullyReplaced = false
+    let mutable pendingInitialAttach = false
     // One guard closure over a token each render saves and restores; guards are only checked while the render runs.
     let mutable renderToken = Int64.MinValue
     let canWrite = Closure.keep (fun () -> clock.IsCurrent renderToken && not clock.EffectivelyMuted)
     let render (sample: PlaybackSample) mode muted =
+        if pendingInitialAttach && not clock.EffectivelyMuted && not cancelled && not fullyReplaced then
+            pendingInitialAttach <- false
+            attachSiblings true
+            assignRenderTransforms()
         let savedToken = renderToken
         renderToken <- clock.WriteToken
         try
@@ -992,7 +1005,10 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         clock.ConfigureRenderer(render, sampleWhenMuted = true, ?totalDuration = (if tweens.Count = 0 || initialIterDuration <= 1e-11 then Some 1e-11 else None))
         clock.OnCancel <- detachSiblings
         clock.OnFault <- detachSiblings
-        attachSiblings true
+        if clock.EffectivelyMuted then
+            pendingInitialAttach <- true
+        else
+            attachSiblings true
         ScopeRegistration.register (fun () -> this.Revert() |> ignore)
         if parentTimelineRef.IsSome then
             try clock.AttachToTimeline(internalRender = true)
@@ -1087,7 +1103,14 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
     /// <summary>Whether playback is paused.</summary>
     member _.Paused = clock.Paused
     /// <summary>Suppresses playback writes, callbacks and completion delivery while the playhead advances.</summary>
-    member _.Muted with get() : bool = clock.Muted and set value = clock.Muted <- value
+    member this.Muted
+        with get() : bool = clock.Muted
+        and set value =
+            clock.Muted <- value
+            if not clock.EffectivelyMuted && pendingInitialAttach && not cancelled && not fullyReplaced then
+                pendingInitialAttach <- false
+                attachSiblings true
+                assignRenderTransforms()
     /// <summary>Whether playback has begun.</summary>
     member _.Began = clock.Began
     /// <summary>Whether playback has completed.</summary>
@@ -1099,8 +1122,10 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
 
     member private this.PrepareSample() : bool =
         if not cancelled && not fullyReplaced then
-            if not siblingsAttached then
-                attachSiblings false
+            if not siblingsAttached && not clock.EffectivelyMuted then
+                let reclaim = pendingInitialAttach
+                pendingInitialAttach <- false
+                attachSiblings reclaim
                 if tweens.Exists _.Replaced then this.OnPropertyReplaced()
             if clock.Cancelled && not fullyReplaced then clock.ReviveReset()
         cancelled || not fullyReplaced
@@ -1121,7 +1146,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
     /// <summary>Plays forward.</summary>
     member this.Play() =
         if not cancelled then
-            if clock.Cancelled || not siblingsAttached then this.Reset() |> ignore
+            if clock.Cancelled || (not siblingsAttached && not pendingInitialAttach) then this.Reset() |> ignore
             elif tweens.Exists(fun tw -> tw.Replaced && not tw.Removed) then
                 for tw in tweens do
                     if not tw.Removed && tw.Replaced then
@@ -1137,7 +1162,9 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         this
 
     /// <summary>Toggles direction according to repeat parity.</summary>
-    member this.Alternate() = clock.Alternate(); this
+    member this.Alternate() =
+        if this.PrepareSample() then clock.Alternate()
+        this
 
     /// <summary>Resets to zero, re-linking siblings if previously completed.</summary>
     member this.Reset() =
@@ -1146,7 +1173,11 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         fullyReplaced <- false
         for tw in tweens do tw.RestoreOwnership()
         detachSiblings()
-        attachSiblings true
+        if clock.EffectivelyMuted then
+            pendingInitialAttach <- true
+        else
+            pendingInitialAttach <- false
+            attachSiblings true
         assignRenderTransforms()
         if clock.Cancelled then clock.ReviveReset() else clock.Reset()
         this
@@ -1159,25 +1190,32 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
 
     /// <summary>Completes immediately and cancels scheduling.</summary>
     member this.Complete(?muteCallbacks: bool) =
-        clock.Complete(?muteCallbacks = muteCallbacks)
-        detachSiblings()
+        if not fullyReplaced && not cancelled then
+            clock.Complete(?muteCallbacks = muteCallbacks)
+            detachSiblings()
         this
 
     /// <summary>Stretches total duration proportionally.</summary>
     member this.Stretch(newDuration: float) =
-        if clock.Duration > 0. then
-            let scale = newDuration / clock.Duration
+        let previousDuration = clock.Duration
+        let previousDelay = clock.Delay
+        clock.Stretch newDuration
+        if previousDuration > 0. && (clock.Duration <> previousDuration || clock.Delay <> previousDelay) then
+            let scale = clock.Duration / previousDuration
+            if parentTimelineRef.IsSome then
+                offset <- parentTimelineRef.Value.AbsoluteOffset + timelineOffset * scale
+            let scaledClockDelay = clock.Delay
             for tw in tweens do
-                tw.Start <- tw.Start * scale
-                tw.Delay <- tw.Delay * scale
+                tw.Start <- PropertyNumbers.round 1e12 (tw.Start * scale)
+                tw.Delay <- PropertyNumbers.round 1e12 (tw.Delay * scale)
                 tw.UpdateDuration <- max 1e-11 (PropertyNumbers.round 1e12 (tw.UpdateDuration * scale))
                 tw.ChangeDuration <- if tw.Overridden then 1e-11 else max 1e-11 (PropertyNumbers.round 1e12 (tw.ChangeDuration * scale))
-                tw.AbsoluteStart <- tw.AbsoluteStart * scale
-                tw.AbsoluteUpdateStart <- tw.AbsoluteUpdateStart * scale
-                tw.AbsoluteEnd <- tw.AbsoluteEnd * scale
+                tw.AbsoluteStart <- PropertyNumbers.round 1e12 (offset + scaledClockDelay + tw.Start)
+                tw.AbsoluteUpdateStart <- PropertyNumbers.round 1e12 (tw.AbsoluteStart - tw.Delay)
+                tw.AbsoluteEnd <- PropertyNumbers.round 1e12 (tw.AbsoluteStart + tw.UpdateDuration)
+                if not (isNull tw.TrackHead) && obj.ReferenceEquals(tw.TrackHead, tw) then
+                    tw.TrackStart <- timelineOffset * scale + (scaledClockDelay + tw.Start) / clock.Speed
                 tw.TweenTime <- if tw.Overridden then 1e-11 else tw.TweenTime * scale
-            offset <- offset * scale
-            clock.Stretch newDuration
         this
 
     /// <summary>Re-evaluates dynamic endpoints and target originals in place.</summary>
@@ -1225,7 +1263,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         let transformRestores = Dictionary<Element, ResizeArray<ComposedTween>>(HashIdentity.Reference)
         let restored = Dictionary<obj, HashSet<string>>(HashIdentity.Reference)
         let eligible (tw:ComposedTween) =
-            version = restoreVersion && not tw.Removed && not tw.Replaced && not tw.StepSource.Muted &&
+            version = restoreVersion && not tw.Removed && not tw.StepSource.Muted &&
             not (manager.HasOtherOwner tw)
         let firstSnapshot (tw:ComposedTween) =
             match restored.TryGetValue tw.Target with
@@ -1235,6 +1273,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                 true
         let domElements = HashSet<Element>(HashIdentity.Reference)
         let restore (tw:ComposedTween) =
+            manager.ReleaseOwner(tw.Target, tw.Property, ownerToken)
             match tw.Target with
             | :? Element as el -> domElements.Add el |> ignore
             | _ -> ()

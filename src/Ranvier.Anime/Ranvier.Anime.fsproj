@@ -124,5 +124,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Ranvier.Anime.Tests" />
     <InternalsVisibleTo Include="Ranvier.Anime.NativeSmoke" />
+    <InternalsVisibleTo Include="Ranvier.Anime.Benchmarks" />
   </ItemGroup>
 </Project>

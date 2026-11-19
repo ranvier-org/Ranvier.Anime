@@ -207,7 +207,7 @@ let run (host: WebCoreHost) (scheduler: FrameScheduler) =
         graph.Run(fun () -> level.Value <- 0.8)
         require "animateOn replays on change" (pump (fun () -> value element "opacity" = "0.8"))
         dispose ()
-        require "animateOn reverts on disposal" (value element "opacity" <> "0.8")
+        require "animateOn reverts on disposal" (value element "opacity" = "")
 
     // animateOn disposed while its first, completed animation is still the latest.
     do
