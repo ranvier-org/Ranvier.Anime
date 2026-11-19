@@ -52,7 +52,7 @@ type internal AnimatableGroup(scheduler:FrameScheduler,?onBegin:NumericAnimation
             // Play on a running forward animation changes nothing; a retarget every frame skips it.
             if not disposed && (not callbacks.Playing || callbacks.Reversed) then callbacks.Play()
     let pauseProperty (_:Timer) =
-        if not disposed && created() && not callbacks.Completed && not(anyRunning()) then callbacks.Complete()
+        if not disposed && created() && (callbacks.Playing || callbacks.Began) && not callbacks.Completed && not(anyRunning()) then callbacks.Complete()
     do if hasHandlers then createCallbacks() |> ignore
     /// <summary>The callback animation if it exists; without handlers it is created only when read.</summary>
     member internal _.CreatedCallbacks=if created() then ValueSome callbacks else ValueNone

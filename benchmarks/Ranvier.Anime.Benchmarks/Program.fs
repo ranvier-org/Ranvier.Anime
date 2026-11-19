@@ -395,6 +395,257 @@ let main argv =
                 GC.KeepAlive acc)
         )
 
+    // 16. Animatable multi-target (256 NumericProperty handles × retarget + 60 frames)
+    do
+        use host = new ManualFrameScheduler()
+        let vals = Array.init 256 float
+        let props = Array.init 256 (fun i -> NumericProperty((fun () -> vals[i]), (fun v -> vals[i] <- v)))
+        use group = new Animatable(host)
+        let handle = group.NumericPrecise(props, 500., { AnimatablePropertyOptions.Default with Ease = id })
+        results.Add(
+            measure "animatable-multi-target-256-retarget-60" 4 25 (fun () ->
+                handle.RetargetPrecise(1000., 500., id)
+                for _ in 1 .. 30 do
+                    host.Advance 16.
+                    host.RunFrame()
+                handle.RetargetPrecise(0., 500., id)
+                for _ in 1 .. 30 do
+                    host.Advance 16.
+                    host.RunFrame()
+                GC.KeepAlive vals[0])
+        )
+
+    // 17. Spring construction (compute settling solver) + 50,000 Ease evaluations
+    do
+        results.Add(
+            measure "spring-construct-and-solve-500-curves" 4 25 (fun () ->
+                let mutable acc = 0.
+                for i in 1 .. 50 do
+                    let sp = Spring(mass = 1. + float (i % 4) * 0.25, stiffness = 80. + float i * 3., damping = 8. + float (i % 10), velocity = float (i % 5) * 0.5)
+                    let ease = sp.Ease
+                    for k in 1 .. 1000 do
+                        acc <- acc + ease (float k * 0.001)
+                GC.KeepAlive acc)
+        )
+
+    // 18. Timeline with 100 OwnedAnimation children × 120 Seek scrubs + TimelinePosition expressions
+    do
+        use host = new ManualFrameScheduler()
+        let vals = Array.zeroCreate<float> 100
+        let props = Array.init 100 (fun i -> NumericProperty((fun () -> vals[i]), (fun v -> vals[i] <- v)))
+        use tl = new Timeline(host)
+        tl.Label("phaseA", TimelinePosition.At 50.) |> ignore
+        for i in 0 .. 99 do
+            tl.Animate(props[i], float (i + 1) * 10., 200., position = TimelinePosition.At(float (i * 5)), from = 0., ease = id) |> ignore
+        results.Add(
+            measure "timeline-owned-100-scrub-120-seeks" 4 25 (fun () ->
+                let mutable acc = 0.
+                for f in 1 .. 120 do
+                    let t = float ((f * 47) % 695)
+                    tl.Seek t
+                    acc <- acc + tl.ResolvePosition(TimelinePosition.Expression "phaseA+=25") + vals[f % 100]
+                GC.KeepAlive acc)
+        )
+
+    // 19. Composed non-Blend multi-target Color + Complex string tracks (64 targets × 60 frames)
+    do
+        use host = new ManualFrameScheduler()
+        let targets =
+            Array.init 64 (fun _ ->
+                box (
+                    AnimatedObject [
+                        "tint", AdaptedValue.Text "#ff2040"
+                        "shadow", AdaptedValue.Text "0px 4px 12px rgba(10, 20, 30, 0.25)"
+                    ]
+                ))
+        use anim =
+            Composed.animateTargets
+                host
+                targets
+                [| PropertySpec.Text("tint", "#2080ff")
+                   PropertySpec.Text("shadow", "8px 16px 32px rgba(40, 80, 160, 0.85)") |]
+                (Some { ComposedAnimationOptions.Default with Duration = 1000.; Ease = id; Autoplay = false })
+        results.Add(
+            measure "composed-nonblend-color-complex-64x60" 4 25 (fun () ->
+                for f in 1 .. 60 do
+                    anim.Seek(float (f * 16)) |> ignore)
+        )
+
+    // 20. ValueInterpolation.decompose + CssColor.parse × 4,000
+    do
+        results.Add(
+            measure "decompose-and-csscolor-parse-4000" 4 25 (fun () ->
+                let mutable acc = 0.
+                for _ in 1 .. 4000 do
+                    let u1 = ValueInterpolation.decompose (ValueInterpolation.Text "125.5px")
+                    let u2 = ValueInterpolation.decompose (ValueInterpolation.Text "+=48deg")
+                    let cx = ValueInterpolation.decompose (ValueInterpolation.Text "translate3d(12px, 24.5px, -8px) scale(1.25)")
+                    let c1 = CssColor.parse "#3b82f6"
+                    let c2 = CssColor.parse "rgba(255, 128, 64, 0.75)"
+                    let c3 = CssColor.parse "hsl(210deg 80% 55% / 90%)"
+                    let c4 = CssColor.parse "cornflowerblue"
+                    acc <- acc + u1.Number + u2.Number + cx.Components[0] + c1[0] + c2[1] + c3[2] + c4[0]
+                GC.KeepAlive acc)
+        )
+
+    // 21. Waapi.convertEase + Stagger 3D Grid (16×16×4 = 1,024 cells, Reversed) × 200
+    do
+        let elastic = Ease.named "outElastic"
+        let staggerOpts =
+            { StaggerOptions.Default with
+                Grid = StaggerGrid.Grid3D(16u, 16u, 4u)
+                Origin = StaggerOrigin.Center
+                Reversed = true }
+        results.Add(
+            measure "waapi-convertease-and-stagger-grid3d-200" 4 25 (fun () ->
+                let mutable len = 0
+                for _ in 1 .. 200 do
+                    let cssLinear = Waapi.convertEase elastic (Some 64)
+                    let dists = Stagger.distribute (StaggerValue.Range(0., 500.)) staggerOpts 1024u
+                    len <- len + cssLinear.Length + int dists[0]
+                GC.KeepAlive len)
+        )
+
+    // 22. AutoLayout 64-node tree capture + Animate + 30 Timeline frames
+    do
+        use host = new ManualFrameScheduler()
+        let nodeStyles = Array.init 65 (fun _ -> Dictionary<string, string>(StringComparer.Ordinal))
+        let nodeAttrs = Array.init 65 (fun _ -> Dictionary<string, string>(StringComparer.Ordinal))
+        let nodeBounds = Array.init 65 (fun i -> if i = 0 then (0., 0., 800., 600.) else (float ((i % 8) * 90), float ((i / 8) * 70), 80., 60.))
+        let classes = HashSet<string>(StringComparer.Ordinal)
+        let tokens =
+            mkProxy<DOMTokenList> (fun m args ->
+                match m.Name with
+                | "add" ->
+                    for s in unbox<string array> args[0] do classes.Add s |> ignore
+                    null
+                | "remove" ->
+                    for s in unbox<string array> args[0] do classes.Remove s |> ignore
+                    null
+                | "contains" -> box (classes.Contains(unbox<string> args[0]))
+                | _ -> null)
+        let domNodes = Array.zeroCreate<HTMLElement> 65
+        let compDecls = Array.zeroCreate<CSSStyleDeclaration> 65
+        for idx in 0 .. 64 do
+            let sDict = nodeStyles[idx]
+            let aDict = nodeAttrs[idx]
+            let inlineStyle =
+                mkProxy<CSSStyleProperties> (fun m args ->
+                    match m.Name with
+                    | "getPropertyValue" ->
+                        match sDict.TryGetValue(unbox<string> args[0]) with
+                        | true, v -> box v
+                        | _ -> box ""
+                    | "getPropertyPriority" -> box ""
+                    | "setProperty" ->
+                        let v = unbox<string> args[1]
+                        for leaf in CssPropertyMetadata.leafNamesReadOnly (unbox<string> args[0]) do
+                            sDict[leaf] <- v
+                        null
+                    | "removeProperty" ->
+                        for leaf in CssPropertyMetadata.leafNamesReadOnly (unbox<string> args[0]) do
+                            sDict.Remove leaf |> ignore
+                        box ""
+                    | "get_length" -> box (uint32 sDict.Count)
+                    | "item" ->
+                        let targetIdx = int (unbox<uint32> args[0])
+                        let mutable kIdx = 0
+                        let mutable found = ""
+                        for k in sDict.Keys do
+                            if kIdx = targetIdx then found <- k
+                            kIdx <- kIdx + 1
+                        box found
+                    | _ -> null)
+            compDecls[idx] <-
+                { new CSSStyleDeclaration with
+                    member _.getPropertyValue name =
+                        match sDict.TryGetValue name with
+                        | true, v when v <> "" -> v
+                        | _ ->
+                            match name with
+                            | "display" -> "block"
+                            | "visibility" -> "visible"
+                            | "position" -> "static"
+                            | "transform" -> "none"
+                            | "opacity" -> "1"
+                            | "font-size" -> "16px"
+                            | "color" -> "rgb(0, 0, 0)"
+                            | "background-color" -> "rgba(0, 0, 0, 0)"
+                            | "border-radius" -> "0px"
+                            | "border" -> "0px"
+                            | "filter" -> "none"
+                            | "clip-path" -> "none"
+                            | _ -> ""
+                    member _.getPropertyPriority _ = ""
+                    member _.setProperty(_, _, _) = ()
+                    member _.removeProperty _ = ""
+                    member _.item _ = ""
+                    member _.length = 0u
+                    member _.cssText with get () = "" and set _ = ()
+                    member _.parentRule = Unchecked.defaultof<CSSRule>
+                    member _.cssRules = Unchecked.defaultof<CSSRuleList> }
+            domNodes[idx] <-
+                mkProxy<HTMLElement> (fun m args ->
+                    let l, t, w, h = nodeBounds[idx]
+                    match m.Name with
+                    | "get_firstChild" ->
+                        if idx = 0 then box (domNodes[1] :> Node) else null
+                    | "get_nextSibling" ->
+                        if idx >= 1 && idx < 64 then box (domNodes[idx + 1] :> Node) else null
+                    | "get_previousSibling" ->
+                        if idx > 1 then box (domNodes[idx - 1] :> Node) else null
+                    | "get_parentElement" ->
+                        if idx >= 1 then box (domNodes[0] :> Element) else null
+                    | "get_nodeType" -> box 1us
+                    | "get_textContent" -> box ""
+                    | "get_style" -> box inlineStyle
+                    | "get_classList" -> box tokens
+                    | "get_clientLeft" | "get_clientTop" -> box 0
+                    | "getAttribute" ->
+                        match aDict.TryGetValue(unbox<string> args[0]) with
+                        | true, v -> box v
+                        | _ -> null
+                    | "setAttribute" ->
+                        aDict[unbox<string> args[0]] <- unbox<string> args[1]
+                        null
+                    | "removeAttribute" ->
+                        aDict.Remove(unbox<string> args[0]) |> ignore
+                        null
+                    | "isSameNode" -> box (Object.ReferenceEquals(domNodes[idx], args[0]))
+                    | "contains" -> box (idx = 0 || Object.ReferenceEquals(domNodes[idx], args[0]))
+                    | "matches" -> box true
+                    | "getBoundingClientRect" ->
+                        box (
+                            mkProxy<DOMRect> (fun rm _ ->
+                                match rm.Name with
+                                | "get_left" | "get_x" -> box l
+                                | "get_top" | "get_y" -> box t
+                                | "get_width" -> box w
+                                | "get_height" -> box h
+                                | _ -> box 0.)
+                        )
+                    | _ -> null)
+        let computedSvc =
+            { new ComputedStyleService with
+                member _.Get(el, _) =
+                    let mutable found = compDecls[0]
+                    for k = 0 to 64 do
+                        if Object.ReferenceEquals(el, domNodes[k]) then found <- compDecls[k]
+                    found }
+        let mutable flipToggle = false
+        results.Add(
+            measure "autolayout-64-nodes-capture-and-30-frames" 3 15 (fun () ->
+                use layout = Layout.create domNodes[0] computedSvc host None None
+                flipToggle <- not flipToggle
+                let shift = if flipToggle then 24. else 0.
+                for k = 1 to 64 do
+                    let l, t, w, h = nodeBounds[k]
+                    nodeBounds[k] <- (l + (if flipToggle then 12. else -12.), t + shift * 0.25, w, h)
+                let tl = layout.Animate()
+                for f = 1 to 30 do
+                    tl.Seek(float (f * 10)))
+        )
+
     if argv.Length >= 1 then
         let outFile = argv[0]
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath outFile)) |> ignore

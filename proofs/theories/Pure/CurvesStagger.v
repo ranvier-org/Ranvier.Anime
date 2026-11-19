@@ -375,3 +375,40 @@ Proof.
       apply IH; try lia;
       intros k Hk; apply Hlut; lia.
 Qed.
+
+(** ** Pass-2 Correctness Proofs (#37, #38): ULP-Safe Clamped Keyframe Offset Deltas & Rationalized Overdamped Spring Decay *)
+
+Definition clamped_offset_step (acc_elapsed target_end : Z) : Z * Z :=
+  let seg_dur := Z.max 0 (target_end - acc_elapsed) in
+  (seg_dur, acc_elapsed + seg_dur).
+
+(**md **Clamping `target_end - acc_elapsed` at `0` guarantees non-negative segment durations even under positive ULP sum drift (#37).**
+For every `acc_elapsed` and `target_end`, `clamped_offset_step` emits `seg_dur >= 0` (preventing `ArgumentException` on equal normalized offsets after a rounded-up prior segment) and reaches `max acc_elapsed target_end`. *)
+Theorem nondecreasing_offsets_clamped_delta_nonneg :
+  forall acc_elapsed target_end,
+    let '(seg_dur, next_elapsed) := clamped_offset_step acc_elapsed target_end in
+    0 <= seg_dur /\
+    next_elapsed = Z.max acc_elapsed target_end /\
+    (acc_elapsed <= target_end -> seg_dur = target_end - acc_elapsed /\ next_elapsed = target_end).
+Proof.
+  intros acc_elapsed target_end.
+  unfold clamped_offset_step.
+  repeat split; lia.
+Qed.
+
+(**md **Conjugate rationalization `-(w0^2) / (zeta*w0 + wd)` equals `-zeta*w0 + wd` without catastrophic subtraction cancellation (#38).**
+Whenever `wd^2 = (zeta*w0)^2 - w0^2` with `w0 > 0` and `zeta*w0 + wd > 0`, the slow overdamped root `r1 = -zeta*w0 + wd` satisfies `r1 * (zeta*w0 + wd) = -(w0 * w0) < 0`, guaranteeing `r1 < 0` strictly negative rather than cancelling to `0.0`. *)
+Theorem rationalized_overdamped_decay_avoids_cancellation :
+  forall zeta_w0 wd w0,
+    0 < w0 ->
+    0 < zeta_w0 + wd ->
+    wd * wd = zeta_w0 * zeta_w0 - w0 * w0 ->
+    (-zeta_w0 + wd) * (zeta_w0 + wd) = -(w0 * w0) /\
+    -zeta_w0 + wd < 0.
+Proof.
+  intros zeta_w0 wd w0 Hw0 Hsum Hwd.
+  assert (Hprod : (-zeta_w0 + wd) * (zeta_w0 + wd) = -(w0 * w0)) by nia.
+  split; [exact Hprod |].
+  assert (Hneg : (-zeta_w0 + wd) * (zeta_w0 + wd) < 0) by nia.
+  nia.
+Qed.

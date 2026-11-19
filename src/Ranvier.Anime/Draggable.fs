@@ -97,7 +97,7 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
             try group.Cancel() with _ -> ()
             reraise()
     let pauseFrame ()=updateTicker |> Option.iter _.Pause()
-    let pauseRelease ()=releaseDriver |> Option.iter(fun driver -> driver.Cancel());releaseDriver<-None
+    let pauseRelease ()=releaseDriver |> Option.iter(fun driver -> driver.Cancel());releaseDriver<-None;manual<-false
     let setAxis index enabled (axis:AnimatableNumber option) snapRule target muted =
         if not disposed && ownerAllowsWrite() && enabled then
             pauseRelease()
@@ -167,6 +167,10 @@ type Draggable(scheduler:FrameScheduler,x:NumericProperty,y:NumericProperty,
     member _.RawX=coordinates[0]
     /// <summary>Unresisted vertical pointer coordinate used by native edge scrolling.</summary>
     member _.RawY=coordinates[1]
+    /// <summary>Sets the horizontal axis coordinate with optional update-callback muting.</summary>
+    member _.SetX(target:float,?muteCallbacks:bool)=live();pauseRelease();setAxis 0 config.XEnabled axisX config.SnapX target (defaultArg muteCallbacks false)
+    /// <summary>Sets the vertical axis coordinate with optional update-callback muting.</summary>
+    member _.SetY(target:float,?muteCallbacks:bool)=live();pauseRelease();setAxis 1 config.YEnabled axisY config.SnapY target (defaultArg muteCallbacks false)
     /// <summary>Current cached x-axis value, including the configured getter modifier.</summary>
     member _.X with get()=value axisX and set target=live();pauseRelease();setAxis 0 config.XEnabled axisX config.SnapX target false
     /// <summary>Current cached y-axis value, including the configured getter modifier.</summary>

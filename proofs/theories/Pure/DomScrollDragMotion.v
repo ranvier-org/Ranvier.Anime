@@ -504,3 +504,21 @@ Proof.
   - split; [rewrite Heq; reflexivity | lia].
   - split; [exact Heq | lia].
 Qed.
+
+(** ** Pass-2 Correctness Proof (#41): Zero-Duration `AutoLayout` Sampler Reaches Target Endpoint After Delay *)
+
+Definition layout_zero_dur_seek (eps local_t : Z) : Z :=
+  if Z.ltb local_t 0 then 0 else eps.
+
+(**md **Zero-duration `AutoLayout` property samplers hold `0` (`first`) during delay (`local_t < 0`) and seek to `eps` (`last`) for all `local_t >= 0` (#41).**
+For any normalized timer epsilon `eps > 0` (`1e-11`), `layout_zero_dur_seek eps local_t` evaluates to `0` before `delay` elapses and `eps` (`100%` progress) at and after `delay`, preventing `Math.Clamp(local_t, 0, 0) = 0` from stranding `Duration = 0` layout transitions at their pre-mutation geometry. *)
+Theorem layout_zero_duration_seek_reaches_target_after_delay :
+  forall eps local_t,
+    0 < eps ->
+    (local_t < 0 -> layout_zero_dur_seek eps local_t = 0) /\
+    (0 <= local_t -> layout_zero_dur_seek eps local_t = eps).
+Proof.
+  intros eps local_t Heps.
+  unfold layout_zero_dur_seek.
+  destruct (Z.ltb_spec local_t 0); lia.
+Qed.

@@ -160,13 +160,36 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                     elif frame.Time<>0. && not(isNull previous) && not previousCross && sample.IterationTime<frame.Start then frame.Time<-0.
             if alive && current() && rendered && sample.AboveZero && not muted && not clock.EffectivelyMuted then onRender |> Option.iter(fun action -> action clock)
         finally renderToken <- savedToken
+    let stageStretch scale =
+        let nextOffset=offset*scale
+        if not(Double.IsFinite nextOffset) then invalidArg "scale" "Scaled offset must remain finite."
+        nextOffset,frames |> Array.map(fun frame -> frame.Scaled scale)
+    let stageZeroStretch scale nextOffset =
+        if not(Double.IsFinite nextOffset) then invalidArg "scale" "Scaled offset must remain finite."
+        frames |> Array.map(fun frame ->
+            let next=FrameSibling(frame.Definition,frame.Child)
+            frame.CopyTo(next,id)
+            next.AbsoluteStart<-PropertyNumbers.round 1e12 (nextOffset+frame.Start)
+            next.AbsoluteUpdateStart<-PropertyNumbers.round 1e12 (nextOffset+frame.Start-frame.Delay)
+            next.AbsoluteEnd<-PropertyNumbers.round 1e12 (nextOffset+frame.Start+frame.Update)
+            if Double.IsFinite frame.OwnsFrom then next.OwnsFrom<-PropertyNumbers.round 1e12 ((frame.OwnsFrom+1e-11)*scale-1e-11)
+            if Double.IsFinite frame.OwnsUntil then next.OwnsUntil<-PropertyNumbers.round 1e12 ((frame.OwnsUntil+1e-11)*scale-1e-11)
+            if not(Double.IsFinite next.AbsoluteStart && Double.IsFinite next.AbsoluteUpdateStart && Double.IsFinite next.AbsoluteEnd &&
+                   (not(Double.IsFinite frame.OwnsFrom) || Double.IsFinite next.OwnsFrom) &&
+                   (not(Double.IsFinite frame.OwnsUntil) || Double.IsFinite next.OwnsUntil)) then
+                invalidArg "scale" "Scaled frame geometry must remain finite."
+            next)
     do
         clock.Seek(0.,muteCallbacks=true)
         clock.ConfigureRenderer(render,sampleWhenMuted=true,?totalDuration=(if program.IterationDuration=1e-11 then Some 1e-11 else None),
+            validateStretch=(fun scale -> stageStretch scale |> ignore),
             onStretch=(fun scale ->
-                let nextOffset=offset*scale
-                if not(Double.IsFinite nextOffset) then invalidArg "scale" "Scaled offset must remain finite."
-                let staged=frames |> Array.map(fun frame -> frame.Scaled scale)
+                let nextOffset,staged=stageStretch scale
+                for index in 0..frames.Length-1 do staged[index].CopyTo(frames[index],id)
+                offset<-nextOffset),
+            validateZeroStretch=(fun scale nextOffset -> stageZeroStretch scale nextOffset |> ignore),
+            onZeroStretch=(fun scale nextOffset ->
+                let staged=stageZeroStretch scale nextOffset
                 for index in 0..frames.Length-1 do staged[index].CopyTo(frames[index],id)
                 offset<-nextOffset))
     let mutable initialized=false

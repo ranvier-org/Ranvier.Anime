@@ -23,7 +23,8 @@ type internal TimelineChildContext(scheduler:Ranvier.Dom.FrameScheduler,offset:f
 
 /// <summary>A constructed child awaiting guarded timeline publication.</summary>
 type internal TimelinePreparedChild<'T>(clock:Timer,renderVersion:unit -> int64,commit:unit -> bool,result:'T,
-                                       restore:(unit -> bool) -> unit) =
+                                       restore:(unit -> bool) -> unit,?removeTarget:(obj -> struct(bool*bool))) =
+    let removeTargetFn = defaultArg removeTarget (fun _ -> struct(false, false))
     /// <summary>The child controller whose scheduling and disposal belong to the timeline.</summary>
     member _.Clock=clock
     /// <summary>The current target dispatch generation, unchanged by cache-only or skipped samples.</summary>
@@ -34,6 +35,8 @@ type internal TimelinePreparedChild<'T>(clock:Timer,renderVersion:unit -> int64,
     member _.Result=result
     /// <summary>Restores captured properties while the parent's lifetime and operation remain current.</summary>
     member _.Restore(current)=restore current
+    /// <summary>Removes a matching target identity, returning whether any target matched and whether all targets were removed.</summary>
+    member _.RemoveTarget(candidate:obj)=removeTargetFn candidate
 
 /// <summary>Owned driver installation with staged same-timeline replacement publication.</summary>
 module internal TimelineKeyframeInstallation =
@@ -57,7 +60,38 @@ module internal TimelineKeyframeInstallation =
                 animation.SetCleanup(fun () ->
                     transaction |> Option.iter(fun siblings -> siblings.Rollback())
                     nodes |> Option.iter context.RemoveSiblings)
-                let driver=new KeyframePlayback(context.Scheduler,program,write,replacing,css,precision,options.Playback,
+                let maxTarget =
+                    let mutable m = -1
+                    for i = 0 to properties.Length - 1 do
+                        if properties[i].Target > m then m <- properties[i].Target
+                    m
+                let targetKeys = Array.zeroCreate<obj> (maxTarget + 1)
+                let bound = min properties.Length keys.Length
+                for i = 0 to bound - 1 do
+                    let struct(k, _) = keys[i]
+                    let t = properties[i].Target
+                    if uint t < uint targetKeys.Length then targetKeys[t] <- k
+                let removedTargets = Array.create (maxTarget + 1) false
+                let guardedWrite target name output =
+                    if uint target >= uint removedTargets.Length || not removedTargets[target] then
+                        write target name output
+                let removeTarget (candidate: obj) =
+                    let mutable matched = false
+                    for t = 0 to targetKeys.Length - 1 do
+                        let keyObj = targetKeys[t]
+                        let isMatch =
+                            not (isNull keyObj) &&
+                            (Object.ReferenceEquals(keyObj, candidate) ||
+                             (match candidate with
+                              | :? Ranvier.Dom.ElementCSSInlineStyle as styled ->
+                                  Object.ReferenceEquals(keyObj, box styled.style)
+                              | _ -> false))
+                        if isMatch && not removedTargets[t] then
+                            removedTargets[t] <- true
+                            matched <- true
+                    let allRemoved = targetKeys.Length > 0 && Array.forall id removedTargets
+                    struct(matched, allRemoved)
+                let driver=new KeyframePlayback(context.Scheduler,program,guardedWrite,replacing,css,precision,options.Playback,
                     onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onRender=options.OnRender,
                     onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete,?siblings=nodes,finiteScalar=finiteScalar)
                 driver.Clock.InheritMute context.IsMuted
@@ -69,7 +103,7 @@ module internal TimelineKeyframeInstallation =
                 else
                     handedOff<-true
                     let commit()=match transaction with Some siblings -> siblings.Commit() | None -> true
-                    Some(TimelinePreparedChild(driver.Clock,(fun () -> driver.RenderVersion),commit,animation,animation.RestoreFromParent))
+                    Some(TimelinePreparedChild(driver.Clock,(fun () -> driver.RenderVersion),commit,animation,animation.RestoreFromParent,removeTarget))
             | _ -> None
         finally
             if not handedOff then transaction |> Option.iter(fun siblings -> siblings.Rollback())

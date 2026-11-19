@@ -259,9 +259,12 @@ type DraggableDom(controller:Draggable,scheduler:FrameScheduler,target:HTMLEleme
     /// <summary>Clears the gesture, pending resize debounce and native scrolling motion, then silently resets coordinates to zero.</summary>
     member _.Reset() =
         live()
-        timeout |> Option.iter _.Dispose();timeout<-None
-        scroll |> Option.iter _.Reset()
-        controller.Reset()
+        cleanup [
+            (fun () -> timeout |> Option.iter _.Dispose();timeout<-None)
+            cleanupDocument
+            releaseStyles
+            (fun () -> scroll |> Option.iter _.Reset())
+            controller.Reset ]
     /// <summary>Detaches observation, pending debounce and input, then restores captured axis accessors.</summary>
     member _.Revert() =
         if not disposed then

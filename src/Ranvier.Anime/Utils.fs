@@ -172,13 +172,14 @@ type ValueChain internal (evaluate: float -> float) =
         ValueChain(fun v ->
             let x = evaluate v
             let span = max - min
-            (((x - min) % span + span) % span) + min)
+            if span = 0. then min else (((x - min) % span + span) % span) + min)
 
     /// <summary>Chains a linear range remapping stage.</summary>
     member _.MapRange(inLow: float, inHigh: float, outLow: float, outHigh: float) =
         ValueChain(fun v ->
             let x = evaluate v
-            outLow + ((x - inLow) / (inHigh - inLow)) * (outHigh - outLow))
+            let inSpan = inHigh - inLow
+            if inSpan = 0. then outLow else outLow + ((x - inLow) / inSpan) * (outHigh - outLow))
 
     /// <summary>Chains a linear interpolation stage using the current pipeline value as the interpolation factor.</summary>
     member _.Lerp(start: float, finish: float) =
@@ -325,7 +326,7 @@ module Utils =
     /// <summary>Wraps a value into the half-open interval [min, max).</summary>
     let wrap (value: float) (min: float) (max: float) : float =
         let span = max - min
-        (((value - min) % span + span) % span) + min
+        if span = 0. then min else (((value - min) % span + span) % span) + min
 
     /// <summary>Linearly interpolates between start and finish by factor.</summary>
     let lerp (start: float) (finish: float) (factor: float) : float =
@@ -344,7 +345,8 @@ module Utils =
 
     /// <summary>Linearly maps a value from [inLow, inHigh] to [outLow, outHigh].</summary>
     let mapRange (value: float) (inLow: float) (inHigh: float) (outLow: float) (outHigh: float) : float =
-        outLow + ((value - inLow) / (inHigh - inLow)) * (outHigh - outLow)
+        let inSpan = inHigh - inLow
+        if inSpan = 0. then outLow else outLow + ((value - inLow) / inSpan) * (outHigh - outLow)
 
     /// <summary>Converts degrees to radians.</summary>
     let degToRad (degrees: float) : float = degrees * Math.PI / 180.
@@ -541,7 +543,8 @@ module Utils =
             tracked |> Option.iter (fun t -> t.Revert())
             let next = constructor arg
             tracked <- Some next
-            snapshot |> Option.iter (fun snap -> next.RestoreScopeTime snap)
+            if not next.Cancelled then
+                snapshot |> Option.iter (fun snap -> next.RestoreScopeTime snap)
             next
 
     /// <summary>Wraps a ComposedAnimation-producing constructor so repeated invocations revert the previous instance and preserve loop/alternate progress.</summary>
@@ -552,7 +555,8 @@ module Utils =
             tracked |> Option.iter (fun a -> a.Revert() |> ignore)
             let next = constructor arg
             tracked <- Some next
-            snapshot |> Option.iter (fun snap -> next.Clock.RestoreScopeTime snap)
+            if not next.Cancelled && not next.Clock.Cancelled then
+                snapshot |> Option.iter (fun snap -> next.Clock.RestoreScopeTime snap)
             next
 
     /// <summary>Selects matching DOM elements within the active Scope root or the supplied document ($ equivalent).</summary>
@@ -593,9 +597,12 @@ module Utils =
                     match target with
                     | :? HTMLElement as htmlEl ->
                         CssUnits.convert htmlEl decomposed.Number decomposed.Unit targetUnit
-                    | _ -> decomposed.Number
-                let prec = match EngineDefaults.precision() with Some p -> int p | None -> 4
-                let rounded = round converted prec
+                    | _ ->
+                        CssUnits.convertMeasured (fun _ _ -> 100, 100) decomposed.Number decomposed.Unit targetUnit
+                let rounded =
+                    match EngineDefaults.precision() with
+                    | Some p -> round converted (int p)
+                    | None -> converted
                 AdaptedValue.Text (ValueInterpolation.number rounded + targetUnit)
             else
                 match rawLit with

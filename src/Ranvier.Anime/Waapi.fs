@@ -110,10 +110,14 @@ type WaapiAnimationOptions =
     /// <summary>Sets staggered delays across targets.</summary>
     member this.WithStaggerDelay(value: StaggerValue, ?staggerOptions: StaggerOptions) =
         let opts = defaultArg staggerOptions StaggerOptions.Default
+        let mutable cachedTargets : Element array = null
+        let mutable cachedOffsets : float array = [||]
         { this with
             Delay = Some (fun _ i targets ->
-                let arr = Stagger.distribute value opts (uint targets.Length)
-                if i < arr.Length then arr[i] else 0.) }
+                if not (Object.ReferenceEquals(cachedTargets, targets)) then
+                    cachedTargets <- targets
+                    cachedOffsets <- Stagger.distribute value opts (uint targets.Length)
+                if uint i < uint cachedOffsets.Length then cachedOffsets[i] else 0.) }
     /// <summary>Invariant diagnostic of WAAPI options.</summary>
     override this.ToString() =
         "WaapiAnimationOptions(Properties=" + this.Properties.Length.ToString(CultureInfo.InvariantCulture) +
@@ -133,11 +137,12 @@ and internal WaapiHelpers private () =
 
     static let validIndividualTransforms =
         System.Collections.Frozen.FrozenSet.ToFrozenSet(
-            [| "x"; "y"; "z"
+            [| "perspective"
+               "x"; "y"; "z"
                "translateX"; "translateY"; "translateZ"
-               "rotateX"; "rotateY"; "rotateZ"
-               "scaleX"; "scaleY"; "scaleZ"
-               "skewX"; "skewY" |],
+               "rotate"; "rotateX"; "rotateY"; "rotateZ"
+               "scale"; "scaleX"; "scaleY"; "scaleZ"
+               "skew"; "skewX"; "skewY" |],
             StringComparer.Ordinal)
 
     static let allRegisterableTransforms =
@@ -274,8 +279,8 @@ and internal WaapiHelpers private () =
         match fromOpt with
         | Some f ->
             let fStr = WaapiHelpers.normalizeValue propName f el idx targets
-            let lastStr = if resolvedToValues.Length > 0 then resolvedToValues[resolvedToValues.Length - 1] else "0"
-            [| fStr; lastStr |]
+            if resolvedToValues.Length = 0 then [| fStr; "0" |]
+            else Array.append [| fStr |] resolvedToValues
         | None -> resolvedToValues
 
     static member removeWaapiAnimation (el: Element option) (property: string option) (parent: WaapiAnimation option) =
@@ -308,6 +313,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
     let scaleToMs = if timeScale = 1. then 1. else 1000.
     let animations = ResizeArray<WebAnimation>()
     let finishSubscriptions = ResizeArray<IDisposable>()
+    let ownLookupRecords = ResizeArray<WaapiLookupRecord>()
     let inlineSnapshots = Array.init parsedTargets.Length (fun _ -> Dictionary<string, string>(StringComparer.Ordinal))
     let completionWaiters = ResizeArray<WaapiAnimation -> unit>()
     let cancelWaiters = ResizeArray<unit -> unit>()
@@ -388,12 +394,17 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
                         | Some c when c <> "translate3d" && c <> "rotate3d" && c <> "matrix" && c <> "matrix3d" -> Some c
                         | _ -> None
                     else None
-                let styleSnapKey =
-                    match indivTransform with
-                    | Some _ -> "transform"
-                    | None -> WaapiHelpers.toKebabName propName
-                if not (inlineSnap.ContainsKey styleSnapKey) then
-                    inlineSnap[styleSnapKey] <- elStyle.getPropertyValue styleSnapKey
+                match indivTransform with
+                | Some canonical ->
+                    if not (inlineSnap.ContainsKey "transform") then
+                        inlineSnap["transform"] <- elStyle.getPropertyValue "transform"
+                    let varName = "--" + canonical
+                    if not (inlineSnap.ContainsKey varName) then
+                        inlineSnap[varName] <- elStyle.getPropertyValue varName
+                | None ->
+                    let styleSnapKey = WaapiHelpers.toKebabName propName
+                    if not (inlineSnap.ContainsKey styleSnapKey) then
+                        inlineSnap[styleSnapKey] <- elStyle.getPropertyValue styleSnapKey
 
                 let mutable propDurMs = baseDurationMs
                 let mutable propDelayMs = baseDelayMs
@@ -464,6 +475,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
                 WaapiHelpers.removeWaapiAnimation (Some el) (Some propName) None
                 animations.Add webAnim
                 let record = { Parent = this; Animation = webAnim; Element = el; Property = propName }
+                ownLookupRecords.Add record
                 WaapiHelpers.ActiveLookups.Add record
 
                 if not persist then
@@ -644,7 +656,12 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
 
     /// <summary>Seeks to 0 with muted callbacks and resumes playback.</summary>
     member this.Restart() =
-        completed <- false
+        if not cancelled then
+            completed <- false
+            completedCount <- 0
+            for record in ownLookupRecords do
+                if not (WaapiHelpers.ActiveLookups.Contains record) then
+                    WaapiHelpers.ActiveLookups.Add record
         this.Seek(0., true).Resume()
 
     /// <summary>Commits animated styles to inline CSS on all active WebAnimations.</summary>
@@ -666,6 +683,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
         for i in WaapiHelpers.ActiveLookups.Count - 1 .. -1 .. 0 do
             if Object.ReferenceEquals(WaapiHelpers.ActiveLookups[i].Parent, this) then
                 WaapiHelpers.ActiveLookups.RemoveAt i
+        ownLookupRecords.Clear()
         animations.Clear()
         let cleanNone () =
             for el in parsedTargets do

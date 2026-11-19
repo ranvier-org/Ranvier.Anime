@@ -24,10 +24,10 @@ type NativeDraggable internal(controller:Draggable,input:DraggableDom option,scr
         first |> Option.iter(fun error -> Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     /// <summary>Borrowed physics and existing Animatable playback controller.</summary>
     member _.Controller=controller
-    /// <summary>Current horizontal source coordinate in its captured scalar unit.</summary>
-    member _.X with get()=controller.X and set value=live();controller.X<-value
-    /// <summary>Current vertical source coordinate in its captured scalar unit.</summary>
-    member _.Y with get()=controller.Y and set value=live();controller.Y<-value
+    /// <summary>Current horizontal source coordinate in its captured scalar unit; setting moves without raising <c>OnUpdate</c>.</summary>
+    member _.X with get()=controller.X and set value=live();controller.SetX(value,true)
+    /// <summary>Current vertical source coordinate in its captured scalar unit; setting moves without raising <c>OnUpdate</c>.</summary>
+    member _.Y with get()=controller.Y and set value=live();controller.SetY(value,true)
     /// <summary>Horizontal container progress.</summary>
     member _.ProgressX with get()=controller.ProgressX and set value=live();controller.ProgressX<-value
     /// <summary>Vertical container progress.</summary>

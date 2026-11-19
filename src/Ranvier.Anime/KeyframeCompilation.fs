@@ -183,8 +183,10 @@ module internal KeyframeCompilation =
                     | true,frames -> frames
                     | _ -> let frames=ResizeArray<FrameInput>() in properties.Add(name,frames);names.Add name;frames
                 let elapsed=frames |> Seq.sumBy(fun frame -> defaultArg frame.Duration 0.)
+                let rawDelta=offset*duration-elapsed
+                let frameDuration=if frames.Count>0 && rawDelta<0. then 0. else rawDelta
                 frames.Add {FrameInput.Default with To=Some value;From=(if frames.Count=1 then frames[0].To else None)
-                                                    Duration=Some(offset*duration-elapsed);Ease=ease}
+                                                    Duration=Some frameDuration;Ease=ease}
         names |> Seq.map(fun name ->
             let frames=properties[name].ToArray()
             let mutable previous=None

@@ -346,6 +346,12 @@ module internal DomTargetHelpers =
                     let raw = el.getAttribute "value"
                     let s = if isNull raw then "0" else raw
                     ValueInterpolation.Text s, Option.ofObj raw
+                | "scrollTop" ->
+                    let v = float el.scrollTop
+                    ValueInterpolation.Number v, Some (ValueInterpolation.number v)
+                | "scrollLeft" ->
+                    let v = float el.scrollLeft
+                    ValueInterpolation.Number v, Some (ValueInterpolation.number v)
                 | _ -> ValueInterpolation.Number 0., None
             | TweenTargetKind.Object, (:? NumericProperty as prop) ->
                 let v = prop.Value
@@ -385,7 +391,8 @@ module internal DomTargetHelpers =
             | (TweenTargetKind.Css | TweenTargetKind.CssVar), (:? Element as el) ->
                 let style = (tryStyle el).Value
                 let valueText =
-                    if output.Text.StartsWith("rgba(", StringComparison.Ordinal) && output.Components.Length >= 4 && output.Components[3] = 1. then
+                    if output.Kind = ValueInterpolation.ValueKind.Color && output.Components.Length = 4 &&
+                       output.Components[3] = 1. && output.Text.StartsWith("rgba(", StringComparison.Ordinal) then
                         let r = int (PropertyNumbers.round 1. output.Components[0])
                         let g = int (PropertyNumbers.round 1. output.Components[1])
                         let b = int (PropertyNumbers.round 1. output.Components[2])
@@ -399,6 +406,8 @@ module internal DomTargetHelpers =
                 | "innerHTML" -> (el :?> HTMLElement).innerHTML <- output.Text
                 | "textContent" -> (el :> Node).textContent <- output.Text
                 | "value" -> el.setAttribute("value", output.Text)
+                | "scrollTop" -> el.scrollTop <- int (Math.Round(match output.Scalar with Some s -> s | None -> scalar))
+                | "scrollLeft" -> el.scrollLeft <- int (Math.Round(match output.Scalar with Some s -> s | None -> scalar))
                 | _ -> ()
             | TweenTargetKind.Object, (:? NumericProperty as prop) ->
                 let v = match output.Scalar with Some s -> s | None -> scalar
@@ -439,12 +448,16 @@ module internal DomTargetHelpers =
                 else
                     bag.SetText(canonical, (ValueInterpolation.number scalar) + suffix)
             | TweenTargetKind.Object, (:? Element as el) ->
-                let text = (ValueInterpolation.number scalar) + suffix
                 match canonical with
-                | "innerHTML" -> (el :?> HTMLElement).innerHTML <- text
-                | "textContent" -> (el :> Node).textContent <- text
-                | "value" -> el.setAttribute("value", text)
-                | _ -> ()
+                | "scrollTop" -> el.scrollTop <- int (Math.Round scalar)
+                | "scrollLeft" -> el.scrollLeft <- int (Math.Round scalar)
+                | _ ->
+                    let text = (ValueInterpolation.number scalar) + suffix
+                    match canonical with
+                    | "innerHTML" -> (el :?> HTMLElement).innerHTML <- text
+                    | "textContent" -> (el :> Node).textContent <- text
+                    | "value" -> el.setAttribute("value", text)
+                    | _ -> ()
             | _ -> ()
 
 /// <summary>Options controlling <see cref="T:Ranvier.Anime.ComposedAnimation"/> construction and playback.</summary>
@@ -811,7 +824,8 @@ and internal CompositionManager(queue: EngineFrameQueue) =
                 tween.PrevAdd <- tail
             entry.Tweens.Add tween
 
-    member _.RemoveTweenSiblings(tween: ComposedTween) =
+    member _.RemoveTweenSiblings(tween: ComposedTween, ?rewindBlend: bool) =
+        let rewindBlend = defaultArg rewindBlend false
         let key = struct(tween.Target, tween.Property)
         match tween.Composition with
         | KeyframeComposition.None -> ()
@@ -834,6 +848,14 @@ and internal CompositionManager(queue: EngineFrameQueue) =
             match additiveMap.TryGetValue key with
             | true, entry ->
                 if entry.Tweens.Remove tween then
+                    if entry.Tweens.Count > 0 then
+                        let residualNumber = if rewindBlend then tween.First.Number else tween.CurrentNumber
+                        entry.FromNumber <- entry.FromNumber + residualNumber
+                        let residualNumbers = if rewindBlend then tween.First.Components else tween.CurrentNumbers
+                        if residualNumbers.Length > 0 && entry.FromNumbers.Length > 0 then
+                            let bound = min entry.FromNumbers.Length residualNumbers.Length
+                            for c = 0 to bound - 1 do
+                                entry.FromNumbers[c] <- entry.FromNumbers[c] + residualNumbers[c]
                     for i in 0 .. entry.Tweens.Count - 1 do
                         entry.Tweens[i].PrevAdd <- if i = 0 then null else entry.Tweens[i - 1]
                         entry.Tweens[i].NextAdd <- if i + 1 = entry.Tweens.Count then null else entry.Tweens[i + 1]
@@ -1145,11 +1167,11 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                     else manager.ComposeTween tw
             rebuildSoaBatch()
 
-    let detachSiblings () =
+    let detachSiblings rewindBlend =
         if siblingsAttached then
             siblingsAttached <- false
             manager.UnregisterAnimation this
-            for tw in tweens do manager.RemoveTweenSiblings tw
+            for tw in tweens do manager.RemoveTweenSiblings(tw, rewindBlend = rewindBlend)
 
     let mutable clock : Timer = Unchecked.defaultof<Timer>
     let mutable fullyReplaced = false
@@ -1337,13 +1359,14 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         if parentTimelineRef.IsNone then
             clock.OnSettled <- fun () ->
                 scheduler.Microtask(fun () ->
-                    if clock.Completed && clock.Paused then detachSiblings()) |> ignore
+                    if clock.Completed && clock.Paused then detachSiblings false) |> ignore
         parentTimelineRef |> Option.iter (fun timeline -> clock.InheritMute(fun () -> timeline.Muted))
         clock.ConfigureRenderer(render, sampleWhenMuted = true, ?totalDuration = (if tweens.Count = 0 || initialIterDuration <= 1e-11 then Some 1e-11 else None))
-        clock.OnCancel <- detachSiblings
-        clock.OnFault <- detachSiblings
+        clock.OnCancel <- (fun () -> manager.UnregisterAnimation this; detachSiblings false)
+        clock.OnFault <- (fun () -> manager.UnregisterAnimation this; detachSiblings false)
         if clock.EffectivelyMuted then
             pendingInitialAttach <- true
+            manager.RegisterAnimation this
         else
             attachSiblings true
         ScopeRegistration.register (fun () -> this.Revert() |> ignore)
@@ -1514,9 +1537,10 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         cancelled <- false
         fullyReplaced <- false
         for tw in tweens do tw.RestoreOwnership()
-        detachSiblings()
+        detachSiblings true
         if clock.EffectivelyMuted then
             pendingInitialAttach <- true
+            manager.RegisterAnimation this
         else
             pendingInitialAttach <- false
             attachSiblings true
@@ -1535,7 +1559,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         if not fullyReplaced && not cancelled then
             clock.Complete(?muteCallbacks = muteCallbacks)
             if manager.IsAdditiveDirty then manager.FlushAdditive()
-            detachSiblings()
+            detachSiblings false
         this
 
     /// <summary>Stretches total duration proportionally.</summary>
@@ -1568,19 +1592,34 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         invalidateSoaBatch()
         let wasPlaying = not clock.Paused
         let savedTime = clock.CurrentTime
-        detachSiblings()
-        let _, iterDur = buildTweens()
+        detachSiblings false
+        let newDelay, iterDur = buildTweens()
         attachSiblings true
-        clock.Resize iterDur
+        clock.ResizeWithDelay(iterDur, newDelay)
         clock.Seek(min savedTime clock.Duration, muteCallbacks = true)
         if wasPlaying then clock.Resume()
         this
 
     /// <summary>Removes matching targets (and optional property) from this animation, cancelling if none remain.</summary>
-    member internal this.RemoveMatching(targetsToRemove: HashSet<obj>, propertyName: string option) : bool =
+    member internal this.RemoveMatching(targetsToRemove: HashSet<obj>, propertyName: string option, ?notifyParent: bool) : bool =
+        let notifyParent = defaultArg notifyParent true
+        let matchesTarget (twTarget: obj) =
+            if targetsToRemove.Contains twTarget then true
+            else
+                match twTarget with
+                | :? Element as el ->
+                    let mutable found = false
+                    for candidate in targetsToRemove do
+                        if not found then
+                            match candidate with
+                            | :? Node as node ->
+                                if (try el.isSameNode node with _ -> false) then found <- true
+                            | _ -> ()
+                    found
+                | _ -> false
         let mutable matched = false
         for tw in tweens do
-            if not tw.Removed && targetsToRemove.Contains tw.Target then
+            if not tw.Removed && matchesTarget tw.Target then
                 let propMatches =
                     match propertyName with
                     | None -> true
@@ -1589,20 +1628,33 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                         StringComparer.Ordinal.Equals(canonical, tw.Property)
                 if propMatches then
                     tw.Removed <- true
-                    manager.RemoveTweenSiblings tw
+                    manager.RemoveTweenSiblings(tw, rewindBlend = false)
                     matched <- true
         if matched then
             invalidateSoaBatch()
             assignRenderTransforms()
-            if this.ActiveTweenCount = 0 then this.Cancel()
-            else rebuildSoaBatch()
+            let noLiveTweens = tweens.TrueForAll(fun tw -> tw.Removed || tw.StepSource.Muted || tw.Replaced)
+            if noLiveTweens then
+                this.Cancel()
+            else
+                let mutable maxEnd = 0.
+                for tw in tweens do
+                    if not tw.Removed && not tw.StepSource.Muted then
+                        let finish = tw.Start + tw.UpdateDuration
+                        if finish > maxEnd then maxEnd <- finish
+                let nextIterDur = if maxEnd <= 1e-11 then 1e-11 else maxEnd
+                clock.ResizeWithoutReset nextIterDur
+                rebuildSoaBatch()
+            if notifyParent then
+                parentTimelineRef |> Option.iter (fun tl -> tl.OnChildTargetsModified())
         matched
 
     /// <summary>Cancels playback while retaining current rendered target values.</summary>
     member _.Cancel() =
         restoreVersion <- restoreVersion + 1
         cancelled <- true
-        detachSiblings()
+        manager.UnregisterAnimation this
+        detachSiblings false
         clock.Cancel()
 
     member internal this.RevertValues(inlineStylesOnly: bool) =
@@ -1659,15 +1711,25 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                     | None -> el.removeAttribute tw.Property
                     | Some orig -> el.setAttribute(tw.Property, orig)
                 | TweenTargetKind.Object, (:? Element as el) when not inlineStylesOnly ->
-                    match tw.InlineOriginal with
-                    | Some orig ->
-                        match tw.Property with
-                        | "innerHTML" -> (el :?> HTMLElement).innerHTML <- orig
-                        | "textContent" -> (el :> Node).textContent <- orig
-                        | "value" -> el.setAttribute("value", orig)
+                    match tw.Property with
+                    | "scrollTop" ->
+                        match tw.Original with
+                        | ValueInterpolation.Number n -> el.scrollTop <- int (Math.Round n)
                         | _ -> ()
-                    | None when tw.Property = "value" -> el.removeAttribute "value"
-                    | None -> ()
+                    | "scrollLeft" ->
+                        match tw.Original with
+                        | ValueInterpolation.Number n -> el.scrollLeft <- int (Math.Round n)
+                        | _ -> ()
+                    | _ ->
+                        match tw.InlineOriginal with
+                        | Some orig ->
+                            match tw.Property with
+                            | "innerHTML" -> (el :?> HTMLElement).innerHTML <- orig
+                            | "textContent" -> (el :> Node).textContent <- orig
+                            | "value" -> el.setAttribute("value", orig)
+                            | _ -> ()
+                        | None when tw.Property = "value" -> el.removeAttribute "value"
+                        | None -> ()
                 | TweenTargetKind.Object, (:? NumericProperty as prop) when not inlineStylesOnly ->
                     match tw.Original with
                     | ValueInterpolation.Number n -> prop.Value <- n
@@ -1704,9 +1766,10 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         else
             if not cancelled then
                 cancelled <- true
+                manager.UnregisterAnimation this
                 CompositionRestoration.run (fun attempt ->
                     attempt (fun () -> clock.StopForRevert(false))
-                    attempt detachSiblings
+                    attempt (fun () -> detachSiblings false)
                     attempt (fun () -> this.RevertValues false))
             this
 
@@ -1770,14 +1833,21 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     let mutable renderToken = Int64.MinValue
     let live = Closure.keep (fun () -> clock.IsCurrent renderToken)
 
-    let recalcDuration () =
+    let computeMaxEnd () =
         let mutable maxEnd = 0.
         for childOffset, child in entries do
             if not child.Cancelled then
-                let finish = childOffset + child.Clock.Delay + child.Duration
+                let finish = childOffset + (child.Clock.Delay + child.Duration) / child.Speed
                 if finish > maxEnd then maxEnd <- finish
-        iterDuration <- maxEnd
+        maxEnd
+
+    let recalcDuration () =
+        iterDuration <- computeMaxEnd()
         clock.Resize iterDuration
+
+    let recalcDurationWithoutReset () =
+        iterDuration <- computeMaxEnd()
+        clock.ResizeWithoutReset iterDuration
 
     do
         clock.ConfigureChildren(
@@ -1825,7 +1895,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
             if entries.Count = 0 then None
             else
                 let lastOff, lastChild = entries[entries.Count - 1]
-                Some(lastOff, lastOff + lastChild.Clock.Delay + lastChild.Duration)
+                Some(lastOff, lastOff + (lastChild.Clock.Delay + lastChild.Duration) / lastChild.Speed)
         let resolvedOffset =
             TimelinePositions.resolve iterDuration prev
                 (fun lbl -> match labels.TryGetValue lbl with true, v -> Some v | _ -> None) position
@@ -1847,11 +1917,22 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
             if entries.Count = 0 then None
             else
                 let lastOff, lastChild = entries[entries.Count - 1]
-                Some(lastOff, lastOff + lastChild.Clock.Delay + lastChild.Duration)
+                Some(lastOff, lastOff + (lastChild.Clock.Delay + lastChild.Duration) / lastChild.Speed)
         labels[name] <-
             TimelinePositions.resolve iterDuration prev
                 (fun lbl -> match labels.TryGetValue lbl with true, v -> Some v | _ -> None) position
         this
+
+    member internal this.OnChildTargetsModified() =
+        if not cancelled then
+            let remaining = ResizeArray<float * ComposedAnimation>(entries.Count)
+            for off, child in entries do
+                if not child.Cancelled && child.ActiveTweenCount > 0 then remaining.Add(off, child)
+            entries.Clear()
+            entries.AddRange remaining
+            entriesSnapshot <- null
+            if entries.Count = 0 then this.Cancel()
+            else recalcDurationWithoutReset()
 
     /// <summary>Removes matching targets (and optional property) across child animations, cancelling empty children and this timeline if empty.</summary>
     member this.RemoveTargets(targets: obj array, ?propertyName: string) =
@@ -1859,14 +1940,14 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
         let mutable anyRemoved = false
         let remaining = ResizeArray<float * ComposedAnimation>()
         for off, child in entries do
-            if child.RemoveMatching(targetSet, propertyName) then anyRemoved <- true
+            if child.RemoveMatching(targetSet, propertyName, notifyParent = false) then anyRemoved <- true
             if not child.Cancelled && child.ActiveTweenCount > 0 then remaining.Add(off, child)
         if anyRemoved then
             entries.Clear()
             entries.AddRange remaining
             entriesSnapshot <- null
             if entries.Count = 0 then this.Cancel()
-            else recalcDuration()
+            else recalcDurationWithoutReset()
         this
 
     /// <summary>Total duration across iterations.</summary>
@@ -1878,6 +1959,12 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     member _.IterationDuration = iterDuration
     /// <summary>Current playhead time.</summary>
     member _.CurrentTime with get() = clock.CurrentTime and set v = clock.CurrentTime <- v
+    /// <summary>Overall normalized progress in [0,1].</summary>
+    member _.Progress with get() = clock.Progress and set v = clock.Progress <- v
+    /// <summary>Whether base playback direction is reversed.</summary>
+    member _.Reversed with get() = clock.Reversed and set v = clock.Reversed <- v
+    /// <summary>Playback speed multiplier.</summary>
+    member _.Speed with get() = clock.Speed and set v = clock.Speed <- v
     /// <summary>Signed interval between preceding playback samples, in the engine time unit.</summary>
     member _.DeltaTime = clock.DeltaTime
     /// <summary>Whether this timeline has active children.</summary>
@@ -1905,12 +1992,32 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     member this.Play() = clock.Play(); this
     /// <summary>Reverses playback.</summary>
     member this.Reverse() = clock.Reverse(); this
+    /// <summary>Toggles direction according to repeat parity.</summary>
+    member this.Alternate() = clock.Alternate(); this
+    /// <summary>Resets to zero and clears child completion flags.</summary>
+    member this.Reset() =
+        clock.Reset()
+        for _, child in entries do
+            if not child.Cancelled then child.Clock.ResetChildFlags()
+        this
+    /// <summary>Resets and resumes playback.</summary>
+    member this.Restart() =
+        this.Reset() |> ignore
+        clock.Resume()
+        this
+    /// <summary>Samples the end while retaining the timeline's reusable lifetime.</summary>
+    member this.Complete(?muteCallbacks: bool) =
+        this.Seek(this.Duration, ?muteCallbacks = muteCallbacks)
 
     /// <summary>Refreshes all active child animations.</summary>
     member this.Refresh() =
+        let wasPlaying = not clock.Paused
+        let savedTime = clock.CurrentTime
         for _, child in entries do
             if not child.Cancelled then child.Refresh() |> ignore
-        recalcDuration()
+        recalcDurationWithoutReset()
+        clock.Seek(min savedTime clock.Duration, muteCallbacks = true)
+        if wasPlaying then clock.Resume()
         this
 
     /// <summary>Reverts all children in reverse order and cancels this timeline.</summary>

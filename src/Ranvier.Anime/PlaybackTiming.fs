@@ -126,6 +126,7 @@ type internal PlaybackTiming(iterationDuration: float, iterationCount: float, de
                 let elapsed = bounded - float rawIndex * period
                 index, (if System.Double.IsNaN elapsed || elapsed = 0. then 0. else elapsed)
             else 0, absolute
+        // Upstream Anime.js v4.5 pins JS signed `index % 2` bitwise XOR (`zeroReversedRepeated`).
         let isReversed = ((if reversed then 1 else 0) ^^^ (if alternate then index % 2 else 0)) <> 0
         let iterationTime =
             if atEnd then (if isReversed then 0. else duration)

@@ -133,13 +133,16 @@ module Follow =
     [<Sealed>]
     type private ComposedFollower<'v>
         (services: AnimeServices, target: obj, options: ComposedAnimationOptions, spec: 'v -> PropertySpec, restore: unit -> unit) =
+        let followerOptions = { options with Autoplay = true }
         let mutable current: ComposedAnimation voption = ValueNone
         let mutable reverted = false
 
         interface Follower<'v> with
             member _.To(value: 'v) =
                 if not reverted then
-                    let next = Composed.animate services.Scheduler target [| spec value |] (Some options)
+                    let next =
+                        ScopeRegistration.run ignore (fun () ->
+                            Composed.animate services.Scheduler target [| spec value |] (Some followerOptions))
                     if current.IsNone then next.Complete() |> ignore
                     current <- ValueSome next
 
@@ -154,8 +157,8 @@ module Follow =
     // One retargetable track for the follower's life, written through the element's transform cache.
     [<Sealed>]
     type private TransformFollower
-        (services: AnimeServices, element: Element, canonical: string, options: ComposedAnimationOptions, restore: unit -> unit) =
-        let priority = (Portable.styleOf element).getPropertyPriority "transform"
+        (services: AnimeServices, element: Element, canonical: string, options: ComposedAnimationOptions,
+         inlineOrig: string option, priority: string) =
         let mutable held: struct (Animatable * AnimatableNumber) voption = ValueNone
         let mutable reverted = false
 
@@ -166,7 +169,7 @@ module Follow =
                     | ValueSome (struct (_, track)) -> track.RetargetPrecise(value, options.Duration, options.Ease)
                     | ValueNone ->
                         ElementTransforms.writeScalar element canonical priority value
-                        let created = new Animatable(services.Scheduler)
+                        let created = ScopeRegistration.run ignore (fun () -> new Animatable(services.Scheduler))
 
                         let trackOptions =
                             { AnimatablePropertyOptions.Default with
@@ -178,7 +181,8 @@ module Follow =
                         let handle =
                             NumericProperty((fun () -> value), ElementTransforms.writeScalar element canonical priority)
 
-                        held <- ValueSome (struct (created, created.NumericPrecise(handle, options.Duration, trackOptions)))
+                        let track = ScopeRegistration.run ignore (fun () -> created.NumericPrecise(handle, options.Duration, trackOptions))
+                        held <- ValueSome (struct (created, track))
 
             member _.Pause() =
                 match held with
@@ -193,8 +197,7 @@ module Follow =
                     | ValueSome (struct (group, _)) -> group.Cancel()
                     | ValueNone -> ()
 
-                    ElementTransforms.discard element
-                    restore ()
+                    ElementTransforms.revertComponents element [| canonical, inlineOrig |] priority
 
     /// <summary>
     /// Follows a value with the element's <c>property</c>: the first value is set at once, later ones animate from
@@ -212,12 +215,14 @@ module Follow =
     let property (element: Element) (property: string) (options: ComposedAnimationOptions) : Follower<float> =
         if isNull (box element) then nullArg "element"
         let services = AnimeHost.Current
-        let restore = Portable.keepInline element property
 
         match ElementTransforms.canonicalName property with
         | Some canonical when canonical <> "translate3d" && canonical <> "rotate3d" && canonical <> "matrix" && canonical <> "matrix3d" ->
-            TransformFollower(services, element, canonical, options, restore)
+            let priority = (Portable.styleOf element).getPropertyPriority "transform"
+            let _, inlineOrig = ElementTransforms.readWithInlineOrigin element canonical
+            TransformFollower(services, element, canonical, options, inlineOrig, priority)
         | _ ->
+            let restore = Portable.keepInline element property
             ComposedFollower<float>(
                 services, box element, Portable.withComputed services options, (fun value -> PropertySpec.Scalar(property, value)), restore)
 
@@ -262,14 +267,19 @@ module Follow =
 
     [<Sealed>]
     type private DrawFollower(services: AnimeServices, root: IDisposable, last: NumericProperty, options: ComposedAnimationOptions) =
+        let followerOptions = { options with Autoplay = true }
+        let mutable targetGoal = last.Value
         let mutable current: ComposedAnimation voption = ValueNone
         let mutable reverted = false
 
         interface Follower<float> with
             member _.To(fraction: float) =
-                if not reverted && fraction <> last.Value then
+                if not reverted && fraction <> targetGoal then
+                    targetGoal <- fraction
                     current <-
-                        ValueSome (Composed.animate services.Scheduler (box last) [| PropertySpec.Scalar("value", fraction) |] (Some options))
+                        ValueSome (
+                            ScopeRegistration.run ignore (fun () ->
+                                Composed.animate services.Scheduler (box last) [| PropertySpec.Scalar("value", fraction) |] (Some followerOptions)))
 
             member _.Pause() = current |> ValueOption.iter (fun animation -> animation.Pause() |> ignore)
 
@@ -315,13 +325,20 @@ module Follow =
 
     [<Sealed>]
     type private MorphFollower(services: AnimeServices, element: SVGGeometryElement, options: ComposedAnimationOptions) =
+        let followerOptions = { options with Autoplay = true }
         let tag = element.tagName.ToLowerInvariant()
         let attribute = if tag = "path" then "d" else "points"
         let original = element.getAttribute attribute
-        let root = Api.createRoot id
+        let mutable morphRoot: IDisposable voption = ValueNone
         let mutable current: ComposedAnimation voption = ValueNone
         let mutable first = true
         let mutable reverted = false
+
+        let disposeStep () =
+            current |> ValueOption.iter (fun animation -> animation.Cancel())
+            current <- ValueNone
+            morphRoot |> ValueOption.iter (fun r -> r.Dispose())
+            morphRoot <- ValueNone
 
         interface Follower<string> with
             member _.To(shape: string) =
@@ -331,25 +348,35 @@ module Follow =
                     first <- false
                     element.setAttribute(attribute, shape)
                 else
-                    current |> ValueOption.iter (fun animation -> animation.Cancel())
-                    let destination = (element :> Node).ownerDocument.createElementNS(svgNamespace, tag) :?> SVGGeometryElement
-                    destination.setAttribute(attribute, shape)
-                    let morphing = Api.runWithOwner root (fun () -> SvgProperties.morph element destination 0.33 None)
+                    disposeStep ()
+                    let stepRoot = Api.createRoot id
+                    morphRoot <- ValueSome stepRoot
+                    try
+                        let destination = (element :> Node).ownerDocument.createElementNS(svgNamespace, tag) :?> SVGGeometryElement
+                        destination.setAttribute(attribute, shape)
+                        let morphing = Api.runWithOwner stepRoot (fun () -> SvgProperties.morph element destination 0.33 None)
 
-                    let animation =
-                        Composed.animate services.Scheduler (box morphing.Progress) [| PropertySpec.Scalar("value", 1., fromValue = 0.) |]
-                            (Some options)
+                        let animation =
+                            ScopeRegistration.run ignore (fun () ->
+                                Composed.animate services.Scheduler (box morphing.Progress) [| PropertySpec.Scalar("value", 1., fromValue = 0.) |]
+                                    (Some followerOptions))
 
-                    (animation :> ITickable).WhenCompleted(fun () -> element.setAttribute(attribute, shape))
-                    current <- ValueSome animation
+                        (animation :> ITickable).WhenCompleted(fun () ->
+                            element.setAttribute(attribute, shape)
+                            if morphRoot |> ValueOption.exists (fun r -> obj.ReferenceEquals(r, stepRoot)) then
+                                stepRoot.Dispose()
+                                morphRoot <- ValueNone)
+                        current <- ValueSome animation
+                    with _ ->
+                        disposeStep ()
+                        reraise ()
 
             member _.Pause() = current |> ValueOption.iter (fun animation -> animation.Pause() |> ignore)
 
             member _.Revert() =
                 if not reverted then
                     reverted <- true
-                    current |> ValueOption.iter (fun animation -> animation.Cancel())
-                    root.Dispose()
+                    disposeStep ()
 
                     if isNull original then element.removeAttribute attribute
                     else element.setAttribute(attribute, original)
@@ -375,38 +402,42 @@ module Follow =
 /// <summary>An identity set of nodes.</summary>
 [<Sealed>]
 type NodeSet() =
-    let items = List<Node>()
+    let perThread = new System.Threading.ThreadLocal<List<Node>>(fun () -> List<Node>())
+    let items () = perThread.Value
 
     /// <summary>The number of nodes in the set.</summary>
-    member _.Count = items.Count
+    member _.Count = (items ()).Count
 
     /// <summary>Whether the node is in the set.</summary>
     member _.Has(node: Node) : bool =
+        let list = items ()
         let mutable found = false
         let mutable i = 0
-        let count = items.Count
+        let count = list.Count
         while i < count && not found do
-            if Portable.same items[i] node then found <- true
+            if Portable.same list[i] node then found <- true
             i <- i + 1
         found
 
     /// <summary>Adds the node, unless the set has it.</summary>
-    member this.Add(node: Node) : unit = if not (this.Has node) then items.Add node
+    member this.Add(node: Node) : unit = if not (this.Has node) then (items ()).Add node
 
     /// <summary>Removes the node, if the set has it.</summary>
     member _.Remove(node: Node) : unit =
-        let mutable i = items.Count - 1
+        let list = items ()
+        let mutable i = list.Count - 1
         while i >= 0 do
-            if Portable.same items[i] node then items.RemoveAt i
+            if Portable.same list[i] node then list.RemoveAt i
             i <- i - 1
 
     /// <summary>Whether <c>root</c> is, or contains, a node of the set.</summary>
     member _.AnyUnder(root: Node) : bool =
+        let list = items ()
         let mutable found = false
         let mutable i = 0
-        let count = items.Count
+        let count = list.Count
         while i < count && not found do
-            if root.contains items[i] then found <- true
+            if root.contains list[i] then found <- true
             i <- i + 1
         found
 
@@ -580,10 +611,9 @@ module Scroll =
                 | ScrollCommand.Reset -> animation.Reset() |> ignore
                 | ScrollCommand.Complete -> animation.Complete() |> ignore }
         | :? ComposedTimeline as timeline ->
-            let rewind () = timeline.Seek(0., muteCallbacks = true) |> ignore
             { Duration = (fun () -> timeline.Duration)
               CurrentTime = (fun () -> timeline.CurrentTime)
-              Progress = (fun () -> if timeline.Duration > 0. then timeline.CurrentTime / timeline.Duration else 1.)
+              Progress = (fun () -> timeline.Progress)
               Completed = (fun () -> timeline.Completed)
               Seek = (fun time muted -> timeline.Seek(time, muteCallbacks = muted) |> ignore)
               Command =
@@ -591,15 +621,11 @@ module Scroll =
                 | ScrollCommand.Play -> timeline.Play() |> ignore
                 | ScrollCommand.Pause -> timeline.Pause() |> ignore
                 | ScrollCommand.Resume -> timeline.Resume() |> ignore
-                | ScrollCommand.Reverse
-                | ScrollCommand.Alternate -> timeline.Reverse() |> ignore
-                | ScrollCommand.Restart ->
-                    rewind ()
-                    timeline.Play() |> ignore
-                | ScrollCommand.Reset ->
-                    rewind ()
-                    timeline.Pause() |> ignore
-                | ScrollCommand.Complete -> timeline.Seek(timeline.Duration) |> ignore }
+                | ScrollCommand.Reverse -> timeline.Reverse() |> ignore
+                | ScrollCommand.Alternate -> timeline.Alternate() |> ignore
+                | ScrollCommand.Restart -> timeline.Restart() |> ignore
+                | ScrollCommand.Reset -> timeline.Reset() |> ignore
+                | ScrollCommand.Complete -> timeline.Complete() |> ignore }
         | _ -> invalidArg "linked" "Scroll.observe links a Timer, Timeline, ComposedAnimation or ComposedTimeline."
 
     /// <summary>

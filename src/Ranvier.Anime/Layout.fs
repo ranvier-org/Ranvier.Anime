@@ -439,7 +439,7 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
             transforms.Add transform
             fun time ->
                 if live() then
-                    let normalized=if length=0. then 1. else Math.Clamp(time/length,0.,1.)
+                    let normalized=if time<0. then 0. elif length=0. then 1. else Math.Clamp(time/length,0.,1.)
                     transform.Sample normalized
         let propertySampler (m:LayoutMeasurement) name first last length ease =
             if first=last then ignore
@@ -462,7 +462,8 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                 updateLast m.Element name
                 fun time ->
                     if live() then
-                        timer.Seek(Math.Clamp(time,0.,length),muteCallbacks=true)
+                        let seekTime = if time < 0. then 0. elif length = 0. then timer.IterationDuration else Math.Clamp(time, 0., length)
+                        timer.Seek(seekTime, muteCallbacks=true)
                         updateLast m.Element name
         let addProperty m name first last delay length ease =
             if first<>last then
@@ -499,11 +500,11 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                 if parentAdded || isEntering then added.Add m.Element |> ignore
                 if parentRemoved || isLeaving then removed.Add m.Element |> ignore
                 let effect=
-                    if isEntering then Some options.EnterFrom
+                    if not m.Target then Some options.SwapAt
+                    elif isEntering then Some options.EnterFrom
                     elif isLeaving then Some options.LeaveTo
-                    elif not m.Target then Some options.SwapAt
                     else None
-                let group=if isEntering then enter elif isLeaving then leave else animate
+                let group=if not m.Target then swap elif isEntering then enter elif isLeaving then leave else animate
                 let index=group |> Seq.tryFindIndex(same m.Element) |> Option.defaultValue 0
                 let context={Element=m.Element;Index=uint index;Count=uint group.Count}
                 let delay=effect |> Option.bind(fun e -> e.DelayBy |> Option.map(fun resolve -> resolve context) |> Option.orElse e.Delay)
@@ -529,8 +530,13 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                 let nodeSwaps=ResizeArray<unit -> unit>()
                 let before=if wasHidden then m else previous
                 let after=if isLeaving || parentRemoved then previous else m
+                let sameParent =
+                    match before.Parent, m.Parent with
+                    | None, None -> true
+                    | Some a, Some b -> same a b
+                    | _ -> false
                 let x,y=
-                    if before.Parent<>m.Parent && not wasHidden then
+                    if not sameParent && not wasHidden then
                         let p=m.Parent |> Option.bind(fun p -> find p measurements |> Option.orElseWith(fun () -> find p fresh))
                         match p with Some p -> before.Left-p.Left-p.BorderLeft,before.Top-p.Top-p.BorderTop | None -> before.X,before.Y
                     else before.X,before.Y
@@ -587,11 +593,13 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                                     let sample=nativeSampler m [|first;middle;last|] length swapEase
                                     renders.Add(fun time -> sample(time-delay))
                                 else
-                                    let firstHalf=propertySampler m name first middle (length/2.) swapEase
-                                    let secondHalf=propertySampler m name middle last (length/2.) (fun t -> 1.-swapEase(1.-t))
+                                    let rawHalf=length/2.
+                                    let halfLen=if rawHalf>0. && PropertyNumbers.round 1e12 rawHalf=0. then 1e-11 else rawHalf
+                                    let firstHalf=propertySampler m name first middle halfLen swapEase
+                                    let secondHalf=propertySampler m name middle last halfLen (fun t -> 1.-swapEase(1.-t))
                                     renders.Add(fun time ->
                                         let local=time-delay
-                                        if local<length/2. then firstHalf local else secondHalf(local-length/2.))
+                                        if local<halfLen then firstHalf local else secondHalf(local-halfLen))
                             elif name<>"transform" then
                                 write m.Element name first ""
                                 nodeSwaps.Add(fun () -> if live() then write m.Element name last "")
@@ -663,10 +671,22 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
             reraise()
     /// <summary>Records, invokes the mutation synchronously and animates its resulting layout.</summary>
     member _.Update(mutate:AutoLayout -> unit,?animationOptions:LayoutOptions) =
+        let previousMeasurements = measurements
+        let previousScroll = scroll
+        let previousIdsCount = identities.Count
         this.Record()
         try mutate this; this.Animate(?animationOptions=animationOptions)
         with _ ->
-            try this.Revert() with _ -> ()
+            try
+                stop()
+                finish false
+                for i = identities.Count - 1 downto previousIdsCount do
+                    let element, value = identities[i]
+                    if element.getAttribute "data-layout-id" = value then element.removeAttribute "data-layout-id"
+                    identities.RemoveAt i
+                measurements <- previousMeasurements
+                scroll <- previousScroll
+            with _ -> ()
             reraise()
     /// <summary>Cancels playback and restores owned declarations while retaining DOM mutations.</summary>
     member _.Revert() =

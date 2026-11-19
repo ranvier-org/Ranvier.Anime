@@ -26,6 +26,7 @@ module CssStagger =
     /// <remarks>Rejects nonnumeric inputs and nonfinite outputs. Options use input-unit magnitudes; constructor failures propagate.</remarks>
     let step<'syntax, 'value when 'value :> Value<'syntax>>
         (create: float -> 'value) (value: Value<'syntax>) (options: StaggerOptions) (targetCount: uint) : 'value array =
+        if isNull (box create) then nullArg "create"
         let number, unitName = numeric "value" value
         Stagger.distribute (StaggerValue.Step number) options targetCount |> construct create unitName
 
@@ -33,6 +34,7 @@ module CssStagger =
     /// <remarks>Options use magnitudes in the endpoint unit. Rejects mixed units and nonfinite results; constructor validation propagates.</remarks>
     let range<'syntax, 'value when 'value :> Value<'syntax>>
         (create: float -> 'value) (first: Value<'syntax>) (last: Value<'syntax>) (options: StaggerOptions) (targetCount: uint) : 'value array =
+        if isNull (box create) then nullArg "create"
         let firstNumber, firstUnit = numeric "first" first
         let lastNumber, lastUnit = numeric "last" last
         if firstUnit <> lastUnit then invalidArg "last" "Endpoint units must match."

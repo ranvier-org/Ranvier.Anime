@@ -251,17 +251,6 @@ module Motion =
             (fun (_: 'inst) element -> animateWithEase element 240. easeOutQuad scaleEnterSpecs)
             (fun _ element -> animateWithEase element 180. easeInQuad scaleExitSpecs)
 
-    let private unfold (_: 'inst) (element: Element) =
-        DomKit.setStyle element "overflow" "hidden"
-        let height = DomKit.scrollHeight element
-        let animation = animateWithEase element 240. easeOutQuad [| PropertySpec.Scalar("height", height, fromValue = 0.) |]
-
-        (animation :> ITickable).WhenCompleted(fun () ->
-            DomKit.removeStyle element "height"
-            DomKit.removeStyle element "overflow")
-
-        animation
-
     let private fold (_: 'inst) (element: Element) =
         DomKit.setStyle element "overflow" "hidden"
         animateWithEase element 180. easeInQuad foldSpecs
@@ -271,7 +260,42 @@ module Motion =
     /// it plays.
     /// </summary>
     let collapse<'native, 'inst> : Part<'native, 'inst> =
-        TemplateParts.both (TemplateParts.motion (entering unfold)) (TemplateParts.exit (departure false fold))
+        let enterPart =
+            TemplateParts.motion (
+                Func<'inst, 'native, MotionContext, unit -> unit>(fun _ native context ->
+                    if context.Inserted && not (reduced ()) then
+                        let node = nodeOf native
+                        let element = elementOf native
+                        DomKit.setStyle element "overflow" "hidden"
+                        let height = DomKit.scrollHeight element
+
+                        let tickable =
+                            try
+                                animateWithEase element 240. easeOutQuad [| PropertySpec.Scalar("height", height, fromValue = 0.) |] :> ITickable
+                            with _ ->
+                                DomKit.removeStyle element "overflow"
+                                reraise ()
+
+                        arriving.Add node
+
+                        tickable.WhenCompleted(fun () ->
+                            arriving.Remove node
+                            DomKit.removeStyle element "height"
+                            DomKit.removeStyle element "overflow")
+
+                        owning node (fun () ->
+                            arriving.Remove node
+
+                            if context.ExitPending() then
+                                Anime.pause tickable
+                            else
+                                tickable.Revert()
+                                DomKit.removeStyle element "overflow")
+                    else
+                        nothing)
+            )
+
+        TemplateParts.both enterPart (TemplateParts.exit (departure false fold))
 
     /// <summary>
     /// FLIP for the rows of every region under the element: a layout over the element's live element children, recorded
@@ -347,7 +371,13 @@ module Motion =
         TemplateParts.motion (
             Func<_, _, _, _>(fun inst native context ->
                 let follower = Follow.property (elementOf native) property parameters
-                Api.createEffectOn (fun () -> read inst) (fun value -> follower.To value)
+
+                try
+                    Api.createEffectOn (fun () -> read inst) (fun value -> follower.To value)
+                with _ ->
+                    follower.Revert()
+                    reraise ()
+
                 owning (nodeOf native) (settleFollower context follower))
         )
 
@@ -365,7 +395,13 @@ module Motion =
         TemplateParts.motion (
             Func<_, _, _, _>(fun inst native context ->
                 let follower = Follow.css (elementOf native) property parameters (Api.untrack (fun () -> read inst))
-                Api.createEffectOn (fun () -> read inst) (fun value -> follower.To value)
+
+                try
+                    Api.createEffectOn (fun () -> read inst) (fun value -> follower.To value)
+                with _ ->
+                    follower.Revert()
+                    reraise ()
+
                 owning (nodeOf native) (settleFollower context follower))
         )
 
@@ -402,7 +438,13 @@ module Motion =
         TemplateParts.motion (
             Func<_, _, _, _>(fun inst native context ->
                 let follower = Follow.draw (elementOf native) parameters (Api.untrack (fun () -> read inst))
-                Api.createEffectOn (fun () -> read inst) (fun fraction -> follower.To fraction)
+
+                try
+                    Api.createEffectOn (fun () -> read inst) (fun fraction -> follower.To fraction)
+                with _ ->
+                    follower.Revert()
+                    reraise ()
+
                 owning (nodeOf native) (settleFollower context follower))
         )
 
@@ -415,7 +457,13 @@ module Motion =
         TemplateParts.motion (
             Func<_, _, _, _>(fun inst native context ->
                 let follower = Follow.morph (elementOf native) parameters
-                Api.createEffectOn (fun () -> read inst) (fun shape -> follower.To shape)
+
+                try
+                    Api.createEffectOn (fun () -> read inst) (fun shape -> follower.To shape)
+                with _ ->
+                    follower.Revert()
+                    reraise ()
+
                 owning (nodeOf native) (settleFollower context follower))
         )
 
@@ -450,7 +498,13 @@ module Motion =
                     | ScrollEvent.Leave -> write binding.InView false
                     | _ -> ()
 
-                let observer = Scroll.observe parameters.Container target parameters.Options tickable onEvent
+                let observer =
+                    try
+                        Scroll.observe parameters.Container target parameters.Options tickable onEvent
+                    with _ ->
+                        tickable.Revert()
+                        reraise ()
+
                 let stop = settle context tickable
 
                 owning (nodeOf native) (fun () ->
@@ -501,9 +555,13 @@ module Motion =
 
                 let draggable = Drag.create (elementOf native) { parameters with Callbacks = chained }
 
-                Api.createEffectOn (fun () -> binding.Position.Value) (fun (struct (x, y)) ->
-                    if x <> draggable.X then draggable.X <- x
-                    if y <> draggable.Y then draggable.Y <- y)
+                try
+                    Api.createEffectOn (fun () -> binding.Position.Value) (fun (struct (x, y)) ->
+                        if x <> draggable.X then draggable.X <- x
+                        if y <> draggable.Y then draggable.Y <- y)
+                with _ ->
+                    draggable.Revert()
+                    reraise ()
 
                 owning (nodeOf native) (fun () -> if context.ExitPending() then draggable.Cancel() else draggable.Revert()))
         )
@@ -517,7 +575,13 @@ module Motion =
         TemplateParts.motion (
             Func<_, _, _, _>(fun inst native context ->
                 let splitter = Text.split (elementOf native) parameters
-                let tickable = play inst splitter :> ITickable
+
+                let tickable =
+                    try
+                        play inst splitter :> ITickable
+                    with _ ->
+                        splitter.Revert() |> ignore
+                        reraise ()
 
                 owning (nodeOf native) (fun () ->
                     if context.ExitPending() then

@@ -34,6 +34,19 @@ module internal TimelinePositions =
                     | _ -> None
             with :? System.FormatException -> None
 
+    let private findOperator (text: string) =
+        let mutable bestIdx = -1
+        let mutable bestOp = ' '
+        let inline check (op: string) =
+            let idx = text.IndexOf(op, System.StringComparison.Ordinal)
+            if idx >= 0 && (bestIdx < 0 || idx < bestIdx) then
+                bestIdx <- idx
+                bestOp <- op[0]
+        check "*="
+        check "+="
+        check "-="
+        if bestIdx >= 0 then ValueSome(struct(bestIdx, bestOp)) else ValueNone
+
     /// <summary>Resolves source position syntax against a duration, previous start/end and label lookup.</summary>
     let resolve duration (previous: (float * float) option) (tryLabel: string -> float option) position =
         let duration = if duration = 1e-11 then 0. else duration
@@ -46,21 +59,27 @@ module internal TimelinePositions =
                 match number text with
                 | Some time -> time
                 | None ->
-                    let sibling =
-                        if text.StartsWith("<", System.StringComparison.Ordinal) then
-                            if text.StartsWith("<<", System.StringComparison.Ordinal) then
-                                Some(previous |> Option.map fst |> Option.defaultValue 0.)
-                            else Some(previous |> Option.map snd |> Option.defaultWith(fun () -> invalidArg "position" "No previous child exists."))
-                        else None
-                    let relative = System.Text.RegularExpressions.Regex.Match(text, @"(\*=|\+=|-=)")
-                    if relative.Success then
-                        let parts = text.Split([|relative.Value|], System.StringSplitOptions.None)
+                    match findOperator text with
+                    | ValueSome(struct(opIdx, opChar)) ->
+                        let prefix = text.Substring(0, opIdx)
+                        let amountText = text.Substring(opIdx + 2)
                         let anchor =
-                            sibling |> Option.defaultWith(fun () ->
-                                if parts[0] = "" then duration
-                                else tryLabel parts[0] |> Option.defaultWith(fun () -> invalidArg "position" "Relative label does not exist."))
-                        let amount = number parts[1] |> Option.defaultWith(fun () -> invalidArg "position" "Invalid relative amount.")
-                        match relative.Value[0] with '+' -> anchor + amount | '-' -> anchor - amount | _ -> anchor * amount
-                    else sibling |> Option.defaultWith(fun () -> tryLabel text |> Option.defaultValue duration)
+                            if prefix = "<<" then
+                                previous |> Option.map fst |> Option.defaultValue 0.
+                            elif prefix = "<" then
+                                previous |> Option.map snd |> Option.defaultWith(fun () -> invalidArg "position" "No previous child exists.")
+                            elif prefix = "" then
+                                duration
+                            else
+                                tryLabel prefix |> Option.defaultWith(fun () -> invalidArg "position" "Relative label does not exist.")
+                        let amount = number amountText |> Option.defaultWith(fun () -> invalidArg "position" "Invalid relative amount.")
+                        match opChar with '+' -> anchor + amount | '-' -> anchor - amount | _ -> anchor * amount
+                    | ValueNone ->
+                        if text = "<<" then
+                            previous |> Option.map fst |> Option.defaultValue 0.
+                        elif text = "<" then
+                            previous |> Option.map snd |> Option.defaultWith(fun () -> invalidArg "position" "No previous child exists.")
+                        else
+                            tryLabel text |> Option.defaultValue duration
         if not(System.Double.IsFinite result) then invalidArg "position" "Position must resolve to a finite time."
         result

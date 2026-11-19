@@ -50,7 +50,7 @@ type ITickable =
 
     /// <summary>Runs the callback once playback completes, at once when it already has; a cancel drops it.</summary>
     /// <remarks>The callback is chained onto the tickable's <c>onComplete</c>, after the one it had.</remarks>
-    [<Emit("((t, f) => { if (t.completed) f(); else { const p = t.onComplete, c = s => { if (t.onComplete === c) t.onComplete = p; if (p) p(s); f(); }; t.onComplete = c; } })($0, $1)")>]
+    [<Emit("((t, f) => { if (t.completed) f(); else { let done = false; const p = t.onComplete, c = s => { if (t.onComplete === c) t.onComplete = p; if (p) p(s); if (!done) { done = true; f(); } }; t.onComplete = c; } })($0, $1)")>]
     abstract WhenCompleted: (unit -> unit) -> unit
 
 /// <summary>A position on a timeline: absolute milliseconds, or an anime.js label or relative position expression.</summary>
@@ -633,7 +633,7 @@ module internal BrowserParams =
 
     /// <summary>The anime.js createLayout parameters; the default visual properties are anime.js's own and stay unnamed.</summary>
     /// <remarks>A timing function receives a plain object with the LayoutContext fields.</remarks>
-    [<Emit("Object.assign({duration: (e, i, t) => $0.Duration({Element: e, Index: i, Count: t}), delay: (e, i, t) => $0.Delay({Element: e, Index: i, Count: t}), ease: $0.Ease}, (p => p.length ? {properties: p} : 0)($0.Properties.filter(n => !$1.includes(n)).map(n => n.replace(/-./g, c => c[1].toUpperCase()))), $0.Extra)")>]
+    [<Emit("Object.assign({duration: (e, i, t) => $0.Duration({Element: e, Index: i, Count: t}), delay: (e, i, t) => $0.Delay({Element: e, Index: i, Count: t}), ease: $0.Ease}, (p => p.length ? {properties: p} : 0)($0.Properties.filter(n => !$1.includes(n)).map(n => n.startsWith('--') ? n : n.replace(/-./g, c => c[1].toUpperCase()))), $0.Extra)")>]
     let private layoutOf (options: LayoutOptions) (defaults: string array) : obj = jsNative
 
     let layout (options: LayoutOptions) : obj =

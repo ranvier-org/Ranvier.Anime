@@ -283,10 +283,18 @@ module internal TextSplitHelpers =
                     if not (isNull (box closestParent)) then
                         DomTargetHelpers.tryStyle closestParent |> Option.iter (fun st -> st.setProperty("display", displayStyle))
                         if isLine then
-                            match box node with
-                            | :? HTMLElement as htmlNode -> closestParent.innerHTML <- htmlNode.innerHTML
-                            | :? Element as elNode -> closestParent.innerHTML <- elNode.innerHTML
-                            | _ -> closestParent.innerHTML <- (if isNull node.textContent then "" else node.textContent)
+                            let frag = doc.createDocumentFragment()
+                            let childList = node.childNodes
+                            let count = int childList.length
+                            if count > 0 then
+                                let children = Array.init count (fun idx -> childList.item (uint idx))
+                                for ch in children do
+                                    let childToAppend = if i > 0 then ch.cloneNode true else ch
+                                    (frag :> Node).appendChild childToAppend |> ignore
+                                (closestParent :> Node).replaceChild(frag :> Node, replaceNode) |> ignore
+                            else
+                                let txt = doc.createTextNode(if isNull node.textContent then "" else node.textContent)
+                                (closestParent :> Node).replaceChild(txt :> Node, replaceNode) |> ignore
                         else
                             (closestParent :> Node).replaceChild(node.cloneNode true, replaceNode) |> ignore
                     i <- i - 1
@@ -451,22 +459,22 @@ type TextSplitter(target: HTMLElement, ?options: TextSplitterOptions) as this =
                 charsStore.AddRange(TextSplitHelpers.getAllTopLevelElements (target :> Element) "char")
 
             let measureElements = if wordsStore.Count > 0 then wordsStore else charsStore
-            let mutable prevY : float option = None
-            let mutable linesCount = 0
-            for i in 0 .. measureElements.Count - 1 do
-                let el = measureElements[i]
-                let rect = el.getBoundingClientRect()
-                match prevY with
-                | Some y when rect.top - y > rect.height * 0.5 -> linesCount <- linesCount + 1
-                | _ -> ()
-                let lineText = linesCount.ToString(CultureInfo.InvariantCulture)
-                el.setAttribute("data-line", lineText)
-                let nested = (el :> ParentNode).querySelectorAll "[data-line]"
-                for c in 0 .. int nested.length - 1 do
-                    (nested.item (uint c) :?> Element).setAttribute("data-line", lineText)
-                prevY <- Some rect.top
+            if canSplitLines && measureElements.Count > 0 then
+                let mutable prevY : float option = None
+                let mutable linesCount = 0
+                for i in 0 .. measureElements.Count - 1 do
+                    let el = measureElements[i]
+                    let rect = el.getBoundingClientRect()
+                    match prevY with
+                    | Some y when rect.top - y > rect.height * 0.5 -> linesCount <- linesCount + 1
+                    | _ -> ()
+                    let lineText = linesCount.ToString(CultureInfo.InvariantCulture)
+                    el.setAttribute("data-line", lineText)
+                    let nested = (el :> ParentNode).querySelectorAll "[data-line]"
+                    for c in 0 .. int nested.length - 1 do
+                        (nested.item (uint c) :?> Element).setAttribute("data-line", lineText)
+                    prevY <- Some rect.top
 
-            if canSplitLines then
                 let linesFragment = doc.createDocumentFragment()
                 let parents = HashSet<Element>(HashIdentity.Reference)
                 let clones = ResizeArray<HTMLElement>()
@@ -522,8 +530,26 @@ type TextSplitter(target: HTMLElement, ?options: TextSplitterOptions) as this =
                     effectReverts[i] <- revertOpt
 
     let handleSplit fontsSettled =
-        if originalHtml.Length > 0 && hasAnySplit && not reverted then
-            runSplit false fontsSettled
+        if not reverted then
+            if originalHtml.Length > 0 && hasAnySplit then
+                runSplit false fontsSettled
+            else
+                ready <-
+                    lineTemplate.IsNone || fontsSettled ||
+                    (match opts.Fonts with
+                     | Some f -> f.Status <> FontSetStatus.Loading
+                     | None -> true)
+                if ready then
+                    for i in 0 .. effectCleanups.Count - 1 do
+                        match effectCleanups[i] with
+                        | Some cleanup ->
+                            effectCleanups[i] <- None
+                            cleanup this
+                        | None -> ()
+                    for i in 0 .. effects.Count - 1 do
+                        let cleanupOpt, revertOpt = effects[i] this
+                        effectCleanups[i] <- cleanupOpt
+                        effectReverts[i] <- revertOpt
 
     do
         ScopeRegistration.register (fun () -> this.Revert() |> ignore)
@@ -747,6 +773,12 @@ module Text =
         if isNull (box scheduler) then nullArg "scheduler"
         if isNull target then nullArg "target"
         if isNull steps || steps.Length = 0 then invalidArg "steps" "Expected at least one scramble step."
+        let originalHtmlOpt =
+            match target with
+            | :? HTMLElement as htmlEl ->
+                let h = htmlEl.innerHTML
+                Some (if isNull h then "" else h)
+            | _ -> None
         let original = ScrambleImpl.readTargetText target
         let compiled = ResizeArray<float * float * ScrambleTextTween>()
         let mutable cursor = 0.
@@ -763,7 +795,7 @@ module Text =
             cursor <- start + tween.Duration
             prevSettled <- Some tween.SettledText
         let totalDur = max 1e-11 cursor
-        let timer = new Timer(scheduler, totalDur, ?onComplete = onComplete)
+        let timer = ScopeRegistration.run ignore (fun () -> new Timer(scheduler, totalDur, ?onComplete = onComplete))
         timer.ConfigureRenderer(fun sample _ _ ->
             let t = sample.IterationTime
             let mutable idx = compiled.Count - 1
@@ -777,9 +809,16 @@ module Text =
             let st, dur, tw = compiled[idx]
             let localProgress = if dur <= 1e-11 then 1. else Math.Clamp((t - st) / dur, 0., 1.)
             ScrambleImpl.writeTargetHtml target (tw.Modifier localProgress))
-        ScopeRegistration.register (fun () ->
-            timer.Revert()
-            ScrambleImpl.writeTargetHtml target original)
+        let mutable revertedScramble = false
+        let restoreScramble (seekToStart: bool) =
+            if not revertedScramble then
+                revertedScramble <- true
+                timer.StopForRevert seekToStart
+                match originalHtmlOpt, target with
+                | Some origHtml, (:? HTMLElement as htmlEl) -> htmlEl.innerHTML <- origHtml
+                | _ -> ScrambleImpl.writeTargetHtml target original
+        timer.OnRevert <- restoreScramble
+        ScopeRegistration.register (fun () -> restoreScramble true)
         timer.Reset()
         if defaultArg autoplay (AnimationDefaults.autoplay true) then timer.Resume()
         timer

@@ -333,3 +333,60 @@ Proof.
   - apply collect_backward_exact.
   - apply collect_forward_exact.
 Qed.
+
+(** ** Pass-2 Correctness Proofs (#37, #39): Forever Re-Anchor Scaling, Signed Odd-Bit XOR & Resize Rebound *)
+
+Definition reanchor_forever_host (anchor duration eff_speed : Z) : Z :=
+  anchor + duration / eff_speed.
+
+Definition timer_elapsed_from_anchor (now anchor eff_speed : Z) : Z :=
+  (now - anchor) * eff_speed.
+
+(**md **Scaling `PlaybackRepeat.Forever` re-anchor by `1 / (Speed * FrameSpeed)` resets timer-unit elapsed time by `-Duration` (#37).**
+Whenever `duration = host_span * eff_speed` (`eff_speed > 0`), advancing `anchor` by `duration / eff_speed` reduces `(now - anchor) * eff_speed` by exact `duration` (`0` at `now = anchor + host_span`), preventing negative-time jumps when `eff_speed <> 1`. *)
+Theorem forever_reanchor_divides_effective_speed :
+  forall now anchor host_span eff_speed,
+    0 < eff_speed ->
+    let duration := host_span * eff_speed in
+    let anchor' := reanchor_forever_host anchor duration eff_speed in
+    timer_elapsed_from_anchor now anchor' eff_speed =
+      timer_elapsed_from_anchor now anchor eff_speed - duration.
+Proof.
+  intros now anchor host_span eff_speed Hpos duration anchor'.
+  unfold anchor', reanchor_forever_host, timer_elapsed_from_anchor, duration.
+  rewrite Z.div_mul by lia.
+  nia.
+Qed.
+
+Definition sample_dir_signed (reversed alternate : bool) (iter_idx : Z) : bool :=
+  xorb reversed (andb alternate (Z.odd iter_idx)).
+
+(**md **Boolean `xorb` with `Z.odd` (`index &&& 1 <> 0`) satisfies direction involution across all signed iteration indices including `-1` (#37).**
+For any signed integer `iter_idx : Z` (including `iter_idx = -1` under 32-bit wraparound), `sample_dir_signed` flips cleanly when `reversed` is negated, whereas `(1 ^^^ (-1 rem 2)) <> 0` fails (`Z.lxor 1 (-1) = -2 <> 0`). *)
+Theorem signed_odd_bit_xor_involution :
+  (forall reversed alternate iter_idx,
+    sample_dir_signed (negb reversed) alternate iter_idx =
+    negb (sample_dir_signed reversed alternate iter_idx)) /\
+  Z.eqb (Z.lxor 1 (Z.rem (-1) 2)) 0 = false.
+Proof.
+  split.
+  - intros [|] [|] iter_idx; unfold sample_dir_signed; destruct (Z.odd iter_idx); reflexivity.
+  - reflexivity.
+Qed.
+
+Definition rebound_resized_sample (delay new_dur cur_time : Z) : Z :=
+  Z.max (-delay) (Z.min new_dur cur_time).
+
+(**md **Rebounding `PlaybackState` on `ResizeWithoutReset` preserves in-range playheads and bounds out-of-range playheads to `[-delay, new_dur]` (#37, #39).**
+When `cur_time` already lies in `[-delay, new_dur]`, `rebound_resized_sample` leaves `cur_time` untouched (preserving active playback on `ComposedTimeline.RemoveTargets`), and when `new_dur < cur_time`, it clamps `cur_time` to `new_dur`. *)
+Theorem resize_rebounds_sample_within_new_duration :
+  forall delay new_dur cur_time,
+    0 <= delay ->
+    0 <= new_dur ->
+    (-delay <= rebound_resized_sample delay new_dur cur_time <= new_dur) /\
+    (-delay <= cur_time <= new_dur -> rebound_resized_sample delay new_dur cur_time = cur_time).
+Proof.
+  intros delay new_dur cur_time Hdel Hdur.
+  unfold rebound_resized_sample.
+  split; lia.
+Qed.

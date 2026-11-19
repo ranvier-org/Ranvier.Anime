@@ -10,13 +10,28 @@ module Reactive =
     /// <summary>Seeds the current value immediately and animates later changes until disposed or its owner ends.</summary>
     /// <remarks>Requires a live Ranvier owner and the graph's thread. Duration is finite, nonnegative milliseconds.</remarks>
     let drive (scheduler: FrameScheduler) (duration: float) (read: unit -> float) (write: float -> unit) : IDisposable =
+        if isNull (box scheduler) then nullArg "scheduler"
+        if isNull (box read) then nullArg "read"
+        if isNull (box write) then nullArg "write"
+        if not (Double.IsFinite duration) || duration < 0. then
+            invalidArg "duration" "Expected finite nonnegative milliseconds."
         let graph = Graph.Current
         graph.AssertOnGraphThread "Reactive.drive"
+        if not (ScopeRegistration.canConstruct()) then raise (ObjectDisposedException "Scope")
         let parent = ScopeRegistration.resourceOwner()
         if parent.IsDisposed then raise (ObjectDisposedException "Owner")
+        let playbackOptions =
+            { PlaybackOptions.Default with
+                Delay = 0.
+                LoopDelay = 0.
+                Repeat = PlaybackRepeat.Count 0u
+                Reversed = false
+                Alternate = false }
         let child = Api.runWithOwner parent (fun () -> Api.createRoot(fun child ->
             try
                 let initial = Api.untrack read
+                if not (Double.IsFinite initial) then
+                    invalidArg "read" "Expected finite numeric target values."
                 let mutable rendered = initial
                 let mutable desired = initial
                 let apply value =
@@ -25,7 +40,7 @@ module Reactive =
                         rendered <- value
                         graph.Untrack(fun () -> write value)
                 let tween = ScopeRegistration.run ignore (fun () ->
-                    new NumericAnimation(scheduler, (fun () -> rendered), apply, initial, duration))
+                    new NumericAnimation(scheduler, (fun () -> rendered), apply, initial, duration, options = playbackOptions))
                 child.Attach tween
                 let mutable restoring=false
                 let revert()=
@@ -44,8 +59,8 @@ module Reactive =
                 if not child.IsDisposed then
                     Api.createEffectOn read (fun target ->
                         if not child.IsDisposed && not restoring && target <> desired then
-                            tween.Retarget target
-                            desired <- target)
+                            desired <- target
+                            tween.Retarget target)
                 child
             with _ ->
                 child.Dispose()
