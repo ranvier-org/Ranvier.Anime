@@ -4,7 +4,6 @@ open System
 open System.Collections.Frozen
 open System.Collections.Generic
 open System.Globalization
-open System.Text.RegularExpressions
 open Ranvier
 open Ranvier.Dom
 
@@ -36,33 +35,76 @@ module internal ScrollMath =
           "bottom",1.; "right",1.; "end",1.; "max",1.; "center",0.5 ]
         |> dict |> fun values -> values.ToFrozenDictionary(StringComparer.Ordinal)
 
-    let number = Regex(@"^([+-]?(?:\d*\.)?\d+(?:[eE][+-]?\d+)?)(.*)$", RegexOptions.CultureInvariant)
-    let relative = Regex(@"(\+=|-=|\*=)", RegexOptions.CultureInvariant)
+    let private tryMatchLeadingFloat (span: ReadOnlySpan<char>) : int =
+        let len = span.Length
+        if len = 0 then -1
+        else
+            let mutable p = 0
+            if span[p] = '+' || span[p] = '-' then p <- p + 1
+            let d1Start = p
+            while p < len && span[p] >= '0' && span[p] <= '9' do p <- p + 1
+            let d1 = p - d1Start
+            let mutable ok = false
+            if p < len && span[p] = '.' then
+                if p + 1 < len && span[p + 1] >= '0' && span[p + 1] <= '9' then
+                    p <- p + 2
+                    while p < len && span[p] >= '0' && span[p] <= '9' do p <- p + 1
+                    ok <- true
+                else
+                    // A dot not followed by digits stays in the trailing unit slice if d1 >= 1
+                    ok <- d1 >= 1
+            else
+                ok <- d1 >= 1
+            if not ok then -1
+            else
+                if p < len && (span[p] = 'e' || span[p] = 'E') then
+                    let mutable ep = p + 1
+                    if ep < len && (span[ep] = '+' || span[ep] = '-') then ep <- ep + 1
+                    let expStart = ep
+                    while ep < len && span[ep] >= '0' && span[ep] <= '9' do ep <- ep + 1
+                    if ep > expStart then p <- ep
+                p
+
+    let private convertSpan (convertUnit: float -> string -> float, size: float, under: float, over: float, fullText: string, span: ReadOnlySpan<char>) : float =
+        let lookup = anchors.GetAlternateLookup<ReadOnlySpan<char>>()
+        let mutable fraction = 0.
+        if lookup.TryGetValue(span, &fraction) then
+            size * fraction +
+            (if span.SequenceEqual("max".AsSpan()) && under < 0. then under
+             elif span.SequenceEqual("min".AsSpan()) && over > 0. then over
+             else 0.)
+        else
+            let numEnd = tryMatchLeadingFloat span
+            if numEnd <= 0 then invalidArg "threshold" ("Invalid scroll anchor: " + fullText)
+            let value = Double.Parse(span.Slice(0, numEnd), NumberStyles.Float, CultureInfo.InvariantCulture)
+            let unitSpan = span.Slice(numEnd)
+            if unitSpan.Length = 0 || (unitSpan.Length = 2 && unitSpan[0] = 'p' && unitSpan[1] = 'x') then value
+            elif unitSpan.Length = 1 && unitSpan[0] = '%' then value / 100. * size
+            else convertUnit value (unitSpan.ToString())
 
     let coordinate convertUnit size under over (text:string) =
-        let convert (text:string) under over =
-            match anchors.TryGetValue text with
-            | true, fraction ->
-                size * fraction + (if text = "max" && under < 0. then under elif text = "min" && over > 0. then over else 0.)
-            | _ ->
-                let matched = number.Match text
-                if not matched.Success then invalidArg "threshold" ("Invalid scroll anchor: " + text)
-                let value = Double.Parse(matched.Groups[1].Value, CultureInfo.InvariantCulture)
-                match matched.Groups[2].Value with
-                | "" | "px" -> value
-                | "%" -> value / 100. * size
-                | unitName -> convertUnit value unitName
-        let apply op a b = match op with "+=" -> a+b | "-=" -> a-b | _ -> a*b
-        let matched = relative.Match text
+        let apply op a b = match op with '+' -> a+b | '-' -> a-b | _ -> a*b
+        let span = if isNull text then ReadOnlySpan<char>.Empty else text.AsSpan()
+        let mutable relIdx = -1
+        let mutable i = 0
+        while i + 1 < span.Length && relIdx < 0 do
+            let c0 = span[i]
+            if span[i + 1] = '=' && (c0 = '+' || c0 = '-' || c0 = '*') then
+                relIdx <- i
+            i <- i + 1
         let result =
-            if matched.Success then
-                let first = text.Substring(0, matched.Index)
-                let last = text.Substring(matched.Index + 2)
-                let a,b = convert first under over,convert last under over
-                if first = "min" then max a (apply matched.Value (convert first 0. 0.) b)
-                elif first = "max" then min a (apply matched.Value (convert first 0. 0.) b)
-                else apply matched.Value a b
-            else convert text under over
+            if relIdx >= 0 then
+                let op = span[relIdx]
+                let firstSpan = span.Slice(0, relIdx)
+                let lastSpan = span.Slice(relIdx + 2)
+                let a = convertSpan(convertUnit, size, under, over, text, firstSpan)
+                let b = convertSpan(convertUnit, size, under, over, text, lastSpan)
+                if firstSpan.SequenceEqual("min".AsSpan()) then
+                    max a (apply op (convertSpan(convertUnit, size, 0., 0., text, firstSpan)) b)
+                elif firstSpan.SequenceEqual("max".AsSpan()) then
+                    min a (apply op (convertSpan(convertUnit, size, 0., 0., text, firstSpan)) b)
+                else apply op a b
+            else convertSpan(convertUnit, size, under, over, text, span)
         round 0 result
 
     let bounds convertUnit geometry enter leave =
@@ -247,7 +289,7 @@ type ScrollObserver(readScroll:unit -> float * bool, measure:unit -> ScrollGeome
             let forced = not hasEntered && (scroll = start || scroll = finish)
             let mutable p = ScrollMath.progress scroll start distance
             let mutable updated,syncCompleted = false,false
-            let smooth = match settings.Sync with ScrollSync.Smooth amount -> Some amount | _ -> None
+            let smooth = match settings.Sync with ScrollSync.Smooth amount -> ValueSome amount | _ -> ValueNone
             let seek = linked.IsSome && (match settings.Sync with ScrollSync.Smooth amount -> amount <> 0. | ScrollSync.Ease _ -> true | _ -> false)
             let sync = match settings.Sync with ScrollSync.Disabled | ScrollSync.Smooth 0. -> false | _ -> true
             debug |> Option.iter(fun debug -> debug.Sample())

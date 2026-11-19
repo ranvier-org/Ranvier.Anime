@@ -2,7 +2,6 @@ namespace Ranvier.Anime
 
 open System
 open System.Collections.Generic
-open System.Collections.Frozen
 open System.Globalization
 open Ranvier
 open Ranvier.Dom
@@ -91,12 +90,66 @@ type LayoutOptions =
     /// <summary>Uses the spring's curve and precise settling duration.</summary>
     member this.WithSpring(spring:Spring)={this with Duration=(fun _ -> spring.SettlingDuration);Ease=spring.Ease;EaseBy=None}
 
+module private LayoutStyleKeyComparer =
+    let instance =
+        { new IEqualityComparer<struct(HTMLElement * string)> with
+            member _.Equals(struct(a, pa), struct(b, pb)) =
+                Object.ReferenceEquals(a, b) && StringComparer.Ordinal.Equals(pa, pb)
+            member _.GetHashCode(struct(e, p)) =
+                HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode e, StringComparer.Ordinal.GetHashCode p) }
+
+module private LayoutConst =
+    let isAnimatedTokens = [| "is-animated" |]
+    let zeroOffsetProps = [| "left"; "top"; "margin-left"; "margin-top" |]
+    let minSizeProps = [| "min-width"; "min-height" |]
+    let maxSizeProps = [| "max-width"; "max-height" |]
+
+    [<AbstractClass; Sealed>]
+    type ScratchTls =
+        [<ThreadStatic; DefaultValue>]
+        static val mutable private chars: char array
+        static member Get() =
+            let mutable b = ScratchTls.chars
+            if isNull b then
+                b <- Array.zeroCreate<char> 128
+                ScratchTls.chars <- b
+            b
+
+    let formatPx (value: float) : string =
+        let buf = ScratchTls.Get()
+        let mutable written = 0
+        if value.TryFormat(Span<char>(buf, 0, 64), &written, "G17", CultureInfo.InvariantCulture) then
+            buf[written] <- 'p'
+            buf[written + 1] <- 'x'
+            String(ReadOnlySpan<char>(buf, 0, written + 2))
+        else
+            value.ToString("G17", CultureInfo.InvariantCulture) + "px"
+
+    let formatTranslatePx (x: float) (y: float) : string =
+        let buf = ScratchTls.Get()
+        let mutable w1 = 0
+        let mutable w2 = 0
+        if x.TryFormat(Span<char>(buf, 0, 56), &w1, "G17", CultureInfo.InvariantCulture) then
+            buf[w1] <- 'p'
+            buf[w1 + 1] <- 'x'
+            buf[w1 + 2] <- ' '
+            let p2 = w1 + 3
+            if y.TryFormat(Span<char>(buf, p2, 56), &w2, "G17", CultureInfo.InvariantCulture) then
+                buf[p2 + w2] <- 'p'
+                buf[p2 + w2 + 1] <- 'x'
+                String(ReadOnlySpan<char>(buf, 0, p2 + w2 + 2))
+            else
+                formatPx x + " " + formatPx y
+        else
+            formatPx x + " " + formatPx y
+
 type private LayoutMeasurement =
     { Id: string
       Element: HTMLElement
       Measure: HTMLElement
       RenderHidden: bool
       Parent: HTMLElement option
+      ParentId: string voption
       Left: float
       Top: float
       BorderLeft: float
@@ -110,7 +163,7 @@ type private LayoutMeasurement =
       Target: bool
       Display: string
       Position: string
-      Values: FrozenDictionary<string,string> }
+      Values: string array }
 
 type private LayoutTransformSampler(element:HTMLElement, values:string array, easing:string) =
     let mutable cancelled=false
@@ -151,7 +204,9 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
     let options=defaultArg options LayoutOptions.Default
     let ownerLive=ScopeRegistration.captureWriteGuard()
     let styles=ResizeArray<LayoutStyleWrite>()
-    let samplers=ResizeArray<Timer>()
+    let styleMap=Dictionary<struct(HTMLElement * string), LayoutStyleWrite>(LayoutStyleKeyComparer.instance)
+    let knownStyleElements=HashSet<HTMLElement>(HashIdentity.Reference)
+    let styleElementAliases=Dictionary<HTMLElement, HTMLElement>(HashIdentity.Reference)
     let transforms=ResizeArray<LayoutTransformSampler>()
     let deferred=ResizeArray<IDisposable>()
     let identities=ResizeArray<HTMLElement*string>()
@@ -174,58 +229,97 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         let existing=e.getAttribute "data-layout-id"
         if not(String.IsNullOrWhiteSpace existing) then existing
         else
-            let value="ranvier-layout-"+identityPrefix+"-"+string nextIdentity
+            let value="ranvier-layout-"+identityPrefix+"-"+nextIdentity.ToString(CultureInfo.InvariantCulture)
             nextIdentity<-nextIdentity+1u
             e.setAttribute("data-layout-id",value)
             identities.Add(e,value)
             value
     let same (a:HTMLElement) (b:HTMLElement)=Object.ReferenceEquals(a,b) || (a:>Node).isSameNode(b:>Node)
+    let canonicalStyleElement (e:HTMLElement) =
+        if knownStyleElements.Contains e then e
+        else
+            let mutable alias = Unchecked.defaultof<HTMLElement>
+            if styleElementAliases.TryGetValue(e, &alias) then alias
+            else
+                let mutable found = Unchecked.defaultof<HTMLElement>
+                for existing in knownStyleElements do
+                    if isNull (box found) && (existing :> Node).isSameNode(e :> Node) then
+                        found <- existing
+                if not (isNull (box found)) then
+                    styleElementAliases[e] <- found
+                    found
+                else
+                    knownStyleElements.Add e |> ignore
+                    e
     let check()=if disposed || not(ownerLive()) then raise(ObjectDisposedException(nameof AutoLayout))
     let text (value:float) = value.ToString("G17",CultureInfo.InvariantCulture)
-    let px value = text value+"px"
+    let px value = LayoutConst.formatPx value
     let captureStyle (e:HTMLElement) name =
         let style=inlineStyle e
         {Element=e;Style=style;Name=name;Snapshot=LayoutStyleSnapshot(style,name)}
     let restoreOne (entry:LayoutStyleWrite) =
         entry.Snapshot.Restore()
+    let restoreAllStyles () =
+        if styles.Count > 0 then
+            let mutable failure:exn option=None
+            let count = styles.Count
+            for i = count - 1 downto 0 do
+                try restoreOne styles[i]
+                with error -> if failure.IsNone then failure <- Some error
+            styles.Clear()
+            styleMap.Clear()
+            knownStyleElements.Clear()
+            styleElementAliases.Clear()
+            failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
     let restoreWhere predicate =
-        let mutable failure:exn option=None
-        let entries=styles.ToArray()
-        styles.Clear()
-        for entry in entries do if not(predicate entry) then styles.Add entry
-        for i=entries.Length-1 downto 0 do
-            try if predicate entries[i] then restoreOne entries[i]
-            with error -> if failure.IsNone then failure<-Some error
-        failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
-    let restore()=restoreWhere(fun _ -> true)
+        if styles.Count > 0 then
+            let mutable failure:exn option=None
+            let entries=styles.ToArray()
+            styles.Clear()
+            styleMap.Clear()
+            knownStyleElements.Clear()
+            styleElementAliases.Clear()
+            for i = 0 to entries.Length - 1 do
+                let entry = entries[i]
+                if not(predicate entry) then
+                    styles.Add entry
+                    let canon = canonicalStyleElement entry.Element
+                    styleMap[struct(canon, entry.Name)] <- entry
+            for i=entries.Length-1 downto 0 do
+                try if predicate entries[i] then restoreOne entries[i]
+                with error -> if failure.IsNone then failure<-Some error
+            failure |> Option.iter(fun error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
+    let restore()=restoreAllStyles()
+    let getOrCaptureStyle (e:HTMLElement) (name:string) : LayoutStyleWrite =
+        let canon = canonicalStyleElement e
+        let key = struct(canon, name)
+        let mutable existing = Unchecked.defaultof<LayoutStyleWrite>
+        if styleMap.TryGetValue(key, &existing) then existing
+        else
+            let created = captureStyle canon name
+            styles.Add created
+            styleMap[key] <- created
+            created
     let write (e:HTMLElement) name value priority =
         check()
         let expected=generation
-        let style=inlineStyle e
-        let entry=
-            styles |> Seq.tryFind(fun x -> same x.Element e && x.Name=name)
-            |> Option.defaultWith(fun () ->
-                let x=captureStyle e name
-                styles.Add x
-                x)
-        style.setProperty(name,value,priority)
+        let entry = getOrCaptureStyle e name
+        entry.Style.setProperty(name,value,priority)
         if expected<>generation || disposed || not(ownerLive()) then raise LayoutConstructionInterrupted
         entry.Snapshot.MarkWritten()
-    let track (e:HTMLElement) name =
-        if not(styles |> Seq.exists(fun x -> same x.Element e && x.Name=name)) then
-            styles.Add(captureStyle e name)
+    let track (e:HTMLElement) name : LayoutStyleWrite =
+        getOrCaptureStyle e name
     let updateLast (e:HTMLElement) name =
-        let style=inlineStyle e
-        for entry in styles do
-            if same entry.Element e && entry.Name=name then entry.Snapshot.MarkWritten()
+        let canon = canonicalStyleElement e
+        let mutable entry = Unchecked.defaultof<LayoutStyleWrite>
+        if styleMap.TryGetValue(struct(canon, name), &entry) then
+            entry.Snapshot.MarkWritten()
     let stop() =
         generation<-generation+1L
         clock |> Option.iter(fun c -> c.Cancel())
         clock<-None
         driver |> Option.iter(fun c -> c.Cancel())
         driver<-None
-        for sampler in samplers do sampler.Cancel()
-        samplers.Clear()
         for transform in transforms do transform.Cancel()
         transforms.Clear()
         for job in deferred do job.Dispose()
@@ -235,6 +329,10 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                       options.EnterFrom.Properties |> Array.map Declaration.name
                       options.LeaveTo.Properties |> Array.map Declaration.name
                       options.SwapAt.Properties |> Array.map Declaration.name] |> Array.distinct
+    let propIndexMap =
+        let d = Dictionary<string, int>(props.Length, StringComparer.Ordinal)
+        for i = 0 to props.Length - 1 do d[props[i]] <- i
+        d
     let isAdjacentText (e:HTMLElement) =
         let rec significant (node:Node) direction =
             if isNull(box node) then false
@@ -244,8 +342,9 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         significant (e:>Node).previousSibling (fun n -> n.previousSibling) ||
         significant (e:>Node).nextSibling (fun n -> n.nextSibling)
     let capture() =
-        let result=ResizeArray<LayoutMeasurement>()
-        let temporary=ResizeArray<LayoutStyleWrite>()
+        let est = max 16 measurements.Length
+        let result=ResizeArray<LayoutMeasurement>(est)
+        let temporary=ResizeArray<LayoutStyleWrite>(est * 2)
         let mute (e:HTMLElement) name value =
             let style=inlineStyle e
             let entry=captureStyle e name
@@ -267,10 +366,14 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
             let rootStyle=computed.Get(root,None)
             check()
             let absolute=let p=rootStyle.getPropertyValue "position" in p="absolute" || p="fixed"
+            let isWildcard = options.Children = "*"
+            let propLen = props.Length
             let rec walk (e:HTMLElement) (parent:LayoutMeasurement option) =
                 let css=computed.Get(e,None)
                 check()
-                let values=props |> Array.map(fun name -> KeyValuePair(name,css.getPropertyValue name)) |> FrozenDictionary.ToFrozenDictionary
+                let values = Array.zeroCreate<string> propLen
+                for idx = 0 to propLen - 1 do
+                    values[idx] <- css.getPropertyValue props[idx]
                 let display=css.getPropertyValue "display"
                 let hidden=display="none" || css.getPropertyValue "visibility"="hidden" || (parent |> Option.exists(fun p -> p.Hidden))
                 mute e "transition" "none"
@@ -285,11 +388,15 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                         let p=result[0]
                         left-p.Left-p.BorderLeft,top-p.Top-p.BorderTop
                     | Some p -> left-p.Left-p.BorderLeft,top-p.Top-p.BorderTop
+                let parentOpt, parentIdOpt =
+                    match parent with
+                    | Some p -> Some p.Element, ValueSome p.Id
+                    | None -> None, ValueNone
                 let current=
                     { Id=identity e;Element=e;Measure=e;RenderHidden=hidden
-                      Parent=parent |> Option.map(fun p -> p.Element);Left=left;Top=top;X=x;Y=y
+                      Parent=parentOpt;ParentId=parentIdOpt;Left=left;Top=top;X=x;Y=y
                       BorderLeft=float e.clientLeft;BorderTop=float e.clientTop;Width=width;Height=height
-                      Hidden=hidden;Inline=isAdjacentText e;Target=same root e || e.matches options.Children
+                      Hidden=hidden;Inline=isAdjacentText e;Target=isWildcard || same root e || e.matches options.Children
                       Display=display;Position=css.getPropertyValue "position";Values=values }
                 result.Add current
                 let mutable child=(e:>Node).firstChild
@@ -299,57 +406,146 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                     | _ -> ()
                     child<-child.nextSibling
             walk root None
-            let selected=
-                match options.Targets with
-                | Some targets -> Array.copy targets
-                | None when options.Children="*" -> result |> Seq.map(fun m -> m.Element) |> Seq.toArray
-                | None ->
-                    let scope=defaultArg options.SelectionRoot ((root:>Node).ownerDocument:>ParentNode)
-                    let matches=scope.querySelectorAll options.Children
-                    [| for index=0 to int matches.length-1 do
-                           match matches.item(uint index) with :? HTMLElement as html -> yield html | _ -> () |]
-            let inRootIds=HashSet<string>(result |> Seq.map(fun m -> m.Id),StringComparer.Ordinal)
-            for candidate in selected do
-                if not((root:>Node).contains(candidate:>Node)) && inRootIds.Contains(candidate.getAttribute "data-layout-id") then
-                    walk candidate None
-            let selectedIds=HashSet<string>(selected |> Seq.map(fun e -> e.getAttribute "data-layout-id"),StringComparer.Ordinal)
-            let merged=ResizeArray<LayoutMeasurement>()
-            let nodes=
-                result.ToArray() |> Array.groupBy(fun m -> m.Id) |> Array.map(fun (_,group) ->
-                    let first=group[0]
-                    let measured=group |> Array.tryFind(fun m -> not m.Hidden) |> Option.defaultValue first
-                    let chosen=
+            if options.Targets.IsNone && isWildcard then
+                // Wildcard selection with no external targets: every walked in-root node is selected,
+                // unless duplicate data-layout-id attributes exist inside the subtree.
+                let firstIdxById = Dictionary<string, int>(result.Count, StringComparer.Ordinal)
+                let mutable hasDuplicateId = false
+                for i = 0 to result.Count - 1 do
+                    let id = result[i].Id
+                    if not (firstIdxById.TryAdd(id, i)) then hasDuplicateId <- true
+                if not hasDuplicateId then
+                    let arr = Array.zeroCreate<LayoutMeasurement> result.Count
+                    for i = 0 to result.Count - 1 do
+                        arr[i] <- { result[i] with Target = true }
+                    arr
+                else
+                    firstIdxById.Clear()
+                    let firsts = ResizeArray<LayoutMeasurement>(result.Count)
+                    let visibles = ResizeArray<LayoutMeasurement>(result.Count)
+                    for i = 0 to result.Count - 1 do
+                        let m = result[i]
+                        let mutable gIdx = 0
+                        if firstIdxById.TryGetValue(m.Id, &gIdx) then
+                            if visibles[gIdx].Hidden && not m.Hidden then visibles[gIdx] <- m
+                        else
+                            firstIdxById[m.Id] <- firsts.Count
+                            firsts.Add m
+                            visibles.Add m
+                    let mergedById = Dictionary<string, LayoutMeasurement>(firsts.Count, StringComparer.Ordinal)
+                    let outArr = Array.zeroCreate<LayoutMeasurement> firsts.Count
+                    for g = 0 to firsts.Count - 1 do
+                        let first = firsts[g]
+                        let measured = visibles[g]
+                        let chosen =
+                            if first.Hidden && not measured.Hidden then
+                                let parentMeas =
+                                    match first.ParentId with
+                                    | ValueSome pid ->
+                                        let mutable pm = Unchecked.defaultof<LayoutMeasurement>
+                                        if mergedById.TryGetValue(pid, &pm) then Some pm
+                                        else
+                                            match first.Parent with
+                                            | Some pEl -> result |> Seq.tryFind(fun r -> same pEl r.Element)
+                                            | None -> None
+                                    | ValueNone -> None
+                                let x, y =
+                                    match parentMeas with
+                                    | Some p -> measured.Left-p.Left-p.BorderLeft, measured.Top-p.Top-p.BorderTop
+                                    | None -> measured.X, measured.Y
+                                { measured with Element=first.Element; Measure=measured.Element; RenderHidden=true; Parent=first.Parent; ParentId=first.ParentId; X=x; Y=y }
+                            else first
+                        let node = { chosen with Target = true }
+                        mergedById[node.Id] <- node
+                        outArr[g] <- node
+                    outArr
+            else
+                let selected=
+                    match options.Targets with
+                    | Some targets -> Array.copy targets
+                    | None ->
+                        let scope=defaultArg options.SelectionRoot ((root:>Node).ownerDocument:>ParentNode)
+                        let matches=scope.querySelectorAll options.Children
+                        [| for index=0 to int matches.length-1 do
+                               match matches.item(uint index) with :? HTMLElement as html -> yield html | _ -> () |]
+                let inRootIds=HashSet<string>(result.Count, StringComparer.Ordinal)
+                for i = 0 to result.Count - 1 do inRootIds.Add result[i].Id |> ignore
+                for candidate in selected do
+                    let candId = candidate.getAttribute "data-layout-id"
+                    if not (isNull candId) && inRootIds.Contains candId && not((root:>Node).contains(candidate:>Node)) then
+                        walk candidate None
+                let selectedIds=HashSet<string>(selected.Length, StringComparer.Ordinal)
+                for candidate in selected do
+                    let cid = candidate.getAttribute "data-layout-id"
+                    if not (isNull cid) then selectedIds.Add cid |> ignore
+                let firstIdxById = Dictionary<string, int>(result.Count, StringComparer.Ordinal)
+                let firsts = ResizeArray<LayoutMeasurement>(result.Count)
+                let visibles = ResizeArray<LayoutMeasurement>(result.Count)
+                for i = 0 to result.Count - 1 do
+                    let m = result[i]
+                    let mutable gIdx = 0
+                    if firstIdxById.TryGetValue(m.Id, &gIdx) then
+                        if visibles[gIdx].Hidden && not m.Hidden then visibles[gIdx] <- m
+                    else
+                        firstIdxById[m.Id] <- firsts.Count
+                        firsts.Add m
+                        visibles.Add m
+                let mergedById = Dictionary<string, LayoutMeasurement>(firsts.Count, StringComparer.Ordinal)
+                let nodes = Array.zeroCreate<LayoutMeasurement> firsts.Count
+                for g = 0 to firsts.Count - 1 do
+                    let first = firsts[g]
+                    let measured = visibles[g]
+                    let chosen =
                         if first.Hidden && not measured.Hidden then
-                            let parent=first.Parent |> Option.bind(fun parent ->
-                                let id=parent.getAttribute "data-layout-id"
-                                merged |> Seq.tryFind(fun m -> m.Id=id)
-                                |> Option.orElseWith(fun () -> result |> Seq.tryFind(fun m -> same parent m.Element)))
-                            let x,y=
-                                match parent with
+                            let parentMeas =
+                                match first.ParentId with
+                                | ValueSome pid ->
+                                    let mutable pm = Unchecked.defaultof<LayoutMeasurement>
+                                    if mergedById.TryGetValue(pid, &pm) then Some pm
+                                    else
+                                        match first.Parent with
+                                        | Some pEl -> result |> Seq.tryFind(fun r -> same pEl r.Element)
+                                        | None -> None
+                                | ValueNone -> None
+                            let x,y =
+                                match parentMeas with
                                 | Some p -> measured.Left-p.Left-p.BorderLeft,measured.Top-p.Top-p.BorderTop
                                 | None -> measured.X,measured.Y
-                            {measured with Element=first.Element;Measure=measured.Element;RenderHidden=true;Parent=first.Parent;X=x;Y=y}
+                            {measured with Element=first.Element;Measure=measured.Element;RenderHidden=true;Parent=first.Parent;ParentId=first.ParentId;X=x;Y=y}
                         else first
                     let node={chosen with Target=same root chosen.Element || selectedIds.Contains chosen.Id}
-                    merged.Add node
-                    node)
-            // Selected descendants animate their ancestor chain.
-            let targetElements=ResizeArray<HTMLElement>()
-            for m in nodes do
-                if m.Target then
-                    let mutable current:Element=m.Element
-                    while not(isNull(box current)) && (root:>Node).contains(current:>Node) do
-                        match current with :? HTMLElement as h -> targetElements.Add h | _ -> ()
-                        current<-(current:>Node).parentElement
-            nodes |> Array.map(fun m -> {m with Target=targetElements |> Seq.exists(same m.Element)})
+                    mergedById[node.Id] <- node
+                    nodes[g] <- node
+                // Selected descendants animate their ancestor chain.
+                let nodeRefSet = HashSet<HTMLElement>(nodes.Length, HashIdentity.Reference)
+                for i = 0 to nodes.Length - 1 do nodeRefSet.Add nodes[i].Element |> ignore
+                let targetRefSet = HashSet<HTMLElement>(nodes.Length, HashIdentity.Reference)
+                let extraTargets = ResizeArray<HTMLElement>()
+                for i = 0 to nodes.Length - 1 do
+                    let m = nodes[i]
+                    if m.Target then
+                        let mutable current:Element=m.Element
+                        while not(isNull(box current)) && (root:>Node).contains(current:>Node) do
+                            match current with
+                            | :? HTMLElement as h ->
+                                if targetRefSet.Add h && not (nodeRefSet.Contains h) then
+                                    extraTargets.Add h
+                            | _ -> ()
+                            current<-(current:>Node).parentElement
+                for i = 0 to nodes.Length - 1 do
+                    let m = nodes[i]
+                    let isTgt =
+                        targetRefSet.Contains m.Element ||
+                        (extraTargets.Count > 0 && extraTargets |> Seq.exists(same m.Element))
+                    if m.Target <> isTgt then
+                        nodes[i] <- { m with Target = isTgt }
+                nodes
         finally restoreTemporary()
     let finish deferTransitions =
-        for sampler in samplers do sampler.Cancel()
-        samplers.Clear()
         for transform in transforms do transform.Cancel()
         transforms.Clear()
         try restoreWhere(fun entry -> not deferTransitions || entry.Name<>"transition")
-        finally root.classList.remove [|"is-animated"|]
+        finally root.classList.remove LayoutConst.isAnimatedTokens
         if deferTransitions && styles.Count>0 then
             let expected=generation
             let job=scheduler.Frame(fun _ ->
@@ -379,7 +575,7 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         let current=capture()
         stop()
         restore()
-        root.classList.remove [|"is-animated"|]
+        root.classList.remove LayoutConst.isAnimatedTokens
         measurements<-current
         scroll<-viewport |> Option.map(fun v -> v.Position())
     /// <summary>Moves the recorded box of <c>element</c> to the viewport position <c>left</c>, <c>top</c>, keeping its recorded size.</summary>
@@ -399,23 +595,52 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         restore()
         let activeProps =
             match animationOptions with
-            | Some overrideOpts -> overrideOpts.Properties |> Array.filter (fun p -> Array.contains p props)
+            | Some overrideOpts -> overrideOpts.Properties |> Array.filter propIndexMap.ContainsKey
             | None -> props
+        let activePropIndices =
+            if Object.ReferenceEquals(activeProps, props) then
+                Array.init props.Length id
+            else
+                activeProps |> Array.map (fun p -> propIndexMap[p])
         let options=defaultArg animationOptions options
         let expected=generation
+        let mutable constructing = true
         let live()=not disposed && ownerLive() && expected=generation
         let ensureLive()=if not(live()) then raise LayoutConstructionInterrupted
         let fresh=capture()
-        let find (element:HTMLElement) (nodes:LayoutMeasurement array)=
-            let id=element.getAttribute "data-layout-id"
-            nodes |> Array.tryFind(fun n -> n.Id=id)
-        let anyChanges=
-            fresh |> Array.exists(fun m ->
-                match find m.Element measurements with
-                | None -> true
-                | Some previous ->
-                    previous.Width<>m.Width || previous.Height<>m.Height || previous.X<>m.X || previous.Y<>m.Y ||
-                    previous.Hidden<>m.Hidden || activeProps |> Array.exists(fun p -> previous.Values[p]<>m.Values[p]))
+        let oldById = Dictionary<string, LayoutMeasurement>(measurements.Length, StringComparer.Ordinal)
+        for i = 0 to measurements.Length - 1 do
+            let m = measurements[i]
+            oldById[m.Id] <- m
+        let freshById = Dictionary<string, LayoutMeasurement>(fresh.Length, StringComparer.Ordinal)
+        for i = 0 to fresh.Length - 1 do
+            let m = fresh[i]
+            freshById[m.Id] <- m
+        let tryFindById (id:string) (map:Dictionary<string, LayoutMeasurement>) =
+            if isNull id then ValueNone
+            else
+                let mutable found = Unchecked.defaultof<LayoutMeasurement>
+                if map.TryGetValue(id, &found) then ValueSome found else ValueNone
+        let anyChanges =
+            let mutable changed = false
+            let mutable fi = 0
+            while fi < fresh.Length && not changed do
+                let m = fresh[fi]
+                match tryFindById m.Id oldById with
+                | ValueNone -> changed <- true
+                | ValueSome previous ->
+                    if previous.Width<>m.Width || previous.Height<>m.Height || previous.X<>m.X || previous.Y<>m.Y ||
+                       previous.Hidden<>m.Hidden then
+                        changed <- true
+                    else
+                        let mutable pi = 0
+                        while pi < activePropIndices.Length && not changed do
+                            let idx = activePropIndices[pi]
+                            if not (String.Equals(previous.Values[idx], m.Values[idx], StringComparison.Ordinal)) then
+                                changed <- true
+                            pi <- pi + 1
+                fi <- fi + 1
+            changed
         let enter=ResizeArray<HTMLElement>()
         let leave=ResizeArray<HTMLElement>()
         let animate=ResizeArray<HTMLElement>()
@@ -425,14 +650,26 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         let mutable duration=0.
         let renders=ResizeArray<float -> unit>()
         let swaps=ResizeArray<float*(unit -> unit)>()
+        let defaultModifier = AnimationDefaults.modifier PropertyNumbers.identityFloat
+        let defaultPrecision =
+            match EngineDefaults.precision() with
+            | None -> -1
+            | Some v when v <= 308u -> int v
+            | _ -> invalidArg "options" "Precision exceeds the finite decimal scale."
+        let defaultReversed = (PlaybackDefaults.current()).Reversed
+        let timeScale = (EngineFrames.forScheduler scheduler).TimeScale
         let nativeSampler (m:LayoutMeasurement) values length ease =
-            track m.Element "transform"
-            let points=Array.init 101(fun index ->
+            track m.Element "transform" |> ignore
+            let sb = System.Text.StringBuilder(900)
+            sb.Append("linear(") |> ignore
+            for index = 0 to 100 do
+                if index > 0 then sb.Append(", ") |> ignore
                 let value=ease(float index/100.)
                 ensureLive()
                 if not(Double.IsFinite value) then invalidArg "ease" "Expected a finite easing result."
-                text(Math.Floor(value*10000.+0.5)/10000.))
-            let transform=new LayoutTransformSampler(m.Element,values,"linear("+String.concat ", " points+")")
+                sb.Append(text(Math.Floor(value*10000.+0.5)/10000.)) |> ignore
+            sb.Append(')') |> ignore
+            let transform=new LayoutTransformSampler(m.Element,values,sb.ToString())
             if not(live()) then
                 transform.Cancel()
                 raise LayoutConstructionInterrupted
@@ -445,58 +682,96 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
             if first=last then ignore
             elif name="transform" then nativeSampler m [|first;last|] length ease
             else
-                track m.Element name
-                let guardedEase time =
-                    let value=ease time
-                    ensureLive()
-                    value
-                let options={DeclarationAnimationOptions.Default with Ease=guardedEase}
-                let timer=ScopeRegistration.run ignore (fun () ->
-                    CssAnimation.declarationPreciseWith options scheduler (inlineStyle m.Element)
-                        (Declaration.create name first) (Declaration.create name last) length)
-                if not(live()) then
-                    timer.Cancel()
-                    raise LayoutConstructionInterrupted
-                timer.Pause()
-                samplers.Add timer
-                updateLast m.Element name
+                let entry = track m.Element name
+                let style = entry.Style
+                let dFirst = Declaration.create name first
+                let dLast = Declaration.create name last
+                let iterDuration = PropertyNumbers.round 1e12 (if length = 0. then 1e-11 else length)
+                if iterDuration = 0. then invalidArg "duration" "Positive duration rounds to zero at source timing precision."
+                ensureLive()
+                let origPrio = style.getPropertyPriority name
+                ensureLive()
+                let origVal = style.getPropertyValue name
+                ensureLive()
+                let priority =
+                    if Declaration.isImportant dFirst || Declaration.isImportant dLast || origPrio = "important" then "important"
+                    else ""
+                let normFirst, normLast =
+                    ValueInterpolation.normalize None (ValueInterpolation.Text origVal)
+                        (ValueInterpolation.Text (Declaration.value dFirst))
+                        (ValueInterpolation.Text (Declaration.value dLast))
+                let isScalar = normFirst.Kind = ValueInterpolation.ValueKind.Number || normFirst.Kind = ValueInterpolation.ValueKind.Unit
+                let unitSuffix = if normLast.Kind = ValueInterpolation.ValueKind.Unit then normLast.Unit else ""
+                let compBuf = if isScalar then Array.Empty<float>() else Array.zeroCreate<float> normLast.Components.Length
+                let applyAt (seekTime: float) =
+                    let clamped = Math.Clamp(seekTime, 0., iterDuration)
+                    let dirTime = if defaultReversed then iterDuration - clamped else clamped
+                    let progress = ease (dirTime / iterDuration)
+                    if constructing then ensureLive()
+                    if live() then
+                        if not (Double.IsFinite progress) then invalidArg "progress" "Expected finite input."
+                        if isScalar then
+                            let struct(ok, scalar) =
+                                ValueInterpolation.trySampleScalarValue(
+                                    true, normFirst.Kind, normFirst.Number, normLast.Number, progress, defaultPrecision, defaultModifier, live)
+                            if ok && live() then
+                                style.setProperty(name, ValueInterpolation.formatNumberWithUnit scalar unitSuffix, priority = priority)
+                                if live() then entry.Snapshot.MarkWritten()
+                        else
+                            if ValueInterpolation.sampleComponentsInto(true, normFirst, normLast, progress, defaultPrecision, defaultModifier, live, compBuf) &&
+                               live() then
+                                style.setProperty(name, ValueInterpolation.formatComponentsText normLast compBuf false, priority = priority)
+                                if live() then entry.Snapshot.MarkWritten()
+                applyAt 0.
+                if not(live()) then raise LayoutConstructionInterrupted
                 fun time ->
                     if live() then
-                        let seekTime = if time < 0. then 0. elif length = 0. then timer.IterationDuration else Math.Clamp(time, 0., length)
-                        timer.Seek(seekTime, muteCallbacks=true)
-                        updateLast m.Element name
+                        let seekTime = if time < 0. then 0. elif length = 0. then iterDuration else Math.Clamp(time, 0., length)
+                        applyAt seekTime
         let addProperty m name first last delay length ease =
             if first<>last then
                 let render=propertySampler m name first last length ease
                 duration<-max duration (delay+length)
                 renders.Add(fun time -> render(time-delay))
         try
-            let classify (m:LayoutMeasurement) =
-                let old=find m.Element measurements
-                let wasHidden=old |> Option.map(fun o -> o.Hidden) |> Option.defaultValue true
-                let parentAdded=m.Parent |> Option.exists added.Contains
-                let parentRemoved=m.Parent |> Option.exists removed.Contains
-                let entering=not m.Hidden && wasHidden && (not parentAdded || old.IsSome)
-                let leaving=m.Hidden && not wasHidden && not parentRemoved
-                if entering || parentAdded then added.Add m.Element |> ignore
-                if leaving || parentRemoved then removed.Add m.Element |> ignore
+            let groupIndices = Array.zeroCreate<int> fresh.Length
+            for fi = 0 to fresh.Length - 1 do
+                let m = fresh[fi]
+                let oldOpt = tryFindById m.Id oldById
+                let wasHidden = match oldOpt with ValueSome o -> o.Hidden | ValueNone -> true
+                let parentAdded = match m.Parent with Some p -> added.Contains p | None -> false
+                let parentRemoved = match m.Parent with Some p -> removed.Contains p | None -> false
+                let isEntering = not m.Hidden && wasHidden && (not parentAdded || oldOpt.IsSome)
+                let isLeaving = m.Hidden && not wasHidden && not parentRemoved
+                if isEntering || parentAdded then added.Add m.Element |> ignore
+                if isLeaving || parentRemoved then removed.Add m.Element |> ignore
                 if m.Target then
-                    if entering then enter.Add m.Element
-                    elif leaving then leave.Add m.Element
-                    elif not(same root m.Element) then animate.Add m.Element
-                else swap.Add m.Element
-            for m in fresh do classify m
+                    if isEntering then
+                        groupIndices[fi] <- enter.Count
+                        enter.Add m.Element
+                    elif isLeaving then
+                        groupIndices[fi] <- leave.Count
+                        leave.Add m.Element
+                    elif not(same root m.Element) then
+                        groupIndices[fi] <- animate.Count
+                        animate.Add m.Element
+                    else
+                        groupIndices[fi] <- 0
+                else
+                    groupIndices[fi] <- swap.Count
+                    swap.Add m.Element
             added.Clear()
             removed.Clear()
-            let plans=ResizeArray<_>()
-            for m in fresh do
-                let old=find m.Element measurements
-                let previous=defaultArg old m
-                let parentAdded=m.Parent |> Option.exists added.Contains
-                let parentRemoved=m.Parent |> Option.exists removed.Contains
-                let wasHidden=old |> Option.map(fun o -> o.Hidden) |> Option.defaultValue true
-                let isEntering=not m.Hidden && wasHidden && (not parentAdded || old.IsSome)
-                let isLeaving=m.Hidden && not wasHidden && not parentRemoved
+            let plans=ResizeArray<_>(fresh.Length)
+            for fi = 0 to fresh.Length - 1 do
+                let m = fresh[fi]
+                let oldOpt = tryFindById m.Id oldById
+                let previous = match oldOpt with ValueSome o -> o | ValueNone -> m
+                let parentAdded = match m.Parent with Some p -> added.Contains p | None -> false
+                let parentRemoved = match m.Parent with Some p -> removed.Contains p | None -> false
+                let wasHidden = match oldOpt with ValueSome o -> o.Hidden | ValueNone -> true
+                let isEntering = not m.Hidden && wasHidden && (not parentAdded || oldOpt.IsSome)
+                let isLeaving = m.Hidden && not wasHidden && not parentRemoved
                 if parentAdded || isEntering then added.Add m.Element |> ignore
                 if parentRemoved || isLeaving then removed.Add m.Element |> ignore
                 let effect=
@@ -505,7 +780,7 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                     elif isLeaving then Some options.LeaveTo
                     else None
                 let group=if not m.Target then swap elif isEntering then enter elif isLeaving then leave else animate
-                let index=group |> Seq.tryFindIndex(same m.Element) |> Option.defaultValue 0
+                let index = groupIndices[fi]
                 let context={Element=m.Element;Index=uint index;Count=uint group.Count}
                 let delay=effect |> Option.bind(fun e -> e.DelayBy |> Option.map(fun resolve -> resolve context) |> Option.orElse e.Delay)
                           |> Option.defaultWith(fun () -> options.Delay context)
@@ -520,14 +795,18 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                     e.PropertiesBy |> Option.map(fun resolve -> resolve context) |> Option.defaultValue e.Properties) |> Option.defaultValue [||]
                 ensureLive()
                 for declaration in boundaryProperties do
-                    if not(Array.contains (Declaration.name declaration) props) then
+                    if not(propIndexMap.ContainsKey (Declaration.name declaration)) then
                         invalidArg "animationOptions" "Boundary property providers must use names declared by the layout's captured Properties."
                 finite "delay" delay
                 finite "duration" length
-                let scale = (EngineFrames.forScheduler scheduler).TimeScale
-                plans.Add(m,previous,parentRemoved,wasHidden,isEntering,isLeaving,boundaryProperties,delay * scale,length * scale,ease)
+                plans.Add(m,previous,parentRemoved,wasHidden,isEntering,isLeaving,boundaryProperties,delay * timeScale,length * timeScale,ease)
+            let rootPosFixed = fresh[0].Position="absolute" || fresh[0].Position="fixed"
+            let childPositionVal = if rootPosFixed then "fixed" else "absolute"
             for m,previous,parentRemoved,wasHidden,isEntering,isLeaving,boundaryProperties,delay,length,ease in plans do
-                let nodeSwaps=ResizeArray<unit -> unit>()
+                let mutable nodeSwaps : ResizeArray<unit -> unit> = null
+                let inline addNodeSwap action =
+                    if isNull nodeSwaps then nodeSwaps <- ResizeArray<unit -> unit>(4)
+                    nodeSwaps.Add action
                 let before=if wasHidden then m else previous
                 let after=if isLeaving || parentRemoved then previous else m
                 let sameParent =
@@ -537,15 +816,42 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                     | _ -> false
                 let x,y=
                     if not sameParent && not wasHidden then
-                        let p=m.Parent |> Option.bind(fun p -> find p measurements |> Option.orElseWith(fun () -> find p fresh))
-                        match p with Some p -> before.Left-p.Left-p.BorderLeft,before.Top-p.Top-p.BorderTop | None -> before.X,before.Y
+                        let pOpt =
+                            match m.ParentId with
+                            | ValueSome pid ->
+                                match tryFindById pid oldById with
+                                | ValueSome pm -> ValueSome pm
+                                | ValueNone -> tryFindById pid freshById
+                            | ValueNone ->
+                                match m.Parent with
+                                | Some p ->
+                                    let pid = p.getAttribute "data-layout-id"
+                                    match tryFindById pid oldById with
+                                    | ValueSome pm -> ValueSome pm
+                                    | ValueNone -> tryFindById pid freshById
+                                | None -> ValueNone
+                        match pOpt with ValueSome p -> before.Left-p.Left-p.BorderLeft,before.Top-p.Top-p.BorderTop | ValueNone -> before.X,before.Y
                     else before.X,before.Y
-                let geometry=[|"width",px before.Width,px after.Width;"height",px before.Height,px after.Height|]
+                let wFirst = px before.Width
+                let wLast = if before.Width = after.Width then wFirst else px after.Width
+                let hFirst = px before.Height
+                let hLast = if before.Height = after.Height then hFirst else px after.Height
                 let changed=abs(before.Width-after.Width)>1. || abs(before.Height-after.Height)>1.
                 let shouldFadeSwap=
-                    changed && (m.Parent |> Option.bind(fun parent -> find parent fresh) |> Option.exists(fun parent ->
-                        parent.Target && (find parent.Element measurements |> Option.exists(fun old ->
-                            abs(parent.Width-old.Width)>1. || abs(parent.Height-old.Height)>1.))))
+                    changed &&
+                    (let parentFreshOpt =
+                        match m.ParentId with
+                        | ValueSome pid -> tryFindById pid freshById
+                        | ValueNone ->
+                            match m.Parent with
+                            | Some parent -> tryFindById (parent.getAttribute "data-layout-id") freshById
+                            | None -> ValueNone
+                     match parentFreshOpt with
+                     | ValueSome parent when parent.Target ->
+                         match tryFindById parent.Id oldById with
+                         | ValueSome old -> abs(parent.Width-old.Width)>1. || abs(parent.Height-old.Height)>1.
+                         | ValueNone -> false
+                     | _ -> false)
                 if anyChanges || not m.Target then
                     write m.Element "transition" "none" "important"
                     if m.RenderHidden && not(same m.Element m.Measure) then
@@ -558,36 +864,59 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                     if not m.Inline then
                         if before.Display="grid" || m.Display="grid" then write m.Element "display" "block" "important"
                         if not(same root m.Element) || (m.Position="absolute" || m.Position="fixed") then
-                            write m.Element "position" (if fresh[0].Position="absolute" || fresh[0].Position="fixed" then "fixed" else "absolute") ""
-                            for name in [|"left";"top";"margin-left";"margin-top"|] do write m.Element name "0px" ""
+                            write m.Element "position" childPositionVal ""
+                            for k = 0 to LayoutConst.zeroOffsetProps.Length - 1 do
+                                write m.Element LayoutConst.zeroOffsetProps[k] "0px" ""
                         elif m.Position="static" then
                             write m.Element "position" "relative" ""
                             write m.Element "left" "0px" ""
                             write m.Element "top" "0px" ""
-                    for name in [|"min-width";"min-height"|] do write m.Element name "auto" ""
-                    for name in [|"max-width";"max-height"|] do write m.Element name "none" ""
-                    for name,first,last in geometry do
-                        write m.Element name first ""
-                        if m.Target then addProperty m name first last delay length ease
-                        else nodeSwaps.Add(fun () -> if live() then write m.Element name last "")
-                    if not m.Inline && (not(same root m.Element) || fresh[0].Position="absolute" || fresh[0].Position="fixed" ||
-                                       geometry |> Array.exists(fun (_,first,last) -> first<>last) ||
-                                       activeProps |> Array.exists(fun property -> before.Values[property]<>after.Values[property])) then
-                        let first=px x+" "+px y
-                        let last=px after.X+" "+px after.Y
+                    for k = 0 to LayoutConst.minSizeProps.Length - 1 do
+                        write m.Element LayoutConst.minSizeProps[k] "auto" ""
+                    for k = 0 to LayoutConst.maxSizeProps.Length - 1 do
+                        write m.Element LayoutConst.maxSizeProps[k] "none" ""
+                    write m.Element "width" wFirst ""
+                    if m.Target then addProperty m "width" wFirst wLast delay length ease
+                    else addNodeSwap(fun () -> if live() then write m.Element "width" wLast "")
+                    write m.Element "height" hFirst ""
+                    if m.Target then addProperty m "height" hFirst hLast delay length ease
+                    else addNodeSwap(fun () -> if live() then write m.Element "height" hLast "")
+                    let hasActivePropDiff () =
+                        let mutable diff = false
+                        let mutable pi = 0
+                        while pi < activePropIndices.Length && not diff do
+                            let idx = activePropIndices[pi]
+                            if not (String.Equals(before.Values[idx], after.Values[idx], StringComparison.Ordinal)) then
+                                diff <- true
+                            pi <- pi + 1
+                        diff
+                    if not m.Inline && (not(same root m.Element) || rootPosFixed ||
+                                       wFirst <> wLast || hFirst <> hLast || hasActivePropDiff()) then
+                        let first = LayoutConst.formatTranslatePx x y
+                        let last = if x = after.X && y = after.Y then first else LayoutConst.formatTranslatePx after.X after.Y
                         write m.Element "translate" first ""
                         if m.Target then addProperty m "translate" first last delay length ease
-                        else nodeSwaps.Add(fun () -> if live() then write m.Element "translate" last "")
-                    for name in activeProps do
-                        let boundary=boundaryProperties |> Array.tryFind(fun d -> Declaration.name d=name)
-                        let first=if isEntering then boundary |> Option.map Declaration.value |> Option.defaultValue before.Values[name] else before.Values[name]
-                        let last=if isLeaving then boundary |> Option.map Declaration.value |> Option.defaultValue after.Values[name] else after.Values[name]
+                        else addNodeSwap(fun () -> if live() then write m.Element "translate" last "")
+                    for pi = 0 to activeProps.Length - 1 do
+                        let name = activeProps[pi]
+                        let pIdx = activePropIndices[pi]
+                        let mutable boundary : Declaration voption = ValueNone
+                        for bi = 0 to boundaryProperties.Length - 1 do
+                            if boundary.IsNone && Declaration.name boundaryProperties[bi] = name then
+                                boundary <- ValueSome boundaryProperties[bi]
+                        let first =
+                            if isEntering then
+                                match boundary with ValueSome d -> Declaration.value d | ValueNone -> before.Values[pIdx]
+                            else before.Values[pIdx]
+                        let last =
+                            if isLeaving then
+                                match boundary with ValueSome d -> Declaration.value d | ValueNone -> after.Values[pIdx]
+                            else after.Values[pIdx]
                         if m.Target then addProperty m name first last delay length ease
                         else
-                            let midpoint=boundaryProperties |> Array.tryFind(fun d -> Declaration.name d=name)
-                            if shouldFadeSwap && midpoint.IsSome then
+                            if shouldFadeSwap && boundary.IsSome then
                                 duration<-max duration (delay+length)
-                                let middle=Declaration.value midpoint.Value
+                                let middle=Declaration.value boundary.Value
                                 let swapEase=ease
                                 if name="transform" then
                                     let sample=nativeSampler m [|first;middle;last|] length swapEase
@@ -602,10 +931,13 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                                         if local<halfLen then firstHalf local else secondHalf(local-halfLen))
                             elif name<>"transform" then
                                 write m.Element name first ""
-                                nodeSwaps.Add(fun () -> if live() then write m.Element name last "")
-                if nodeSwaps.Count>0 then
+                                addNodeSwap(fun () -> if live() then write m.Element name last "")
+                if not (isNull nodeSwaps) && nodeSwaps.Count>0 then
+                    let swapArr = nodeSwaps.ToArray()
                     duration<-max duration (delay+length/2.)
-                    swaps.Add(delay+length/2.,fun () -> for apply in nodeSwaps do if live() then apply())
+                    swaps.Add(delay+length/2.,fun () ->
+                        for si = 0 to swapArr.Length - 1 do
+                            if live() then swapArr[si]())
             entering<-enter.ToArray()
             leaving<-leave.ToArray()
             animating<-animate.ToArray()
@@ -622,7 +954,7 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                             transform.Cancel()
                         for entry in styles do
                             if entry.Name="display" || entry.Name="visibility" then restoreOne entry
-                        root.classList.remove [|"is-animated"|]
+                        root.classList.remove LayoutConst.isAnimatedTokens
                         options.Callbacks.OnComplete animation
                         if live() then options.Callbacks.OnPause animation
             let onComplete animation =
@@ -640,13 +972,16 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
             clock<-Some animation
             let empty=renders.Count=0 && swaps.Count=0
             if not empty then
+              let renderArr = renders.ToArray()
               ScopeRegistration.run ignore (fun () ->
-                let renderDriver=new NumericAnimation(scheduler,(fun () -> 0.),(fun t -> for render in renders do if live() then render t),
+                let renderDriver=new NumericAnimation(scheduler,(fun () -> 0.),(fun t ->
+                    for ri = 0 to renderArr.Length - 1 do
+                        if live() then renderArr[ri] t),
                                                      duration,duration)
                 driver<-Some renderDriver
                 animation.Sync(renderDriver,position=TimelinePosition.At 0.) |> ignore
                 for position,apply in swaps do animation.Call(apply,position=TimelinePosition.At position) |> ignore)
-            if not empty then root.classList.add [|"is-animated"|]
+            if not empty then root.classList.add LayoutConst.isAnimatedTokens
             animation.Reset()
             if empty then
                 animation.Complete(muteCallbacks=true); finish false
@@ -659,13 +994,16 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                 let job=scheduler.Frame(fun _ -> if live() then v.ScrollTo {Left=Some position.X;Top=Some position.Y;Behavior=ScrollBehavior.Instant})
                 deferred.Add job
             | _ -> ()
+            constructing <- false
             animation
         with
         | LayoutConstructionInterrupted ->
+            constructing <- false
             let abandoned=ScopeRegistration.run ignore (fun () -> new Timeline(scheduler))
             abandoned.Cancel()
             abandoned
         | _ ->
+            constructing <- false
             if expected=generation then
                 try stop(); finish false with _ -> ()
             reraise()
@@ -737,7 +1075,5 @@ module Layout =
     /// <summary>Creates an AutoLayout observer for the root element and records its initial state.</summary>
     let create (root: HTMLElement) (computed: ComputedStyleService) (scheduler: FrameScheduler)
                (options: LayoutOptions option) (viewport: ViewportScrollService option) =
-        let instance = new AutoLayout(root, computed, scheduler, ?options=options, ?viewport=viewport)
-        instance.Record()
-        instance
+        new AutoLayout(root, computed, scheduler, ?options=options, ?viewport=viewport)
 

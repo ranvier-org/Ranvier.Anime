@@ -96,31 +96,74 @@ type Follower<'v> =
 /// <summary>Followers: properties that animate to each value given to them.</summary>
 [<RequireQualifiedAccess>]
 module Follow =
-    /// <summary>A follower of a numeric property, transform component or CSS property of the element.</summary>
-    let property (element: Element) (property: string) (options: ComposedAnimationOptions) : Follower<float> =
-        let animatable =
-            Raw.Anime.animatable (Raw.Targets.op_Implicit element, Raw.withUnit (BrowserParams.composed options) property)
+    [<Sealed>]
+    type private PropertyFollower(animatable: Raw.Animatable, property: string) =
+        let mutable first = true
+        let mutable reverted = false
 
-        let first = ref true
-        let reverted = ref false
-
-        { new Follower<float> with
+        interface Follower<float> with
             member _.To value =
-                if not reverted.Value then
+                if not reverted then
                     animatable.set (property, value)
 
-                    if first.Value then
-                        first.Value <- false
+                    if first then
+                        first <- false
                         Raw.completeProperty animatable property
 
             member _.Pause() =
                 Raw.pauseAnimatable animatable
 
             member _.Revert() =
-                if not reverted.Value then
-                    reverted.Value <- true
+                if not reverted then
+                    reverted <- true
                     animatable.revert ()
-        }
+
+    /// <summary>A follower of a numeric property, transform component or CSS property of the element.</summary>
+    let property (element: Element) (property: string) (options: ComposedAnimationOptions) : Follower<float> =
+        let animatable =
+            Raw.Anime.animatable (Raw.Targets.op_Implicit element, Raw.withUnit (BrowserParams.composed options) property)
+
+        PropertyFollower (animatable, property)
+
+    [<Sealed>]
+    type private CssFollower<'s>(targets: Raw.Targets, name: string, suffix: string, settings: Raw.AnimatableProp, restore: unit -> unit) =
+        let mutable seed: Raw.JSAnimation = null
+        let mutable animatable: Raw.Animatable = null
+        let mutable reverted = false
+
+        interface Follower<Ranvier.Css.Value<'s>> with
+            member _.To value =
+                if not reverted then
+                    Fable.Ranvier.Anime.CssAnimationRuntime.requireUnit suffix value
+
+                    let number, _ =
+                        Ranvier.Css.RuntimeApi.tryNumericValue value
+                        |> Option.get
+
+                    if isNull animatable then
+                        let rendered =
+                            Fable.Ranvier.Anime.Value.op_Implicit (Ranvier.Css.RuntimeApi.renderValue value)
+
+                        seed <- Fable.Ranvier.Anime.Utils.set (targets, Raw.Anim().With(name, rendered))
+                        animatable <- Raw.Anime.animatable (targets, Raw.AnimatableParams().With(name, settings))
+                        animatable.set (name, number)
+                        Raw.completeProperty animatable name
+                    else
+                        animatable.set (name, number)
+
+            member _.Pause() =
+                if not (isNull animatable) then
+                    Raw.pauseAnimatable animatable
+
+            member _.Revert() =
+                if not reverted then
+                    reverted <- true
+
+                    if not (isNull animatable) then
+                        animatable.revert ()
+                        seed.revert ()
+
+                    restore ()
 
     /// <summary>
     /// A follower of a typed numeric custom property. <c>initial</c> fixes the unit suffix every value keeps; it is not
@@ -141,45 +184,25 @@ module Follow =
         let settings =
             Fable.Ranvier.Anime.CssAnimationRuntime.withUnit (unbox (BrowserParams.composed options)) suffix
 
-        let targets = Raw.Targets.op_Implicit element
-        let seed: Raw.JSAnimation ref = ref null
-        let animatable: Raw.Animatable ref = ref null
-        let reverted = ref false
+        CssFollower<'s>(Raw.Targets.op_Implicit element, name, suffix, settings, restore)
 
-        { new Follower<Ranvier.Css.Value<'s>> with
-            member _.To value =
-                if not reverted.Value then
-                    Fable.Ranvier.Anime.CssAnimationRuntime.requireUnit suffix value
+    [<Sealed>]
+    type private DrawFollower(animatable: Raw.Animatable, restore: unit -> unit) =
+        let mutable reverted = false
 
-                    let number, _ =
-                        Ranvier.Css.RuntimeApi.tryNumericValue value
-                        |> Option.get
-
-                    if isNull animatable.Value then
-                        let rendered =
-                            Fable.Ranvier.Anime.Value.op_Implicit (Ranvier.Css.RuntimeApi.renderValue value)
-
-                        seed.Value <- Fable.Ranvier.Anime.Utils.set (targets, Raw.Anim().With(name, rendered))
-                        animatable.Value <- Raw.Anime.animatable (targets, Raw.AnimatableParams().With(name, settings))
-                        animatable.Value.set (name, number)
-                        Raw.completeProperty animatable.Value name
-                    else
-                        animatable.Value.set (name, number)
+        interface Follower<float> with
+            member _.To fraction =
+                if not reverted then
+                    animatable.set ("draw", fraction)
 
             member _.Pause() =
-                if not (isNull animatable.Value) then
-                    Raw.pauseAnimatable animatable.Value
+                Raw.pauseAnimatable animatable
 
             member _.Revert() =
-                if not reverted.Value then
-                    reverted.Value <- true
-
-                    if not (isNull animatable.Value) then
-                        animatable.Value.revert ()
-                        seed.Value.revert ()
-
+                if not reverted then
+                    reverted <- true
+                    animatable.revert ()
                     restore ()
-        }
 
     /// <summary>
     /// A follower of the drawn fraction, 0..1, of an SVG geometry element's stroke. <c>initial</c> is drawn at creation and
@@ -197,44 +220,24 @@ module Follow =
         let animatable =
             Raw.Anime.animatable (Raw.Targets.object (Raw.strokeTarget drawable initial), parameters)
 
-        let reverted = ref false
+        DrawFollower (animatable, restore)
 
-        { new Follower<float> with
-            member _.To fraction =
-                if not reverted.Value then
-                    animatable.set ("draw", fraction)
+    [<Sealed>]
+    type private MorphFollower(element: Element, attribute: string, converted: Raw.Anim, restore: unit -> unit) =
+        let mutable current: Raw.JSAnimation = null
+        let mutable first = true
+        let mutable reverted = false
 
-            member _.Pause() =
-                Raw.pauseAnimatable animatable
-
-            member _.Revert() =
-                if not reverted.Value then
-                    reverted.Value <- true
-                    animatable.revert ()
-                    restore ()
-        }
-
-    /// <summary>A follower of the shape of an SVG path (<c>d</c>) or polygon (<c>points</c>): each later shape is morphed to.</summary>
-    let morph (element: Element) (options: ComposedAnimationOptions) : Follower<string> =
-        let converted: Raw.Anim =
-            unbox (BrowserParams.animation [||] { options with Autoplay = true } false)
-
-        let attribute = Raw.shapeAttribute element
-        let restore = Raw.keepAttributes element [| attribute |]
-        let current: Raw.JSAnimation ref = ref null
-        let first = ref true
-        let reverted = ref false
-
-        { new Follower<string> with
+        interface Follower<string> with
             member _.To shape =
-                if reverted.Value then
+                if reverted then
                     ()
-                elif first.Value then
-                    first.Value <- false
+                elif first then
+                    first <- false
                     Raw.setShape element attribute shape
                 else
-                    if not (isNull current.Value) then
-                        current.Value.cancel ()
+                    if not (isNull current) then
+                        current.cancel ()
 
                     let target =
                         Raw.Svg.morphTo (Raw.Targets.op_Implicit (Raw.shapeLike element attribute shape))
@@ -243,21 +246,29 @@ module Follow =
                         Raw.Anime.animate (Raw.Targets.op_Implicit element, Raw.withKey converted attribute target)
 
                     ((box morphing :?> ITickable)).WhenCompleted(fun () -> Raw.setShape element attribute shape)
-                    current.Value <- morphing
+                    current <- morphing
 
             member _.Pause() =
-                if not (isNull current.Value) then
-                    current.Value.pause ()
+                if not (isNull current) then
+                    current.pause ()
 
             member _.Revert() =
-                if not reverted.Value then
-                    reverted.Value <- true
+                if not reverted then
+                    reverted <- true
 
-                    if not (isNull current.Value) then
-                        current.Value.cancel ()
+                    if not (isNull current) then
+                        current.cancel ()
 
                     restore ()
-        }
+
+    /// <summary>A follower of the shape of an SVG path (<c>d</c>) or polygon (<c>points</c>): each later shape is morphed to.</summary>
+    let morph (element: Element) (options: ComposedAnimationOptions) : Follower<string> =
+        let converted: Raw.Anim =
+            unbox (BrowserParams.animation [||] { options with Autoplay = true } false)
+
+        let attribute = Raw.shapeAttribute element
+        let restore = Raw.keepAttributes element [| attribute |]
+        MorphFollower (element, attribute, converted, restore)
 
 /// <summary>An identity set of nodes.</summary>
 /// <remarks>Under Fable this is a JavaScript <c>Set</c>.</remarks>
@@ -307,41 +318,43 @@ type FlipLayout =
 /// <summary>FLIP layouts on anime.js's <c>createLayout</c>.</summary>
 [<RequireQualifiedAccess>]
 module Flip =
-    /// <summary>A layout over <c>root</c>; nothing is measured until the first <c>Record</c>.</summary>
-    let create (root: Element) (options: LayoutOptions) : FlipLayout =
-        let converted = BrowserParams.layout options
-        let layout: Raw.AutoLayout ref = ref null
-        let recorded: Element array ref = ref [||]
-        let visualsOwned = ref false
+    [<Sealed>]
+    type private Layouts(root: Element, converted: obj) =
+        let mutable layout: Raw.AutoLayout = null
+        let mutable recorded: Element array = [||]
+        let mutable visualsOwned = false
 
-        { new FlipLayout with
+        interface FlipLayout with
             member _.Record(children, owned) =
-                recorded.Value <- children
-                visualsOwned.Value <- owned
+                recorded <- children
+                visualsOwned <- owned
 
-                if isNull layout.Value then
-                    layout.Value <- Raw.Anime.layout (root, unbox (Raw.withKey converted "children" children))
+                if isNull layout then
+                    layout <- Raw.Anime.layout (root, unbox (Raw.withKey converted "children" children))
                 else
-                    Raw.measureChildren layout.Value children
-                    Raw.leaveVisuals layout.Value converted owned
-                    layout.Value.record () |> ignore
+                    Raw.measureChildren layout children
+                    Raw.leaveVisuals layout converted owned
+                    layout.record () |> ignore
 
-                Raw.startFrom layout.Value children
+                Raw.startFrom layout children
 
             member _.SetOwned owned =
-                visualsOwned.Value <- owned
+                visualsOwned <- owned
 
             member _.Animate() =
-                if not (isNull layout.Value) then
-                    Raw.measureChildren layout.Value (Raw.childrenNow recorded.Value root)
-                    Raw.leaveVisuals layout.Value converted visualsOwned.Value
-                    layout.Value.animate () |> ignore
+                if not (isNull layout) then
+                    Raw.measureChildren layout (Raw.childrenNow recorded root)
+                    Raw.leaveVisuals layout converted visualsOwned
+                    layout.animate () |> ignore
 
             member _.Revert() =
-                if not (isNull layout.Value) then
-                    layout.Value.revert ()
-                    layout.Value <- null
-        }
+                if not (isNull layout) then
+                    layout.revert ()
+                    layout <- null
+
+    /// <summary>A layout over <c>root</c>; nothing is measured until the first <c>Record</c>.</summary>
+    let create (root: Element) (options: LayoutOptions) : FlipLayout =
+        Layouts (root, BrowserParams.layout options)
 
     /// <summary>Keeps the element's current visual box; the next <c>Record</c> that measures it starts it from there.</summary>
     [<Emit("$0.motionFrom = $0.getBoundingClientRect()")>]

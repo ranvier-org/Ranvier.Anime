@@ -365,18 +365,34 @@ module internal CssPropertyMetadata =
             "width",[|"block-size";"inline-size"|]
         ]
         |> fun values -> values.ToFrozenDictionary(System.StringComparer.Ordinal)
+    let private singleLeafCache = System.Collections.Concurrent.ConcurrentDictionary<string, string array>(System.StringComparer.Ordinal)
+    let private counterpartSetCache = System.Collections.Concurrent.ConcurrentDictionary<string, FrozenSet<string>>(System.StringComparer.Ordinal)
+    let private emptyValuesCache = System.Collections.Concurrent.ConcurrentDictionary<string, struct(string * string * string * bool) array>(System.StringComparer.Ordinal)
+
     let inline private normalizePropName (name: string) =
         let span = System.MemoryExtensions.AsSpan name
         if span.IndexOfAnyInRange('A', 'Z') < 0 && span.IndexOfAnyInRange('\u0080', '\uFFFF') < 0 then name
         else name.ToLowerInvariant()
     /// <summary>Canonical affected longhands without copying cached expansion arrays; callers must treat the result as read-only.</summary>
     let internal leafNamesReadOnly (name:string) =
-        if name.StartsWith("--",System.StringComparison.Ordinal) then [|name|]
+        if name.StartsWith("--",System.StringComparison.Ordinal) then
+            match singleLeafCache.TryGetValue name with
+            | true, cached -> cached
+            | _ ->
+                let arr = [|name|]
+                if singleLeafCache.Count < 1024 then singleLeafCache.TryAdd(name, arr) |> ignore
+                arr
         else
             let lower = normalizePropName name
             match expansions.TryGetValue lower with
             | true,values -> values
-            | _ -> [|lower|]
+            | _ ->
+                match singleLeafCache.TryGetValue lower with
+                | true, cached -> cached
+                | _ ->
+                    let arr = [|lower|]
+                    if singleLeafCache.Count < 1024 then singleLeafCache.TryAdd(lower, arr) |> ignore
+                    arr
     /// <summary>Canonical affected longhands; preserves case-sensitive custom property names.</summary>
     let leafNames (name:string) =
         if name.StartsWith("--",System.StringComparison.Ordinal) then [|name|]
@@ -391,3 +407,27 @@ module internal CssPropertyMetadata =
             match related.TryGetValue name with
             | true,values -> values
             | _ -> [||]) |> Array.distinct
+    /// <summary>Cached immutable set of logical counterpart longhands for a property name.</summary>
+    let internal counterpartSet (name:string) : FrozenSet<string> =
+        if name.StartsWith("--", System.StringComparison.Ordinal) then FrozenSet<string>.Empty
+        else
+            let lower = normalizePropName name
+            match counterpartSetCache.TryGetValue lower with
+            | true, cached -> cached
+            | _ ->
+                let cps = counterparts (leafNamesReadOnly lower)
+                let set =
+                    if cps.Length = 0 then FrozenSet<string>.Empty
+                    else FrozenSet.ToFrozenSet(cps, System.StringComparer.Ordinal)
+                if counterpartSetCache.Count < 1024 then counterpartSetCache.TryAdd(lower, set) |> ignore
+                set
+    /// <summary>Cached read-only empty-origin leaf records for a property captured against an empty inline style.</summary>
+    let internal emptyValuesFor (name:string) : struct(string * string * string * bool) array =
+        let key = if name.StartsWith("--", System.StringComparison.Ordinal) then name else normalizePropName name
+        match emptyValuesCache.TryGetValue key with
+        | true, cached -> cached
+        | _ ->
+            let leaves = leafNamesReadOnly name
+            let arr = Array.init leaves.Length (fun i -> struct(leaves[i], "", "", false))
+            if emptyValuesCache.Count < 1024 then emptyValuesCache.TryAdd(key, arr) |> ignore
+            arr
