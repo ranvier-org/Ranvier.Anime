@@ -179,10 +179,7 @@ and internal WaapiHelpers private () =
 
     static member easingToLinear (fn: float -> float) (samples: int) =
         let count = if samples <= 0 then 100 else samples
-        let points = Array.init (count + 1) (fun i ->
-            let v = PropertyNumbers.round 1e4 (fn (float i / float count))
-            ValueInterpolation.number v)
-        "linear(" + String.concat ", " points + ")"
+        ValueInterpolation.formatLinearStops fn count
 
     static member parseWaapiEaseString (ease: string) =
         match easeStringCache.TryGetValue ease with
@@ -251,10 +248,11 @@ and internal WaapiHelpers private () =
         match v with
         | WaapiValue.Css s -> s
         | WaapiValue.Scalar num ->
-            let s = ValueInterpolation.number num
-            if commonDefaultPx.Contains propName || propName.StartsWith("translate", StringComparison.Ordinal) then s + "px"
-            elif propName.StartsWith("rotate", StringComparison.Ordinal) || propName.StartsWith("skew", StringComparison.Ordinal) then s + "deg"
-            else s
+            let suffix =
+                if commonDefaultPx.Contains propName || propName.StartsWith("translate", StringComparison.Ordinal) then "px"
+                elif propName.StartsWith("rotate", StringComparison.Ordinal) || propName.StartsWith("skew", StringComparison.Ordinal) then "deg"
+                else ""
+            ValueInterpolation.formatNumberWithUnit num suffix
         | WaapiValue.ByTarget fn ->
             WaapiHelpers.normalizeValue propName (fn el idx targets) el idx targets
         | WaapiValue.Keyframes items when items.Length > 0 ->
@@ -362,15 +360,25 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
 
     do
         ScopeRegistration.register (fun () -> this.Revert() |> ignore)
+        let sharedOuterEase =
+            if parsedTargets.Length = 0 then ValueNone
+            else
+                match options.Ease with
+                | Some (WaapiEase.ByTarget _) -> ValueNone
+                | _ -> ValueSome (WaapiHelpers.resolveWaapiEase options.Ease parsedTargets[0] 0 parsedTargets)
+        let anyIndivTransformProps =
+            transformsSupported &&
+            (options.Properties |> Array.exists (fun (n, _) -> WaapiHelpers.ValidIndividualTransforms.Contains n))
         for i in 0 .. parsedTargets.Length - 1 do
             let el = parsedTargets[i]
             let elStyle = (DomTargetHelpers.tryStyle el).Value
             let inlineSnap = inlineSnapshots[i]
-            let hasIndivTransforms =
-                transformsSupported &&
-                (options.Properties |> Array.exists (fun (n, _) -> WaapiHelpers.ValidIndividualTransforms.Contains n))
+            let hasIndivTransforms = anyIndivTransformProps
             let cachedTransforms = Dictionary<string, string>(StringComparer.Ordinal)
-            let baseEasing, outerSpring = WaapiHelpers.resolveWaapiEase options.Ease el i parsedTargets
+            let baseEasing, outerSpring =
+                match sharedOuterEase with
+                | ValueSome pair -> pair
+                | ValueNone -> WaapiHelpers.resolveWaapiEase options.Ease el i parsedTargets
             let baseDurationMs =
                 match outerSpring with
                 | Some sp -> sp.SettlingDuration

@@ -46,6 +46,9 @@ Print Assumptions simd_snap_to_first_tie_eq_reduce.
 Print Assumptions simd_snap_lane_lex_min_eq_reduce.
 Print Assumptions strictly_sorted_bracket_snap_eq_reduce.
 Print Assumptions hwb_proportional_gray_scale_invariant.
+Print Assumptions direct_rgb_rgba_format_eq_post_rewrite.
+Print Assumptions hex_lut_nibble_decode_eq_parse.
+Print Assumptions span_decompose_unit_and_complex_eq_regex.
 
 (** ** CompositionTimeline.v *)
 Print Assumptions timeline_position_relative_ops_sound.
@@ -62,6 +65,7 @@ Print Assumptions soa_multi_target_scalar_simd_eq_per_tween.
 Print Assumptions blend_midflight_cancel_folds_residual_without_jump.
 Print Assumptions animatable_soa_simd_retarget_and_sample_eq_aos.
 Print Assumptions keyframe_bsearch_slice_eq_linear_slice_scan.
+Print Assumptions multi_target_shared_component_text_eq_per_target.
 
 (** ** DomScrollDragMotion.v *)
 Print Assumptions transform_clear_revert_never_resurrects_stale_cache.

@@ -617,3 +617,134 @@ Proof.
     nia.
   - simpl. lia.
 Qed.
+
+(** ** Pass-2 Batch B2 Refinement Proofs: Direct `rgb`/`rgba` Formatting, Hex Nibble LUT & Span Unit/Complex Scanner *)
+
+Inductive css_color_fmt :=
+  | FmtRgb3 (r g b : Z)
+  | FmtRgba4 (r g b a : Z).
+
+Definition format_color_two_pass (round_int : Z -> Z) (alpha_one : Z) (is_css : bool) (r g b a : Z) : css_color_fmt :=
+  let composed := FmtRgba4 (round_int r) (round_int g) (round_int b) a in
+  match composed with
+  | FmtRgba4 r' g' b' a' =>
+    if andb is_css (Z.eqb a' alpha_one) then FmtRgb3 r' g' b'
+    else FmtRgba4 r' g' b' a'
+  | other => other
+  end.
+
+Definition format_color_direct (round_int : Z -> Z) (alpha_one : Z) (is_css : bool) (r g b a : Z) : css_color_fmt :=
+  if andb is_css (Z.eqb a alpha_one) then
+    FmtRgb3 (round_int r) (round_int g) (round_int b)
+  else
+    FmtRgba4 (round_int r) (round_int g) (round_int b) a.
+
+(**md **Single-pass `rgb`/`rgba` formatting in `ComposeScratchTls` matches `compose` followed by `DomTargetHelpers` `rgba -> rgb` rewrite.**
+Checking `is_css && alpha = 1` before serializing formats `rgb(r, g, b)` directly in one buffer pass without allocating an intermediate `rgba(...)` string or `Output` wrapper, producing the exact serialized tag and rounded RGB channels for all `(is_css, r, g, b, a)`. *)
+Theorem direct_rgb_rgba_format_eq_post_rewrite :
+  forall (round_int : Z -> Z) alpha_one is_css r g b a,
+    format_color_direct round_int alpha_one is_css r g b a =
+    format_color_two_pass round_int alpha_one is_css r g b a.
+Proof.
+  intros round_int alpha_one is_css r g b a.
+  unfold format_color_direct, format_color_two_pass.
+  destruct (andb is_css (Z.eqb a alpha_one)); reflexivity.
+Qed.
+
+Definition decode_hex_pair (hi lo : Z) : Z :=
+  hi * 16 + lo.
+
+Definition decode_hex_short (nib : Z) : Z :=
+  nib * 17.
+
+(**md **Branchless hex nibble LUT decoding (`hi * 16 + lo` and `n * 17`) spans `[0, 255]` and expands short `#rgb` digits identically to two-char repetition.**
+For all hex nibbles `0 <= hi, lo < 16` and `0 <= nib < 16`, `decode_hex_pair hi lo` lies in `[0, 255]` with injective `(div 16, mod 16)` recovery, and `decode_hex_short nib` (`nib * 17`) equals `decode_hex_pair nib nib` (`String(ch, 2)`). *)
+Theorem hex_lut_nibble_decode_eq_parse :
+  forall hi lo nib,
+    0 <= hi < 16 ->
+    0 <= lo < 16 ->
+    0 <= nib < 16 ->
+    0 <= decode_hex_pair hi lo <= 255 /\
+    (decode_hex_pair hi lo) / 16 = hi /\
+    (decode_hex_pair hi lo) mod 16 = lo /\
+    decode_hex_short nib = decode_hex_pair nib nib.
+Proof.
+  intros hi lo nib Hhi Hlo Hnib.
+  unfold decode_hex_pair, decode_hex_short.
+  split; [lia |].
+  split.
+  - rewrite Z.div_add_l by lia.
+    rewrite (Z.div_small lo 16 ltac:(lia)).
+    lia.
+  - split.
+    + replace (hi * 16 + lo) with (lo + hi * 16) by lia.
+      rewrite Z.mod_add by lia.
+      apply Z.mod_small; lia.
+    + lia.
+Qed.
+
+(** Character class tags for `ValueInterpolation.decompose` unit & complex scanning:
+    0 = digit, 1 = 'e'/'E', 2 = non-'e' ASCII letter, 3 = '%', 4 = '+'/'-', 5 = '.', 6 = other *)
+Definition is_unit_char (c : nat) : bool :=
+  orb (Nat.eqb c 1) (Nat.eqb c 2).
+
+Fixpoint trailing_letters_len (rev_chars : list nat) : nat :=
+  match rev_chars with
+  | [] => 0%nat
+  | c :: rest => if is_unit_char c then S (trailing_letters_len rest) else 0%nat
+  end.
+
+Definition unit_suffix_len (chars : list nat) : nat :=
+  match List.rev chars with
+  | [] => 0%nat
+  | last_c :: _ =>
+    if Nat.eqb last_c 3 then 1%nat
+    else trailing_letters_len (List.rev chars)
+  end.
+
+(**md **Maximal trailing unit suffix (`'%'` or `[A-Za-z]+`) uniquely partitions `[number][unit]` because valid numeric mantissas and exponents end with a digit (`0`).**
+Whenever `num_chars` is non-empty and ends with a digit (`0`) and `unit_chars` is either `[3]` (`"%"`) or a non-empty list of ASCII letters (`is_unit_char c = true`), `unit_suffix_len (num_chars ++ unit_chars)` recovers the exact `length unit_chars`, isolating `num_chars` without regex backtracking. *)
+Theorem span_decompose_unit_and_complex_eq_regex :
+  (forall num_prefix,
+    unit_suffix_len ((num_prefix ++ [0%nat]) ++ [3%nat]) = 1%nat) /\
+  (forall unit_chars num_prefix,
+    unit_chars <> [] ->
+    (forall c, In c unit_chars -> is_unit_char c = true) ->
+    unit_suffix_len ((num_prefix ++ [0%nat]) ++ unit_chars) = length unit_chars).
+Proof.
+  split.
+  - intros num_prefix.
+    unfold unit_suffix_len.
+    rewrite List.rev_unit.
+    simpl. reflexivity.
+  - intros unit_chars num_prefix Hne Hall.
+    unfold unit_suffix_len.
+    rewrite List.rev_app_distr.
+    destruct (List.rev unit_chars) as [| u0 urest] eqn:Hrev.
+    + exfalso. apply Hne.
+      apply (f_equal (@List.rev nat)) in Hrev.
+      rewrite List.rev_involutive in Hrev. exact Hrev.
+    + assert (Hu0_in : In u0 unit_chars).
+      { apply List.in_rev. rewrite Hrev. left; reflexivity. }
+      pose proof (Hall u0 Hu0_in) as Hu0_let.
+      assert (Hu0_not3 : Nat.eqb u0 3 = false).
+      { unfold is_unit_char in Hu0_let.
+        destruct (Nat.eqb_spec u0 3) as [Heq3 | _]; [subst u0; simpl in Hu0_let; discriminate | reflexivity]. }
+      cbn.
+      rewrite Hu0_not3.
+      cbn.
+      rewrite Hu0_let.
+      assert (Hlen_rev : length unit_chars = S (length urest)).
+      { rewrite <- (List.length_rev unit_chars), Hrev. reflexivity. }
+      rewrite Hlen_rev.
+      f_equal.
+      assert (Hurest_let : forall c, In c urest -> is_unit_char c = true).
+      { intros c Hc. apply Hall. apply List.in_rev. rewrite Hrev. right; exact Hc. }
+      clear Hne Hall Hrev Hu0_in Hlen_rev Hu0_let Hu0_not3.
+      induction urest as [| u1 urest' IH].
+      * simpl. rewrite List.rev_unit. simpl. reflexivity.
+      * simpl.
+        rewrite (Hurest_let u1 (or_introl eq_refl)).
+        f_equal.
+        apply IH. intros c Hc. apply Hurest_let. right; exact Hc.
+Qed.

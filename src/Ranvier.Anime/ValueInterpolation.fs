@@ -7,7 +7,6 @@ module internal ValueInterpolation =
     open System.Runtime.CompilerServices
     open System.Runtime.InteropServices
     open System.Runtime.Intrinsics
-    open System.Text.RegularExpressions
     open Ranvier.Anime
 
     [<AbstractClass; Sealed>]
@@ -143,6 +142,100 @@ module internal ValueInterpolation =
                     writeString &buf &pos (number value)
         else
             writeString &buf &pos (number value)
+    /// <summary>Formats a scalar with an optional unit suffix in a single allocation.</summary>
+    let formatNumberWithUnit (value: float) (unitSuffix: string) : string =
+        if String.IsNullOrEmpty unitSuffix then
+            let mutable buf = ComposeScratchTls.Acquire(48)
+            let mutable pos = 0
+            writeNumber &buf &pos value
+            let s = String(ReadOnlySpan<char>(buf, 0, pos))
+            ComposeScratchTls.Release buf
+            s
+        else
+            let mutable buf = ComposeScratchTls.Acquire(48 + unitSuffix.Length)
+            let mutable pos = 0
+            writeNumber &buf &pos value
+            writeString &buf &pos unitSuffix
+            let s = String(ReadOnlySpan<char>(buf, 0, pos))
+            ComposeScratchTls.Release buf
+            s
+
+    /// <summary>Formats two space-separated numbers in a single allocation (used by SVG Drawable).</summary>
+    let formatPairSpace (a: float) (b: float) : string =
+        let mutable buf = ComposeScratchTls.Acquire(96)
+        let mutable pos = 0
+        writeNumber &buf &pos a
+        buf[pos] <- ' '
+        pos <- pos + 1
+        writeNumber &buf &pos b
+        let s = String(ReadOnlySpan<char>(buf, 0, pos))
+        ComposeScratchTls.Release buf
+        s
+
+    /// <summary>Formats a WAAPI CSS linear(...) easing string in a single scratch-buffer pass.</summary>
+    let formatLinearStops (fn: float -> float) (count: int) : string =
+        let mutable buf = ComposeScratchTls.Acquire((count + 1) * 12 + 16)
+        let mutable pos = 7
+        buf[0] <- 'l'; buf[1] <- 'i'; buf[2] <- 'n'; buf[3] <- 'e'; buf[4] <- 'a'; buf[5] <- 'r'; buf[6] <- '('
+        let fCount = float count
+        for i = 0 to count do
+            if i > 0 then
+                if pos + 2 > buf.Length then ComposeScratchTls.Grow(&buf, pos + 2)
+                buf[pos] <- ','
+                buf[pos + 1] <- ' '
+                pos <- pos + 2
+            let v = PropertyNumbers.round 1e4 (fn (float i / fCount))
+            writeNumber &buf &pos v
+        if pos + 1 > buf.Length then ComposeScratchTls.Grow(&buf, pos + 1)
+        buf[pos] <- ')'
+        pos <- pos + 1
+        let s = String(ReadOnlySpan<char>(buf, 0, pos))
+        ComposeScratchTls.Release buf
+        s
+
+    /// <summary>Formats Color or Complex component arrays directly into a CSS/object string without allocating an Output.</summary>
+    let formatComponentsText (template: Data) (values: float array) (cssOpaqueRgb: bool) : string =
+        if template.Kind = ValueKind.Color then
+            if cssOpaqueRgb && values.Length = 4 && values[3] = 1. then
+                let mutable buf = ComposeScratchTls.Acquire(64)
+                let mutable pos = 4
+                buf[0] <- 'r'; buf[1] <- 'g'; buf[2] <- 'b'; buf[3] <- '('
+                writeNumber &buf &pos (float (int (PropertyNumbers.round 1. values[0])))
+                buf[pos] <- ','; buf[pos + 1] <- ' '; pos <- pos + 2
+                writeNumber &buf &pos (float (int (PropertyNumbers.round 1. values[1])))
+                buf[pos] <- ','; buf[pos + 1] <- ' '; pos <- pos + 2
+                writeNumber &buf &pos (float (int (PropertyNumbers.round 1. values[2])))
+                buf[pos] <- ')'; pos <- pos + 1
+                let s = String(ReadOnlySpan<char>(buf, 0, pos))
+                ComposeScratchTls.Release buf
+                s
+            else
+                let mutable buf = ComposeScratchTls.Acquire(64)
+                let mutable pos = 5
+                buf[0] <- 'r'; buf[1] <- 'g'; buf[2] <- 'b'; buf[3] <- 'a'; buf[4] <- '('
+                writeNumber &buf &pos (PropertyNumbers.round 1. values[0])
+                buf[pos] <- ','; pos <- pos + 1
+                writeNumber &buf &pos (PropertyNumbers.round 1. values[1])
+                buf[pos] <- ','; pos <- pos + 1
+                writeNumber &buf &pos (PropertyNumbers.round 1. values[2])
+                buf[pos] <- ','; pos <- pos + 1
+                writeNumber &buf &pos values[3]
+                buf[pos] <- ')'; pos <- pos + 1
+                let s = String(ReadOnlySpan<char>(buf, 0, pos))
+                ComposeScratchTls.Release buf
+                s
+        else
+            let mutable buf = ComposeScratchTls.Acquire(values.Length * 12 + 64)
+            let mutable pos = 0
+            let strings = template.Strings
+            writeString &buf &pos strings[0]
+            for index = 0 to values.Length - 1 do
+                writeNumber &buf &pos values[index]
+                writeString &buf &pos strings[index + 1]
+            let s = String(ReadOnlySpan<char>(buf, 0, pos))
+            ComposeScratchTls.Release buf
+            s
+
     /// <summary>A composed scalar or string with the sampled component values.</summary>
     /// <remarks>Text is composed on first read: a numeric writer reads <c>Number</c> and never formats.</remarks>
     [<Sealed; AllowNullLiteral; System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
@@ -162,7 +255,7 @@ module internal ValueInterpolation =
         member _.Scalar=if kind=ValueKind.Number then Some number else None
         /// <summary>The composed CSS text, formatted on first read.</summary>
         member _.Text=
-            if isNull text then text<-(numberText number)+unitSuffix
+            if isNull text then text<-formatNumberWithUnit number unitSuffix
             text
         /// <summary>The sampled component values.</summary>
         member _.Components=components
@@ -171,57 +264,259 @@ module internal ValueInterpolation =
         /// <summary>The invariant scalar or composed text.</summary>
         override this.ToString() =
             if kind=ValueKind.Number then number.ToString("R",CultureInfo.InvariantCulture) else this.Text
-    let private regex pattern = Regex(pattern,RegexOptions.CultureInvariant ||| RegexOptions.IgnoreCase)
-    let private unitPattern=regex @"^([-+]?[0-9]*\.?[0-9]+(?:e[-+]?[0-9]+)?)([a-z]+|%)$"
-    let private radixPattern=regex @"^0(?:x[0-9a-f]+|b[01]+|o[0-7]+)$"
-    let private tryNumber (text:string) =
-        let text=text.Trim()
-        if text.Length=0 then Some 0.
+
+    let private internUnit (u: ReadOnlySpan<char>) : string =
+        match u.Length with
+        | 1 ->
+            if u[0] = '%' then "%"
+            elif u[0] = 's' then "s"
+            else u.ToString()
+        | 2 ->
+            if u[0] = 'p' && u[1] = 'x' then "px"
+            elif u[0] = 'e' && u[1] = 'm' then "em"
+            elif u[0] = 'v' && u[1] = 'w' then "vw"
+            elif u[0] = 'v' && u[1] = 'h' then "vh"
+            elif u[0] = 'm' && u[1] = 's' then "ms"
+            elif u[0] = 'p' && u[1] = 't' then "pt"
+            elif u[0] = 'f' && u[1] = 'r' then "fr"
+            elif u[0] = 'c' && u[1] = 'h' then "ch"
+            elif u[0] = 'e' && u[1] = 'x' then "ex"
+            else u.ToString()
+        | 3 ->
+            if u.SequenceEqual("deg".AsSpan()) then "deg"
+            elif u.SequenceEqual("rem".AsSpan()) then "rem"
+            elif u.SequenceEqual("rad".AsSpan()) then "rad"
+            elif u.SequenceEqual("dvh".AsSpan()) then "dvh"
+            elif u.SequenceEqual("svh".AsSpan()) then "svh"
+            elif u.SequenceEqual("lvh".AsSpan()) then "lvh"
+            else u.ToString()
+        | 4 ->
+            if u.SequenceEqual("turn".AsSpan()) then "turn"
+            elif u.SequenceEqual("grad".AsSpan()) then "grad"
+            elif u.SequenceEqual("vmin".AsSpan()) then "vmin"
+            elif u.SequenceEqual("vmax".AsSpan()) then "vmax"
+            else u.ToString()
+        | _ -> u.ToString()
+
+    let private internTemplatePart (s: ReadOnlySpan<char>) : string =
+        match s.Length with
+        | 0 -> ""
+        | 1 ->
+            match s[0] with
+            | ')' -> ")"
+            | ' ' -> " "
+            | ',' -> ","
+            | '%' -> "%"
+            | _ -> s.ToString()
+        | 2 ->
+            if s[0] = ',' && s[1] = ' ' then ", "
+            elif s[0] = 'p' && s[1] = 'x' then "px"
+            elif s[0] = ')' && s[1] = ' ' then ") "
+            else s.ToString()
+        | 3 ->
+            if s.SequenceEqual("px ".AsSpan()) then "px "
+            elif s.SequenceEqual("px,".AsSpan()) then "px,"
+            elif s.SequenceEqual("px)".AsSpan()) then "px)"
+            else s.ToString()
+        | 4 ->
+            if s.SequenceEqual("px, ".AsSpan()) then "px, "
+            elif s.SequenceEqual("deg)".AsSpan()) then "deg)"
+            else s.ToString()
+        | _ -> s.ToString()
+
+    let private tryNumberSpan (raw: ReadOnlySpan<char>) : float voption =
+        let span = raw.Trim()
+        if span.Length = 0 then ValueSome 0.
         else
-            match Double.TryParse(text,NumberStyles.Float,CultureInfo.InvariantCulture) with
-            | true,value when Double.IsNaN value -> None
-            | true,value when Double.IsInfinity value && text.EndsWith("infinity",StringComparison.OrdinalIgnoreCase) &&
-                              text<>"Infinity" && text<>"+Infinity" && text<>"-Infinity" -> None
-            | true,value -> Some value
-            | _ when radixPattern.IsMatch text ->
-                let radix=match Char.ToLowerInvariant text[1] with 'x' -> 16 | 'b' -> 2 | _ -> 8
-                let mutable value=System.Numerics.BigInteger.Zero
-                for index in 2..text.Length-1 do
-                    let digit="0123456789abcdef".IndexOf(Char.ToLowerInvariant text[index])
-                    value<-value*System.Numerics.BigInteger(radix)+System.Numerics.BigInteger(digit)
-                Some(float value)
-            | _ -> None
-    let private digitsPattern=regex @"[-+]?[0-9]*\.?[0-9]+(?:e[-+]?[0-9])?"
-    let private parse (text:string) =
-        let value=Double.Parse(text,NumberStyles.Float,CultureInfo.InvariantCulture)
+            let c0 = span[0]
+            if not ((c0 >= '0' && c0 <= '9') || c0 = '+' || c0 = '-' || c0 = '.' || c0 = 'I') then ValueNone
+            elif span.Length > 2 && c0 = '0' &&
+                 (let c1 = span[1] in c1 = 'x' || c1 = 'X' || c1 = 'b' || c1 = 'B' || c1 = 'o' || c1 = 'O') then
+                let radix =
+                    match Char.ToLowerInvariant span[1] with
+                    | 'x' -> 16
+                    | 'b' -> 2
+                    | _ -> 8
+                let mutable valid = true
+                let mutable idx = 2
+                if span.Length <= 18 then
+                    let mutable acc = 0UL
+                    let uRadix = uint64 radix
+                    while idx < span.Length && valid do
+                        let ch = span[idx]
+                        let d =
+                            if ch >= '0' && ch <= '9' then int ch - int '0'
+                            elif ch >= 'a' && ch <= 'f' then int ch - int 'a' + 10
+                            elif ch >= 'A' && ch <= 'F' then int ch - int 'A' + 10
+                            else -1
+                        if d < 0 || d >= radix then valid <- false
+                        else acc <- acc * uRadix + uint64 d
+                        idx <- idx + 1
+                    if valid then ValueSome(float acc) else ValueNone
+                else
+                    let mutable value = System.Numerics.BigInteger.Zero
+                    let bRadix = System.Numerics.BigInteger(radix)
+                    while idx < span.Length && valid do
+                        let ch = span[idx]
+                        let d =
+                            if ch >= '0' && ch <= '9' then int ch - int '0'
+                            elif ch >= 'a' && ch <= 'f' then int ch - int 'a' + 10
+                            elif ch >= 'A' && ch <= 'F' then int ch - int 'A' + 10
+                            else -1
+                        if d < 0 || d >= radix then valid <- false
+                        else value <- value * bRadix + System.Numerics.BigInteger(d)
+                        idx <- idx + 1
+                    if valid then ValueSome(float value) else ValueNone
+            else
+                let mutable parsed = 0.
+                if Double.TryParse(span, NumberStyles.Float, CultureInfo.InvariantCulture, &parsed) then
+                    if Double.IsNaN parsed then ValueNone
+                    elif Double.IsInfinity parsed &&
+                         span.EndsWith("infinity".AsSpan(), StringComparison.OrdinalIgnoreCase) &&
+                         not (span.SequenceEqual("Infinity".AsSpan())) &&
+                         not (span.SequenceEqual("+Infinity".AsSpan())) &&
+                         not (span.SequenceEqual("-Infinity".AsSpan())) then ValueNone
+                    else ValueSome parsed
+                else ValueNone
+
+    let private parseSpanFinite (span: ReadOnlySpan<char>) : float =
+        let value = Double.Parse(span, NumberStyles.Float, CultureInfo.InvariantCulture)
         finite "value" value
         value
+
+    // Exact match of `^([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)([A-Za-z]+|%)$` (when no ' ' in span).
+    let private tryMatchUnitSpan (span: ReadOnlySpan<char>) : struct(float * string) voption =
+        let len = span.Length
+        if len < 2 || span.IndexOf ' ' >= 0 then ValueNone
+        else
+            let lastCh = span[len - 1]
+            let uStart =
+                if lastCh = '%' then len - 1
+                elif Char.IsAsciiLetter lastCh then
+                    let mutable k = len - 1
+                    while k > 0 && Char.IsAsciiLetter span[k - 1] do k <- k - 1
+                    k
+                else len
+            if uStart <= 0 || uStart >= len then ValueNone
+            else
+                let numSpan = span.Slice(0, uStart)
+                let nLen = numSpan.Length
+                let mutable p = 0
+                if numSpan[0] = '+' || numSpan[0] = '-' then p <- 1
+                let d1Start = p
+                while p < nLen && numSpan[p] >= '0' && numSpan[p] <= '9' do p <- p + 1
+                let d1 = p - d1Start
+                let mutable ok = false
+                if p < nLen && numSpan[p] = '.' then
+                    p <- p + 1
+                    let d2Start = p
+                    while p < nLen && numSpan[p] >= '0' && numSpan[p] <= '9' do p <- p + 1
+                    ok <- (p - d2Start) >= 1
+                else
+                    ok <- d1 >= 1
+                if ok && p < nLen && (numSpan[p] = 'e' || numSpan[p] = 'E') then
+                    p <- p + 1
+                    if p < nLen && (numSpan[p] = '+' || numSpan[p] = '-') then p <- p + 1
+                    let d3Start = p
+                    while p < nLen && numSpan[p] >= '0' && numSpan[p] <= '9' do p <- p + 1
+                    ok <- (p - d3Start) >= 1
+                if ok && p = nLen then
+                    let numVal = parseSpanFinite numSpan
+                    ValueSome(struct(numVal, internUnit (span.Slice(uStart))))
+                else ValueNone
+
+    // Tries to match `[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9])?` (single-digit exponent!) starting at `startIdx`.
+    // Returns the exclusive end index if matched, or -1 if no match starts at `startIdx`.
+    let private tryMatchComplexNumberAt (span: ReadOnlySpan<char>, startIdx: int) : int =
+        let len = span.Length
+        let mutable p = startIdx
+        if span[p] = '+' || span[p] = '-' then p <- p + 1
+        let d1Start = p
+        while p < len && span[p] >= '0' && span[p] <= '9' do p <- p + 1
+        let d1 = p - d1Start
+        let mutable matchedMantissa = false
+        if p < len && span[p] = '.' && p + 1 < len && span[p + 1] >= '0' && span[p + 1] <= '9' then
+            p <- p + 2
+            while p < len && span[p] >= '0' && span[p] <= '9' do p <- p + 1
+            matchedMantissa <- true
+        elif d1 >= 1 then
+            matchedMantissa <- true
+        if not matchedMantissa then -1
+        else
+            if p < len && (span[p] = 'e' || span[p] = 'E') then
+                let mutable ep = p + 1
+                if ep < len && (span[ep] = '+' || span[ep] = '-') then ep <- ep + 1
+                if ep < len && span[ep] >= '0' && span[ep] <= '9' then
+                    p <- ep + 1
+            p
+
+    let private decomposeComplexSpan (span: ReadOnlySpan<char>) : struct(float array * string array) =
+        let len = span.Length
+        let mutable count = 0
+        let mutable i = 0
+        while i < len do
+            let c = span[i]
+            if (c >= '0' && c <= '9') || c = '+' || c = '-' || c = '.' then
+                let mEnd = tryMatchComplexNumberAt(span, i)
+                if mEnd > i then
+                    count <- count + 1
+                    i <- mEnd
+                else i <- i + 1
+            else i <- i + 1
+        if count = 0 then
+            struct(Array.Empty<float>(), [| span.ToString() |])
+        else
+            let comps = Array.zeroCreate<float> count
+            let strs = Array.zeroCreate<string> (count + 1)
+            let mutable cIdx = 0
+            let mutable segStart = 0
+            let mutable pos = 0
+            while pos < len do
+                let c = span[pos]
+                if (c >= '0' && c <= '9') || c = '+' || c = '-' || c = '.' then
+                    let mEnd = tryMatchComplexNumberAt(span, pos)
+                    if mEnd > pos then
+                        strs[cIdx] <- internTemplatePart (span.Slice(segStart, pos - segStart))
+                        comps[cIdx] <- parseSpanFinite (span.Slice(pos, mEnd - pos))
+                        cIdx <- cIdx + 1
+                        segStart <- mEnd
+                        pos <- mEnd
+                    else pos <- pos + 1
+                else pos <- pos + 1
+            strs[cIdx] <- internTemplatePart (span.Slice(segStart, len - segStart))
+            struct(comps, strs)
+
     /// <summary>Decomposes finite scalars and source unit/color/compound syntax without native CSS resolution.</summary>
     let decompose literal =
-        let scalar number : Data = {Kind=ValueKind.Number;Number=number;Unit=null;Operator=None;Components=[||];Strings=[||]}
+        let scalar number : Data = {Kind=ValueKind.Number;Number=number;Unit=null;Operator=None;Components=Array.Empty<float>();Strings=Array.Empty<string>()}
         match literal with
         | Number value -> finite "value" value; scalar value
         | Text text ->
             if String.IsNullOrWhiteSpace text then scalar 0.
             else
-                match tryNumber text with
-                | Some value -> finite "value" value; scalar value
-                | _ ->
-                    let op=if text.Length>1 && text[1]='=' then Some text[0] else None
-                    let text=if op.IsSome then text.Substring 2 else text
-                    let unitMatch=if text.Contains(' ') then Match.Empty else unitPattern.Match text
-                    if unitMatch.Success then
-                        {scalar(parse unitMatch.Groups[1].Value) with Kind=ValueKind.Unit;Unit=unitMatch.Groups[2].Value;Operator=op}
-                    elif op.IsSome then
-                        let value=match tryNumber text with Some value -> value | None -> invalidArg "value" "Expected a finite relative operand."
-                        finite "value" value
-                        {scalar value with Operator=op}
-                    else
-                        match CssColor.tryParseEndpoint text with
-                        | Some color -> {scalar 0. with Kind=ValueKind.Color;Components=color}
-                        | None ->
-                            let components=digitsPattern.Matches text |> Seq.cast<Match> |> Seq.map(fun item -> parse item.Value) |> Seq.toArray
-                            {scalar 0. with Kind=ValueKind.Complex;Components=components;Strings=digitsPattern.Split text}
+                let fullSpan = text.AsSpan()
+                match tryNumberSpan fullSpan with
+                | ValueSome value -> finite "value" value; scalar value
+                | ValueNone ->
+                    let op = if fullSpan.Length > 1 && fullSpan[1] = '=' then Some fullSpan[0] else None
+                    let bodySpan = if op.IsSome then fullSpan.Slice(2) else fullSpan
+                    match tryMatchUnitSpan bodySpan with
+                    | ValueSome struct(numVal, unitStr) ->
+                        { Kind = ValueKind.Unit; Number = numVal; Unit = unitStr; Operator = op; Components = Array.Empty<float>(); Strings = Array.Empty<string>() }
+                    | ValueNone ->
+                        if op.IsSome then
+                            let value =
+                                match tryNumberSpan bodySpan with
+                                | ValueSome v -> v
+                                | ValueNone -> invalidArg "value" "Expected a finite relative operand."
+                            finite "value" value
+                            { scalar value with Operator = op }
+                        else
+                            match CssColor.tryParseEndpoint text with
+                            | Some color -> { scalar 0. with Kind = ValueKind.Color; Components = color }
+                            | None ->
+                                let struct(comps, strs) = decomposeComplexSpan bodySpan
+                                { scalar 0. with Kind = ValueKind.Complex; Components = comps; Strings = strs }
     let private relative first last op = match op with '-' -> first-last | '+' -> first+last | _ -> first*last
     /// <summary>Normalizes decomposed relative endpoints, units and component templates using a captured original value.</summary>
     let normalizeData (convertUnit:(float -> string -> string -> float) option, original:Data, first:Data, last:Data) =
@@ -271,34 +566,7 @@ module internal ValueInterpolation =
         if template.Kind=ValueKind.Number || template.Kind=ValueKind.Unit then
             Output(template.Kind,scalar,(if template.Kind=ValueKind.Unit then template.Unit else ""),Array.Empty<float>(),null)
         else
-            let text =
-                if template.Kind=ValueKind.Color then
-                    let mutable buf = ComposeScratchTls.Acquire(64)
-                    let mutable pos = 5
-                    buf[0] <- 'r'; buf[1] <- 'g'; buf[2] <- 'b'; buf[3] <- 'a'; buf[4] <- '('
-                    writeNumber &buf &pos (PropertyNumbers.round 1. values[0])
-                    buf[pos] <- ','; pos <- pos + 1
-                    writeNumber &buf &pos (PropertyNumbers.round 1. values[1])
-                    buf[pos] <- ','; pos <- pos + 1
-                    writeNumber &buf &pos (PropertyNumbers.round 1. values[2])
-                    buf[pos] <- ','; pos <- pos + 1
-                    writeNumber &buf &pos values[3]
-                    buf[pos] <- ')'; pos <- pos + 1
-                    let s = String(ReadOnlySpan<char>(buf, 0, pos))
-                    ComposeScratchTls.Release buf
-                    s
-                else
-                    let mutable buf = ComposeScratchTls.Acquire(values.Length * 12 + 64)
-                    let mutable pos = 0
-                    let strings = template.Strings
-                    writeString &buf &pos strings[0]
-                    for index = 0 to values.Length - 1 do
-                        writeNumber &buf &pos values[index]
-                        writeString &buf &pos strings[index + 1]
-                    let s = String(ReadOnlySpan<char>(buf, 0, pos))
-                    ComposeScratchTls.Release buf
-                    s
-            Output(template.Kind,0.,null,values,text)
+            Output(template.Kind,0.,null,values,formatComponentsText template values false)
 
     /// <summary>Samples scalar endpoints without allocating an <see cref="Output"/> instance.</summary>
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
@@ -525,6 +793,23 @@ module internal ValueInterpolation =
             let values = Array.zeroCreate<float> last.Length
             lerpComplexSimd first last values progress 4
             values
+
+    /// <summary>Captures SVG endpoints for zero-Output string morphing.</summary>
+    let prepareMorphText firstText lastText : (float -> (unit -> bool) -> string voption) =
+        let first,last = normalize None (Text firstText) (Text firstText) (Text lastText)
+        if first.Kind=ValueKind.Complex then
+            let scratch = Array.zeroCreate<float> last.Components.Length
+            fun progress current ->
+                finite "progress" progress
+                if not(current()) then ValueNone
+                else
+                    lerpComplexSimd first.Components last.Components scratch progress 4
+                    if current() then ValueSome(formatComponentsText last scratch false) else ValueNone
+        else
+            fun progress current ->
+                match sampleOutput(false,first,last,progress,4,PropertyNumbers.identityFloat,current) with
+                | null -> ValueNone
+                | output -> ValueSome output.Text
 
     /// <summary>Captures SVG endpoints for identity-only progress writes. Compound arithmetic has no callbacks.</summary>
     let prepareMorph firstText lastText =
