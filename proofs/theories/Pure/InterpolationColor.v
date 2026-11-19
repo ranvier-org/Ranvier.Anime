@@ -220,3 +220,87 @@ Proof.
       rewrite Z.div_mul by lia; reflexivity.
   - split; reflexivity.
 Qed.
+
+(** ** Batch A2 Refinement Proofs: 3-Tier SIMD Morph Coordinate Rounding & Fixed-4-Decimal Integer Decomposition *)
+
+Definition morph_coord_step (S a b p : Z) : Z :=
+  js_round_half_int (lerp_exact_scaled S (2 * a) (2 * b) p).
+
+Fixpoint morph_coords_scalar (S p : Z) (xs ys : list Z) : list Z :=
+  match xs, ys with
+  | x :: xrest, y :: yrest => morph_coord_step S x y p :: morph_coords_scalar S p xrest yrest
+  | _, _ => []
+  end.
+
+Fixpoint morph_coords_simd_chunks (fuel chunk : nat) (S p : Z) (xs ys : list Z) : list Z :=
+  match fuel with
+  | 0%nat => morph_coords_scalar S p xs ys
+  | S fuel' =>
+    if (Nat.leb chunk 0 || Nat.ltb (length xs) chunk || Nat.ltb (length ys) chunk)%bool then
+      morph_coords_scalar S p xs ys
+    else
+      morph_coords_scalar S p (firstn chunk xs) (firstn chunk ys) ++
+      morph_coords_simd_chunks fuel' chunk S p (skipn chunk xs) (skipn chunk ys)
+  end.
+
+Lemma morph_coords_scalar_split :
+  forall k S p xs ys,
+    (k <= length xs)%nat ->
+    (k <= length ys)%nat ->
+    morph_coords_scalar S p (firstn k xs) (firstn k ys) ++
+    morph_coords_scalar S p (skipn k xs) (skipn k ys) =
+    morph_coords_scalar S p xs ys.
+Proof.
+  induction k as [| k' IH]; intros S p xs ys Hx Hy.
+  - simpl. reflexivity.
+  - destruct xs as [| x xrest]; [simpl in Hx; lia |].
+    destruct ys as [| y yrest]; [simpl in Hy; lia |].
+    simpl in *.
+    f_equal.
+    apply IH; lia.
+Qed.
+
+(**md **3-tier SIMD (`Vector512` / `Vector256` / `Vector128`) SVG morph interpolation with half-ceiling tie rounding matches scalar `morphCoordinates`.**
+Across any positive lane width `chunk` (`8`, `4`, `2`) and arbitrary coordinate arrays `xs`, `ys`, chunked SIMD interpolation and JS half-ceiling rounding followed by a scalar tail equals `morph_coords_scalar` element-for-element. *)
+Theorem morph_simd_chunks_eq_scalar :
+  forall fuel chunk S p xs ys,
+    morph_coords_simd_chunks fuel chunk S p xs ys = morph_coords_scalar S p xs ys.
+Proof.
+  induction fuel as [| fuel' IH]; intros chunk S p xs ys.
+  - simpl. reflexivity.
+  - simpl.
+    destruct (Nat.leb_spec chunk 0); [simpl; reflexivity |].
+    destruct (Nat.ltb_spec (length xs) chunk); [simpl; reflexivity |].
+    destruct (Nat.ltb_spec (length ys) chunk); [simpl; reflexivity |].
+    simpl.
+    rewrite IH.
+    apply morph_coords_scalar_split; lia.
+Qed.
+
+Definition decompose_fixed4_int (n : Z) : bool * Z * Z :=
+  let neg := Z.ltb n 0 in
+  let mag := Z.abs n in
+  (neg, mag / 10000, mag mod 10000).
+
+Definition reconstruct_fixed4_int (parts : bool * Z * Z) : Z :=
+  let '(neg, q, r) := parts in
+  let mag := 10000 * q + r in
+  if neg then -mag else mag.
+
+(**md **Fixed-4-decimal integer decomposition splits any scaled coordinate `n` into a non-negative quotient and `[0, 9999]` fractional remainder and reconstructs `n` losslessy.**
+For every integer `n`, `decompose_fixed4_int n` produces `q >= 0` and `0 <= r < 10000` such that `reconstruct_fixed4_int (decompose_fixed4_int n) = n`. *)
+Theorem fixed4_int_decomposition_exact :
+  forall n,
+    let '(neg, q, r) := decompose_fixed4_int n in
+    0 <= q /\
+    0 <= r < 10000 /\
+    reconstruct_fixed4_int (neg, q, r) = n.
+Proof.
+  intros n.
+  unfold decompose_fixed4_int, reconstruct_fixed4_int.
+  assert (Habs : 0 <= Z.abs n) by lia.
+  assert (Hq : 0 <= Z.abs n / 10000) by (apply Z.div_pos; lia).
+  assert (Hr : 0 <= Z.abs n mod 10000 < 10000) by (apply Z.mod_pos_bound; lia).
+  assert (Hdm : Z.abs n = 10000 * (Z.abs n / 10000) + Z.abs n mod 10000) by (apply Z.div_mod; lia).
+  destruct (Z.ltb_spec n 0); repeat split; lia.
+Qed.

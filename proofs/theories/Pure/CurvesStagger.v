@@ -182,3 +182,196 @@ Proof.
       reflexivity.
     + reflexivity.
 Qed.
+
+(** ** Batch A2 Refinement Proofs: 4-Branch `Ease.bounce` & Monotone Binary-Search `Ease.linear` *)
+
+Definition bounce_term_64 (scale64 center22 t22 : Z) : Z :=
+  let d := center22 - t22 in
+  scale64 - d * d.
+
+Fixpoint bounce_loop_64_aux (steps : list (Z * Z * Z)) (fallback : Z * Z) (t22 : Z) : Z :=
+  match steps with
+  | [] =>
+    let '(sc, c) := fallback in
+    bounce_term_64 sc c t22
+  | (thresh, sc, c) :: rest =>
+    if Z.ltb t22 thresh then bounce_loop_64_aux rest fallback t22
+    else bounce_term_64 sc c t22
+  end.
+
+(** Models the `b = 3, 2, 1, 0` Penner/Anime.js `bounce` loop on `t = t22 / 22 >= 0` scaled by `64` (`7.5625 = (11/4)^2`). *)
+Definition bounce_loop_64 (t22 : Z) : Z :=
+  bounce_loop_64_aux [(14, 64, 22); (6, 16, 10); (2, 4, 4)] (1, 1) t22.
+
+Definition bounce_4branch_64 (t22 : Z) : Z :=
+  if Z.geb t22 14 then 64 - (22 - t22) * (22 - t22)
+  else if Z.geb t22 6 then 16 - (10 - t22) * (10 - t22)
+  else if Z.geb t22 2 then 4 - (4 - t22) * (4 - t22)
+  else 1 - (1 - t22) * (1 - t22).
+
+(**md **`Math.Pow`-free 4-branch `Ease.bounce` equals the Penner/Anime.js power-search loop across `[0, +infinity)`.**
+For all non-negative `t22 = 22 * t >= 0`, the closed-form 4-branch evaluation with dyadic constants `(1, 1/4, 1/16, 1/64)` and `(22/22, 10/22, 4/22, 1/22)` matches the `b = 3 .. 0` search loop identically. *)
+Theorem bounce_4branch_eq_pow_loop :
+  forall t22,
+    0 <= t22 ->
+    bounce_4branch_64 t22 = bounce_loop_64 t22.
+Proof.
+  intros t22 Hnn.
+  unfold bounce_4branch_64, bounce_loop_64, bounce_loop_64_aux, bounce_term_64.
+  destruct (Z.geb_spec t22 14); destruct (Z.ltb_spec t22 14); try lia.
+  destruct (Z.geb_spec t22 6); destruct (Z.ltb_spec t22 6); try lia.
+  destruct (Z.geb_spec t22 2); destruct (Z.ltb_spec t22 2); lia.
+Qed.
+
+Definition nondecreasing_z (xs : list Z) : Prop :=
+  forall i j : nat,
+    (i <= j)%nat ->
+    (j < length xs)%nat ->
+    List.nth i xs 0 <= List.nth j xs 0.
+
+Fixpoint linear_first_ge (t : Z) (xs : list Z) : nat :=
+  match xs with
+  | [] => 0%nat
+  | x :: rest => if Z.gtb t x then S (linear_first_ge t rest) else 0%nat
+  end.
+
+Fixpoint bsearch_first_ge (fuel lo hi : nat) (t : Z) (xs : list Z) : nat :=
+  match fuel with
+  | 0%nat => lo
+  | S f =>
+    if Nat.leb hi lo then lo
+    else
+      let mid := Nat.div (lo + hi) 2 in
+      if Z.gtb t (List.nth mid xs 0) then
+        bsearch_first_ge f (S mid) hi t xs
+      else
+        bsearch_first_ge f lo mid t xs
+  end.
+
+Lemma linear_first_ge_bound :
+  forall t xs, (linear_first_ge t xs <= length xs)%nat.
+Proof.
+  intros t xs.
+  induction xs as [| x rest IH]; simpl; [lia |].
+  destruct (Z.gtb t x); lia.
+Qed.
+
+Lemma nondecreasing_cons_tail :
+  forall x rest,
+    nondecreasing_z (x :: rest) ->
+    nondecreasing_z rest.
+Proof.
+  intros x rest Hnd i j Hij Hj.
+  exact (Hnd (S i) (S j) ltac:(lia) ltac:(simpl; lia)).
+Qed.
+
+Lemma linear_first_ge_characterization :
+  forall xs t mid,
+    nondecreasing_z xs ->
+    (mid < length xs)%nat ->
+    (Z.gtb t (List.nth mid xs 0) = true <-> (mid < linear_first_ge t xs)%nat).
+Proof.
+  induction xs as [| x rest IH]; intros t mid Hnd Hmid.
+  - simpl in Hmid. lia.
+  - destruct mid as [| m'].
+    + simpl.
+      destruct (Z.gtb_spec t x) as [Htx | Hle]; split; intros Hgoal; try reflexivity; try discriminate; lia.
+    + simpl List.nth.
+      simpl linear_first_ge.
+      destruct (Z.gtb_spec t x) as [Htx | Hle].
+      * rewrite (IH t m' (nondecreasing_cons_tail x rest Hnd) ltac:(simpl in Hmid; lia)).
+        lia.
+      * assert (Hxm : x <= List.nth m' rest 0).
+        { apply (Hnd 0%nat (S m')); [lia | exact Hmid]. }
+        destruct (Z.gtb_spec t (List.nth m' rest 0)) as [Htm | Htm]; split; intros Hgoal; try discriminate; lia.
+Qed.
+
+Lemma bsearch_first_ge_invariant :
+  forall fuel lo hi t xs,
+    nondecreasing_z xs ->
+    (hi <= length xs)%nat ->
+    (lo <= linear_first_ge t xs <= hi)%nat ->
+    (hi - lo <= fuel)%nat ->
+    bsearch_first_ge fuel lo hi t xs = linear_first_ge t xs.
+Proof.
+  induction fuel as [| f IH]; intros lo hi t xs Hnd Hhi Hrange Hfuel.
+  - simpl. lia.
+  - cbn [bsearch_first_ge].
+    destruct (Nat.leb_spec hi lo) as [Hle | Hlt].
+    + lia.
+    + set (mid := Nat.div (lo + hi) 2).
+      assert (Hmid_bounds : (lo <= mid /\ mid < hi)%nat).
+      { subst mid.
+        pose proof (Nat.div_mod (lo + hi) 2 ltac:(lia)) as Hdm.
+        pose proof (Nat.mod_upper_bound (lo + hi) 2 ltac:(lia)) as Hmod.
+        lia. }
+      assert (Hmid_len : (mid < length xs)%nat) by lia.
+      pose proof (linear_first_ge_characterization xs t mid Hnd Hmid_len) as Hchar.
+      destruct (Z.gtb t (List.nth mid xs 0)) eqn:Hgt.
+      * assert (Hmk : (mid < linear_first_ge t xs)%nat) by (apply Hchar; reflexivity).
+        apply IH; [exact Hnd | exact Hhi | lia | lia].
+      * assert (Hkm : (linear_first_ge t xs <= mid)%nat).
+        { destruct (Nat.lt_ge_cases mid (linear_first_ge t xs)) as [Hlt_k | Hge_k]; [| exact Hge_k].
+          apply Hchar in Hlt_k. discriminate. }
+        apply IH; [exact Hnd | lia | lia | lia].
+Qed.
+
+(**md **Binary-search stop selection on non-decreasing `Ease.linear` stops equals sequential stop scanning (including duplicate stops).**
+For every sorted stop-position array `xs` (allowing repeated timestamps), `bsearch_first_ge` returns the exact first index `k` with `time <= xs[k]` selected by `Ease.linear`'s sequential loop. *)
+Theorem monotone_lower_bound_bsearch_eq_linear_scan :
+  forall t xs,
+    nondecreasing_z xs ->
+    bsearch_first_ge (length xs) 0%nat (length xs) t xs = linear_first_ge t xs.
+Proof.
+  intros t xs Hnd.
+  pose proof (linear_first_ge_bound t xs) as Hbnd.
+  apply bsearch_first_ge_invariant; [exact Hnd | lia | lia | lia].
+Qed.
+
+Fixpoint bisect_direct (steps : nat) (f : nat -> Z) (target tol : Z) (lo hi cur : nat) : nat * nat * nat :=
+  match steps with
+  | 0%nat => (lo, hi, cur)
+  | S rem =>
+    let mid := Nat.div (lo + hi) 2 in
+    let diff := f mid - target in
+    let '(lo', hi') := if Z.gtb diff 0 then (lo, mid) else (mid, hi) in
+    if Z.leb (Z.abs diff) tol then (lo', hi', mid)
+    else bisect_direct rem f target tol lo' hi' mid
+  end.
+
+Fixpoint bisect_lut (lut_steps rem_steps : nat) (lut : list Z) (f : nat -> Z) (target tol : Z) (lo hi cur : nat) : nat * nat * nat :=
+  match lut_steps with
+  | 0%nat => bisect_direct rem_steps f target tol lo hi cur
+  | S lrem =>
+    let mid := Nat.div (lo + hi) 2 in
+    let diff := List.nth mid lut 0 - target in
+    let '(lo', hi') := if Z.gtb diff 0 then (lo, mid) else (mid, hi) in
+    if Z.leb (Z.abs diff) tol then (lo', hi', mid)
+    else bisect_lut lrem rem_steps lut f target tol lo' hi' mid
+  end.
+
+(**md **Dyadic LUT-prefixed `Ease.cubicBezier` bisection is bit-for-bit identical to full bisection.**
+Whenever `lut` tabulates `f` across `[0 .. hi]` (`nth k lut 0 = f k`), running `lut_steps` table-lookup bisection iterations followed by `rem_steps` direct polynomial bisection iterations produces the exact same `(lo, hi, current)` state and early-exit iteration as `(lut_steps + rem_steps)` direct bisection iterations. *)
+Theorem dyadic_lut_bisection_eq_direct_bisection :
+  forall lut_steps rem_steps lut (f : nat -> Z) target tol lo hi cur,
+    (lo <= hi)%nat ->
+    (forall k : nat, (k <= hi)%nat -> List.nth k lut 0 = f k) ->
+    bisect_lut lut_steps rem_steps lut f target tol lo hi cur =
+    bisect_direct (lut_steps + rem_steps)%nat f target tol lo hi cur.
+Proof.
+  induction lut_steps as [| lrem IH]; intros rem_steps lut f target tol lo hi cur Hle Hlut.
+  - simpl. reflexivity.
+  - cbn [bisect_lut plus bisect_direct].
+    set (mid := Nat.div (lo + hi) 2).
+    assert (Hmid : (lo <= mid /\ mid <= hi)%nat).
+    { subst mid.
+      pose proof (Nat.div_mod (lo + hi) 2 ltac:(lia)) as Hdm.
+      pose proof (Nat.mod_upper_bound (lo + hi) 2 ltac:(lia)) as Hmod.
+      lia. }
+    rewrite (Hlut mid ltac:(lia)).
+    destruct (Z.gtb (f mid - target) 0);
+      destruct (Z.leb (Z.abs (f mid - target)) tol);
+      try reflexivity;
+      apply IH; try lia;
+      intros k Hk; apply Hlut; lia.
+Qed.

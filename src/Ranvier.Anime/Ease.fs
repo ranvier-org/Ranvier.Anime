@@ -71,14 +71,31 @@ module Ease =
                 elif index = length - 1 then 1.
                 else snd points[index] |> Option.defaultValue(float index / float last))
             let values = Array.init length (fun index -> fst points[min index last])
-            fun time ->
-                progress time
-                let mutable index = 1
-                while index < length && time > positions[index] do index <- index + 1
-                if index = length then values[length - 1]
-                else
-                    values[index - 1] + (values[index] - values[index - 1]) *
-                    (time - positions[index - 1]) / (positions[index] - positions[index - 1])
+            let mutable monotonic = true
+            for i = 1 to length - 1 do
+                if not (positions[i] >= positions[i - 1]) then monotonic <- false
+            if monotonic && length > 8 then
+                fun time ->
+                    progress time
+                    let mutable lo = 1
+                    let mutable hi = length
+                    while lo < hi do
+                        let mid = int (uint (lo + hi) >>> 1)
+                        if time > positions[mid] then lo <- mid + 1
+                        else hi <- mid
+                    if lo = length then values[length - 1]
+                    else
+                        values[lo - 1] + (values[lo] - values[lo - 1]) *
+                        (time - positions[lo - 1]) / (positions[lo] - positions[lo - 1])
+            else
+                fun time ->
+                    progress time
+                    let mutable index = 1
+                    while index < length && time > positions[index] do index <- index + 1
+                    if index = length then values[length - 1]
+                    else
+                        values[index - 1] + (values[index] - values[index - 1]) *
+                        (time - positions[index - 1]) / (positions[index] - positions[index - 1])
 
     /// <summary>Constructs an irregular easing from finite randomness and one [0,1) draw per interior stop.</summary>
     /// <remarks>Counts 0–2 yield the two endpoints. Draws occur only at construction; randomness may be signed or exceed 1.</remarks>
@@ -107,12 +124,26 @@ module Ease =
 
     let private bounce time =
         if time < -1. / 11. then invalidArg "time" "Bounce extrapolation must not fall below -1/11."
-        let mutable b = 3
-        let mutable power = Math.Pow(2., float b)
-        while time < (power - 1.) / 11. do
-            b <- b - 1
-            power <- Math.Pow(2., float b)
-        1. / Math.Pow(4., float (3 - b)) - 7.5625 * Math.Pow((power * 3. - 2.) / 22. - time, 2.)
+        elif time >= 7. / 11. then
+            let d = 1. - time
+            1. - 7.5625 * d * d
+        elif time >= 3. / 11. then
+            let d = 10. / 22. - time
+            0.25 - 7.5625 * d * d
+        elif time >= 1. / 11. then
+            let d = 4. / 22. - time
+            0.0625 - 7.5625 * d * d
+        elif time >= 0. then
+            let d = 1. / 22. - time
+            0.015625 - 7.5625 * d * d
+        else
+            let mutable b = 0
+            let mutable power = 1.
+            while time < (power - 1.) / 11. do
+                b <- b - 1
+                power <- power * 0.5
+            let d = (power * 3. - 2.) / 22. - time
+            1. / Math.Pow(4., float (3 - b)) - 7.5625 * d * d
 
     // Easing formulas adapted through Anime.js from Robert Penner, (c) 2001 Robert Penner.
     /// <summary>Creates an easing function accepting finite progress, including signed axis extrapolation; outputs may overshoot.</summary>
@@ -122,7 +153,12 @@ module Ease =
             match family with
             | Power exponent ->
                 finite "exponent" exponent
-                fun time -> Math.Pow(time, exponent)
+                if exponent = 1. then id
+                elif exponent = 2. then fun time -> time * time
+                elif exponent = 3. then fun time -> time * time * time
+                elif exponent = 4. then fun time -> let t2 = time * time in t2 * t2
+                elif exponent = 5. then fun time -> let t2 = time * time in t2 * t2 * time
+                else fun time -> Math.Pow(time, exponent)
             | Sine -> fun time -> 1. - Math.Cos(time * Math.PI / 2.)
             | Circular -> fun time -> 1. - Math.Sqrt(1. - time * time)
             | Exponential -> fun time -> if time = 0. then 0. else Math.Pow(2., 10. * time - 10.)
@@ -150,16 +186,23 @@ module Ease =
             progress time
             evaluate time
 
+    let private tryDirectionPrefix (s: string) : struct(int * EaseDirection) voption =
+        if isNull s then ValueNone
+        elif s.StartsWith("inOut", StringComparison.Ordinal) then ValueSome(struct(5, InOut))
+        elif s.StartsWith("outIn", StringComparison.Ordinal) then ValueSome(struct(5, OutIn))
+        elif s.StartsWith("in", StringComparison.Ordinal) then ValueSome(struct(2, In))
+        elif s.StartsWith("out", StringComparison.Ordinal) then ValueSome(struct(3, Out))
+        else ValueNone
+
     /// <summary>Resolves an Anime.js family name with default parameters; unknown names raise an argument error.</summary>
     let named (name: string) =
         if name = "linear" || name = "none" then create (Power 1.) In
         else
-            let prefixes = ["inOut", InOut; "outIn", OutIn; "in", In; "out", Out]
-            match prefixes |> List.tryFind (fun (prefix, _) -> not (isNull name) && name.StartsWith(prefix, StringComparison.Ordinal)) with
-            | None -> invalidArg "name" "Unknown easing name."
-            | Some (prefix, direction) ->
+            match tryDirectionPrefix name with
+            | ValueNone -> invalidArg "name" "Unknown easing name."
+            | ValueSome struct(prefixLen, direction) ->
                 let family =
-                    match name.Substring prefix.Length with
+                    match name.Substring prefixLen with
                     | "" -> Power 1.68
                     | "Quad" -> Power 2.
                     | "Cubic" -> Power 3.
@@ -179,7 +222,6 @@ module Ease =
         if isNull text then None
         elif text = "linear" || text = "none" then Some(create (Power 1.) In)
         else
-            let prefixes = ["inOut", InOut; "outIn", OutIn; "in", In; "out", Out]
             let tryNumber (raw: string) fallback =
                 let trimmed = raw.Trim()
                 if String.IsNullOrEmpty trimmed then Some fallback
@@ -189,10 +231,10 @@ module Ease =
                     | _ -> None
             let paren = text.IndexOf '('
             if paren < 0 then
-                match prefixes |> List.tryFind (fun (prefix, _) -> text.StartsWith(prefix, StringComparison.Ordinal)) with
-                | None -> None
-                | Some (prefix, direction) ->
-                    match text.Substring prefix.Length with
+                match tryDirectionPrefix text with
+                | ValueNone -> None
+                | ValueSome struct(prefixLen, direction) ->
+                    match text.Substring prefixLen with
                     | "" -> Some(create (Power 1.68) direction)
                     | "Quad" -> Some(create (Power 2.) direction)
                     | "Cubic" -> Some(create (Power 3.) direction)
@@ -210,10 +252,10 @@ module Ease =
                 let head = text.Substring(0, paren)
                 let body = text.Substring(paren + 1, text.Length - paren - 2)
                 let parts = body.Split ','
-                match prefixes |> List.tryFind (fun (prefix, _) -> head.StartsWith(prefix, StringComparison.Ordinal)) with
-                | None -> None
-                | Some (prefix, direction) ->
-                    match head.Substring prefix.Length with
+                match tryDirectionPrefix head with
+                | ValueNone -> None
+                | ValueSome struct(prefixLen, direction) ->
+                    match head.Substring prefixLen with
                     | "" ->
                         tryNumber parts[0] 1.68 |> Option.map (fun exp -> create (Power exp) direction)
                     | "Back" ->
@@ -258,20 +300,38 @@ module Ease =
         finite "y1" y1
         finite "x2" x2
         finite "y2" y2
-        let bezier time a1 a2 = (((1. - 3. * a2 + 3. * a1) * time + (3. * a2 - 6. * a1)) * time + 3. * a1) * time
+        let ax = 1. - 3. * x2 + 3. * x1
+        let bx = 3. * x2 - 6. * x1
+        let cx = 3. * x1
+        let ay = 1. - 3. * y2 + 3. * y1
+        let by = 3. * y2 - 6. * y1
+        let cy = 3. * y1
+        let inline evalX t = ((ax * t + bx) * t + cx) * t
+        let inline evalY t = ((ay * t + by) * t + cy) * t
+        let samples = Array.init 257 (fun k -> evalX (float k * (1. / 256.)))
         fun time ->
             progress time
             if time = 0. || time = 1. || (x1 = y1 && x2 = y2) then time
             else
-                let mutable lower = 0.
-                let mutable upper = 1.
-                let mutable current = 0.
+                let mutable loIdx = 0
+                let mutable hiIdx = 256
+                let mutable midIdx = 128
                 let mutable iterations = 0
                 let mutable searching = true
-                while searching do
-                    current <- lower + (upper - lower) / 2.
-                    let difference = bezier current x1 x2 - time
-                    if difference > 0. then upper <- current else lower <- current
+                while searching && iterations < 8 do
+                    midIdx <- (loIdx + hiIdx) >>> 1
+                    let difference = samples[midIdx] - time
+                    if difference > 0. then hiIdx <- midIdx else loIdx <- midIdx
                     iterations <- iterations + 1
-                    searching <- abs difference > 0.0000001 && iterations < 100
-                bezier current y1 y2
+                    searching <- abs difference > 0.0000001
+                let mutable current = float midIdx * (1. / 256.)
+                if searching then
+                    let mutable lower = float loIdx * (1. / 256.)
+                    let mutable upper = float hiIdx * (1. / 256.)
+                    while searching do
+                        current <- lower + (upper - lower) * 0.5
+                        let difference = evalX current - time
+                        if difference > 0. then upper <- current else lower <- current
+                        iterations <- iterations + 1
+                        searching <- abs difference > 0.0000001 && iterations < 100
+                evalY current

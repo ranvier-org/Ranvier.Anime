@@ -144,7 +144,7 @@ module internal CssColor =
     let private splitChannels functionName (body:string) =
         let legacy = body.Contains(',')
         if legacy then
-            if not (List.contains functionName ["rgb";"rgba";"hsl";"hsla"]) then invalid ()
+            if functionName <> "rgb" && functionName <> "rgba" && functionName <> "hsl" && functionName <> "hsla" then invalid ()
             let parts = body.Split(',',StringSplitOptions.TrimEntries)
             if (parts.Length <> 3 && parts.Length <> 4) || parts |> Array.contains "none" then invalid ()
             parts[..2], (if parts.Length = 4 then scaled 1. parts[3] else 1.), true
@@ -180,8 +180,9 @@ module internal CssColor =
                 let a,b =
                     if name.EndsWith("lch", StringComparison.Ordinal) then
                         let c = max 0. (scaled (if ok then 0.4 else 150.) y)
-                        let angle = hue z * Math.PI / 180.
-                        c * cos angle, c * sin angle
+                        let angle = hue z * (Math.PI / 180.)
+                        let struct(sinA, cosA) = Math.SinCos angle
+                        c * cosA, c * sinA
                     else
                         let scale = if ok then 0.4 else 125.
                         scaled scale y, scaled scale z
@@ -200,35 +201,80 @@ module internal CssColor =
             for i in 0..2 do result[i] <- PropertyNumbers.round 1. result[i]
         result
 
-    let private functions = set ["rgb";"rgba";"hsl";"hsla";"hwb";"lab";"lch";"oklab";"oklch";"color"]
+    let private tryMatchFunctionName (prefix: ReadOnlySpan<char>) : string voption =
+        match prefix.Length with
+        | 3 ->
+            if prefix.Equals("rgb", StringComparison.OrdinalIgnoreCase) then ValueSome "rgb"
+            elif prefix.Equals("hsl", StringComparison.OrdinalIgnoreCase) then ValueSome "hsl"
+            elif prefix.Equals("hwb", StringComparison.OrdinalIgnoreCase) then ValueSome "hwb"
+            elif prefix.Equals("lab", StringComparison.OrdinalIgnoreCase) then ValueSome "lab"
+            elif prefix.Equals("lch", StringComparison.OrdinalIgnoreCase) then ValueSome "lch"
+            else ValueNone
+        | 4 ->
+            if prefix.Equals("rgba", StringComparison.OrdinalIgnoreCase) then ValueSome "rgba"
+            elif prefix.Equals("hsla", StringComparison.OrdinalIgnoreCase) then ValueSome "hsla"
+            else ValueNone
+        | 5 ->
+            if prefix.Equals("oklab", StringComparison.OrdinalIgnoreCase) then ValueSome "oklab"
+            elif prefix.Equals("oklch", StringComparison.OrdinalIgnoreCase) then ValueSome "oklch"
+            elif prefix.Equals("color", StringComparison.OrdinalIgnoreCase) then ValueSome "color"
+            else ValueNone
+        | _ -> ValueNone
 
     let private tryParse forInterpolation (value:string) =
-        if String.IsNullOrWhiteSpace value then None
+        if isNull value then None
         else
-            let text = value.Trim().ToLowerInvariant()
-            let opening = text.IndexOf('(')
-            if opening >= 0 then
-                let name = text[..opening-1]
-                if not (functions.Contains name) then None
+            let span = value.AsSpan().Trim()
+            if span.IsEmpty then None
+            elif span[0] = '#' then
+                if span.Length > 9 then
+                    let mutable hasWs = false
+                    for i = 1 to span.Length - 1 do
+                        if Char.IsWhiteSpace span[i] then hasWs <- true
+                    if hasWs then None else invalid ()
                 else
-                    let mutable depth = 1
-                    let mutable next = opening+1
-                    while depth > 0 && next < text.Length do
-                        match text[next] with
-                        | '(' -> depth <- depth+1
-                        | ')' -> depth <- depth-1
-                        | _ -> ()
-                        next <- next+1
-                    if depth <> 0 then invalid ()
-                    elif next < text.Length then None
-                    else Some(functional forInterpolation name text[opening+1..next-2])
-            elif text[0] = '#' && not (text |> Seq.exists Char.IsWhiteSpace) then
-                let result = hex text
-                if forInterpolation then result[3] <- Math.Round(result[3],3,MidpointRounding.AwayFromZero)
-                Some result
-            elif text |> Seq.forall Char.IsAsciiLetter then
-                named text |> Option.map (fun (r,g,b,a) -> [|r;g;b;a|])
-            else None
+                    let mutable hasWs = false
+                    for i = 1 to span.Length - 1 do
+                        if Char.IsWhiteSpace span[i] then hasWs <- true
+                    if hasWs then None
+                    else
+                        let result = hex (span.ToString())
+                        if forInterpolation then result[3] <- Math.Round(result[3],3,MidpointRounding.AwayFromZero)
+                        Some result
+            else
+                // Fast zero-alloc scan: CSS color functions have a 3..5 letter prefix before '(';
+                // CSS named colors consist solely of ASCII letters (<= 24 chars).
+                let mutable i = 0
+                let limit = min span.Length 6
+                while i < limit && Char.IsAsciiLetter span[i] do i <- i + 1
+                if i < span.Length && span[i] = '(' then
+                    match tryMatchFunctionName (span.Slice(0, i)) with
+                    | ValueNone -> None
+                    | ValueSome fnName ->
+                        let mutable depth = 1
+                        let mutable next = i + 1
+                        while depth > 0 && next < span.Length do
+                            match span[next] with
+                            | '(' -> depth <- depth + 1
+                            | ')' -> depth <- depth - 1
+                            | _ -> ()
+                            next <- next + 1
+                        if depth <> 0 then invalid ()
+                        elif next < span.Length then None
+                        else
+                            let body = span.Slice(i + 1, next - i - 2).ToString().ToLowerInvariant()
+                            Some(functional forInterpolation fnName body)
+                elif span.Length <= 24 then
+                    let mutable allLetters = i > 0
+                    let mutable k = i
+                    while allLetters && k < span.Length do
+                        if not (Char.IsAsciiLetter span[k]) then allLetters <- false
+                        k <- k + 1
+                    if not allLetters then None
+                    else
+                        let lower = span.ToString().ToLowerInvariant()
+                        named lower |> Option.map (fun (r,g,b,a) -> [|r;g;b;a|])
+                else None
 
     let tryParseEndpoint value = tryParse true value
 

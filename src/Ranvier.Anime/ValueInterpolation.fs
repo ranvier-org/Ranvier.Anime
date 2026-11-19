@@ -13,24 +13,24 @@ module internal ValueInterpolation =
     [<AbstractClass; Sealed>]
     type private ComposeScratchTls =
         [<ThreadStatic; DefaultValue>]
-        static val mutable private builder: System.Text.StringBuilder
-        [<ThreadStatic; DefaultValue>]
         static val mutable private chars: char array
-        static member Acquire() =
-            let mutable sb = ComposeScratchTls.builder
-            if isNull sb then
-                sb <- System.Text.StringBuilder(128)
-                ComposeScratchTls.builder <- sb
-            else
-                sb.Clear() |> ignore
+        static member Acquire(minCapacity: int) =
             let mutable buf = ComposeScratchTls.chars
-            if isNull buf then
-                buf <- Array.zeroCreate<char> 64
+            if isNull buf || buf.Length < minCapacity then
+                let cap = max 16384 (int (System.Numerics.BitOperations.RoundUpToPowerOf2(uint32 (max 16 minCapacity))))
+                buf <- Array.zeroCreate<char> cap
                 ComposeScratchTls.chars <- buf
-            struct(sb, buf)
-        static member Release(sb: System.Text.StringBuilder) =
-            if sb.Capacity > 8192 then
-                ComposeScratchTls.builder <- System.Text.StringBuilder(256)
+            buf
+        static member Grow(buf: byref<char array>, needed: int) =
+            let mutable newCap = buf.Length * 2
+            while newCap < needed do newCap <- newCap * 2
+            let next = Array.zeroCreate<char> newCap
+            Array.Copy(buf, 0, next, 0, buf.Length)
+            buf <- next
+            ComposeScratchTls.chars <- next
+        static member Release(buf: char array) =
+            if buf.Length > 131072 then
+                ComposeScratchTls.chars <- Array.zeroCreate<char> 16384
     /// <summary>The source decomposition category.</summary>
     type ValueKind = Number = 0 | Unit = 1 | Color = 2 | Complex = 3
     /// <summary>A numeric or serialized endpoint before source decomposition.</summary>
@@ -76,19 +76,73 @@ module internal ValueInterpolation =
                     (if negative then "-" else "")+result
                 else split[0]+"e"+(if exponent>=0 then "+" else "-")+string(abs exponent)
     let private numberText value=number value
-    let private appendNumber (sb: System.Text.StringBuilder) (scratch: char array) (value: float) =
+    let inline private writeString (buf: byref<char array>) (pos: byref<int>) (s: string) =
+        if not (String.IsNullOrEmpty s) then
+            let needed = pos + s.Length
+            if needed > buf.Length then ComposeScratchTls.Grow(&buf, needed)
+            s.AsSpan().CopyTo(Span<char>(buf, pos, s.Length))
+            pos <- needed
+
+    let private writeNumber (buf: byref<char array>) (pos: byref<int>) (value: float) =
+        if pos + 40 > buf.Length then ComposeScratchTls.Grow(&buf, pos + 40)
         if value = 0. then
-            sb.Append('0') |> ignore
+            buf[pos] <- '0'
+            pos <- pos + 1
         elif Double.IsFinite value then
-            let span = Span<char>(scratch)
-            let mutable written = 0
-            if value.TryFormat(span, &written, "R", CultureInfo.InvariantCulture) &&
-               span.Slice(0, written).IndexOfAny('E', 'e') < 0 then
-                sb.Append(ReadOnlySpan<char>(scratch, 0, written)) |> ignore
-            else
-                sb.Append(number value) |> ignore
+            let mutable fastDone = false
+            if abs value <= 1e9 then
+                let n = int64 (Math.Round(value * 10000.))
+                if float n / 10000. = value then
+                    fastDone <- true
+                    let mutable p = pos
+                    let u =
+                        if n < 0L then
+                            buf[p] <- '-'
+                            p <- p + 1
+                            uint64 (-n)
+                        else
+                            uint64 n
+                    let q = u / 10000UL
+                    let r = int (u % 10000UL)
+                    if q < 10UL then
+                        buf[p] <- char (48 + int q)
+                        p <- p + 1
+                    else
+                        let mutable written = 0
+                        q.TryFormat(Span<char>(buf, p, 24), &written, ReadOnlySpan<char>.Empty, CultureInfo.InvariantCulture) |> ignore
+                        p <- p + written
+                    if r <> 0 then
+                        buf[p] <- '.'
+                        let d0 = r / 1000
+                        let d1 = (r / 100) % 10
+                        let d2 = (r / 10) % 10
+                        let d3 = r % 10
+                        buf[p + 1] <- char (48 + d0)
+                        if d3 <> 0 then
+                            buf[p + 2] <- char (48 + d1)
+                            buf[p + 3] <- char (48 + d2)
+                            buf[p + 4] <- char (48 + d3)
+                            p <- p + 5
+                        elif d2 <> 0 then
+                            buf[p + 2] <- char (48 + d1)
+                            buf[p + 3] <- char (48 + d2)
+                            p <- p + 4
+                        elif d1 <> 0 then
+                            buf[p + 2] <- char (48 + d1)
+                            p <- p + 3
+                        else
+                            p <- p + 2
+                    pos <- p
+            if not fastDone then
+                let span = Span<char>(buf, pos, 36)
+                let mutable written = 0
+                if value.TryFormat(span, &written, "R", CultureInfo.InvariantCulture) &&
+                   span.Slice(0, written).IndexOfAny('E', 'e') < 0 then
+                    pos <- pos + written
+                else
+                    writeString &buf &pos (number value)
         else
-            sb.Append(number value) |> ignore
+            writeString &buf &pos (number value)
     /// <summary>A composed scalar or string with the sampled component values.</summary>
     /// <remarks>Text is composed on first read: a numeric writer reads <c>Number</c> and never formats.</remarks>
     [<Sealed; AllowNullLiteral; System.Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
@@ -215,28 +269,32 @@ module internal ValueInterpolation =
         if template.Kind=ValueKind.Number || template.Kind=ValueKind.Unit then
             Output(template.Kind,scalar,(if template.Kind=ValueKind.Unit then template.Unit else ""),Array.Empty<float>(),null)
         else
-            let struct(sb, scratch) = ComposeScratchTls.Acquire()
             let text =
                 if template.Kind=ValueKind.Color then
-                    sb.Append("rgba(") |> ignore
-                    appendNumber sb scratch (PropertyNumbers.round 1. values[0])
-                    sb.Append(',') |> ignore
-                    appendNumber sb scratch (PropertyNumbers.round 1. values[1])
-                    sb.Append(',') |> ignore
-                    appendNumber sb scratch (PropertyNumbers.round 1. values[2])
-                    sb.Append(',') |> ignore
-                    appendNumber sb scratch values[3]
-                    sb.Append(')') |> ignore
-                    let s = sb.ToString()
-                    ComposeScratchTls.Release sb
+                    let mutable buf = ComposeScratchTls.Acquire(64)
+                    let mutable pos = 5
+                    buf[0] <- 'r'; buf[1] <- 'g'; buf[2] <- 'b'; buf[3] <- 'a'; buf[4] <- '('
+                    writeNumber &buf &pos (PropertyNumbers.round 1. values[0])
+                    buf[pos] <- ','; pos <- pos + 1
+                    writeNumber &buf &pos (PropertyNumbers.round 1. values[1])
+                    buf[pos] <- ','; pos <- pos + 1
+                    writeNumber &buf &pos (PropertyNumbers.round 1. values[2])
+                    buf[pos] <- ','; pos <- pos + 1
+                    writeNumber &buf &pos values[3]
+                    buf[pos] <- ')'; pos <- pos + 1
+                    let s = String(ReadOnlySpan<char>(buf, 0, pos))
+                    ComposeScratchTls.Release buf
                     s
                 else
-                    sb.Append(template.Strings[0]) |> ignore
+                    let mutable buf = ComposeScratchTls.Acquire(values.Length * 12 + 64)
+                    let mutable pos = 0
+                    let strings = template.Strings
+                    writeString &buf &pos strings[0]
                     for index = 0 to values.Length - 1 do
-                        appendNumber sb scratch values[index]
-                        sb.Append(template.Strings[index + 1]) |> ignore
-                    let s = sb.ToString()
-                    ComposeScratchTls.Release sb
+                        writeNumber &buf &pos values[index]
+                        writeString &buf &pos strings[index + 1]
+                    let s = String(ReadOnlySpan<char>(buf, 0, pos))
+                    ComposeScratchTls.Release buf
                     s
             Output(template.Kind,0.,null,values,text)
 
@@ -343,6 +401,23 @@ module internal ValueInterpolation =
                 dst[i] <- PropertyNumbers.round scale (a + (last[i] - a) * progress)
                 i <- i + 1
 
+    let inline private sampleColorRgba4 (first: float array) (last: float array) (progress: float) : Vector256<float> =
+        let a3 = first[3]
+        let b3 = last[3]
+        let alpha = if progress = 1. then b3 elif progress = 0. then a3 else a3 + (b3 - a3) * progress
+        if Vector256.IsHardwareAccelerated then
+            let va = Vector256.LoadUnsafe(&MemoryMarshal.GetArrayDataReference(first))
+            let vb = Vector256.LoadUnsafe(&MemoryMarshal.GetArrayDataReference(last))
+            let vSq = Vector256.Max(Vector256<float>.Zero, va * va * Vector256.Create(1. - progress) + vb * vb * Vector256.Create(progress))
+            Vector256.Sqrt(vSq).WithElement(3, alpha)
+        else
+            let oneMinusP = 1. - progress
+            let inline sq i =
+                let a = first[i]
+                let b = last[i]
+                Math.Sqrt(max 0. (a * a * oneMinusP + b * b * progress))
+            Vector256.Create(sq 0, sq 1, sq 2, alpha)
+
     /// <summary>Samples compound or color components directly into <paramref name="dst"/> without allocating <see cref="Output"/> or formatting strings.</summary>
     let sampleComponentsInto (roundNumbers: bool, first: Data, last: Data, progress: float, precision: int,
                               modifier: float -> float, canWrite: unit -> bool, dst: float array) : bool =
@@ -350,7 +425,23 @@ module internal ValueInterpolation =
         if not (canWrite()) then false
         else
             let precision = if progress = 0. || progress = 1. || (first.Kind = ValueKind.Number && not roundNumbers) then -1 else precision
-            if Object.ReferenceEquals(modifier, PropertyNumbers.identityFloat) then
+            let isIdentity = Object.ReferenceEquals(modifier, PropertyNumbers.identityFloat)
+            if first.Kind = ValueKind.Color && first.Components.Length = 4 && last.Components.Length = 4 then
+                let vColor = sampleColorRgba4 first.Components last.Components progress
+                if isIdentity then
+                    vColor.StoreUnsafe(&MemoryMarshal.GetArrayDataReference(dst))
+                    true
+                else
+                    let mutable alive = true
+                    let mutable idx = 0
+                    while idx < 4 && alive do
+                        if not (canWrite()) then alive <- false
+                        else
+                            let result = modifier (vColor.GetElement idx)
+                            if canWrite() then dst[idx] <- result else alive <- false
+                        idx <- idx + 1
+                    alive && canWrite()
+            elif isIdentity then
                 if first.Kind = ValueKind.Color then
                     let oneMinusP = 1. - progress
                     for index = 0 to last.Components.Length - 1 do
@@ -429,24 +520,24 @@ module internal ValueInterpolation =
         if progress=0. then Array.copy first
         elif progress=1. then Array.copy last
         else
-            let values = Array.zeroCreate last.Length
-            for i in 0..values.Length-1 do
-                values[i] <- PropertyNumbers.round 10000. (first[i]+(last[i]-first[i])*progress)
+            let values = Array.zeroCreate<float> last.Length
+            lerpComplexSimd first last values progress 4
             values
 
     /// <summary>Captures SVG endpoints for identity-only progress writes. Compound arithmetic has no callbacks.</summary>
     let prepareMorph firstText lastText =
         let first,last = normalize None (Text firstText) (Text firstText) (Text lastText)
         if first.Kind=ValueKind.Complex then
+            let scratch = Array.zeroCreate<float> last.Components.Length
             fun progress current ->
                 finite "progress" progress
                 if not(current()) then None
                 else
-                    let values = morphCoordinates first.Components last.Components progress
-                    if current() then Some(compose(last,0.,values)) else None
+                    lerpComplexSimd first.Components last.Components scratch progress 4
+                    if current() then Some(compose(last,0.,scratch)) else None
         else
             fun progress current ->
-                match sampleOutput(false,first,last,progress,4,id,current) with
+                match sampleOutput(false,first,last,progress,4,PropertyNumbers.identityFloat,current) with
                 | null -> None
                 | output -> Some output
 

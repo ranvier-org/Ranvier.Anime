@@ -44,23 +44,33 @@ type GamutPolicy =
 /// <summary>Pure color conversion and interpolation without CSS parsing or a scheduler. D50 matrices follow d3-color; see THIRD-PARTY-NOTICES.md.</summary>
 [<RequireQualifiedAccess>]
 module ColorSpace =
-    let private finite values =
-        if values |> List.exists (Double.IsFinite >> not) then
+    [<Struct>]
+    type private LabVal =
+        val Lightness: float
+        val A: float
+        val B: float
+        new(l, a, b) = { Lightness = l; A = a; B = b }
+
+    [<Struct>]
+    type private HclVal =
+        val Hue: float
+        val Chroma: float
+        val Lightness: float
+        new(h, c, l) = { Hue = h; Chroma = c; Lightness = l }
+
+    let inline private finite3 a b c =
+        if not (Double.IsFinite a && Double.IsFinite b && Double.IsFinite c) then
             invalidArg "color" "Color components must be finite."
 
-    let private alpha value =
-        if
-            not (Double.IsFinite value)
-            || value < 0.
-            || value > 1.
-        then
+    let inline private checkAlpha value =
+        if not (Double.IsFinite value) || value < 0. || value > 1. then
             invalidArg "alpha" "Alpha must be in [0,1]."
 
     let rgba red green blue opacity =
-        finite [ red; green; blue ]
-        alpha opacity
+        finite3 red green blue
+        checkAlpha opacity
 
-        if List.exists (fun x -> x < 0. || x > 1.) [ red; green; blue ] then
+        if red < 0. || red > 1. || green < 0. || green > 1. || blue < 0. || blue > 1. then
             invalidArg "channels" "Expected normalized sRGB in [0,1]."
 
         {
@@ -70,199 +80,173 @@ module ColorSpace =
             Alpha = opacity
         }
 
-    let applyGamut policy (color: Rgba) =
-        finite [ color.Red; color.Green; color.Blue ]
-        alpha color.Alpha
+    let inline private clipUnit x = Math.Clamp(x, 0., 1.)
 
-        let clip x =
-            Math.Clamp (x, 0., 1.)
+    let applyGamut policy (color: Rgba) =
+        finite3 color.Red color.Green color.Blue
+        checkAlpha color.Alpha
 
         match policy with
         | GamutPolicy.Preserve -> color
         | GamutPolicy.Clip ->
             { color with
-                Red = clip color.Red
-                Green = clip color.Green
-                Blue = clip color.Blue
+                Red = clipUnit color.Red
+                Green = clipUnit color.Green
+                Blue = clipUnit color.Blue
             }
         | GamutPolicy.Reject -> rgba color.Red color.Green color.Blue color.Alpha
 
+    let inline private srgbLinear x =
+        if x <= 0.04045 then x / 12.92
+        else Math.Pow((x + 0.055) / 1.055, 2.4)
+
+    let inline private labForward x =
+        if x > 216. / 24389. then Math.Cbrt x
+        else x / (108. / 841.) + 4. / 29.
+
+    let inline private labInverse t =
+        if t > 6. / 29. then t * t * t
+        else (108. / 841.) * (t - 4. / 29.)
+
+    let inline private srgbGamma x =
+        if x <= 0.0031308 then 12.92 * x
+        else 1.055 * Math.Pow(x, 1. / 2.4) - 0.055
+
+    let inline private snapLabUnit v =
+        if v < 0. && v >= -1e-5 then 0.
+        elif v > 1. && v <= 1. + 1e-5 then 1.
+        else v
+
+    let private toLabCore (color: Rgba) : LabVal =
+        let r = srgbLinear color.Red
+        let g = srgbLinear color.Green
+        let b = srgbLinear color.Blue
+        let y = labForward (0.2225045 * r + 0.7168786 * g + 0.0606169 * b)
+        if r = g && g = b then
+            LabVal(116. * y - 16., 0., 0.)
+        else
+            let x = labForward ((0.4360747 * r + 0.3850649 * g + 0.1430804 * b) / 0.96422)
+            let z = labForward ((0.0139322 * r + 0.0971045 * g + 0.7141733 * b) / 0.82521)
+            LabVal(116. * y - 16., 500. * (x - y), 200. * (y - z))
+
+    let private fromLabCore (l: float) (a: float) (b: float) : struct(float * float * float) =
+        let fy = (l + 16.) / 116.
+        let y = labInverse fy
+        if a = 0. && b = 0. then
+            let grey = snapLabUnit (srgbGamma y)
+            struct(grey, grey, grey)
+        else
+            let x = 0.96422 * labInverse (fy + a / 500.)
+            let z = 0.82521 * labInverse (fy - b / 200.)
+            let r = snapLabUnit (srgbGamma (3.1338561 * x - 1.6168667 * y - 0.4906146 * z))
+            let g = snapLabUnit (srgbGamma (-0.9787684 * x + 1.9161415 * y + 0.0334540 * z))
+            let bl = snapLabUnit (srgbGamma (0.0719453 * x - 0.2289914 * y + 1.4052427 * z))
+            struct(r, g, bl)
+
+    let private toHclCore (color: Rgba) : HclVal =
+        let lab = toLabCore color
+        let chroma = sqrt (lab.A * lab.A + lab.B * lab.B)
+        if chroma < 1e-7 then
+            HclVal(0., 0., lab.Lightness)
+        else
+            let hue = (atan2 lab.B lab.A * (180. / Math.PI) + 360.) % 360.
+            HclVal(hue, chroma, lab.Lightness)
+
     let toLab (color: Rgba) =
-        applyGamut GamutPolicy.Preserve color |> ignore
-
-        let linear x =
-            if x <= 0.04045 then
-                x / 12.92
-            else
-                Math.Pow ((x + 0.055) / 1.055, 2.4)
-
-        let f x =
-            if x > 216. / 24389. then
-                Math.Pow (x, 1. / 3.)
-            else
-                x / (108. / 841.) + 4. / 29.
-
-        let r, g, b = linear color.Red, linear color.Green, linear color.Blue
-        let y = f (0.2225045 * r + 0.7168786 * g + 0.0606169 * b)
-
-        let x, z =
-            if r = g && g = b then
-                y, y
-            else
-                f (
-                    (0.4360747 * r + 0.3850649 * g + 0.1430804 * b)
-                    / 0.96422
-                ),
-                f (
-                    (0.0139322 * r + 0.0971045 * g + 0.7141733 * b)
-                    / 0.82521
-                )
-
+        finite3 color.Red color.Green color.Blue
+        checkAlpha color.Alpha
+        let lab = toLabCore color
         {
-            Lightness = 116. * y - 16.
-            A = 500. * (x - y)
-            B = 200. * (y - z)
+            Lightness = lab.Lightness
+            A = lab.A
+            B = lab.B
             Alpha = color.Alpha
         }
 
     let fromLab (color: LabColor) =
-        finite [ color.Lightness; color.A; color.B ]
-        alpha color.Alpha
-
-        let inverse t =
-            if t > 6. / 29. then
-                t * t * t
-            else
-                (108. / 841.) * (t - 4. / 29.)
-
-        let gamma x =
-            if x <= 0.0031308 then
-                12.92 * x
-            else
-                1.055 * Math.Pow (x, 1. / 2.4) - 0.055
-
-        let y = (color.Lightness + 16.) / 116.
-
-        let x, z =
-            0.96422 * inverse (y + color.A / 500.), 0.82521 * inverse (y - color.B / 200.)
-
-        let y = inverse y
-
-        let snapUnit v =
-            if v < 0. && v >= -1e-5 then 0.
-            elif v > 1. && v <= 1. + 1e-5 then 1.
-            else v
-
-        let rgb =
-            if color.A = 0. && color.B = 0. then
-                let grey = snapUnit (gamma y)
-                {
-                    Red = grey
-                    Green = grey
-                    Blue = grey
-                    Alpha = color.Alpha
-                }
-            else
-                {
-                    Red = snapUnit (gamma (3.1338561 * x - 1.6168667 * y - 0.4906146 * z))
-                    Green = snapUnit (gamma (-0.9787684 * x + 1.9161415 * y + 0.0334540 * z))
-                    Blue = snapUnit (gamma (0.0719453 * x - 0.2289914 * y + 1.4052427 * z))
-                    Alpha = color.Alpha
-                }
-
-        rgb
-        |> applyGamut GamutPolicy.Preserve
+        finite3 color.Lightness color.A color.B
+        checkAlpha color.Alpha
+        let struct(r, g, b) = fromLabCore color.Lightness color.A color.B
+        finite3 r g b
+        {
+            Red = r
+            Green = g
+            Blue = b
+            Alpha = color.Alpha
+        }
 
     let toHcl color =
-        let lab = toLab color
-        let chroma = sqrt (lab.A * lab.A + lab.B * lab.B)
-
-        let hue =
-            if chroma < 1e-7 then
-                0.
-            else
-                (atan2 lab.B lab.A * 180. / Math.PI + 360.) % 360.
-
+        finite3 color.Red color.Green color.Blue
+        checkAlpha color.Alpha
+        let hcl = toHclCore color
         {
-            Hue = hue
-            Chroma = (if chroma < 1e-7 then 0. else chroma)
-            Lightness = lab.Lightness
-            Alpha = lab.Alpha
+            Hue = hcl.Hue
+            Chroma = hcl.Chroma
+            Lightness = hcl.Lightness
+            Alpha = color.Alpha
         }
 
     let fromHcl (color: HclColor) =
-        finite [ color.Hue; color.Chroma; color.Lightness ]
+        finite3 color.Hue color.Chroma color.Lightness
+        checkAlpha color.Alpha
 
         if color.Chroma < 0. then
             invalidArg "color" "Negative chroma."
 
-        let angle = (color.Hue % 360.) * Math.PI / 180.
-
-        fromLab
-            {
-                Lightness = color.Lightness
-                A = cos angle * color.Chroma
-                B = sin angle * color.Chroma
-                Alpha = color.Alpha
-            }
+        let angle = (color.Hue % 360.) * (Math.PI / 180.)
+        let struct(sinA, cosA) = Math.SinCos angle
+        let struct(r, g, b) = fromLabCore color.Lightness (cosA * color.Chroma) (sinA * color.Chroma)
+        finite3 r g b
+        {
+            Red = r
+            Green = g
+            Blue = b
+            Alpha = color.Alpha
+        }
 
     /// <summary>Interpolates straight alpha and color at progress in [0,1]. HCL takes the shortest hue path and borrows hue from a chromatic endpoint.</summary>
     let interpolate space gamut (first: Rgba) (last: Rgba) progress =
-        if
-            not (Double.IsFinite progress)
-            || progress < 0.
-            || progress > 1.
-        then
+        if not (Double.IsFinite progress) || progress < 0. || progress > 1. then
             invalidArg "progress" "Expected progress in [0,1]."
 
-        applyGamut GamutPolicy.Preserve first |> ignore
-        applyGamut GamutPolicy.Preserve last |> ignore
+        finite3 first.Red first.Green first.Blue
+        checkAlpha first.Alpha
+        finite3 last.Red last.Green last.Blue
+        checkAlpha last.Alpha
 
-        let lerp a b =
+        let inline lerp a b =
             let result = PropertyNumbers.interpolate a b progress
-
-            if Double.IsFinite result then
-                result
-            else
-                a * (1. - progress) + b * progress
+            if Double.IsFinite result then result else a * (1. - progress) + b * progress
 
         let opacity = lerp first.Alpha last.Alpha
 
-        let result =
+        let struct(r, g, b) =
             match space with
             | ColorInterpolation.Srgb ->
-                {
-                    Red = lerp first.Red last.Red
-                    Green = lerp first.Green last.Green
-                    Blue = lerp first.Blue last.Blue
-                    Alpha = opacity
-                }
+                struct(lerp first.Red last.Red, lerp first.Green last.Green, lerp first.Blue last.Blue)
             | ColorInterpolation.Lab ->
-                let a, b = toLab first, toLab last
-
-                fromLab
-                    {
-                        Lightness = lerp a.Lightness b.Lightness
-                        A = lerp a.A b.A
-                        B = lerp a.B b.B
-                        Alpha = opacity
-                    }
+                let a = toLabCore first
+                let bl = toLabCore last
+                fromLabCore (lerp a.Lightness bl.Lightness) (lerp a.A bl.A) (lerp a.B bl.B)
             | ColorInterpolation.Hcl ->
-                let a, b = toHcl first, toHcl last
-                let h0 = if a.Chroma = 0. then b.Hue else a.Hue
-                let h1 = if b.Chroma = 0. then h0 else b.Hue
+                let a = toHclCore first
+                let bl = toHclCore last
+                let h0 = if a.Chroma = 0. then bl.Hue else a.Hue
+                let h1 = if bl.Chroma = 0. then h0 else bl.Hue
                 let delta = (h1 - h0 + 540.) % 360. - 180.
+                let hue = h0 + progress * delta
+                let chroma = lerp a.Chroma bl.Chroma
+                let lightness = lerp a.Lightness bl.Lightness
+                let angle = (hue % 360.) * (Math.PI / 180.)
+                let struct(sinA, cosA) = Math.SinCos angle
+                fromLabCore lightness (cosA * chroma) (sinA * chroma)
 
-                fromHcl
-                    {
-                        Hue = h0 + progress * delta
-                        Chroma = lerp a.Chroma b.Chroma
-                        Lightness = lerp a.Lightness b.Lightness
-                        Alpha = opacity
-                    }
+        finite3 r g b
 
-        applyGamut
-            gamut
-            (if progress = 0. then first
-             elif progress = 1. then last
-             else result)
+        if progress = 0. then applyGamut gamut first
+        elif progress = 1. then applyGamut gamut last
+        else
+            match gamut with
+            | GamutPolicy.Preserve -> { Red = r; Green = g; Blue = b; Alpha = opacity }
+            | GamutPolicy.Clip -> { Red = clipUnit r; Green = clipUnit g; Blue = clipUnit b; Alpha = opacity }
+            | GamutPolicy.Reject -> rgba r g b opacity
