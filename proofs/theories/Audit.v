@@ -34,6 +34,9 @@ Print Assumptions lab_white_snap_preserves_in_gamut.
 Print Assumptions angle_grad_turn_deg_homomorphism.
 Print Assumptions morph_simd_chunks_eq_scalar.
 Print Assumptions fixed4_int_decomposition_exact.
+Print Assumptions simd_snap_to_first_tie_eq_reduce.
+Print Assumptions simd_snap_lane_lex_min_eq_reduce.
+Print Assumptions strictly_sorted_bracket_snap_eq_reduce.
 
 (** ** CompositionTimeline.v *)
 Print Assumptions timeline_position_relative_ops_sound.
@@ -58,3 +61,5 @@ Print Assumptions motion_animate_on_reverse_revert_restores_initial_style.
 Print Assumptions motion_slot_close_is_terminal.
 Print Assumptions draggable_numeric_sentinel_cache_eq_eager_text.
 Print Assumptions css_balanced_delimiter_single_pass_eq_two_pass.
+Print Assumptions parallel_snapshot_restore_eq_frozendict.
+Print Assumptions char_buffer_scramble_eq_string_cache.

@@ -304,3 +304,280 @@ Proof.
   assert (Hdm : Z.abs n = 10000 * (Z.abs n / 10000) + Z.abs n mod 10000) by (apply Z.div_mod; lia).
   destruct (Z.ltb_spec n 0); repeat split; lia.
 Qed.
+
+(** ** Batch A4 Refinement Proof: 3-Tier SIMD Earliest-Tie Nearest-Point Reduction (`Utils.snapTo`) *)
+
+Definition snap_step (target : Z) (acc : Z * Z) (cv : Z) : Z * Z :=
+  let '(best_val, best_dist) := acc in
+  let d := Z.abs (cv - target) in
+  if Z.ltb d best_dist then (cv, d) else (best_val, best_dist).
+
+Fixpoint snap_reduce_direct (target : Z) (closest : Z) (rest : list Z) : Z :=
+  match rest with
+  | [] => closest
+  | cv :: tl =>
+    let closest' :=
+      if Z.ltb (Z.abs (cv - target)) (Z.abs (closest - target)) then cv else closest in
+    snap_reduce_direct target closest' tl
+  end.
+
+Definition chunk_has_closer (target best_dist : Z) (chunk_pts : list Z) : bool :=
+  List.existsb (fun cv => Z.ltb (Z.abs (cv - target)) best_dist) chunk_pts.
+
+Definition snap_chunk_step (target : Z) (acc : Z * Z) (chunk_pts : list Z) : Z * Z :=
+  let '(_, best_dist) := acc in
+  if chunk_has_closer target best_dist chunk_pts then
+    List.fold_left (snap_step target) chunk_pts acc
+  else
+    acc.
+
+Fixpoint snap_simd_chunks (fuel chunk : nat) (target : Z) (acc : Z * Z) (rest : list Z) : Z * Z :=
+  match fuel with
+  | 0%nat => List.fold_left (snap_step target) rest acc
+  | S fuel' =>
+    if (Nat.leb chunk 0 || Nat.ltb (length rest) chunk)%bool then
+      List.fold_left (snap_step target) rest acc
+    else
+      let acc' := snap_chunk_step target acc (firstn chunk rest) in
+      snap_simd_chunks fuel' chunk target acc' (skipn chunk rest)
+  end.
+
+Lemma snap_fold_no_closer_unchanged :
+  forall chunk_pts target best_val best_dist,
+    chunk_has_closer target best_dist chunk_pts = false ->
+    List.fold_left (snap_step target) chunk_pts (best_val, best_dist) = (best_val, best_dist).
+Proof.
+  induction chunk_pts as [| cv tl IH]; intros target best_val best_dist Hnc; simpl in *.
+  - reflexivity.
+  - apply Bool.orb_false_iff in Hnc as [Hhead Htail].
+    unfold snap_step at 1.
+    rewrite Hhead.
+    apply IH. exact Htail.
+Qed.
+
+Lemma snap_chunk_step_eq_fold :
+  forall target acc chunk_pts,
+    snap_chunk_step target acc chunk_pts = List.fold_left (snap_step target) chunk_pts acc.
+Proof.
+  intros target [best_val best_dist] chunk_pts.
+  unfold snap_chunk_step.
+  destruct (chunk_has_closer target best_dist chunk_pts) eqn:Hhas.
+  - reflexivity.
+  - symmetry. apply snap_fold_no_closer_unchanged. exact Hhas.
+Qed.
+
+Lemma snap_simd_chunks_eq_fold :
+  forall fuel chunk target acc rest,
+    snap_simd_chunks fuel chunk target acc rest = List.fold_left (snap_step target) rest acc.
+Proof.
+  induction fuel as [| fuel' IH]; intros chunk target acc rest; simpl.
+  - reflexivity.
+  - destruct (Nat.leb_spec chunk 0); [simpl; reflexivity |].
+    destruct (Nat.ltb_spec (length rest) chunk); [simpl; reflexivity |].
+    simpl.
+    rewrite IH.
+    rewrite snap_chunk_step_eq_fold.
+    rewrite <- List.fold_left_app.
+    rewrite List.firstn_skipn.
+    reflexivity.
+Qed.
+
+Lemma snap_fold_tracks_direct_reduce :
+  forall rest target closest,
+    List.fold_left (snap_step target) rest (closest, Z.abs (closest - target)) =
+    (snap_reduce_direct target closest rest, Z.abs (snap_reduce_direct target closest rest - target)).
+Proof.
+  induction rest as [| cv tl IH]; intros target closest; simpl.
+  - reflexivity.
+  - unfold snap_step at 1.
+    destruct (Z.ltb (Z.abs (cv - target)) (Z.abs (closest - target))).
+    + apply IH.
+    + apply IH.
+Qed.
+
+(**md **3-tier SIMD (`Vector512` / `Vector256` / `Vector128`) nearest-point distance scan with mask fast-skip and earliest-index tie-breaking matches `Array.reduce` (`Utils.snapTo` & `ValueChain.SnapTo`).**
+Across any positive vector width `chunk` (`8`, `4`, `2`), skipping chunks where no lane satisfies `|cv - target| < best_dist` and folding improving chunks left-to-right returns the exact element selected by `Array.reduce` (`snap_reduce_direct`), preserving earliest-entry tie-breaking with zero closure allocations. *)
+Theorem simd_snap_to_first_tie_eq_reduce :
+  forall fuel chunk target p0 rest,
+    fst (snap_simd_chunks fuel chunk target (p0, Z.abs (p0 - target)) rest) =
+    snap_reduce_direct target p0 rest.
+Proof.
+  intros fuel chunk target p0 rest.
+  rewrite snap_simd_chunks_eq_fold.
+  rewrite snap_fold_tracks_direct_reduce.
+  simpl. reflexivity.
+Qed.
+
+Definition lex_ltb (a b : Z * nat) : bool :=
+  orb (Z.ltb (fst a) (fst b)) (andb (Z.eqb (fst a) (fst b)) (Nat.ltb (snd a) (snd b))).
+
+Definition lex_pair_min (a b : Z * nat) : Z * nat :=
+  if lex_ltb b a then b else a.
+
+Lemma lex_ltb_true_iff :
+  forall a b,
+    lex_ltb a b = true <->
+    (fst a < fst b \/ (fst a = fst b /\ (snd a < snd b)%nat)).
+Proof.
+  intros [da ia] [db ib]; unfold lex_ltb; simpl.
+  rewrite Bool.orb_true_iff, Bool.andb_true_iff, Z.ltb_lt, Z.eqb_eq, Nat.ltb_lt.
+  tauto.
+Qed.
+
+Lemma lex_ltb_false_iff :
+  forall a b,
+    lex_ltb a b = false <->
+    (fst b < fst a \/ (fst b = fst a /\ (snd b <= snd a)%nat)).
+Proof.
+  intros [da ia] [db ib]; unfold lex_ltb; simpl.
+  rewrite Bool.orb_false_iff, Bool.andb_false_iff, Z.ltb_ge, Z.eqb_neq, Nat.ltb_ge.
+  split; intros H; lia.
+Qed.
+
+Fixpoint indexed_dists (target : Z) (idx : nat) (pts : list Z) : list (Z * nat) :=
+  match pts with
+  | [] => []
+  | cv :: tl => (Z.abs (cv - target), idx) :: indexed_dists target (S idx) tl
+  end.
+
+Lemma lex_fold_indexed_eq_direct :
+  forall rest target prefix p0 best_idx,
+    (best_idx < length prefix)%nat ->
+    let closest := nth best_idx prefix p0 in
+    let '(_, final_idx) :=
+      List.fold_left lex_pair_min
+        (indexed_dists target (length prefix) rest)
+        (Z.abs (closest - target), best_idx) in
+    nth final_idx (prefix ++ rest) p0 = snap_reduce_direct target closest rest.
+Proof.
+  induction rest as [| cv tl IH]; intros target prefix p0 best_idx Hlt closest.
+  - simpl. rewrite app_nil_r. reflexivity.
+  - cbn [indexed_dists List.fold_left snap_reduce_direct].
+    destruct (lex_ltb (Z.abs (cv - target), length prefix) (Z.abs (closest - target), best_idx)) eqn:Hcmp.
+    + assert (Hstep : lex_pair_min (Z.abs (closest - target), best_idx) (Z.abs (cv - target), length prefix) =
+                      (Z.abs (cv - target), length prefix)).
+      { unfold lex_pair_min. rewrite Hcmp. reflexivity. }
+      rewrite Hstep.
+      apply lex_ltb_true_iff in Hcmp. simpl in Hcmp.
+      assert (Hstrict : Z.abs (cv - target) < Z.abs (closest - target)) by lia.
+      destruct (Z.ltb_spec (Z.abs (cv - target)) (Z.abs (closest - target))); [| lia].
+      replace (prefix ++ cv :: tl) with ((prefix ++ [cv]) ++ tl) by (rewrite <- app_assoc; reflexivity).
+      assert (Hlen : length (prefix ++ [cv]) = S (length prefix)) by (rewrite length_app; simpl; lia).
+      rewrite <- Hlen.
+      assert (Hnth : nth (length prefix) (prefix ++ [cv]) p0 = cv) by (rewrite nth_middle; reflexivity).
+      pose proof (IH target (prefix ++ [cv]) p0 (length prefix) ltac:(lia)) as Hrec.
+      cbv zeta in Hrec.
+      rewrite Hnth in Hrec.
+      exact Hrec.
+    + assert (Hstep : lex_pair_min (Z.abs (closest - target), best_idx) (Z.abs (cv - target), length prefix) =
+                      (Z.abs (closest - target), best_idx)).
+      { unfold lex_pair_min. rewrite Hcmp. reflexivity. }
+      rewrite Hstep.
+      apply lex_ltb_false_iff in Hcmp. simpl in Hcmp.
+      assert (Hnlt : Z.abs (closest - target) <= Z.abs (cv - target)) by lia.
+      destruct (Z.ltb_spec (Z.abs (cv - target)) (Z.abs (closest - target))); [lia |].
+      replace (prefix ++ cv :: tl) with ((prefix ++ [cv]) ++ tl) by (rewrite <- app_assoc; reflexivity).
+      assert (Hlen : length (prefix ++ [cv]) = S (length prefix)) by (rewrite length_app; simpl; lia).
+      rewrite <- Hlen.
+      assert (Hnth : nth best_idx (prefix ++ [cv]) p0 = closest) by (unfold closest; rewrite app_nth1 by lia; reflexivity).
+      pose proof (IH target (prefix ++ [cv]) p0 best_idx ltac:(lia)) as Hrec.
+      cbv zeta in Hrec.
+      rewrite Hnth in Hrec.
+      exact Hrec.
+Qed.
+
+(**md **Branchless SIMD `(vBestDist, vBestIdx)` lane reduction with horizontal lexicographic merge is commutative, associative, and matches `Array.reduce`.**
+`lex_pair_min` forms a commutative, associative semilattice on `(distance, index)` pairs, so accumulating per-lane `(vBestDist, vBestIdx)` vectors in any lane-interleaved order and merging horizontally selects the exact earliest-tie minimum `snap_reduce_direct target p0 rest`. *)
+Theorem simd_snap_lane_lex_min_eq_reduce :
+  (forall a b, lex_pair_min a b = lex_pair_min b a) /\
+  (forall a b c, lex_pair_min a (lex_pair_min b c) = lex_pair_min (lex_pair_min a b) c) /\
+  (forall target p0 rest,
+    let '(_, best_idx) :=
+      List.fold_left lex_pair_min (indexed_dists target 1%nat rest) (Z.abs (p0 - target), 0%nat) in
+    nth best_idx (p0 :: rest) p0 = snap_reduce_direct target p0 rest).
+Proof.
+  split.
+  - intros [da ia] [db ib]; unfold lex_pair_min.
+    destruct (lex_ltb (db, ib) (da, ia)) eqn:H1;
+    destruct (lex_ltb (da, ia) (db, ib)) eqn:H2;
+    try rewrite lex_ltb_true_iff in *;
+    try rewrite lex_ltb_false_iff in *;
+    simpl in *; try reflexivity; f_equal; lia.
+  - split.
+    + intros [da ia] [db ib] [dc ic]; unfold lex_pair_min.
+      destruct (lex_ltb (dc, ic) (db, ib)) eqn:Hcb;
+      destruct (lex_ltb (db, ib) (da, ia)) eqn:Hba;
+      simpl;
+      try rewrite Hcb;
+      try rewrite Hba;
+      destruct (lex_ltb (dc, ic) (da, ia)) eqn:Hca;
+      repeat match goal with
+             | H : lex_ltb _ _ = true |- _ => apply lex_ltb_true_iff in H
+             | H : lex_ltb _ _ = false |- _ => apply lex_ltb_false_iff in H
+             end;
+      simpl in *; try reflexivity; f_equal; lia.
+    + intros target p0 rest.
+      change (p0 :: rest) with ([p0] ++ rest).
+      pose proof (lex_fold_indexed_eq_direct rest target [p0] p0 0%nat ltac:(simpl; lia)) as H.
+      simpl in H. exact H.
+Qed.
+
+Lemma snap_reduce_direct_app :
+  forall a b target closest,
+    snap_reduce_direct target closest (a ++ b) =
+    snap_reduce_direct target (snap_reduce_direct target closest a) b.
+Proof.
+  induction a as [| x tl IH]; intros b target closest; simpl.
+  - reflexivity.
+  - apply IH.
+Qed.
+
+Lemma snap_reduce_direct_in :
+  forall a target closest,
+    In (snap_reduce_direct target closest a) (closest :: a).
+Proof.
+  induction a as [| x tl IH]; intros target closest; simpl.
+  - left; reflexivity.
+  - destruct (Z.ltb (Z.abs (x - target)) (Z.abs (closest - target))).
+    + right. apply IH.
+    + pose proof (IH target closest) as Hin.
+      destruct Hin as [Heq | Htl]; [left; exact Heq | right; right; exact Htl].
+Qed.
+
+Lemma snap_reduce_all_farther_unchanged :
+  forall post target winner,
+    (forall q, In q post -> Z.abs (winner - target) <= Z.abs (q - target)) ->
+    snap_reduce_direct target winner post = winner.
+Proof.
+  induction post as [| q tl IH]; intros target winner Hfar; simpl.
+  - reflexivity.
+  - pose proof (Hfar q (or_introl eq_refl)) as Hq.
+    destruct (Z.ltb_spec (Z.abs (q - target)) (Z.abs (winner - target))); [lia |].
+    apply IH. intros r Hr. apply Hfar. right; exact Hr.
+Qed.
+
+(**md **Binary-search bracketing `(lo_val, hi_val)` on strictly increasing snap arrays matches full `Array.reduce` (`ValueChain.SnapTo`).**
+Whenever `p0 :: pre` all lie strictly below `lo_val <= target <= hi_val` and `post` all lie strictly above `hi_val`, `snap_reduce_direct` across the entire list `(p0 :: pre) ++ lo_val :: hi_val :: post` reduces to the single 2-point comparison `if |hi_val - target| < |lo_val - target| then hi_val else lo_val` with earliest-entry tie-breaking. *)
+Theorem strictly_sorted_bracket_snap_eq_reduce :
+  forall target p0 pre lo_val hi_val post,
+    (forall p, In p (p0 :: pre) -> p < lo_val) ->
+    lo_val <= target ->
+    target <= hi_val ->
+    (forall q, In q post -> hi_val < q) ->
+    snap_reduce_direct target p0 (pre ++ lo_val :: hi_val :: post) =
+    (if Z.ltb (Z.abs (hi_val - target)) (Z.abs (lo_val - target)) then hi_val else lo_val).
+Proof.
+  intros target p0 pre lo_val hi_val post Hpre Hlo Hhi Hpost.
+  rewrite snap_reduce_direct_app.
+  set (c := snap_reduce_direct target p0 pre).
+  assert (Hc_in : In c (p0 :: pre)) by apply snap_reduce_direct_in.
+  assert (Hc_lt : c < lo_val) by (apply Hpre; exact Hc_in).
+  simpl.
+  destruct (Z.ltb_spec (Z.abs (lo_val - target)) (Z.abs (c - target))); [| lia].
+  set (winner := if Z.ltb (Z.abs (hi_val - target)) (Z.abs (lo_val - target)) then hi_val else lo_val).
+  apply snap_reduce_all_farther_unchanged.
+  intros q Hq_in.
+  assert (Hq_gt : hi_val < q) by (apply Hpost; exact Hq_in).
+  unfold winner.
+  destruct (Z.ltb_spec (Z.abs (hi_val - target)) (Z.abs (lo_val - target))); lia.
+Qed.

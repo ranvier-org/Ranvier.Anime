@@ -3,7 +3,129 @@ namespace Ranvier.Anime
 open System
 open System.Collections.Generic
 open System.Globalization
+open System.Runtime.InteropServices
+open System.Runtime.Intrinsics
 open Ranvier.Dom
+
+module private SnapSimd =
+    let private idxInit512 = Vector512.Create(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L)
+    let private idxInit256 = Vector256.Create(0L, 1L, 2L, 3L)
+    let private idxInit128 = Vector128.Create(0L, 1L)
+
+    let snapToPoints (target: float) (points: float array) : float =
+        let p0 = points[0]
+        let mutable bestDist = abs (p0 - target)
+        if Double.IsNaN bestDist then
+            p0
+        else
+            let n = points.Length
+            let mutable bestIdx = 0
+            let mutable i = 0
+            if Vector512.IsHardwareAccelerated && n >= 8 then
+                let vTarget = Vector512.Create(target)
+                let vStep = Vector512.Create(8L)
+                let mutable vBestDist = Vector512.Create(bestDist)
+                let mutable vBestIdx = Vector512<int64>.Zero
+                let mutable vCurIdx = idxInit512
+                let pRef = &MemoryMarshal.GetArrayDataReference(points)
+                while i + 8 <= n do
+                    let vPts = Vector512.LoadUnsafe(&pRef, unativeint i)
+                    let vDist = Vector512.Abs(vPts - vTarget)
+                    let mask = Vector512.LessThan(vDist, vBestDist)
+                    vBestDist <- Vector512.ConditionalSelect(mask, vDist, vBestDist)
+                    vBestIdx <- Vector512.ConditionalSelect(mask.AsInt64(), vCurIdx, vBestIdx)
+                    vCurIdx <- vCurIdx + vStep
+                    i <- i + 8
+                for k = 0 to 7 do
+                    let d = vBestDist.GetElement(k)
+                    let idx = int (vBestIdx.GetElement(k))
+                    if d < bestDist || (d = bestDist && idx < bestIdx) then
+                        bestDist <- d
+                        bestIdx <- idx
+            elif Vector256.IsHardwareAccelerated && n >= 4 then
+                let vTarget = Vector256.Create(target)
+                let vStep = Vector256.Create(4L)
+                let mutable vBestDist = Vector256.Create(bestDist)
+                let mutable vBestIdx = Vector256<int64>.Zero
+                let mutable vCurIdx = idxInit256
+                let pRef = &MemoryMarshal.GetArrayDataReference(points)
+                while i + 4 <= n do
+                    let vPts = Vector256.LoadUnsafe(&pRef, unativeint i)
+                    let vDist = Vector256.Abs(vPts - vTarget)
+                    let mask = Vector256.LessThan(vDist, vBestDist)
+                    vBestDist <- Vector256.ConditionalSelect(mask, vDist, vBestDist)
+                    vBestIdx <- Vector256.ConditionalSelect(mask.AsInt64(), vCurIdx, vBestIdx)
+                    vCurIdx <- vCurIdx + vStep
+                    i <- i + 4
+                for k = 0 to 3 do
+                    let d = vBestDist.GetElement(k)
+                    let idx = int (vBestIdx.GetElement(k))
+                    if d < bestDist || (d = bestDist && idx < bestIdx) then
+                        bestDist <- d
+                        bestIdx <- idx
+            elif Vector128.IsHardwareAccelerated && n >= 2 then
+                let vTarget = Vector128.Create(target)
+                let vStep = Vector128.Create(2L)
+                let mutable vBestDist = Vector128.Create(bestDist)
+                let mutable vBestIdx = Vector128<int64>.Zero
+                let mutable vCurIdx = idxInit128
+                let pRef = &MemoryMarshal.GetArrayDataReference(points)
+                while i + 2 <= n do
+                    let vPts = Vector128.LoadUnsafe(&pRef, unativeint i)
+                    let vDist = Vector128.Abs(vPts - vTarget)
+                    let mask = Vector128.LessThan(vDist, vBestDist)
+                    vBestDist <- Vector128.ConditionalSelect(mask, vDist, vBestDist)
+                    vBestIdx <- Vector128.ConditionalSelect(mask.AsInt64(), vCurIdx, vBestIdx)
+                    vCurIdx <- vCurIdx + vStep
+                    i <- i + 2
+                for k = 0 to 1 do
+                    let d = vBestDist.GetElement(k)
+                    let idx = int (vBestIdx.GetElement(k))
+                    if d < bestDist || (d = bestDist && idx < bestIdx) then
+                        bestDist <- d
+                        bestIdx <- idx
+            else
+                i <- 1
+            while i < n do
+                let d = abs (points[i] - target)
+                if d < bestDist then
+                    bestDist <- d
+                    bestIdx <- i
+                i <- i + 1
+            points[bestIdx]
+
+    let isStrictlyIncreasingFinite (points: float array) : bool =
+        let n = points.Length
+        if n < 2 || not (Double.IsFinite points[0]) || not (Double.IsFinite points[n - 1]) then
+            false
+        else
+            let mutable ok = true
+            let mutable i = 1
+            while i < n && ok do
+                let prev = points[i - 1]
+                let cur = points[i]
+                ok <- Double.IsFinite cur && prev < cur
+                i <- i + 1
+            ok
+
+    let snapToStrictlySorted (target: float) (points: float array) : float =
+        if Double.IsNaN target then
+            points[0]
+        else
+            let last = points.Length - 1
+            if target <= points[0] then
+                points[0]
+            elif target >= points[last] then
+                points[last]
+            else
+                let mutable lo = 0
+                let mutable hi = last
+                while lo + 1 < hi do
+                    let mid = (lo + hi) >>> 1
+                    if points[mid] < target then lo <- mid else hi <- mid
+                let pLo = points[lo]
+                let pHi = points[hi]
+                if abs (pHi - target) < abs (pLo - target) then pHi else pLo
 
 /// <summary>Composable numeric transformation pipeline matching Anime.js chainable utilities.</summary>
 [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>]
@@ -28,7 +150,7 @@ type ValueChain internal (evaluate: float -> float) =
             let x = evaluate v
             if decimalLength < 0 then x
             elif decimalLength = 0 then jsRound x
-            else PropertyNumbers.round (Math.Pow(10., float decimalLength)) x)
+            else PropertyNumbers.round (PropertyNumbers.pow10 decimalLength) x)
 
     /// <summary>Chains a uniform step-increment snap stage.</summary>
     member _.Snap(increment: float) =
@@ -40,9 +162,10 @@ type ValueChain internal (evaluate: float -> float) =
     member _.SnapTo(points: float array) =
         if isNull points || points.Length = 0 then invalidArg "points" "Expected nonempty snap points."
         let copy = Array.copy points
-        ValueChain(fun v ->
-            let x = evaluate v
-            copy |> Array.reduce (fun closest cv -> if abs (cv - x) < abs (closest - x) then cv else closest))
+        if copy.Length >= 8 && SnapSimd.isStrictlyIncreasingFinite copy then
+            ValueChain(fun v -> SnapSimd.snapToStrictlySorted (evaluate v) copy)
+        else
+            ValueChain(fun v -> SnapSimd.snapToPoints (evaluate v) copy)
 
     /// <summary>Chains a range wrap stage in [min, max).</summary>
     member _.Wrap(min: float, max: float) =
@@ -187,7 +310,7 @@ module Utils =
     let round (value: float) (decimalLength: int) : float =
         if decimalLength < 0 then value
         elif decimalLength = 0 then PropertyNumbers.round 1. value
-        else PropertyNumbers.round (Math.Pow(10., float decimalLength)) value
+        else PropertyNumbers.round (PropertyNumbers.pow10 decimalLength) value
 
     /// <summary>Snaps a value to the nearest multiple of increment.</summary>
     let snap (value: float) (increment: float) : float =
@@ -197,7 +320,7 @@ module Utils =
     /// <summary>Snaps a value to the closest entry in points (ties keep the earlier entry).</summary>
     let snapTo (value: float) (points: float array) : float =
         if isNull points || points.Length = 0 then invalidArg "points" "Expected nonempty snap points."
-        points |> Array.reduce (fun closest cv -> if abs (cv - value) < abs (closest - value) then cv else closest)
+        SnapSimd.snapToPoints value points
 
     /// <summary>Wraps a value into the half-open interval [min, max).</summary>
     let wrap (value: float) (min: float) (max: float) : float =
@@ -303,8 +426,28 @@ module Utils =
             let u2 = u1 ^^^ (u1 + ((u1 ^^^ (u1 >>> 7)) * (u1 ||| 61u)))
             t <- float (int32 u2)
             let normalized = float (u2 ^^^ (u2 >>> 14)) / 4294967296.
-            let m = Math.Pow(10., float dec)
+            let m = PropertyNumbers.pow10 dec
             Math.Floor((normalized * (hi - lo + (1. / m)) + lo) * m) / m
+
+    /// <summary>Unboxed inclusive integer Mulberry32 generator matching createSeededRandom with decimalLength = 0.</summary>
+    let internal createSeededRandomInt (seed: float option) : (int -> int -> int) =
+        let mutable t =
+            match seed with
+            | Some s -> s
+            | None ->
+                let s = autoSeed
+                autoSeed <- autoSeed + 1.
+                s
+        let inline toUint32 (v: float) =
+            let rem = Math.Truncate(v) % 4294967296.
+            uint32 (if rem < 0. then rem + 4294967296. else rem)
+        fun lo hi ->
+            let u0 = toUint32 (t + 1831565813.)
+            let u1 = (u0 ^^^ (u0 >>> 15)) * (u0 ||| 1u)
+            let u2 = u1 ^^^ (u1 + ((u1 ^^^ (u1 >>> 7)) * (u1 ||| 61u)))
+            t <- float (int32 u2)
+            let normalized = float (u2 ^^^ (u2 >>> 14)) / 4294967296.
+            int (Math.Floor(normalized * float (hi - lo + 1) + float lo))
 
     /// <summary>Creates a generator whose sequence continues across draws, per-target callbacks and picks.</summary>
     let seededRandom (seed: float) = SeededRandom(createSeededRandom (Some seed) None None None)

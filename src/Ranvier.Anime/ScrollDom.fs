@@ -30,6 +30,13 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
                             else style.setProperty("position",value,priority))
                         debugPositionSnapshot <- None }
     let children = ResizeArray<ScrollObserver>()
+    let mutable childSnapshot : ScrollObserver array = [||]
+    let mutable childrenDirty = false
+    let getChildSnapshot () =
+        if childrenDirty then
+            childSnapshot <- children.ToArray()
+            childrenDirty <- false
+        childSnapshot
     let mutable disposed = false
     let mutable x,y,previousX,previousY,velocity = 0.,0.,0.,0.,0.
     let mutable backwardX,backwardY,lastBackward = false,false,false
@@ -49,12 +56,16 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
         lastVelocitySample <- now
         velocity <- ScrollMath.round 5 (if elapsed > 0. then sqrt(dx*dx+dy*dy)/elapsed else 0.)))
     let ticker = new Timer(scheduler,infinity,onBegin=(fun _ -> data.Resume()),onUpdate=(fun _ ->
-        let ordered = children.ToArray()
-        if lastBackward then Array.Reverse ordered
+        let snap = getChildSnapshot()
         let now = scheduler.Now()
         let elapsed = now - lastScrollSample
         lastScrollSample <- now
-        for child in ordered do if not disposed then child.HandleScroll(elapsed)))
+        if lastBackward then
+            for i = snap.Length - 1 downto 0 do
+                if not disposed then snap[i].HandleScroll(elapsed)
+        else
+            for i = 0 to snap.Length - 1 do
+                if not disposed then snap[i].HandleScroll(elapsed)))
     let wake = new Timer(scheduler,500. * engine.TimeScale,onBegin=(fun _ ->
         if ticker.Paused then lastScrollSample <- scheduler.Now()
         ticker.Resume()),onComplete=(fun _ -> ticker.Pause()))
@@ -70,7 +81,7 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
             x <- float element.scrollLeft
             y <- float element.scrollTop
     let number (value:string) =
-        let token = value.Trim().TrimEnd([|'p';'x'|])
+        let token = value.AsSpan().Trim().TrimEnd("px".AsSpan())
         match Double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture) with
         | true,value -> value
         | _ -> 0.
@@ -143,7 +154,7 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
         let cleanup () =
             initialization |> Option.iter(fun frame -> frame.Dispose())
             initialization <- None
-            child |> Option.iter(fun child -> children.Remove child |> ignore)
+            child |> Option.iter(fun c -> if children.Remove c then childrenDirty <- true)
             if children.Count = 0 then this.Dispose()
         let result = new ScrollObserver(
             (fun () -> if settings.Horizontal then x,backwardX else y,backwardY),measure,
@@ -164,6 +175,7 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
                     overlay.Sample(settings.Horizontal,x,y,entering))
             Remove=(fun () -> overlay.Remove()) }
         children.Add result
+        childrenDirty <- true
         initialization <- Some(scheduler.Frame(fun _ ->
             initialization <- None
             if not disposed && not result.Reverted && not result.Ready then
@@ -193,7 +205,10 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
     member _.Refresh() =
         if not disposed then
             bounds()
-            for child in children.ToArray() do if not disposed && child.Ready then child.Resize()
+            let snap = getChildSnapshot()
+            for i = 0 to snap.Length - 1 do
+                let child = snap[i]
+                if not disposed && child.Ready then child.Resize()
             if not disposed then readCoords(); wake.Restart()
     /// <summary>Current Euclidean velocity in CSS pixels per engine time unit.</summary>
     member _.Velocity = velocity / engine.TimeScale
@@ -210,8 +225,11 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
             finally
                 try eventTarget.removeEventListener("scroll",listener,false)
                 finally
-                    for child in children.ToArray() do child.Revert()
+                    let snap = getChildSnapshot()
+                    for i = 0 to snap.Length - 1 do snap[i].Revert()
                     children.Clear()
+                    childSnapshot <- [||]
+                    childrenDirty <- false
                     onDispose |> Option.iter(fun callback -> callback())
     interface IDisposable with member _.Dispose() = this.Dispose()
 

@@ -254,10 +254,9 @@ module internal ScrambleImpl =
                 match options.DelayBy with
                 | Some fn -> fn target index totalTargets
                 | None -> options.Delay
-            let rng =
-                if options.Seed <> 0. then Utils.createSeededRandom (Some options.Seed) None None None
-                else Utils.createSeededRandom None None None None
-            let rngInt lo hi = int (rng (Some (float lo)) (Some (float hi)) (Some 0))
+            let rngInt =
+                if options.Seed <> 0. then Utils.createSeededRandomInt (Some options.Seed)
+                else Utils.createSeededRandomInt None
 
             let currentText = readTargetText target
             let cachedOriginal =
@@ -372,33 +371,48 @@ module internal ScrambleImpl =
                     if revealTime > float charEnds[targetIndices[i]] then
                         charEnds[targetIndices[i]] <- float32 revealTime
 
+            let hasCharacters = characters.Length > 0
             let charCache =
                 Array.init animLength (fun _ ->
-                    if characters.Length > 0 then string characters[rngInt 0 totalChars] else "")
+                    if hasCharacters then characters[rngInt 0 totalChars] else '\u0000')
+
+            let hasFixedOverrideChar, fixedOverrideChar =
+                match overrideCharOpt with
+                | Some ch when ch.Length > 0 -> true, ch[0]
+                | _ -> false, '\u0000'
+
+            let overrideCharsStr = defaultArg overrideCharsOpt ""
+            let hasNonEmptyOverrideChars = hasFixedOverrideChar || overrideCharsStr.Length > 0
 
             let overrideCache =
                 match overrideCharsOpt with
-                | None -> None
-                | Some oc when StringComparer.Ordinal.Equals(oc, characters) && overrideCharOpt.IsNone ->
-                    Some charCache
+                | None -> ValueNone
+                | Some oc when StringComparer.Ordinal.Equals(oc, characters) && not hasFixedOverrideChar ->
+                    ValueSome charCache
                 | Some oc ->
-                    Some (Array.init animLength (fun _ ->
-                        match overrideCharOpt with
-                        | Some ch -> ch
-                        | None -> if oc.Length > 0 then string oc[rngInt 0 (oc.Length - 1)] else ""))
+                    ValueSome (Array.init animLength (fun _ ->
+                        if hasFixedOverrideChar then fixedOverrideChar
+                        elif oc.Length > 0 then oc[rngInt 0 (oc.Length - 1)]
+                        else '\u0000'))
+
+            let outBuf = Array.zeroCreate<char> animLength
 
             let fillStartText =
                 if prevTweenValue.IsSome then startingText
                 elif not hasOverride then ""
                 else
                     match overrideCache with
-                    | Some oc ->
-                        let sb = StringBuilder(startLength)
+                    | ValueSome oc ->
+                        let mutable startLen = 0
                         for c in 0 .. startLength - 1 do
-                            if startingText[c] = ' ' then sb.Append ' ' |> ignore
-                            else sb.Append oc[c] |> ignore
-                        sb.ToString()
-                    | None -> startingText
+                            if startingText[c] = ' ' then
+                                outBuf[startLen] <- ' '
+                                startLen <- startLen + 1
+                            elif hasNonEmptyOverrideChars then
+                                outBuf[startLen] <- oc[c]
+                                startLen <- startLen + 1
+                        if startLen = 0 then "" else String(outBuf, 0, startLen)
+                    | ValueNone -> startingText
 
             let mutable lastValue = -1.
             let mutable lastStep = -1
@@ -425,46 +439,56 @@ module internal ScrambleImpl =
                         if refreshChars then lastStep <- currentStep
                         let linear = if revealDelayRatio > 0. then (v - revealDelayRatio) / (1. - revealDelayRatio) else v
                         let t = if linear > 0. then easeFn linear else 0.
-                        let sb = StringBuilder(animLength)
+                        let mutable outLen = 0
                         for c in 0 .. animLength - 1 do
                             let charStart = float charStarts[c]
                             let charEnd = float charEnds[c]
                             if t >= charEnd then
-                                if c < endLength then sb.Append settledText[c] |> ignore
+                                if c < endLength then
+                                    outBuf[outLen] <- settledText[c]
+                                    outLen <- outLen + 1
                             elif t <= 0. || t < charStart then
                                 if hasOverride && c < startLength then
                                     if hasOverrideChars then
-                                        if startingText[c] = ' ' then sb.Append ' ' |> ignore
+                                        if startingText[c] = ' ' then
+                                            outBuf[outLen] <- ' '
+                                            outLen <- outLen + 1
                                         else
-                                            let ocArr = overrideCache.Value
-                                            if refreshChars then
-                                                ocArr[c] <-
-                                                    match overrideCharOpt with
-                                                    | Some ch -> ch
-                                                    | None ->
-                                                        let ocStr = overrideCharsOpt.Value
-                                                        if ocStr.Length > 0 then string ocStr[rngInt 0 totalOverrideChars] else ""
-                                            sb.Append ocArr[c] |> ignore
+                                            match overrideCache with
+                                            | ValueSome ocArr ->
+                                                if refreshChars then
+                                                    if hasFixedOverrideChar then
+                                                        ocArr[c] <- fixedOverrideChar
+                                                    elif overrideCharsStr.Length > 0 then
+                                                        ocArr[c] <- overrideCharsStr[rngInt 0 totalOverrideChars]
+                                                if hasNonEmptyOverrideChars then
+                                                    outBuf[outLen] <- ocArr[c]
+                                                    outLen <- outLen + 1
+                                            | ValueNone -> ()
                                     else
-                                        sb.Append startingText[c] |> ignore
+                                        outBuf[outLen] <- startingText[c]
+                                        outLen <- outLen + 1
                             else
                                 let isSpace =
                                     (c < endLength && settledText[c] = ' ') ||
                                     (c < startLength && startingText[c] = ' ')
                                 if isSpace then
-                                    sb.Append ' ' |> ignore
+                                    outBuf[outLen] <- ' '
+                                    outLen <- outLen + 1
                                 elif hasCursor && t - charStart < cursorZone then
                                     let cursorIdx =
                                         if settleSpacing > 0. then
                                             cursorLen - 1 - int (Math.Truncate ((t - charStart) / settleSpacing))
                                         else cursorLen - 1
                                     let clampedIdx = Math.Clamp(cursorIdx, 0, cursorLen - 1)
-                                    sb.Append cursorChars[clampedIdx] |> ignore
-                                else
-                                    if refreshChars && characters.Length > 0 then
-                                        charCache[c] <- string characters[rngInt 0 totalChars]
-                                    sb.Append charCache[c] |> ignore
-                        scrambled <- sb.ToString()
+                                    outBuf[outLen] <- cursorChars[clampedIdx]
+                                    outLen <- outLen + 1
+                                elif hasCharacters then
+                                    if refreshChars then
+                                        charCache[c] <- characters[rngInt 0 totalChars]
+                                    outBuf[outLen] <- charCache[c]
+                                    outLen <- outLen + 1
+                        scrambled <- if outLen = 0 then "" else String(outBuf, 0, outLen)
                         if refreshChars then options.OnChange scrambled t
                         scrambled
 
