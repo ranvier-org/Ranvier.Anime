@@ -1,5 +1,5 @@
 ---
-last_commit_released: a067d3dfac4e501d5f1719d6bf8866862268071d
+last_commit_released: efb73d7a1f3819a6209d740b225884244082f1ae
 updaters:
   - regex:
       file: Fable.Ranvier.Anime.fsproj
@@ -9,6 +9,19 @@ updaters:
 # Changelog
 
 This changelog is generated from conventional commits by [EasyBuild.ShipIt](https://github.com/easybuild-org/EasyBuild.ShipIt).
+
+## 0.2.0 - 2026-11-19
+
+### 🐞 Bug Fixes
+
+* *(anime)* Resolve pass-2 proof-lifted correctness bugs (#37-#41) and expand benchmarks (#42) ([b7fd6a5](https://github.com/ranvier-org/Ranvier.Anime/commit/b7fd6a5f687a993018f05e767cfd20fe32fd1247))
+* *(deps)* Reference Ranvier.Css.Core from Fable.Ranvier.Anime (#46) ([b883108](https://github.com/ranvier-org/Ranvier.Anime/commit/b8831085c02571765b9aca6faff48bfa79412695))
+
+### ⚡ Performance Improvements
+
+* *(anime)* O(1) indexed AutoLayout, fast empty-style snapshots & View/Scroll polish (#45) ([74a181b](https://github.com/ranvier-org/Ranvier.Anime/commit/74a181bdad78261c3f6719369bd63149d4b606a7))
+
+<strong><small>[View changes on Github](https://github.com/ranvier-org/Ranvier.Anime/compare/a067d3dfac4e501d5f1719d6bf8866862268071d..efb73d7a1f3819a6209d740b225884244082f1ae)</small></strong>
 
 ## 0.1.45 - 2026-11-14
 
