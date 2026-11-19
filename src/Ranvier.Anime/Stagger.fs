@@ -341,33 +341,194 @@ module Stagger =
                 originIndex % columns, Math.Floor(originIndex / columns) % rows,
                 (if hasDepth then Math.Floor(originIndex / (columns * rows)) else 0.)
         let indexedDistances () =
-            Array.init totalLength (fun index ->
+            let arr = Array.zeroCreate<float> totalLength
+            if totalLength > 0 then
                 match dimensions with
-                | None -> abs(originIndex - float index)
+                | None ->
+                    let mutable i = 0
+                    let rArr = &MemoryMarshal.GetArrayDataReference(arr)
+                    if Vector512.IsHardwareAccelerated && totalLength >= 8 then
+                        let vOrigin = Vector512.Create(originIndex)
+                        let vStride = Vector512.Create(8.)
+                        let mutable vIdx = Vector512.Create(0., 1., 2., 3., 4., 5., 6., 7.)
+                        while i <= totalLength - 8 do
+                            Vector512.Abs(vOrigin - vIdx).StoreUnsafe(&rArr, unativeint i)
+                            vIdx <- vIdx + vStride
+                            i <- i + 8
+                    elif Vector256.IsHardwareAccelerated && totalLength >= 4 then
+                        let vOrigin = Vector256.Create(originIndex)
+                        let vStride = Vector256.Create(4.)
+                        let mutable vIdx = Vector256.Create(0., 1., 2., 3.)
+                        while i <= totalLength - 4 do
+                            Vector256.Abs(vOrigin - vIdx).StoreUnsafe(&rArr, unativeint i)
+                            vIdx <- vIdx + vStride
+                            i <- i + 4
+                    elif Vector128.IsHardwareAccelerated && totalLength >= 2 then
+                        let vOrigin = Vector128.Create(originIndex)
+                        let vStride = Vector128.Create(2.)
+                        let mutable vIdx = Vector128.Create(0., 1.)
+                        while i <= totalLength - 2 do
+                            Vector128.Abs(vOrigin - vIdx).StoreUnsafe(&rArr, unativeint i)
+                            vIdx <- vIdx + vStride
+                            i <- i + 2
+                    while i < totalLength do
+                        arr[i] <- abs(originIndex - float i)
+                        i <- i + 1
                 | Some(columns, rows, layers, hasDepth) ->
                     let originX, originY, originZ = originPoint columns rows layers hasDepth
-                    let x = float index % columns
-                    let y = Math.Floor(float index / columns) % rows
-                    let z = if hasDepth then Math.Floor(float index / (columns * rows)) else 0.
-                    let dx, dy, dz = originX - x, originY - y, originZ - z
                     match options.Axis with
-                    | Some StaggerAxis.X -> -dx
-                    | Some StaggerAxis.Y -> -dy
-                    | Some StaggerAxis.Z -> -dz
-                    | None -> Math.Sqrt(dx * dx + dy * dy + (if hasDepth then dz * dz else 0.)))
+                    | Some axis ->
+                        let slice = columns * rows
+                        for i = 0 to totalLength - 1 do
+                            let fi = float i
+                            let x = fi % columns
+                            let y = Math.Floor(fi / columns) % rows
+                            let z = if hasDepth then Math.Floor(fi / slice) else 0.
+                            arr[i] <-
+                                match axis with
+                                | StaggerAxis.X -> -(originX - x)
+                                | StaggerAxis.Y -> -(originY - y)
+                                | StaggerAxis.Z -> -(originZ - z)
+                    | None ->
+                        let mutable i = 0
+                        let rArr = &MemoryMarshal.GetArrayDataReference(arr)
+                        if Vector512.IsHardwareAccelerated && totalLength >= 8 then
+                            let vCols = Vector512.Create(columns)
+                            let vRows = Vector512.Create(rows)
+                            let vOx = Vector512.Create(originX)
+                            let vOy = Vector512.Create(originY)
+                            let vOz = Vector512.Create(originZ)
+                            let vStride = Vector512.Create(8.)
+                            let mutable vIdx = Vector512.Create(0., 1., 2., 3., 4., 5., 6., 7.)
+                            while i <= totalLength - 8 do
+                                let q1 = Vector512.Floor(vIdx / vCols)
+                                let vx = vIdx - q1 * vCols
+                                let q2 = Vector512.Floor(q1 / vRows)
+                                let vy = q1 - q2 * vRows
+                                let dx = vOx - vx
+                                let dy = vOy - vy
+                                let sq =
+                                    if hasDepth then
+                                        let dz = vOz - q2
+                                        dx * dx + dy * dy + dz * dz
+                                    else dx * dx + dy * dy
+                                Vector512.Sqrt(sq).StoreUnsafe(&rArr, unativeint i)
+                                vIdx <- vIdx + vStride
+                                i <- i + 8
+                        elif Vector256.IsHardwareAccelerated && totalLength >= 4 then
+                            let vCols = Vector256.Create(columns)
+                            let vRows = Vector256.Create(rows)
+                            let vOx = Vector256.Create(originX)
+                            let vOy = Vector256.Create(originY)
+                            let vOz = Vector256.Create(originZ)
+                            let vStride = Vector256.Create(4.)
+                            let mutable vIdx = Vector256.Create(0., 1., 2., 3.)
+                            while i <= totalLength - 4 do
+                                let q1 = Vector256.Floor(vIdx / vCols)
+                                let vx = vIdx - q1 * vCols
+                                let q2 = Vector256.Floor(q1 / vRows)
+                                let vy = q1 - q2 * vRows
+                                let dx = vOx - vx
+                                let dy = vOy - vy
+                                let sq =
+                                    if hasDepth then
+                                        let dz = vOz - q2
+                                        dx * dx + dy * dy + dz * dz
+                                    else dx * dx + dy * dy
+                                Vector256.Sqrt(sq).StoreUnsafe(&rArr, unativeint i)
+                                vIdx <- vIdx + vStride
+                                i <- i + 4
+                        elif Vector128.IsHardwareAccelerated && totalLength >= 2 then
+                            let vCols = Vector128.Create(columns)
+                            let vRows = Vector128.Create(rows)
+                            let vOx = Vector128.Create(originX)
+                            let vOy = Vector128.Create(originY)
+                            let vOz = Vector128.Create(originZ)
+                            let vStride = Vector128.Create(2.)
+                            let mutable vIdx = Vector128.Create(0., 1.)
+                            while i <= totalLength - 2 do
+                                let q1 = Vector128.Floor(vIdx / vCols)
+                                let vx = vIdx - q1 * vCols
+                                let q2 = Vector128.Floor(q1 / vRows)
+                                let vy = q1 - q2 * vRows
+                                let dx = vOx - vx
+                                let dy = vOy - vy
+                                let sq =
+                                    if hasDepth then
+                                        let dz = vOz - q2
+                                        dx * dx + dy * dy + dz * dz
+                                    else dx * dx + dy * dy
+                                Vector128.Sqrt(sq).StoreUnsafe(&rArr, unativeint i)
+                                vIdx <- vIdx + vStride
+                                i <- i + 2
+                        while i < totalLength do
+                            let fi = float i
+                            let q1 = Math.Floor(fi / columns)
+                            let x = fi - q1 * columns
+                            let q2 = Math.Floor(q1 / rows)
+                            let y = q1 - q2 * rows
+                            let dx = originX - x
+                            let dy = originY - y
+                            let dz = if hasDepth then originZ - q2 else 0.
+                            arr[i] <- Math.Sqrt(dx * dx + dy * dy + (if hasDepth then dz * dz else 0.))
+                            i <- i + 1
+            arr
         let distances =
             match automaticDistances options totalLength originIndex with
             | Some distances -> distances
             | None -> indexedDistances()
         let maximum =
-            if distances.Length = 0 then 0.
+            let n = distances.Length
+            if n = 0 then 0.
             else
                 let mutable m = distances[0]
-                for i = 1 to distances.Length - 1 do
+                let mutable i = 0
+                let rDist = &MemoryMarshal.GetArrayDataReference(distances)
+                if options.Axis.IsNone && Vector512.IsHardwareAccelerated && n >= 8 then
+                    let mutable vMax = Vector512.LoadUnsafe(&rDist, 0un)
+                    i <- 8
+                    while i <= n - 8 do
+                        let vd = Vector512.LoadUnsafe(&rDist, unativeint i)
+                        let vPick = Vector512.BitwiseOr(Vector512.GreaterThan(vd, vMax), Vector512.OnesComplement(Vector512.Equals(vd, vd)))
+                        vMax <- Vector512.ConditionalSelect(vPick, vd, vMax)
+                        i <- i + 8
+                    m <- vMax.GetElement(0)
+                    for lane = 1 to 7 do
+                        let lv = vMax.GetElement(lane)
+                        if Double.IsNaN lv || lv > m then m <- lv
+                elif options.Axis.IsNone && Vector256.IsHardwareAccelerated && n >= 4 then
+                    let mutable vMax = Vector256.LoadUnsafe(&rDist, 0un)
+                    i <- 4
+                    while i <= n - 4 do
+                        let vd = Vector256.LoadUnsafe(&rDist, unativeint i)
+                        let vPick = Vector256.BitwiseOr(Vector256.GreaterThan(vd, vMax), Vector256.OnesComplement(Vector256.Equals(vd, vd)))
+                        vMax <- Vector256.ConditionalSelect(vPick, vd, vMax)
+                        i <- i + 4
+                    m <- vMax.GetElement(0)
+                    for lane = 1 to 3 do
+                        let lv = vMax.GetElement(lane)
+                        if Double.IsNaN lv || lv > m then m <- lv
+                elif options.Axis.IsNone && Vector128.IsHardwareAccelerated && n >= 2 then
+                    let mutable vMax = Vector128.LoadUnsafe(&rDist, 0un)
+                    i <- 2
+                    while i <= n - 2 do
+                        let vd = Vector128.LoadUnsafe(&rDist, unativeint i)
+                        let vPick = Vector128.BitwiseOr(Vector128.GreaterThan(vd, vMax), Vector128.OnesComplement(Vector128.Equals(vd, vd)))
+                        vMax <- Vector128.ConditionalSelect(vPick, vd, vMax)
+                        i <- i + 2
+                    m <- vMax.GetElement(0)
+                    let lv1 = vMax.GetElement(1)
+                    if Double.IsNaN lv1 || lv1 > m then m <- lv1
+                else i <- 1
+                while i < n do
                     let v = distances[i]
                     if Double.IsNaN v || v > m then m <- v
+                    i <- i + 1
                 m
-        if options.Ease.IsSome || options.Reversed then
+        let canFuseReverse =
+            options.Ease.IsNone && options.Reversed && options.Origin <> StaggerOrigin.Random
+            && length = totalLength && options.IndexMap.IsNone && jitter.IsNone && options.Modifier.IsNone
+        if (options.Ease.IsSome || options.Reversed) && not canFuseReverse then
             for index = 0 to distances.Length - 1 do
                 let mutable distance = distances[index]
                 match options.Ease with
@@ -389,6 +550,8 @@ module Stagger =
         let spacing = if isRange then (finish - first) / maximum else step
         if length = totalLength && options.IndexMap.IsNone && jitter.IsNone && options.Modifier.IsNone then
             // In-place SIMD output pass: reuses `distances` directly with zero extra array allocation!
+            let revAxis = canFuseReverse && options.Axis.IsSome
+            let revRadial = canFuseReverse && options.Axis.IsNone
             let mutable i = 0
             let rDist = &MemoryMarshal.GetArrayDataReference(distances)
             if Double.IsFinite spacing && Vector512.IsHardwareAccelerated && length >= 8 then
@@ -396,9 +559,11 @@ module Stagger =
                 let vHalf = Vector512.Create(0.5)
                 let vSpacing = Vector512.Create(spacing)
                 let vStart = Vector512.Create(start)
+                let vMax = Vector512.Create(maximum)
                 let vZero = Vector512<float>.Zero
                 while i <= length - 8 do
-                    let vd = Vector512.LoadUnsafe(&rDist, unativeint i)
+                    let vd0 = Vector512.LoadUnsafe(&rDist, unativeint i)
+                    let vd = if revRadial then Vector512.Abs(vMax - vd0) elif revAxis then -vd0 else vd0
                     let vScaled = vd * v100
                     let vNear = Vector512.Round(vScaled, MidpointRounding.ToEven)
                     let vTie = Vector512.Equals(Vector512.Abs(vScaled - vNear), vHalf)
@@ -414,9 +579,11 @@ module Stagger =
                 let vHalf = Vector256.Create(0.5)
                 let vSpacing = Vector256.Create(spacing)
                 let vStart = Vector256.Create(start)
+                let vMax = Vector256.Create(maximum)
                 let vZero = Vector256<float>.Zero
                 while i <= length - 4 do
-                    let vd = Vector256.LoadUnsafe(&rDist, unativeint i)
+                    let vd0 = Vector256.LoadUnsafe(&rDist, unativeint i)
+                    let vd = if revRadial then Vector256.Abs(vMax - vd0) elif revAxis then -vd0 else vd0
                     let vScaled = vd * v100
                     let vNear = Vector256.Round(vScaled, MidpointRounding.ToEven)
                     let vTie = Vector256.Equals(Vector256.Abs(vScaled - vNear), vHalf)
@@ -426,8 +593,28 @@ module Stagger =
                     let vCleanTerm = Vector256.ConditionalSelect(vFiniteNonZero, vTerm, vZero)
                     (vStart + vCleanTerm).StoreUnsafe(&rDist, unativeint i)
                     i <- i + 4
+            elif Double.IsFinite spacing && Vector128.IsHardwareAccelerated && length >= 2 then
+                let v100 = Vector128.Create(100.)
+                let vHalf = Vector128.Create(0.5)
+                let vSpacing = Vector128.Create(spacing)
+                let vStart = Vector128.Create(start)
+                let vMax = Vector128.Create(maximum)
+                let vZero = Vector128<float>.Zero
+                while i <= length - 2 do
+                    let vd0 = Vector128.LoadUnsafe(&rDist, unativeint i)
+                    let vd = if revRadial then Vector128.Abs(vMax - vd0) elif revAxis then -vd0 else vd0
+                    let vScaled = vd * v100
+                    let vNear = Vector128.Round(vScaled, MidpointRounding.ToEven)
+                    let vTie = Vector128.Equals(Vector128.Abs(vScaled - vNear), vHalf)
+                    let vRound = Vector128.ConditionalSelect(vTie, Vector128.Ceiling(vScaled), vNear) / v100
+                    let vTerm = vSpacing * vRound
+                    let vFiniteNonZero = Vector128.AndNot(Vector128.Equals(vTerm, vTerm), Vector128.Equals(vTerm, vZero))
+                    let vCleanTerm = Vector128.ConditionalSelect(vFiniteNonZero, vTerm, vZero)
+                    (vStart + vCleanTerm).StoreUnsafe(&rDist, unativeint i)
+                    i <- i + 2
             while i < length do
-                let distance = distances[i]
+                let d0 = distances[i]
+                let distance = if revRadial then abs(maximum - d0) elif revAxis then -d0 else d0
                 let term = spacing * roundDistance distance
                 distances[i] <- start + (if Double.IsNaN term || term = 0. then 0. else term)
                 i <- i + 1

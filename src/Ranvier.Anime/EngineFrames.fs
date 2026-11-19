@@ -117,10 +117,12 @@ type internal DeferredWrites =
             if not(isNull pending) && pending.Count > 0 then
                 DeferredWrites.FlushPending pending
 
-type private EngineFrameEntry() =
+type private EngineFrameEntry() as this =
+    let node = LinkedListNode<EngineFrameEntry>(this)
     /// <summary>The pending frame callback; null when none is pending (no per-frame option allocation).</summary>
     member val Callback:(float -> unit)=Unchecked.defaultof<_> with get,set
-    member val Node:LinkedListNode<EngineFrameEntry> option=None with get,set
+    member _.Node = node
+    member val Queued=false with get,set
     member val Version=0L with get,set
     member val Closed=false with get,set
     member val ResetTime:unit -> unit=ignore with get,set
@@ -173,7 +175,7 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
                         callback now
                     else
                         entries.Remove cursor
-                        entry.Node<-None
+                        entry.Queued<-false
                     cursor<-next
                 afterUpdate()
         finally
@@ -294,10 +296,11 @@ type internal EngineFrameQueue(scheduler:FrameScheduler) =
             live()
             entry.Version<-entry.Version+1L
             entry.Callback<-callback
-            if entry.Node.IsNone then
+            if not entry.Queued then
                 let mutable previous=entries.Last
                 while not(isNull previous) && previous.Value.Priority>entry.Priority do previous<-previous.Previous
-                entry.Node<-Some(if isNull previous then entries.AddFirst entry else entries.AddAfter(previous,entry))
+                if isNull previous then entries.AddFirst entry.Node else entries.AddAfter(previous,entry.Node)
+                entry.Queued<-true
             if not pumping then suspended<-false
             schedule true false
         let cancelRequest () =
@@ -359,6 +362,20 @@ module internal EngineFrames =
             let adapter,configure,initialTick,terminate,request,cancelRequest=queue.CreateScheduler()
             roots.Add(adapter,EngineRoot(queue,configure,initialTick,terminate,request,cancelRequest))
             adapter
+    /// <summary>Acquires both the root scheduler adapter and its EngineRoot in one lookup.</summary>
+    let acquireRoot scheduler : struct(FrameScheduler * EngineRoot) =
+        if isNull(box scheduler) then nullArg "scheduler"
+        match roots.TryGetValue scheduler with
+        | true,root -> struct(scheduler,root)
+        | _ ->
+            let queue =
+                match queues.TryGetValue scheduler with
+                | true,q -> q
+                | _ -> queues.GetValue(scheduler,fun s -> EngineFrameQueue s)
+            let adapter,configure,initialTick,terminate,request,cancelRequest=queue.CreateScheduler()
+            let root = EngineRoot(queue,configure,initialTick,terminate,request,cancelRequest)
+            roots.Add(adapter,root)
+            struct(adapter,root)
     /// <summary>The engine root behind an adapter <c>createRoot</c> returned.</summary>
     let rootOf scheduler =
         match roots.TryGetValue scheduler with

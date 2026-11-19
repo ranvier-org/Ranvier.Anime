@@ -1179,7 +1179,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
     // One guard closure over a token each render saves and restores; guards are only checked while the render runs.
     let mutable renderToken = Int64.MinValue
     let canWrite = Closure.keep (fun () -> clock.IsCurrent renderToken && not clock.EffectivelyMuted)
-    let render (sample: PlaybackSample) mode muted =
+    let render = PlaybackRenderer(fun (sample: PlaybackSample) mode muted ->
         if pendingInitialAttach && not clock.EffectivelyMuted && not cancelled && not fullyReplaced then
             pendingInitialAttach <- false
             attachSiblings true
@@ -1344,7 +1344,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
                 else manager.FlushAdditive()
             if rendered && sample.AboveZero && not muted && canWrite() then
                 options.OnRender this
-        finally renderToken <- savedToken
+        finally renderToken <- savedToken)
 
     do
         clock <- ScopeRegistration.run ignore (fun () ->
@@ -1851,11 +1851,11 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
 
     do
         clock.ConfigureChildren(
-            (fun _ _ _ ->
+            PlaybackRenderer(fun _ _ _ ->
                 for i = 0 to entries.Count - 1 do
                     let _, child = entries[i]
                     if not child.Cancelled then child.Clock.ResetChildFlags()),
-            (fun sample mode muted ->
+            PlaybackChildRenderer(fun sample mode muted ->
                 let savedToken = renderToken
                 renderToken <- clock.WriteToken
                 try
@@ -1892,13 +1892,12 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     member this.Add(targets: obj array, specs: PropertySpec array, ?options: ComposedAnimationOptions, ?position: TimelinePosition) =
         if cancelled then invalidOp "Cannot add a child to a cancelled timeline."
         let prev =
-            if entries.Count = 0 then None
+            if entries.Count = 0 then ValueNone
             else
                 let lastOff, lastChild = entries[entries.Count - 1]
-                Some(lastOff, lastOff + (lastChild.Clock.Delay + lastChild.Duration) / lastChild.Speed)
+                ValueSome(struct(lastOff, lastOff + (lastChild.Clock.Delay + lastChild.Duration) / lastChild.Speed))
         let resolvedOffset =
-            TimelinePositions.resolve iterDuration prev
-                (fun lbl -> match labels.TryGetValue lbl with true, v -> Some v | _ -> None) position
+            TimelinePositions.resolve iterDuration prev labels position
         let authored = defaultArg options ComposedAnimationOptions.Default
         let childOpts = { authored with Autoplay = false; Computed = authored.Computed |> Option.orElse defaultComputed }
         let child = new ComposedAnimation(scheduler, targets, specs, childOpts, Some this, resolvedOffset)
@@ -1914,13 +1913,11 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
     /// <summary>Records a named position label.</summary>
     member this.Label(name: string, ?position: TimelinePosition) =
         let prev =
-            if entries.Count = 0 then None
+            if entries.Count = 0 then ValueNone
             else
                 let lastOff, lastChild = entries[entries.Count - 1]
-                Some(lastOff, lastOff + (lastChild.Clock.Delay + lastChild.Duration) / lastChild.Speed)
-        labels[name] <-
-            TimelinePositions.resolve iterDuration prev
-                (fun lbl -> match labels.TryGetValue lbl with true, v -> Some v | _ -> None) position
+                ValueSome(struct(lastOff, lastOff + (lastChild.Clock.Delay + lastChild.Duration) / lastChild.Speed))
+        labels[name] <- TimelinePositions.resolve iterDuration prev labels position
         this
 
     member internal this.OnChildTargetsModified() =

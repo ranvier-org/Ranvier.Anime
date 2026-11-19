@@ -390,3 +390,86 @@ Proof.
   unfold rebound_resized_sample.
   split; lia.
 Qed.
+
+(** ** Pass-2 Batch B1 Refinement Proof: Lazy `PlaybackSample` Rounded Public Getters *)
+
+Record eager_playback_sample := {
+  eps_abs : Z;
+  eps_iter_time : Z;
+  eps_cur : Z;
+  eps_iter_cur : Z;
+  eps_prog : Z;
+  eps_iter_prog : Z
+}.
+
+Record lazy_playback_sample := {
+  lps_abs : Z;
+  lps_iter_time : Z;
+  lps_lower : Z;
+  lps_dur : Z;
+  lps_iter_dur : Z
+}.
+
+Definition bound_current_z (round4 : Z -> Z) (lower dur abs_t : Z) : Z :=
+  let r := round4 abs_t in
+  if Z.gtb lower dur then (if Z.ltb r lower then lower else dur)
+  else clamp_z lower dur r.
+
+Definition mk_eager_sample
+    (round4 : Z -> Z) (round_ratio10 : Z -> Z -> Z)
+    (abs_t iter_t lower dur iter_dur : Z) : eager_playback_sample :=
+  {| eps_abs := abs_t;
+     eps_iter_time := iter_t;
+     eps_cur := bound_current_z round4 lower dur abs_t;
+     eps_iter_cur := clamp_z 0 iter_dur (round4 iter_t);
+     eps_prog := clamp_z 0 10000000000 (round_ratio10 abs_t dur);
+     eps_iter_prog := clamp_z 0 10000000000 (round_ratio10 iter_t iter_dur) |}.
+
+Definition rebound_eager_sample
+    (round4 : Z -> Z) (round_ratio10 : Z -> Z -> Z)
+    (lower' dur' iter_dur' : Z) (s : eager_playback_sample) : eager_playback_sample :=
+  mk_eager_sample round4 round_ratio10 (eps_abs s) (eps_iter_time s) lower' dur' iter_dur'.
+
+Definition mk_lazy_sample (abs_t iter_t lower dur iter_dur : Z) : lazy_playback_sample :=
+  {| lps_abs := abs_t;
+     lps_iter_time := iter_t;
+     lps_lower := lower;
+     lps_dur := dur;
+     lps_iter_dur := iter_dur |}.
+
+Definition rebound_lazy_sample (lower' dur' iter_dur' : Z) (s : lazy_playback_sample) : lazy_playback_sample :=
+  {| lps_abs := lps_abs s;
+     lps_iter_time := lps_iter_time s;
+     lps_lower := lower';
+     lps_dur := dur';
+     lps_iter_dur := iter_dur' |}.
+
+Definition lazy_cur (round4 : Z -> Z) (s : lazy_playback_sample) : Z :=
+  bound_current_z round4 (lps_lower s) (lps_dur s) (lps_abs s).
+
+Definition lazy_iter_cur (round4 : Z -> Z) (s : lazy_playback_sample) : Z :=
+  clamp_z 0 (lps_iter_dur s) (round4 (lps_iter_time s)).
+
+Definition lazy_prog (round_ratio10 : Z -> Z -> Z) (s : lazy_playback_sample) : Z :=
+  clamp_z 0 10000000000 (round_ratio10 (lps_abs s) (lps_dur s)).
+
+Definition lazy_iter_prog (round_ratio10 : Z -> Z -> Z) (s : lazy_playback_sample) : Z :=
+  clamp_z 0 10000000000 (round_ratio10 (lps_iter_time s) (lps_iter_dur s)).
+
+(**md **Deferring `PlaybackSample` rounding and clamping to lazy getters is bit-for-bit identical across `Sample` and `Rebound`.**
+Storing raw `(absoluteTime, iterationTime, lower, duration, iterationDuration)` inside `PlaybackSample` eliminates four `PropertyNumbers.round` and four `Math.Clamp` evaluations from every engine tick and `Rebound` while returning identical `CurrentTime`, `IterationCurrentTime`, `Progress`, and `IterationProgress` values. *)
+Theorem lazy_playback_sample_getters_eq_eager :
+  forall (round4 : Z -> Z) (round_ratio10 : Z -> Z -> Z)
+         abs_t iter_t lower dur iter_dur lower' dur' iter_dur',
+    let es := mk_eager_sample round4 round_ratio10 abs_t iter_t lower dur iter_dur in
+    let ls := mk_lazy_sample abs_t iter_t lower dur iter_dur in
+    let es' := rebound_eager_sample round4 round_ratio10 lower' dur' iter_dur' es in
+    let ls' := rebound_lazy_sample lower' dur' iter_dur' ls in
+    (lazy_cur round4 ls, lazy_iter_cur round4 ls, lazy_prog round_ratio10 ls, lazy_iter_prog round_ratio10 ls) =
+      (eps_cur es, eps_iter_cur es, eps_prog es, eps_iter_prog es) /\
+    (lazy_cur round4 ls', lazy_iter_cur round4 ls', lazy_prog round_ratio10 ls', lazy_iter_prog round_ratio10 ls') =
+      (eps_cur es', eps_iter_cur es', eps_prog es', eps_iter_prog es').
+Proof.
+  intros.
+  split; reflexivity.
+Qed.

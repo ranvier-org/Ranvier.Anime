@@ -60,7 +60,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
                           onLoop=(fun _ -> notify onLoop),
                           onPause=(fun _ -> notify onPause),
                           onComplete=(fun _ -> notify onComplete)))
-    let render (sample: PlaybackSample) mode muted =
+    let render = PlaybackRenderer(fun (sample: PlaybackSample) mode muted ->
         let iterationDuration = clock.IterationDuration
         let expected = clock.Generation
         let inline canWrite () = expected = clock.Generation && not clock.Cancelled && ancestorLive() && constructionAccepted && ownerAllowsWrite()
@@ -77,7 +77,7 @@ type NumericAnimation(scheduler: FrameScheduler, read: unit -> float, write: flo
                 finite "ease" progress
                 write (PropertyNumbers.interpolate first last progress)
                 if canWrite() && sample.AboveZero && not muted && not clock.EffectivelyMuted then
-                    onRender |> Option.iter(fun callback -> callback this)
+                    onRender |> Option.iter(fun callback -> callback this))
     do clock.ConfigureRenderer(render, sampleWhenMuted=true, ?totalDuration=(if iterationDuration = 1e-11 then Some 1e-11 else None),
                                onStretch=(fun scale -> tweenTime <- tweenTime*scale))
     do clock.OnFault <- closeRestoration

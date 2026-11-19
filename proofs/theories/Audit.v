@@ -15,6 +15,7 @@ Print Assumptions snapshot_index_traversal_eq_reversed_copy.
 Print Assumptions forever_reanchor_divides_effective_speed.
 Print Assumptions signed_odd_bit_xor_involution.
 Print Assumptions resize_rebounds_sample_within_new_duration.
+Print Assumptions lazy_playback_sample_getters_eq_eager.
 
 (** ** CurvesStagger.v *)
 Print Assumptions ease_out_reflection_endpoints_and_involution.
@@ -27,6 +28,8 @@ Print Assumptions monotone_lower_bound_bsearch_eq_linear_scan.
 Print Assumptions dyadic_lut_bisection_eq_direct_bisection.
 Print Assumptions nondecreasing_offsets_clamped_delta_nonneg.
 Print Assumptions rationalized_overdamped_decay_avoids_cancellation.
+Print Assumptions spring_precomputed_sincos_eq_direct.
+Print Assumptions stagger_grid3d_quotient_chain_simd_eq_direct.
 
 (** ** InterpolationColor.v *)
 Print Assumptions js_half_ceil_round_ties_toward_pos_inf.
@@ -57,6 +60,8 @@ Print Assumptions simd_channel_add_chunks_eq_scalar.
 Print Assumptions property_slice_cursor_search_eq_full_frame_scan.
 Print Assumptions soa_multi_target_scalar_simd_eq_per_tween.
 Print Assumptions blend_midflight_cancel_folds_residual_without_jump.
+Print Assumptions animatable_soa_simd_retarget_and_sample_eq_aos.
+Print Assumptions keyframe_bsearch_slice_eq_linear_slice_scan.
 
 (** ** DomScrollDragMotion.v *)
 Print Assumptions transform_clear_revert_never_resurrects_stale_cache.

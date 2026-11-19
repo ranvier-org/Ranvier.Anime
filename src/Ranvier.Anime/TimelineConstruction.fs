@@ -41,7 +41,8 @@ type internal TimelinePreparedChild<'T>(clock:Timer,renderVersion:unit -> int64,
 /// <summary>Owned driver installation with staged same-timeline replacement publication.</summary>
 module internal TimelineKeyframeInstallation =
     /// <summary>Compiles guarded captured properties and installs one owned driver with optional staged replacement siblings.</summary>
-    let private installCore finiteScalar (context:TimelineChildContext,animation:KeyframeAnimation,defaults:FrameDefaults,properties:FrameProperty array,
+    let private installCore finiteScalar (writeScalarOpt:(int -> string -> float -> unit) option)
+                (context:TimelineChildContext,animation:KeyframeAnimation,defaults:FrameDefaults,properties:FrameProperty array,
                  keys:struct(obj*string) array,resolve,original,write,css,precision,options:KeyframeAnimationOptions,current) =
         let replacing=options.Composition=KeyframeComposition.Replace
         let transaction=if replacing then Some(context.BeginSiblings keys) else None
@@ -75,6 +76,11 @@ module internal TimelineKeyframeInstallation =
                 let guardedWrite target name output =
                     if uint target >= uint removedTargets.Length || not removedTargets[target] then
                         write target name output
+                let guardedWriteScalar =
+                    writeScalarOpt |> Option.map(fun ws ->
+                        fun target name value ->
+                            if uint target >= uint removedTargets.Length || not removedTargets[target] then
+                                ws target name value)
                 let removeTarget (candidate: obj) =
                     let mutable matched = false
                     for t = 0 to targetKeys.Length - 1 do
@@ -93,7 +99,8 @@ module internal TimelineKeyframeInstallation =
                     struct(matched, allRemoved)
                 let driver=new KeyframePlayback(context.Scheduler,program,guardedWrite,replacing,css,precision,options.Playback,
                     onBegin=options.OnBegin,onBeforeUpdate=options.OnBeforeUpdate,onRender=options.OnRender,
-                    onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete,?siblings=nodes,finiteScalar=finiteScalar)
+                    onUpdate=options.OnUpdate,onLoop=options.OnLoop,onPause=options.OnPause,onComplete=options.OnComplete,
+                    ?siblings=nodes,finiteScalar=finiteScalar,?writeScalar=guardedWriteScalar)
                 driver.Clock.InheritMute context.IsMuted
                 ScopeRegistration.run ignore (fun () -> animation.SetDriver driver)
                 driver.Clock.OnCancel<-animation.Cancel
@@ -109,6 +116,10 @@ module internal TimelineKeyframeInstallation =
             if not handedOff then transaction |> Option.iter(fun siblings -> siblings.Rollback())
 
     /// <summary>Installs source-compatible numeric or CSS keyframe interpolation.</summary>
-    let install args=installCore false args
+    let install args=installCore false None args
+    /// <summary>Installs source-compatible numeric keyframe interpolation with an unboxed scalar writer.</summary>
+    let installWithScalar writeScalar args=installCore false (Some writeScalar) args
     /// <summary>Installs scalar facade interpolation with its existing finite-endpoint arithmetic.</summary>
-    let scalar args=installCore true args
+    let scalar args=installCore true None args
+    /// <summary>Installs scalar facade interpolation with an unboxed scalar writer.</summary>
+    let scalarDirect writeScalar args=installCore true (Some writeScalar) args

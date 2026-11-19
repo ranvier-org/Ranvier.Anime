@@ -7,6 +7,10 @@ open Ranvier.Anime.ValueInterpolation
 /// <summary>Mutable playback geometry and sampled cache for one frame, linked across children of the same timeline.</summary>
 [<AllowNullLiteral>]
 type internal FrameSibling(definition:FrameTween,child:obj) =
+    let mutable valueOutput = definition.CachedEnd
+    let mutable valueScalar = definition.CachedEnd.Number
+    let mutable valueScalarDirty = false
+    let mutable valueVersion = 0L
     /// <summary>The trimmed immutable endpoints and authoring metadata used by this playback node.</summary>
     member val Definition=definition with get,set
     /// <summary>Owning animation identity, distinct from target identity.</summary>
@@ -37,8 +41,23 @@ type internal FrameSibling(definition:FrameTween,child:obj) =
     member val Overridden=false with get,set
     /// <summary>Whether a later replacement shortened or overrode this node.</summary>
     member val Overlapped=false with get,set
-    /// <summary>Most recent modified output cache, separate from raw destination metadata.</summary>
-    member val Value=definition.CachedEnd with get,set
+    /// <summary>Most recent modified output cache, separate from raw destination metadata; lazily materialized for scalar updates.</summary>
+    member this.Value
+        with get() =
+            if valueScalarDirty then
+                valueOutput <- ValueInterpolation.compose(this.Definition.First, valueScalar, Array.Empty<float>())
+                valueScalarDirty <- false
+            valueOutput
+        and set (output:Output) =
+            valueOutput <- output
+            valueScalar <- output.Number
+            valueScalarDirty <- false
+            valueVersion <- valueVersion + 1L
+    member internal _.SetScalarValue(value:float) =
+        valueScalar <- value
+        valueScalarDirty <- true
+        valueVersion <- valueVersion + 1L
+    member internal _.ValueVersion = valueVersion
     /// <summary>Whether the owning child has more than one iteration.</summary>
     member val Repeats=false with get,set
     /// <summary>Child total duration minus one iteration, including repeated gaps.</summary>
@@ -62,16 +81,34 @@ type internal FrameSibling(definition:FrameTween,child:obj) =
     /// <summary>Captures a publication guard that rejects intervening playback or geometry changes.</summary>
     member this.Observe() =
         let definition=this.Definition
-        let value=this.Value
+        let ver=valueVersion
         let previous=this.Previous
         let next=this.Next
-        let geometry=(this.Start,this.Delay,this.Update,this.Change,this.AbsoluteStart,this.AbsoluteUpdateStart,this.AbsoluteEnd,this.Time,this.LoopExtension)
-        let flags=(this.Overridden,this.Overlapped,this.Repeats)
+        let s0=this.Start
+        let d0=this.Delay
+        let u0=this.Update
+        let c0=this.Change
+        let as0=this.AbsoluteStart
+        let aus0=this.AbsoluteUpdateStart
+        let ae0=this.AbsoluteEnd
+        let t0=this.Time
+        let le0=this.LoopExtension
+        let ov0=this.Overridden
+        let ol0=this.Overlapped
+        let rp0=this.Repeats
         fun () ->
-            obj.ReferenceEquals(definition,this.Definition) && obj.ReferenceEquals(value,this.Value) &&
+            obj.ReferenceEquals(definition,this.Definition) && ver=this.ValueVersion &&
             obj.ReferenceEquals(previous,this.Previous) && obj.ReferenceEquals(next,this.Next) &&
-            geometry=(this.Start,this.Delay,this.Update,this.Change,this.AbsoluteStart,this.AbsoluteUpdateStart,this.AbsoluteEnd,this.Time,this.LoopExtension) &&
-            flags=(this.Overridden,this.Overlapped,this.Repeats)
+            s0=this.Start && d0=this.Delay && u0=this.Update && c0=this.Change &&
+            as0=this.AbsoluteStart && aus0=this.AbsoluteUpdateStart && ae0=this.AbsoluteEnd &&
+            t0=this.Time && le0=this.LoopExtension &&
+            ov0=this.Overridden && ol0=this.Overlapped && rp0=this.Repeats
+    member internal _.RawValueState : struct(Output * float * bool) = struct(valueOutput, valueScalar, valueScalarDirty)
+    member internal _.SetRawValueState(out:Output, scalar:float, dirty:bool) =
+        valueOutput <- out
+        valueScalar <- scalar
+        valueScalarDirty <- dirty
+        valueVersion <- valueVersion + 1L
     /// <summary>Copies mutable state and maps links to another registry generation.</summary>
     member this.CopyTo(target:FrameSibling,resolve:FrameSibling -> FrameSibling) =
         target.Definition<-this.Definition
@@ -87,7 +124,8 @@ type internal FrameSibling(definition:FrameTween,child:obj) =
         target.Next<-resolve this.Next
         target.Overridden<-this.Overridden
         target.Overlapped<-this.Overlapped
-        target.Value<-this.Value
+        let struct(vo, vs, vd) = this.RawValueState
+        target.SetRawValueState(vo, vs, vd)
         target.Repeats<-this.Repeats
         target.LoopExtension<-this.LoopExtension
         target.OwnsFrom<-this.OwnsFrom
@@ -111,8 +149,10 @@ type internal FrameSibling(definition:FrameTween,child:obj) =
         next.LoopExtension<-this.LoopExtension*scale
         if Double.IsFinite this.OwnsFrom then next.OwnsFrom<-this.OwnsFrom*scale
         if Double.IsFinite this.OwnsUntil then next.OwnsUntil<-this.OwnsUntil*scale
-        if [next.Start;next.Delay;next.AbsoluteStart;next.AbsoluteUpdateStart;next.AbsoluteEnd;next.Time;next.LoopExtension]
-           |> List.exists(fun value -> not(Double.IsFinite value)) then invalidArg "scale" "Scaled frame geometry must remain finite."
+        if not(Double.IsFinite next.Start && Double.IsFinite next.Delay &&
+               Double.IsFinite next.AbsoluteStart && Double.IsFinite next.AbsoluteUpdateStart &&
+               Double.IsFinite next.AbsoluteEnd && Double.IsFinite next.Time && Double.IsFinite next.LoopExtension) then
+            invalidArg "scale" "Scaled frame geometry must remain finite."
         next
     /// <summary>An invariant diagnostic without formatting endpoint data or callbacks.</summary>
     override this.ToString()="FrameSibling("+this.Definition.Name+")"

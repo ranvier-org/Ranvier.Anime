@@ -34,6 +34,11 @@ type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundN
     new(original:Literal,unit:string option,roundNumbers:bool,convertUnit:(float -> string -> string -> float) option) =
         let first,last=normalize convertUnit original original (Text("+=0"+defaultArg unit ""))
         AnimatableValue(first,last,roundNumbers,first.Number,Array.copy first.Components)
+    /// <summary>Creates a unitless numeric kernel directly without string or regex decomposition.</summary>
+    static member internal CreateNumber(value:float) =
+        if not(Double.IsFinite value) then invalidArg "value" "Expected finite input."
+        let data : Data = {Kind=ValueKind.Number;Number=value;Unit=null;Operator=None;Components=Array.Empty<float>();Strings=Array.Empty<string>()}
+        AnimatableValue(data,data,false,value,Array.Empty<float>())
     /// <summary>Copies endpoints and cached values for atomic multi-target preparation without repeating context conversion.</summary>
     member _.Fork() =
         let fork=AnimatableValue(first,last,roundNumbers,cachedNumber,Array.copy cachedComponents)
@@ -42,6 +47,8 @@ type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundN
     member internal _.SetNumbers(fromNumber,toNumber) =
         firstNumber<-fromNumber
         lastNumber<-toNumber
+    member internal _.RoundNumbers=roundNumbers
+    member internal _.Template=first
     /// <summary>The normalized endpoint category retained across retargets.</summary>
     member _.Kind=first.Kind
     /// <summary>Copies captured unit and component-template metadata for typed adapter validation.</summary>
@@ -77,6 +84,22 @@ type internal AnimatableValue private (initialFirst:Data,initialLast:Data,roundN
             modify modifier current cachedNumber |> Option.map(fun value -> compose(first,value,[||]))
         elif current() then Some(compose(last,0.,Array.copy cachedComponents))
         else None
+    /// <summary>Samples scalar endpoints into a value without allocating an <see cref="Output"/>; superseded modifiers discard the update.</summary>
+    member _.TrySampleScalar(progress,precision,modifier,canWrite:unit -> bool) : struct(bool * float) =
+        let savedExpected=guardExpected
+        let savedInner=guardInner
+        guardExpected<-generation
+        guardInner<-canWrite
+        try
+            let struct(ok, value) = trySampleScalarValue(roundNumbers,first.Kind,firstNumber,lastNumber,progress,precision,modifier,guard)
+            if ok && guard() then
+                cachedNumber<-value
+                generation<-generation+1L
+                struct(true, value)
+            else struct(false, 0.)
+        finally
+            guardExpected<-savedExpected
+            guardInner<-savedInner
     /// <summary>Samples cached endpoints into an output, or null when superseded; superseded modifiers discard the cache update.</summary>
     member _.TrySample(progress,precision,modifier,canWrite:unit -> bool) : Output =
         let savedExpected=guardExpected

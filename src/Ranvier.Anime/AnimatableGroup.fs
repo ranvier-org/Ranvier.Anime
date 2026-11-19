@@ -71,13 +71,13 @@ type internal AnimatableGroup(scheduler:FrameScheduler,?onBegin:NumericAnimation
     member _.Cancelled=disposed
     /// <summary>Captures, initializes and attaches a property track to the group's callback lifecycle.</summary>
     member _.Add(kernels:AnimatableValue array,write:int -> Output -> unit,duration:float,options:PlaybackOptions,
-                 ease:float -> float,modifier:float -> float,precision:int) =
+                 ease:float -> float,modifier:float -> float,precision:int,?writeScalar:int -> float -> unit) =
         live()
         let root=AnimatableFrames.createRoot scheduler
         let mutable created:AnimatableTrack option=None
         try
             let track=new AnimatableTrack(root,kernels,write,duration,options,ease,modifier,precision,
-                                          onBegin=beginProperty,onPause=pauseProperty,onComplete=pauseProperty)
+                                          onBegin=beginProperty,onPause=pauseProperty,onComplete=pauseProperty,?writeScalar=writeScalar)
             created<-Some track
             roots.Add root
             tracks.Add track

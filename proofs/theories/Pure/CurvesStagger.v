@@ -412,3 +412,70 @@ Proof.
   assert (Hneg : (-zeta_w0 + wd) * (zeta_w0 + wd) < 0) by nia.
   nia.
 Qed.
+
+(** ** Pass-2 Batch B1 Refinement Proofs: Fused `SinCos` Underdamped Spring & 3D Grid Quotient-Chain SIMD *)
+
+Definition spring_underdamped_direct
+    (exp_fn sin_fn cos_fn : Z -> Z)
+    (zeta_w0 wd coeff t : Z) : Z :=
+  let env := exp_fn (-t * zeta_w0) in
+  let osc := cos_fn (wd * t) + (if Z.eqb coeff 0 then 0 else coeff * sin_fn (wd * t)) in
+  if Z.eqb osc 0 then 0 else env * osc.
+
+Definition spring_underdamped_sincos
+    (exp_fn : Z -> Z) (sincos_fn : Z -> Z * Z)
+    (neg_zeta_w0 wd coeff t : Z) : Z :=
+  let env := exp_fn (neg_zeta_w0 * t) in
+  let osc :=
+    if Z.eqb coeff 0 then snd (sincos_fn (wd * t))
+    else
+      let '(s, c) := sincos_fn (wd * t) in
+      c + coeff * s in
+  if Z.eqb osc 0 then 0 else env * osc.
+
+(**md **Fused `SinCos` and precomputed decay rate `-zeta * w0` equal direct underdamped `Spring.solve` evaluation.**
+Whenever `sincos_fn x = (sin_fn x, cos_fn x)` and `neg_zeta_w0 = -zeta_w0`, `spring_underdamped_sincos` evaluates to the exact displacement of `spring_underdamped_direct`, including the `coeff = 0` and `osc = 0` guards. *)
+Theorem spring_precomputed_sincos_eq_direct :
+  forall (exp_fn sin_fn cos_fn : Z -> Z) (sincos_fn : Z -> Z * Z)
+         zeta_w0 wd coeff t,
+    (forall x, sincos_fn x = (sin_fn x, cos_fn x)) ->
+    spring_underdamped_sincos exp_fn sincos_fn (-zeta_w0) wd coeff t =
+    spring_underdamped_direct exp_fn sin_fn cos_fn zeta_w0 wd coeff t.
+Proof.
+  intros exp_fn sin_fn cos_fn sincos_fn zeta_w0 wd coeff t Hsc.
+  unfold spring_underdamped_sincos, spring_underdamped_direct.
+  rewrite Hsc.
+  replace ((-zeta_w0) * t) with (-t * zeta_w0) by lia.
+  destruct (Z.eqb coeff 0); simpl; [rewrite Z.add_0_r; reflexivity | reflexivity].
+Qed.
+
+Definition grid3_quotient_chain (cols rows idx : Z) : Z * Z * Z :=
+  let q1 := Z.div idx cols in
+  let x := idx - q1 * cols in
+  let q2 := Z.div q1 rows in
+  let y := q1 - q2 * rows in
+  (x, y, q2).
+
+(**md **Chained floor-quotient 3D grid SIMD coordinates equal direct modulo/slice coordinates.**
+For `cols > 0`, `rows > 0`, and `idx >= 0`, computing `q1 = idx / cols`, `x = idx - q1 * cols`, `q2 = q1 / rows`, `y = q1 - q2 * rows`, and `z = q2` in SIMD vector lanes matches `grid3_decode cols rows idx` (`idx mod cols`, `(idx / cols) mod rows`, `idx / (cols * rows)`) identically without a third division by `cols * rows`. *)
+Theorem stagger_grid3d_quotient_chain_simd_eq_direct :
+  forall cols rows idx,
+    0 < cols ->
+    0 < rows ->
+    0 <= idx ->
+    grid3_quotient_chain cols rows idx = grid3_decode cols rows idx.
+Proof.
+  intros cols rows idx Hc Hr Hidx.
+  unfold grid3_quotient_chain, grid3_decode.
+  pose proof (Z.div_mod idx cols ltac:(lia)) as Hdm1.
+  set (q1 := idx / cols) in *.
+  assert (Hq1 : 0 <= q1) by (subst q1; apply Z.div_pos; lia).
+  pose proof (Z.div_mod q1 rows ltac:(lia)) as Hdm2.
+  set (q2 := q1 / rows) in *.
+  assert (Hz : idx / (cols * rows) = q2).
+  { subst q1 q2. rewrite Z.div_div by lia. reflexivity. }
+  rewrite Hz.
+  replace (idx - q1 * cols) with (idx mod cols) by nia.
+  replace (q1 - q2 * rows) with (q1 mod rows) by nia.
+  reflexivity.
+Qed.

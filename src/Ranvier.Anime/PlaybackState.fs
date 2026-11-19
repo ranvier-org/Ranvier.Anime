@@ -48,9 +48,11 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let mutable writeGuard = Closure.keep (fun () -> true)
     let mutable completingSetter = false
     let mutable internalRender = false
-    let mutable renderer : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
-    let mutable childRenderer : (PlaybackSample -> PlaybackTickMode -> bool -> bool) option = None
-    let mutable prepareLoop : PlaybackSample -> PlaybackTickMode -> bool -> unit = fun _ _ _ -> ()
+    let mutable renderer : PlaybackRenderer = null
+    let mutable sampleWhenMuted = false
+    let mutable renderingEnabled = true
+    let mutable childRenderer : PlaybackChildRenderer = null
+    let mutable prepareLoop : PlaybackRenderer = null
 
     let live () =
         if cancelled then raise (System.ObjectDisposedException("Timer"))
@@ -84,13 +86,14 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
                 if parentAllowsLifecycle() then emit PlaybackEvent.Begin
             elif next.AbsoluteTime <= 0. then
                 began <- false
-            if childRenderer.IsNone && current() && next.AboveZero && next.Iteration <> previousIteration then emit PlaybackEvent.Loop
+            if isNull childRenderer && current() && next.AboveZero && next.Iteration <> previousIteration then emit PlaybackEvent.Loop
             if current() && next.ShouldRender then
                 if next.AboveZero then
                     deltaTime <- next.PreviousTime - lastTime
                     lastTime <- next.PreviousTime
                     emit PlaybackEvent.BeforeUpdate
-                if childRenderer.IsNone && current() then renderer next mode mute
+                if isNull childRenderer && not (isNull renderer) && renderingEnabled && (sampleWhenMuted || not(isMuted())) && current() then
+                    renderer.Invoke(next, mode, mute)
                 if next.AboveZero then emit PlaybackEvent.Update
             if current() then
                 if hasParent && timing.Duration <= 1e-11 then
@@ -103,22 +106,20 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
                 elif next.AboveZero && next.AtEnd then
                     if System.Double.IsFinite iterations && float next.Iteration >= iterations - 1. then
                         paused <- true
-                        if childRenderer.IsNone && not wasCompleted then
+                        if isNull childRenderer && not wasCompleted then
                             completed <- true
                             finish (parentAllowsLifecycle())
                 else completed <- false
-            match childRenderer with
-            | Some renderChildren when current() ->
+            if not (isNull childRenderer) && current() then
                 if next.Iteration <> previousIteration then
-                    prepareLoop next mode mute
+                    if not (isNull prepareLoop) then prepareLoop.Invoke(next, mode, mute)
                     if current() then emit PlaybackEvent.Loop
-                let childrenComplete = if current() then renderChildren next mode mute else false
+                let childrenComplete = if current() then childRenderer.Invoke(next, mode, mute) else false
                 if current() && (childrenComplete || next.Backwards) && next.AbsoluteTime >= timing.Duration then
                     paused <- true
                     if not completed then
                         completed <- true
                         finish true
-            | _ -> ()
 
         finally internalRender <- previousInternal
 
@@ -137,7 +138,7 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
     let rec resume expected =
         if current expected && paused then
             paused <- false
-            if timing.Duration <= 1e-11 && childRenderer.IsNone then render 1e-11 PlaybackTickMode.Force false false
+            if timing.Duration <= 1e-11 && isNull childRenderer then render 1e-11 PlaybackTickMode.Force false false
     and seek expected time mute =
         if not(System.Double.IsFinite time) then invalidArg "time" "Expected finite milliseconds."
         if current expected then
@@ -224,11 +225,18 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         writeGuard <- guard
         try action() finally writeGuard <- previous
     /// <summary>Renders eligible samples between before-update and update callbacks, including muted and nonpositive samples.</summary>
-    member _.Renderer with set value = renderer <- value
+    member _.Renderer
+        with set (fn: PlaybackSample -> PlaybackTickMode -> bool -> unit) =
+            renderer <- PlaybackRenderer(fun s m mute -> fn s m mute)
+            sampleWhenMuted <- true
+    member _.ConfigureRenderer(render: PlaybackRenderer, whenMuted: bool) =
+        renderer <- render
+        sampleWhenMuted <- whenMuted
+    member _.RenderingEnabled with set value = renderingEnabled <- value
     /// <summary>Renders timeline children after root update callbacks; loop preparation precedes the root loop callback.</summary>
-    member _.ConfigureChildren(beforeLoop, renderChildren) =
+    member _.ConfigureChildren(beforeLoop: PlaybackRenderer, renderChildren: PlaybackChildRenderer) =
         prepareLoop <- beforeLoop
-        childRenderer <- Some renderChildren
+        childRenderer <- renderChildren
     /// <summary>Raw time preceding the current sample, used for forced property-render eligibility.</summary>
     member _.PreviousAbsoluteTime = previousAbsoluteTime
     /// <summary>Initial delay after any source stretch operation.</summary>

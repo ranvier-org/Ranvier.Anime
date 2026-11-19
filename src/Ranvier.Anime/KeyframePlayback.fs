@@ -20,12 +20,14 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                                replace:bool,roundNumbers:bool,precision:int,options:PlaybackOptions,
                                ?onBegin:Timer -> unit,?onBeforeUpdate:Timer -> unit,?onRender:Timer -> unit,
                                ?onUpdate:Timer -> unit,?onLoop:Timer -> unit,?onPause:Timer -> unit,?onComplete:Timer -> unit,
-                               ?siblings:FrameSibling array,?finiteScalar:bool) =
+                               ?siblings:FrameSibling array,?finiteScalar:bool,?writeScalar:int -> string -> float -> unit) =
     do
         if isNull(box program) then nullArg "program"
         if isNull(box write) then nullArg "write"
         if precision < -1 || precision>308 then invalidArg "precision" "Expected disabled rounding or at most 308 decimal places."
     let finiteScalar=defaultArg finiteScalar false
+    let writeScalarOpt = match writeScalar with Some ws -> ValueSome ws | None -> ValueNone
+    let hasSiblings = siblings.IsSome
     let ownerAllowsWrite=ScopeRegistration.captureWriteGuard()
     let definitions=Array.copy program.Tweens
     let frames=
@@ -38,7 +40,7 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
             definitions |> Array.map(fun frame -> FrameSibling(frame,child))
     let mutable offset=program.Offset
     do
-        if replace && siblings.IsNone then
+        if replace && not hasSiblings then
             let groups=Dictionary<struct(int*string),ResizeArray<FrameSibling>>(KeyframePropComparer.instance)
             for frame in frames do frame.Start<-frame.Start+program.Delay
             for frame in frames do
@@ -56,13 +58,19 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
     let clock=ScopeRegistration.run ignore (fun () -> new Timer(scheduler,program.IterationDuration,options=effectiveOptions,
                         ?onBegin=onBegin,?onBeforeUpdate=onBeforeUpdate,?onUpdate=onUpdate,
                         ?onLoop=onLoop,?onPause=onPause,?onComplete=onComplete))
-    let sampleFrame (definition:FrameTween) progress current =
+    let sampleFrameOutput (definition:FrameTween) progress current : Output option =
         if finiteScalar then
-            let value=definition.Modifier(PropertyNumbers.interpolate definition.First.Number definition.Last.Number progress)
-            if current() then Some(struct(value,ValueInterpolation.compose(definition.First,value,[||]))) else None
-        else ValueInterpolation.sample(roundNumbers,definition.First,definition.Last,progress,precision,definition.Modifier,current)
+            let raw = PropertyNumbers.interpolate definition.First.Number definition.Last.Number progress
+            let value =
+                if Object.ReferenceEquals(definition.Modifier, PropertyNumbers.identityFloat) then raw
+                else definition.Modifier raw
+            if current() then Some(ValueInterpolation.compose(definition.First,value,Array.Empty<float>())) else None
+        else
+            match ValueInterpolation.sampleOutput(roundNumbers,definition.First,definition.Last,progress,precision,definition.Modifier,current) with
+            | null -> None
+            | output -> Some output
     do
-        if siblings.IsSome then
+        if hasSiblings then
             let propGroups = Dictionary<struct(int * string), ResizeArray<FrameSibling>>(KeyframePropComparer.instance)
             for i = 0 to frames.Length - 1 do
                 let f = frames[i]
@@ -75,18 +83,41 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                         propGroups.Add(key, created)
                         created
                 list.Add f
-            let propSlices = Dictionary<struct(int * string), FrameSibling array>(propGroups.Count, KeyframePropComparer.instance)
+            let propSlices = Dictionary<struct(int * string), struct(FrameSibling array * bool)>(propGroups.Count, KeyframePropComparer.instance)
             for KeyValue(k, list) in propGroups do
-                propSlices.Add(k, list.ToArray())
+                let arr = list.ToArray()
+                let mutable sorted = true
+                for cIdx = 1 to arr.Length - 1 do
+                    if arr[cIdx].Start < arr[cIdx - 1].Start then sorted <- false
+                propSlices.Add(k, struct(arr, sorted))
             for i = 0 to frames.Length - 1 do
                 let frame = frames[i]
-                let slice = propSlices[struct(frame.Definition.Target, frame.Definition.Name)]
+                let struct(slice, sorted) = propSlices[struct(frame.Definition.Target, frame.Definition.Name)]
                 if slice.Length = 1 then
                     frame.SampleAt <-
                         Some(fun (f:FrameSibling) parentTime current ->
                             let time = clock.IterationTimeAt((parentTime - offset) * clock.Speed)
                             let progress = f.Definition.Ease(Math.Clamp((time - f.Start) / f.Update, 0., 1.))
-                            if current() then sampleFrame f.Definition progress current |> Option.map(fun struct(_,output) -> output)
+                            if current() then sampleFrameOutput f.Definition progress current
+                            else None)
+                elif sorted && slice.Length > 4 then
+                    frame.SampleAt <-
+                        Some(fun (f:FrameSibling) parentTime current ->
+                            let time = clock.IterationTimeAt((parentTime - offset) * clock.Speed)
+                            let f0 = slice[0]
+                            let selected =
+                                if time < f0.Start then
+                                    if f0.Start < f.Start then f0 else f
+                                else
+                                    let mutable lo = 0
+                                    let mutable hi = slice.Length
+                                    while lo < hi do
+                                        let mid = int (uint (lo + hi) >>> 1)
+                                        if slice[mid].Start <= time then lo <- mid + 1
+                                        else hi <- mid
+                                    slice[lo - 1]
+                            let progress = selected.Definition.Ease(Math.Clamp((time - selected.Start) / selected.Update, 0., 1.))
+                            if current() then sampleFrameOutput selected.Definition progress current
                             else None)
                 else
                     frame.SampleAt <-
@@ -98,28 +129,28 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                                 if candidate.Start <= time || (selected.Start > time && candidate.Start < selected.Start) then
                                     selected <- candidate
                             let progress = selected.Definition.Ease(Math.Clamp((time - selected.Start) / selected.Update, 0., 1.))
-                            if current() then sampleFrame selected.Definition progress current |> Option.map(fun struct(_,output) -> output)
+                            if current() then sampleFrameOutput selected.Definition progress current
                             else None)
     let mutable renderToken = Int64.MinValue
     let current = Closure.keep (fun () -> clock.IsCurrent renderToken && ownerAllowsWrite())
-    let render (sample:PlaybackSample) mode muted =
+    let render = PlaybackRenderer(fun (sample:PlaybackSample) mode muted ->
         let savedToken = renderToken
         renderToken <- clock.WriteToken
         try
             let delta=sample.AbsoluteTime-clock.PreviousAbsoluteTime
             let forced=mode=PlaybackTickMode.Force || (if sample.Backwards then -delta else delta)>=clock.TickThreshold
             let absolute=PropertyNumbers.round 1e12 (offset+clock.Delay+sample.IterationTime)
-            let parentTime=PropertyNumbers.round 1e12 (offset+(clock.Delay+sample.AbsoluteTime)/clock.Speed)
+            let parentTime=if hasSiblings then PropertyNumbers.round 1e12 (offset+(clock.Delay+sample.AbsoluteTime)/clock.Speed) else 0.
             let mutable rendered=false
-            let mutable alive=current()
+            let mutable alive=clock.IsCurrent renderToken && ownerAllowsWrite()
             for index in 0..frames.Length-1 do
                 if alive then
                     let frame=frames[index]
                     let previous=frame.Previous
                     let next=frame.Next
-                    let previousCross=not(isNull previous) && not(obj.ReferenceEquals(previous.Child,frame.Child))
-                    let nextSame=not(isNull next) && obj.ReferenceEquals(next.Child,frame.Child)
-                    let timedTakeover=Double.IsFinite frame.OwnsUntil && not(isNull next) && not nextSame
+                    let previousCross=hasSiblings && not(isNull previous) && not(obj.ReferenceEquals(previous.Child,frame.Child))
+                    let nextSame=not(isNull next) && (not hasSiblings || obj.ReferenceEquals(next.Child,frame.Child))
+                    let timedTakeover=hasSiblings && Double.IsFinite frame.OwnsUntil && not(isNull next) && not nextSame
                     let previousEnd=if isNull previous then 0. else previous.AbsoluteStart+previous.Change
                     let ending=frame.AbsoluteStart+frame.Change
                     let takeover=
@@ -132,10 +163,13 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                                 (frame.Time<>0. || absolute>=frame.AbsoluteStart ||
                                  (previousCross && not frame.Definition.HasFrom && not previous.Overridden && absolute>=previousEnd) ||
                                  (nextSame && not next.Overridden && next.Time<>0. && sample.IterationTime<next.Start))
-                    let laterAtBoundary=
-                        sample.Backwards && not clock.InternalRender && not(isNull next) && not nextSame &&
-                        not next.Overridden && next.Definition.HasFrom && parentTime=next.AbsoluteStart
-                    let owns=parentTime>=frame.OwnsFrom && parentTime<frame.OwnsUntil && not laterAtBoundary
+                    let owns =
+                        if not hasSiblings then true
+                        else
+                            let laterAtBoundary=
+                                sample.Backwards && not clock.InternalRender && not(isNull next) && not nextSame &&
+                                not next.Overridden && next.Definition.HasFrom && parentTime=next.AbsoluteStart
+                            parentTime>=frame.OwnsFrom && parentTime<frame.OwnsUntil && not laterAtBoundary
                     let eligible=owns && (forced || history || (timedTakeover && sample.Backwards)) && (isNull previous || previousCross || sample.IterationTime>=frame.Start) &&
                                  (not replace || (not frame.Overridden && (not frame.Overlapped || timedTakeover || absolute<=ending) &&
                                                   (isNull next || timedTakeover || next.Overridden || absolute<=takeover) &&
@@ -145,21 +179,47 @@ type internal KeyframePlayback(scheduler:FrameScheduler,program:FrameProgram,wri
                     if eligible then
                         frame.Time<-Math.Clamp(sample.IterationTime-frame.Start,0.,if timedTakeover then frame.Update else frame.Change)
                         let definition=definitions[index]
-                        let progress=definition.Ease(frame.Time/frame.Update)
-                        alive<-current()
+                        let rawRatio = frame.Time / frame.Update
+                        let progress =
+                            if Object.ReferenceEquals(definition.Ease, PropertyNumbers.identityFloat) then rawRatio
+                            else definition.Ease rawRatio
+                        alive <- clock.IsCurrent renderToken && ownerAllowsWrite()
                         if alive then
-                            match sampleFrame definition progress current with
-                            | Some struct(_,output) when current() ->
-                                frame.Value<-output
-                                if not clock.InternalRender && not clock.EffectivelyMuted then
-                                    write definition.Target definition.Name output
-                                    renderVersion<-renderVersion+1L
-                                    rendered<-true
-                                alive<-current()
-                            | _ -> alive<-false
+                            let kind = definition.First.Kind
+                            if kind = ValueKind.Number || kind = ValueKind.Unit then
+                                let struct(ok, scalarVal) =
+                                    if finiteScalar then
+                                        let raw = PropertyNumbers.interpolate definition.First.Number definition.Last.Number progress
+                                        let v =
+                                            if Object.ReferenceEquals(definition.Modifier, PropertyNumbers.identityFloat) then raw
+                                            else definition.Modifier raw
+                                        if clock.IsCurrent renderToken && ownerAllowsWrite() then struct(true, v) else struct(false, 0.)
+                                    else
+                                        ValueInterpolation.trySampleScalarValue(roundNumbers, kind, definition.First.Number, definition.Last.Number, progress, precision, definition.Modifier, current)
+                                if ok && clock.IsCurrent renderToken && ownerAllowsWrite() then
+                                    frame.SetScalarValue scalarVal
+                                    if not clock.InternalRender && not clock.EffectivelyMuted then
+                                        match writeScalarOpt with
+                                        | ValueSome ws -> ws definition.Target definition.Name scalarVal
+                                        | ValueNone -> write definition.Target definition.Name frame.Value
+                                        renderVersion<-renderVersion+1L
+                                        rendered<-true
+                                    alive <- clock.IsCurrent renderToken && ownerAllowsWrite()
+                                else alive<-false
+                            else
+                                match ValueInterpolation.sampleOutput(roundNumbers, definition.First, definition.Last, progress, precision, definition.Modifier, current) with
+                                | null -> alive<-false
+                                | output when clock.IsCurrent renderToken && ownerAllowsWrite() ->
+                                    frame.Value<-output
+                                    if not clock.InternalRender && not clock.EffectivelyMuted then
+                                        write definition.Target definition.Name output
+                                        renderVersion<-renderVersion+1L
+                                        rendered<-true
+                                    alive <- clock.IsCurrent renderToken && ownerAllowsWrite()
+                                | _ -> alive<-false
                     elif frame.Time<>0. && not(isNull previous) && not previousCross && sample.IterationTime<frame.Start then frame.Time<-0.
-            if alive && current() && rendered && sample.AboveZero && not muted && not clock.EffectivelyMuted then onRender |> Option.iter(fun action -> action clock)
-        finally renderToken <- savedToken
+            if alive && clock.IsCurrent renderToken && ownerAllowsWrite() && rendered && sample.AboveZero && not muted && not clock.EffectivelyMuted then onRender |> Option.iter(fun action -> action clock)
+        finally renderToken <- savedToken)
     let stageStretch scale =
         let nextOffset=offset*scale
         if not(Double.IsFinite nextOffset) then invalidArg "scale" "Scaled offset must remain finite."

@@ -49,7 +49,8 @@ module internal TimelineKeyframeBinding =
                         previous |> Option.bind(fun tween -> tween.CachedEnd.Scalar)),number,current)
                 let original index=Number(targets[index].Value)
                 let write target _ (output:Output)=targets[target].Value<-output.Number
-                install(context,animation,defaults,properties,targets |> Array.map(fun target -> struct(box target,"value")),
+                let writeScalar target _ value=targets[target].Value<-value
+                TimelineKeyframeInstallation.installWithScalar writeScalar (context,animation,defaults,properties,targets |> Array.map(fun target -> struct(box target,"value")),
                         resolve,original,write,false,precision,options,current)),
             ?position=position,zeroDuration=(duration<=1e-11))
         |> Option.defaultWith(fun () -> invalidOp "Owned keyframe construction was superseded.")

@@ -261,7 +261,7 @@ module CssAnimation =
         let mutable renderToken = Int64.MinValue
         let mutable renderResGuard : unit -> bool = Closure.keep (fun () -> false)
         let canWrite = Closure.keep (fun () -> clock.IsCurrent renderToken && renderResGuard())
-        let render (sample:PlaybackSample) mode muted =
+        let render = PlaybackRenderer(fun (sample:PlaybackSample) mode muted ->
             let savedToken = renderToken
             let savedRes = renderResGuard
             renderToken <- clock.WriteToken
@@ -287,7 +287,7 @@ module CssAnimation =
                             | _ -> ())
             finally
                 renderToken <- savedToken
-                renderResGuard <- savedRes
+                renderResGuard <- savedRes)
         try
             clock.ConfigureRenderer(render,?totalDuration=(if iterationDuration=1e-11 then Some 1e-11 else None),
                                     onStretch=(fun scale -> tweenTime<-tweenTime*scale))
