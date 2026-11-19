@@ -212,7 +212,7 @@ type ScrollObserver(readScroll:unit -> float * bool, measure:unit -> ScrollGeome
         let expected = generation
         settings <- options()
         match settings.Sync with
-        | ScrollSync.Smooth amount when not(Double.IsFinite amount) -> invalidArg "Sync" "Smoothing must be finite."
+        | ScrollSync.Smooth amount when not(Double.IsFinite amount) || amount < 0. -> invalidArg "Sync" "Smoothing must be finite and non-negative."
         | _ -> ()
         debug |> Option.iter(fun debug -> debug.Remove())
         let time = linked |> Option.map(fun linked -> linked.CurrentTime())

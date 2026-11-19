@@ -247,6 +247,9 @@ module ElementTransforms =
             state.Cache.Clear()
             for KeyValue(k, v) in parsed do state.Cache[k] <- v
             state.FullTranslate <- fullTranslate
+        else
+            state.Cache.Clear()
+            state.FullTranslate <- None
         for canonical, originalOpt in originals do
             match originalOpt with
             | Some v -> state.Cache[canonical] <- v

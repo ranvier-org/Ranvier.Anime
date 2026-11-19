@@ -627,8 +627,22 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
                     match entry with
                     | TimelineEntry.OwnedTimer(_, child) | TimelineEntry.OwnedAnimation(_, child, _, _) ->
                         try child.Cancel() with _ -> ()
-                    | TimelineEntry.Borrowed(_, _, _, identity) ->
-                        borrowedProperties.Remove identity |> ignore
+                    | TimelineEntry.Property track ->
+                        match propertySiblings.TryGetValue track.Property with
+                        | true, tracks ->
+                            tracks.Remove track |> ignore
+                            if tracks.Count = 0 then propertySiblings.Remove track.Property |> ignore
+                        | _ -> ()
+                    | TimelineEntry.Borrowed(track, _, _, identity) ->
+                        match borrowedProperties.TryGetValue identity with
+                        | true, prop ->
+                            borrowedProperties.Remove identity |> ignore
+                            match propertySiblings.TryGetValue prop with
+                            | true, tracks ->
+                                tracks.Remove track |> ignore
+                                if tracks.Count = 0 then propertySiblings.Remove prop |> ignore
+                            | _ -> ()
+                        | _ -> ()
                     | _ -> ()
                 else remaining.Add entry
             if removed then
@@ -644,10 +658,7 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
                         let finish = entry.Offset + entry.Duration
                         if finish > maxEnd then maxEnd <- finish
                     duration <- maxEnd
-                    let iterations =
-                        if Double.IsPositiveInfinity clock.IterationCount then infinity else clock.IterationCount
-                    let total = PlaybackTiming(duration, iterations, clock.Delay, clock.LoopDelay).Duration
-                    clock.ConfigureRenderer((fun _ _ _ -> ()), totalDuration = total)
+                    clock.ResizeWithoutReset duration
         this
     /// <summary>Maps observable completion to the callback result.</summary>
     member this.ThenResult<'T>(callback: Timeline -> 'T) : Threading.Tasks.Task<'T> =

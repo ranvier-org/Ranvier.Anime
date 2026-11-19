@@ -148,12 +148,29 @@ module ColorSpace =
 
         let y = inverse y
 
-        {
-            Red = gamma (3.1338561 * x - 1.6168667 * y - 0.4906146 * z)
-            Green = gamma (-0.9787684 * x + 1.9161415 * y + 0.0334540 * z)
-            Blue = gamma (0.0719453 * x - 0.2289914 * y + 1.4052427 * z)
-            Alpha = color.Alpha
-        }
+        let snapUnit v =
+            if v < 0. && v >= -1e-5 then 0.
+            elif v > 1. && v <= 1. + 1e-5 then 1.
+            else v
+
+        let rgb =
+            if color.A = 0. && color.B = 0. then
+                let grey = snapUnit (gamma y)
+                {
+                    Red = grey
+                    Green = grey
+                    Blue = grey
+                    Alpha = color.Alpha
+                }
+            else
+                {
+                    Red = snapUnit (gamma (3.1338561 * x - 1.6168667 * y - 0.4906146 * z))
+                    Green = snapUnit (gamma (-0.9787684 * x + 1.9161415 * y + 0.0334540 * z))
+                    Blue = snapUnit (gamma (0.0719453 * x - 0.2289914 * y + 1.4052427 * z))
+                    Alpha = color.Alpha
+                }
+
+        rgb
         |> applyGamut GamutPolicy.Preserve
 
     let toHcl color =

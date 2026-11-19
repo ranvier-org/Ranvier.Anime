@@ -397,6 +397,10 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
         check()
         stop()
         restore()
+        let activeProps =
+            match animationOptions with
+            | Some overrideOpts -> overrideOpts.Properties |> Array.filter (fun p -> Array.contains p props)
+            | None -> props
         let options=defaultArg animationOptions options
         let expected=generation
         let live()=not disposed && ownerLive() && expected=generation
@@ -411,7 +415,7 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                 | None -> true
                 | Some previous ->
                     previous.Width<>m.Width || previous.Height<>m.Height || previous.X<>m.X || previous.Y<>m.Y ||
-                    previous.Hidden<>m.Hidden || props |> Array.exists(fun p -> previous.Values[p]<>m.Values[p]))
+                    previous.Hidden<>m.Hidden || activeProps |> Array.exists(fun p -> previous.Values[p]<>m.Values[p]))
         let enter=ResizeArray<HTMLElement>()
         let leave=ResizeArray<HTMLElement>()
         let animate=ResizeArray<HTMLElement>()
@@ -562,13 +566,13 @@ type AutoLayout(root:HTMLElement, computed:ComputedStyleService, scheduler:Frame
                         else nodeSwaps.Add(fun () -> if live() then write m.Element name last "")
                     if not m.Inline && (not(same root m.Element) || fresh[0].Position="absolute" || fresh[0].Position="fixed" ||
                                        geometry |> Array.exists(fun (_,first,last) -> first<>last) ||
-                                       props |> Array.exists(fun property -> before.Values[property]<>after.Values[property])) then
+                                       activeProps |> Array.exists(fun property -> before.Values[property]<>after.Values[property])) then
                         let first=px x+" "+px y
                         let last=px after.X+" "+px after.Y
                         write m.Element "translate" first ""
                         if m.Target then addProperty m "translate" first last delay length ease
                         else nodeSwaps.Add(fun () -> if live() then write m.Element "translate" last "")
-                    for name in props do
+                    for name in activeProps do
                         let boundary=boundaryProperties |> Array.tryFind(fun d -> Declaration.name d=name)
                         let first=if isEntering then boundary |> Option.map Declaration.value |> Option.defaultValue before.Values[name] else before.Values[name]
                         let last=if isLeaving then boundary |> Option.map Declaration.value |> Option.defaultValue after.Values[name] else after.Values[name]

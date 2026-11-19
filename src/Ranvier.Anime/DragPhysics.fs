@@ -68,9 +68,11 @@ module DragPhysics =
 
     /// <summary>Axis autoscroll increment rounded to whole CSS pixels.</summary>
     let edgeScroll minimum maximum paddingBefore paddingAfter threshold speed value =
-        let negative=Math.Floor(Math.Clamp((value-minimum+paddingBefore)/threshold,-1.,0.)*speed*10.+0.5)
-        let positive=Math.Floor(Math.Clamp((value-maximum-paddingAfter)/threshold,0.,1.)*speed*10.+0.5)
-        if negative<>0. then negative else positive
+        if not (Double.IsFinite threshold) || threshold <= 0. then 0.
+        else
+            let negative=Math.Floor(Math.Clamp((value-minimum+paddingBefore)/threshold,-1.,0.)*speed*10.+0.5)
+            let positive=Math.Floor(Math.Clamp((value-maximum-paddingAfter)/threshold,0.,1.)*speed*10.+0.5)
+            if negative<>0. then negative else positive
 
 /// <summary>Source three-sample maximum velocity with a minimum 17 ms sampling interval.</summary>
 type DragVelocity(initialTime:float) =

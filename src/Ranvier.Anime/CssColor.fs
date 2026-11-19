@@ -185,8 +185,9 @@ module internal CssColor =
                     else
                         let scale = if ok then 0.4 else 125.
                         scaled scale y, scaled scale z
-                if l = 0. then 0.,0.,0.
-                elif l = lightnessScale then 1.,1.,1.
+                if a = 0. && b = 0. && (l = 0. || l = lightnessScale) then
+                    let endpoint = if l = 0. then 0. else 1.
+                    endpoint,endpoint,endpoint
                 elif ok then oklab l a b
                 else
                     let c = ColorSpace.fromLab {Lightness=l; A=a; B=b; Alpha=1.}

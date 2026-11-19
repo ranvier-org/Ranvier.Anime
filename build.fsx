@@ -29,6 +29,8 @@ module Spec =
             "tests/Ranvier.View.Anime.Browser/"
             "tests/Portable/"
             "examples/"
+            "proofs/"
+            "benchmarks/"
             ".SageFs/"
             "build.defs.fsx"
             "build.native.fsx"

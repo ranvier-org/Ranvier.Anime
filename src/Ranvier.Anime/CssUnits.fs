@@ -7,7 +7,7 @@ module internal CssUnits =
     /// <summary>Converts source angle ratios or two recorded baseline widths; zero measurements use 100.</summary>
     let convertMeasured measure value currentUnit targetUnit =
         if not(Double.IsFinite value) then invalidArg "value" "Expected a finite value."
-        let angle = function "deg" -> Some 1. | "rad" -> Some(180./Math.PI) | "turn" -> Some 360. | _ -> None
+        let angle = function "deg" -> Some 1. | "rad" -> Some(180./Math.PI) | "turn" -> Some 360. | "grad" -> Some 0.9 | _ -> None
         let result =
             if currentUnit=targetUnit then value
             else

@@ -148,7 +148,8 @@ type internal PlaybackState(duration: float, iterations: float, delay: float, lo
         let count = if System.Double.IsPositiveInfinity iterations then System.Math.Floor(1e12 / duration) else iterations
         reversed <- if alternate && count % 2. = 0. then reversed else not reversed
         if System.Double.IsPositiveInfinity iterations then
-            let progress = if reversed then 1. - sample.IterationProgress else sample.IterationProgress
+            let rawProgress = if System.Double.IsNaN sample.IterationProgress then 0. else sample.IterationProgress
+            let progress = if reversed then 1. - rawProgress else rawProgress
             let time = duration * float sample.Iteration + duration * progress
             let wasPaused = paused
             pause()
