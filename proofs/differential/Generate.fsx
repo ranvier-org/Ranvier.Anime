@@ -76,7 +76,8 @@ for idx in 0 .. count - 1 do
         let h0 = nextInt 0 359
         let mutable h1 = nextInt 0 359
         // Avoid exact 180-degree antipode where floating Lab roundoff of 1e-14 can flip -180 vs +180
-        if abs (((h1 - h0 + 540) % 360) - 180) <= 1 then
+        let hueDiff = ((h1 - h0) % 360 + 360) % 360
+        if abs (hueDiff - 180) <= 1 then
             h1 <- (h1 + 17) % 360
         let gradHund = nextInt -400 800
         progSb.Append($"(color {fmtIntList halfNums} {fmtIntList xs} {fmtIntList ys} {showBool c0Zero} {h0} {h1} {gradHund})\n") |> ignore
