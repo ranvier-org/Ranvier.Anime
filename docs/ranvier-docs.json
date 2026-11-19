@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "title": "Animation",
+  "description": "Portable native and anime.js timeline, spring, stagger, and signal-driven animation primitives.",
+  "index": "index.md",
+  "packages": [
+    [
+      "animejs",
+      "4.5.0"
+    ]
+  ],
+  "proofsUrl": "https://ranvier-org.github.io/Ranvier.Anime/proofs/",
+  "apiReference": {
+    "title": "API reference",
+    "projects": [
+      "src/Ranvier.Anime/Ranvier.Anime.fsproj",
+      "src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj"
+    ],
+    "assemblies": [
+      "Ranvier.Anime",
+      "Fable.Ranvier.Anime"
+    ]
+  },
+  "sections": [
+    {
+      "title": "Getting started",
+      "items": [
+        "index.md",
+        "guide/introduction.md"
+      ]
+    },
+    {
+      "title": "Timelines & reactivity",
+      "items": [
+        "anime/bindings.md",
+        "anime/reactive.md",
+        "anime/testing.md"
+      ]
+    }
+  ]
+}
