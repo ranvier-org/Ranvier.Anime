@@ -18,6 +18,16 @@ module Spec =
             "src/Fable.Ranvier.Anime/Fable.Ranvier.Anime.fsproj"
         ]
 
+    /// External Ranvier packages checked for matching traced and untraced ids.
+    let externalPackages =
+        [
+            "Ranvier"
+            "Ranvier.Dom"
+            "Ranvier.Css"
+            "Ranvier.Css.Core"
+            "Ranvier.Css.Dom"
+        ]
+
     let groups = [ "all"; "native"; "bindings"; "workflows" ]
 
     /// The native port's sources keep the port's own layout; Fantomas formats the rest.
@@ -247,7 +257,7 @@ module Stage =
     /// The contribution and version ownership checks the workflows run.
     let workflows =
         stage "workflows" {
-            run "node --test .github/scripts/contrib.test.cjs"
+            run "node --test .github/scripts/contrib.test.cjs .github/scripts/packages.test.cjs"
             run (Cmd.ofList Spec.python [ "-I"; "tests/test_versioning.py" ])
             run (Cmd.ofList Spec.python [ "-I"; ".github/scripts/check_versioning.py" ])
         }
@@ -290,18 +300,12 @@ module Stage =
         input {
             let! config = Baked.Dotnet.configOrRelease
             let label = if traced then "traced" else "untraced"
+            let traceValue = if traced then "true" else "false"
 
             return
                 stage $"pack {label} libraries" {
                     for project in Spec.sources do
-                        stage $"pack {label} {project}" {
-                            run (
-                                if traced then
-                                    cmd $"dotnet pack {project} -c {config} -p:RanvierTrace=true -m:1 -o bin"
-                                else
-                                    cmd $"dotnet pack {project} -c {config} --no-build --no-restore -o bin"
-                            )
-                        }
+                        stage $"pack {label} {project}" { run (cmd $"dotnet pack {project} -c {config} -p:RanvierTrace={traceValue} -m:1 -o bin") }
                 }
         }
 
@@ -320,6 +324,15 @@ module Stage =
                     clean
                     untraced
                     traced
+
+                    stage "check package ids, versions, frameworks, trace builds and dependencies" {
+                        run (
+                            Cmd.ofList
+                                "node"
+                                ([ ".github/scripts/packages.cjs"; "bin"; "src"; "--external" ]
+                                 @ Spec.externalPackages)
+                        )
+                    }
                 }
         }
 

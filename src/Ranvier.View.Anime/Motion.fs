@@ -119,7 +119,7 @@ module Motion =
     let private nothing () = ()
 
     let private reduced () =
-        match Api.untrack (fun () -> (Reactive.policy ()).Value) with
+        match (Reactive.policy ()).Peek with
         | Reactive.Reduced -> true
         | Reactive.Full -> false
 
@@ -491,7 +491,7 @@ module Motion =
                 let write (signal: Signal<'v> voption) (value: 'v) =
                     signal
                     |> ValueOption.iter (fun signal ->
-                        if Api.untrack (fun () -> signal.Value) <> value then
+                        if signal.Peek <> value then
                             graph.Batch(fun () -> signal.Value <- value))
 
                 let onEvent (event: ScrollEvent) (progress: float) =
@@ -533,13 +533,13 @@ module Motion =
                 let publish (draggable: NativeDraggable) =
                     let next = struct (draggable.X, draggable.Y)
 
-                    if Api.untrack (fun () -> binding.Position.Value) <> next then
+                    if binding.Position.Peek <> next then
                         graph.Batch(fun () -> binding.Position.Value <- next)
 
                 let dragging (value: bool) =
                     binding.Dragging
                     |> ValueOption.iter (fun signal ->
-                        if Api.untrack (fun () -> signal.Value) <> value then
+                        if signal.Peek <> value then
                             graph.Batch(fun () -> signal.Value <- value))
 
                 let chained =

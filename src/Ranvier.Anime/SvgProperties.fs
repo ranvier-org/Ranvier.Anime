@@ -44,6 +44,8 @@ type SvgMorph internal (source:SVGGeometryElement,destination:SVGGeometryElement
             reraise()
     /// <summary>Normalized progress; writes after restoration, supersession or owner disposal are ignored.</summary>
     member _.Progress=progress
+    /// <summary>Closes this morph without restoring the step's entry attribute, for followers managing outer restoration.</summary>
+    member internal _.Close()=lifetime.Close()
     /// <summary>Restores the original source attribute once, stopping after owner or scope-generation reentry.</summary>
     member _.Revert()=
         match lifetime.BeginRestore() with

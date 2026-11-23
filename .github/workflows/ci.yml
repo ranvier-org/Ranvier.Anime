@@ -51,6 +51,9 @@ jobs:
         with:
           global-json-file: global.json
           dotnet-version: 8.0.x
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
       - name: Build and pack Ranvier.Anime and Fable.Ranvier.Anime, untraced and traced
         run: dotnet fsi build.fsx -- pack
       - uses: actions/upload-artifact@v7

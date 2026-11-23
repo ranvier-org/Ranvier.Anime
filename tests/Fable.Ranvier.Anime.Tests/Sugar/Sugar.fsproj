@@ -12,6 +12,6 @@
         <ProjectReference Include="$(RanvierCssRoot)/src/Ranvier.Css.Bindings/Ranvier.Css.Bindings.fsproj" />
     </ItemGroup>
     <ItemGroup Condition="'$(UseLocalRanvierCss)' != 'true'">
-        <PackageReference Include="Ranvier.Css.Bindings" Version="$(RanvierCssBindingsVersion)" />
+        <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="$(RanvierCssBindingsVersion)" />
     </ItemGroup>
 </Project>
