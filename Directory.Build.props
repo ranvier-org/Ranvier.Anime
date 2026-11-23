@@ -40,9 +40,9 @@
         <RanvierCssVersion Condition="'$(RanvierCssVersion)' == ''">0.3.0</RanvierCssVersion>
         <RanvierCssBindingsVersion Condition="'$(RanvierCssBindingsVersion)' == ''">0.2.0</RanvierCssBindingsVersion>
         <RanvierCssDomVersion Condition="'$(RanvierCssDomVersion)' == ''">0.2.0</RanvierCssDomVersion>
-        <RanvierViewVersion Condition="'$(RanvierViewVersion)' == ''">0.3.0</RanvierViewVersion>
-        <RanvierViewWebCoreVersion Condition="'$(RanvierViewWebCoreVersion)' == ''">0.2.1</RanvierViewWebCoreVersion>
-        <RanvierViewWebCoreSdlVersion Condition="'$(RanvierViewWebCoreSdlVersion)' == ''">0.2.2</RanvierViewWebCoreSdlVersion>
+        <RanvierViewVersion Condition="'$(RanvierViewVersion)' == ''">0.4.0</RanvierViewVersion>
+        <RanvierViewWebCoreVersion Condition="'$(RanvierViewWebCoreVersion)' == ''">0.3.0</RanvierViewWebCoreVersion>
+        <RanvierViewWebCoreSdlVersion Condition="'$(RanvierViewWebCoreSdlVersion)' == ''">0.2.3</RanvierViewWebCoreSdlVersion>
         <RanvierWebCoreNativeVersion Condition="'$(RanvierWebCoreNativeVersion)' == ''">0.1.3</RanvierWebCoreNativeVersion>
     </PropertyGroup>
 
