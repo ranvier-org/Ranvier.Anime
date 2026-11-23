@@ -48,7 +48,6 @@
     <ProjectReference Include="../../upstream/view-aot/src/Ranvier.View.WebCore/Ranvier.View.WebCore.fsproj" Condition="'$(NativeSmokeGraph)' == 'source'" />
     <PackageReference Include="Ranvier.View.WebCore$(RanvierPackageSuffix)" Version="$(RanvierViewWebCoreVersion)" Condition="'$(NativeSmokeGraph)' != 'source'" />
     <PackageReference Update="FSharp.Core" Version="10.1.401" />
-    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" ILCompilerPackVersion="10.0.14" Condition="'$(PublishAot)' == 'true'" />
     <PackageReference Include="Ranvier.Css.Bindings$(RanvierPackageSuffix)" Version="$(RanvierCssBindingsVersion)" />
   </ItemGroup>
   <Target Name="RequirePinnedSourceGraph" BeforeTargets="PrepareForBuild">

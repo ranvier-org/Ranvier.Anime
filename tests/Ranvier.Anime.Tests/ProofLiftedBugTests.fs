@@ -548,4 +548,60 @@ let tests =
                     host.RunFrame()
                 close (Double.Parse(fst styles["opacity"], Globalization.CultureInfo.InvariantCulture)) 1.0 "ComposedFollower overrides Autoplay=false so follower animates"
                 fOp.Revert()
+
+                // 3. Follow.morph keeps exact target shape after step-root disposal, retargets mid-flight, and restores original on Revert
+                let mkSvgPath (attrs: Dictionary<string, string>) (ownerDoc: unit -> Document) =
+                    domProxy<SVGGeometryElement> (fun m args ->
+                        match m.Name with
+                        | "get_tagName" -> box "path"
+                        | "get_ownerDocument" -> box (ownerDoc ())
+                        | "getTotalLength" -> box 100f
+                        | "getPointAtLength" ->
+                            let d = float (unbox<float32> args[0])
+                            let shape = match attrs.TryGetValue "d" with true, v -> v | _ -> ""
+                            let px, py =
+                                if shape = "M0 0 L0 100" then 0., d
+                                elif shape = "M0 0 L100 100" then d * 0.70710678, d * 0.70710678
+                                else d, 0.
+                            box (domProxy<SVGPoint> (fun pm _ ->
+                                match pm.Name with "get_x" -> box (float32 px) | "get_y" -> box (float32 py) | _ -> null))
+                        | "getAttribute" ->
+                            match attrs.TryGetValue(string args[0]) with true, v -> box v | _ -> null
+                        | "setAttribute" ->
+                            attrs[string args[0]] <- string args[1]
+                            null
+                        | "removeAttribute" ->
+                            attrs.Remove(string args[0]) |> ignore
+                            null
+                        | _ -> null)
+                let mutable svgDoc = Unchecked.defaultof<Document>
+                svgDoc <-
+                    domProxy<Document> (fun m _ ->
+                        match m.Name with
+                        | "createElementNS" ->
+                            let destAttrs = Dictionary<string, string>(StringComparer.Ordinal)
+                            box (mkSvgPath destAttrs (fun () -> svgDoc))
+                        | _ -> null)
+                let srcAttrs = Dictionary<string, string>(StringComparer.Ordinal)
+                srcAttrs["d"] <- "M0 0 L100 0"
+                let srcPath = mkSvgPath srcAttrs (fun () -> svgDoc)
+                use morphGraph = new Graph()
+                let morphFollower =
+                    morphGraph.Run(fun () ->
+                        let f = Follow.morph (srcPath :> Element) { ComposedAnimationOptions.Default with Duration = 100.; Ease = id }
+                        f.To "M0 0 L100 0"
+                        f)
+                // Call second To outside ambient graph to verify graph-captured stepRoot creation too
+                morphFollower.To "M0 0 L0 100"
+                host.Advance 50.
+                host.RunFrame()
+                let midShape = srcAttrs["d"]
+                Expect.notEqual midShape "M0 0 L100 0" "Follow.morph interpolates at midpoint"
+                Expect.notEqual midShape "M0 0 L0 100" "Follow.morph has not yet settled at midpoint"
+                for _ in 1..10 do
+                    host.Advance 15.
+                    host.RunFrame()
+                Expect.equal srcAttrs["d"] "M0 0 L0 100" "Follow.morph retains exact target shape after stepRoot disposal"
+                morphFollower.Revert()
+                Expect.equal srcAttrs["d"] "M0 0 L100 0" "Follow.morph Revert restores initial shape"
         ]

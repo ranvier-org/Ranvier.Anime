@@ -325,18 +325,22 @@ module Follow =
 
     [<Sealed>]
     type private MorphFollower(services: AnimeServices, element: SVGGeometryElement, options: ComposedAnimationOptions) =
+        let graph = Graph.Current
         let followerOptions = { options with Autoplay = true }
         let tag = element.tagName.ToLowerInvariant()
         let attribute = if tag = "path" then "d" else "points"
         let original = element.getAttribute attribute
         let mutable morphRoot: IDisposable voption = ValueNone
+        let mutable activeMorph: SvgMorph voption = ValueNone
         let mutable current: ComposedAnimation voption = ValueNone
         let mutable first = true
         let mutable reverted = false
 
-        let disposeStep () =
+        let cancelStep () =
             current |> ValueOption.iter (fun animation -> animation.Cancel())
             current <- ValueNone
+            activeMorph |> ValueOption.iter (fun morph -> morph.Close())
+            activeMorph <- ValueNone
             morphRoot |> ValueOption.iter (fun r -> r.Dispose())
             morphRoot <- ValueNone
 
@@ -348,13 +352,14 @@ module Follow =
                     first <- false
                     element.setAttribute(attribute, shape)
                 else
-                    disposeStep ()
-                    let stepRoot = Api.createRoot id
+                    cancelStep ()
+                    let stepRoot = graph.Run(fun () -> Api.createRoot id)
                     morphRoot <- ValueSome stepRoot
                     try
                         let destination = (element :> Node).ownerDocument.createElementNS(svgNamespace, tag) :?> SVGGeometryElement
                         destination.setAttribute(attribute, shape)
-                        let morphing = Api.runWithOwner stepRoot (fun () -> SvgProperties.morph element destination 0.33 None)
+                        let morphing = graph.Run(fun () -> Api.runWithOwner stepRoot (fun () -> SvgProperties.morph element destination 0.33 None))
+                        activeMorph <- ValueSome morphing
 
                         let animation =
                             ScopeRegistration.run ignore (fun () ->
@@ -362,13 +367,16 @@ module Follow =
                                     (Some followerOptions))
 
                         (animation :> ITickable).WhenCompleted(fun () ->
-                            element.setAttribute(attribute, shape)
+                            morphing.Close()
                             if morphRoot |> ValueOption.exists (fun r -> obj.ReferenceEquals(r, stepRoot)) then
+                                activeMorph <- ValueNone
                                 stepRoot.Dispose()
-                                morphRoot <- ValueNone)
+                                morphRoot <- ValueNone
+                            if not reverted then
+                                element.setAttribute(attribute, shape))
                         current <- ValueSome animation
                     with _ ->
-                        disposeStep ()
+                        cancelStep ()
                         reraise ()
 
             member _.Pause() = current |> ValueOption.iter (fun animation -> animation.Pause() |> ignore)
@@ -376,7 +384,7 @@ module Follow =
             member _.Revert() =
                 if not reverted then
                     reverted <- true
-                    disposeStep ()
+                    cancelStep ()
 
                     if isNull original then element.removeAttribute attribute
                     else element.setAttribute(attribute, original)

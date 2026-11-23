@@ -318,13 +318,14 @@ type FlipLayout =
 /// <summary>FLIP layouts on anime.js's <c>createLayout</c>.</summary>
 [<RequireQualifiedAccess>]
 module Flip =
-    [<Sealed>]
-    type private Layouts(root: Element, converted: obj) =
+    /// <summary>A layout over <c>root</c>; nothing is measured until the first <c>Record</c>.</summary>
+    let create (root: Element) (options: LayoutOptions) : FlipLayout =
+        let converted = BrowserParams.layout options
         let mutable layout: Raw.AutoLayout = null
         let mutable recorded: Element array = [||]
         let mutable visualsOwned = false
 
-        interface FlipLayout with
+        { new FlipLayout with
             member _.Record(children, owned) =
                 recorded <- children
                 visualsOwned <- owned
@@ -351,10 +352,7 @@ module Flip =
                 if not (isNull layout) then
                     layout.revert ()
                     layout <- null
-
-    /// <summary>A layout over <c>root</c>; nothing is measured until the first <c>Record</c>.</summary>
-    let create (root: Element) (options: LayoutOptions) : FlipLayout =
-        Layouts (root, BrowserParams.layout options)
+        }
 
     /// <summary>Keeps the element's current visual box; the next <c>Record</c> that measures it starts it from there.</summary>
     [<Emit("$0.motionFrom = $0.getBoundingClientRect()")>]

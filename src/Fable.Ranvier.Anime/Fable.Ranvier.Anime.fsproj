@@ -56,6 +56,6 @@
         <ProjectReference Include="$(RanvierCssRoot)/src/Ranvier.Css/Ranvier.Css.fsproj" />
     </ItemGroup>
     <ItemGroup Condition="'$(UseLocalRanvierCss)' != 'true'">
-        <PackageReference Include="Ranvier.Css.Core" Version="$(RanvierCssVersion)" />
+        <PackageReference Include="Ranvier.Css.Core$(RanvierPackageSuffix)" Version="$(RanvierCssVersion)" />
     </ItemGroup>
 </Project>
