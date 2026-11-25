@@ -1,5 +1,5 @@
 ---
-last_commit_released: 8dadb22b73a065c314bcf38c4cabc498e382e946
+last_commit_released: 57059b38d2d3b039611d89e70678ea5cc8370fe2
 updaters:
   - regex:
       file: Ranvier.Anime.fsproj
@@ -9,6 +9,14 @@ updaters:
 # Changelog
 
 This changelog is generated from conventional commits by [EasyBuild.ShipIt](https://github.com/easybuild-org/EasyBuild.ShipIt).
+
+## 0.3.1 - 2026-11-25
+
+### 🐞 Bug Fixes
+
+* *(anime)* Close remaining proof-lifted gaps from #39-#41 (#53) ([57059b3](https://github.com/ranvier-org/Ranvier.Anime/commit/57059b38d2d3b039611d89e70678ea5cc8370fe2))
+
+<strong><small>[View changes on Github](https://github.com/ranvier-org/Ranvier.Anime/compare/8dadb22b73a065c314bcf38c4cabc498e382e946..57059b38d2d3b039611d89e70678ea5cc8370fe2)</small></strong>
 
 ## 0.3.0 - 2026-11-23
 
