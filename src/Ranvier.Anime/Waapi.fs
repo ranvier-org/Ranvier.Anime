@@ -326,6 +326,14 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
     let mutable speed = options.PlaybackRate
     let mutable cancelled = false
 
+    // AnimationService.Finished settles once, for the finished promise current at the call.
+    let observeFinished (animSvc: AnimationService) (record: WaapiLookupRecord) =
+        let el, propName = record.Element, record.Property
+        let op = animSvc.Finished(record.Animation, function
+            | ResourceOutcome.Succeeded _ -> WaapiHelpers.removeWaapiAnimation (Some el) (Some propName) (Some this)
+            | _ -> ())
+        finishSubscriptions.Add (op :> IDisposable)
+
     let settleCompletion () =
         if completionWaiters.Count > 0 then
             let snapshot = completionWaiters.ToArray()
@@ -488,11 +496,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
 
                 if not persist then
                     match options.Animations with
-                    | Some animSvc ->
-                        let op = animSvc.Finished(webAnim, function
-                            | ResourceOutcome.Succeeded _ -> WaapiHelpers.removeWaapiAnimation (Some el) (Some propName) (Some this)
-                            | _ -> ())
-                        finishSubscriptions.Add (op :> IDisposable)
+                    | Some animSvc -> observeFinished animSvc record
                     | None ->
                         let finishListener =
                             { new EventListenerObject with
@@ -670,7 +674,17 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] WaapiAnimation
             for record in ownLookupRecords do
                 if not (WaapiHelpers.ActiveLookups.Contains record) then
                     WaapiHelpers.ActiveLookups.Add record
-        this.Seek(0., true).Resume()
+        this.Seek(0., true).Resume() |> ignore
+        // Each service subscription settles once, so the replay observes its own finished promise. The event-listener
+        // path keeps its listener.
+        match options.Animations with
+        | Some animSvc when not cancelled && not persist ->
+            for sub in finishSubscriptions do
+                try sub.Dispose() with _ -> ()
+            finishSubscriptions.Clear()
+            for record in ownLookupRecords do observeFinished animSvc record
+        | _ -> ()
+        this
 
     /// <summary>Commits animated styles to inline CSS on all active WebAnimations.</summary>
     member this.CommitStyles() =

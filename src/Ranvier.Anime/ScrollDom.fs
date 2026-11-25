@@ -44,13 +44,10 @@ type ScrollContainer(scheduler:FrameScheduler, element:HTMLElement, computed:Com
     let engine = EngineFrames.forScheduler scheduler
     let mutable lastVelocitySample = scheduler.Now()
     let mutable lastScrollSample = lastVelocitySample
+    // Velocity only: direction comes from each scroll event, since net movement over a 30 Hz sample hides a reversal.
     let data = new Timer(scheduler,infinity,options={PlaybackOptions.Default with FrameRate=30.},onUpdate=(fun _ ->
         let dx,dy = previousX-x,previousY-y
         previousX <- x; previousY <- y
-        if dx <> 0. then backwardX <- dx > 0.
-        if dy <> 0. then backwardY <- dy > 0.
-        if dy <> 0. then lastBackward <- dy > 0.
-        elif dx <> 0. then lastBackward <- dx > 0.
         let now = scheduler.Now()
         let elapsed = now - lastVelocitySample
         lastVelocitySample <- now
