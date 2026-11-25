@@ -185,4 +185,26 @@ let tests = testList "scroll DOM contracts" [
         Expect.isLessThanOrEqual (abs(timer.Progress-0.5)) 1e-8 "linked midpoint"
         observer.Revert()
         Expect.isFalse timer.Cancelled "observer borrows playback lifetime"
+
+    testCase "#41 follow-up: a reversal inside one 30 Hz data window keeps the scroll event's direction" <| fun _ ->
+        let element,target,computed,resize,_,scroll,_,_ = fixture()
+        use scheduler = new ManualFrameScheduler()
+        use container = new ScrollContainer(scheduler,element,computed,resize)
+        let events = ResizeArray<ScrollEvent>()
+        use observer = container.Observe(target,onEvent=(fun event _ -> events.Add event))
+        let frame milliseconds = scheduler.Advance milliseconds; scheduler.RunFrame()
+        // 240 Hz frames past the 500 ms wake: the ticker pauses while the 30 Hz data timer keeps running, so the next
+        // scroll resumes the ticker after the data timer in frame order.
+        for _ in 1..150 do frame 4.
+        Expect.isEmpty events "no event before the target's range"
+        // Past the target's range (100..700) and back into it, between two data samples: net forward, last backward.
+        scroll 800
+        scroll 690
+        Expect.isTrue container.BackwardY "the reversing scroll event moves backward"
+        frame 34.
+        for _ in 1..5 do frame 4.
+        Expect.isTrue container.BackwardY "the data sample keeps the last scroll event's direction"
+        Expect.contains events ScrollEvent.EnterBackward "entering after the reversal is backward"
+        Expect.isFalse (events.Contains ScrollEvent.EnterForward) "no forward entry"
+        observer.Revert()
 ]

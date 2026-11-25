@@ -604,4 +604,101 @@ let tests =
                 Expect.equal srcAttrs["d"] "M0 0 L0 100" "Follow.morph retains exact target shape after stepRoot disposal"
                 morphFollower.Revert()
                 Expect.equal srcAttrs["d"] "M0 0 L100 0" "Follow.morph Revert restores initial shape"
+
+            testCase "#40 follow-up: Waapi Restart with Persist=false observes the finished promise current after the restart"
+            <| fun _ ->
+                let mutable currentTime: DoubleOrCSSNumericValue option = None
+                let webAnim =
+                    domProxy<WebAnimation> (fun m args ->
+                        match m.Name with
+                        | "get_currentTime" -> box currentTime
+                        | "set_currentTime" ->
+                            currentTime <- unbox<DoubleOrCSSNumericValue option> args[0]
+                            null
+                        | "set_playbackRate" | "pause" | "play" | "commitStyles" | "cancel" -> null
+                        | other -> failwith other)
+                // AnimationService.Finished settles once, for the finished promise current at the call.
+                let finished = ResizeArray<ResourceOutcome<WebAnimation> -> unit>()
+                let animations =
+                    domProxy<AnimationService> (fun m args ->
+                        match m.Name with
+                        | "Finished" ->
+                            finished.Add(unbox<ResourceOutcome<WebAnimation> -> unit> args[1])
+                            box (domProxy<ResourceOperation<WebAnimation>> (fun op _ ->
+                                match op.Name with
+                                | "Dispose" | "Cancel" -> null
+                                | other -> failwith other))
+                        | other -> failwith other)
+                let style =
+                    domProxy<CSSStyleProperties> (fun m _ ->
+                        match m.Name with
+                        | "getPropertyValue" | "removeProperty" -> box ""
+                        | "setProperty" -> null
+                        | other -> failwith other)
+                let mutable el = Unchecked.defaultof<HTMLElement>
+                el <-
+                    domProxy<HTMLElement> (fun m args ->
+                        match m.Name with
+                        | "get_style" -> box style
+                        | "get_ownerDocument" -> null
+                        | "animate" -> box webAnim
+                        | "isSameNode" -> box (Object.ReferenceEquals(args[0], el))
+                        | "getAttribute" | "removeAttribute" -> null
+                        | other -> failwith other)
+                use anim =
+                    Waapi.animate
+                        (el :> Element)
+                        { WaapiAnimationOptions.Default with
+                            Properties = [| "opacity", WaapiValue.Scalar 0.5 |]
+                            Duration = Some(fun _ _ _ -> 100.)
+                            Autoplay = false
+                            Animations = Some animations }
+                Expect.equal finished.Count 1 "construction observes the first finished promise"
+                finished[0] (ResourceOutcome.Succeeded webAnim)
+                Expect.isTrue anim.Completed "the first finish completes the animation"
+                anim.Restart() |> ignore
+                Expect.isFalse anim.Completed "Restart clears completion"
+                let replay = anim.Then()
+                Expect.equal finished.Count 2 "Restart observes the finished promise of the replay"
+                finished[finished.Count - 1] (ResourceOutcome.Succeeded webAnim)
+                Expect.isTrue anim.Completed "the replay's finish completes the animation"
+                Expect.isTrue replay.IsCompleted "Then() settles after the replay"
+
+            testCase "#39 follow-up: setting ComposedAnimation.Speed after Add re-measures the ComposedTimeline without moving its playhead"
+            <| fun _ ->
+                use host = new ManualFrameScheduler()
+                let bag = AnimatedObject [ "x", AdaptedValue.Scalar 0. ]
+                use ctl = Composed.createTimeline host None (Some false)
+                ctl.Add([| box bag |], [| PropertySpec.Scalar("x", 100.) |], options = { ComposedAnimationOptions.Default with Duration = 100.; Ease = id }) |> ignore
+                close ctl.Duration 100. "100ms child at Speed=1"
+                ctl.Seek 20. |> ignore
+                let _, child = ctl.Children[0]
+                child.Speed <- 2.
+                close ctl.Duration 50. "the child at Speed=2 contributes 50ms"
+                close ctl.CurrentTime 20. "re-measuring keeps the playhead"
+                ctl.Seek 25. |> ignore
+                close (bag.GetNumber "x") 50. "the child samples at twice the timeline time"
+
+            testCase "#39 follow-up: Restart of a completed Blend animation replays its delta after the settle microtask detached it"
+            <| fun _ ->
+                use host = new ManualFrameScheduler()
+                let bag = AnimatedObject [ "x", AdaptedValue.Scalar 0. ]
+                let blendOpts =
+                    { ComposedAnimationOptions.Default with
+                        Duration = 100.
+                        Ease = id
+                        Autoplay = false
+                        Composition = KeyframeComposition.Blend }
+                use first = Composed.animate host bag [| PropertySpec.Scalar("x", 100.) |] (Some blendOpts)
+                use second = Composed.animate host bag [| PropertySpec.Scalar("x", 100.) |] (Some blendOpts)
+                first.Seek 100. |> ignore
+                second.Seek 50. |> ignore
+                close (bag.GetNumber "x") 100. "first completed, second mid-flight"
+                // Completion detaches the settled animation's Blend tweens in a microtask; second keeps the entry alive.
+                host.RunMicrotasks()
+                Expect.isTrue first.Completed "first completed"
+                Expect.isFalse second.Completed "second still active"
+                first.Restart() |> ignore
+                first.Seek 50. |> ignore
+                close (bag.GetNumber "x") 50. "restarted Blend animation replays from 0 -> 100"
         ]

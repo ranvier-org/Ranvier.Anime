@@ -750,6 +750,11 @@ and internal CompositionManager(queue: EngineFrameQueue) =
 
     member _.HasOtherOwner(tween: ComposedTween) = hasOtherOwner tween
 
+    member _.TryAdditiveEntry(tween: ComposedTween) =
+        match additiveMap.TryGetValue(struct(tween.Target, tween.Property)) with
+        | true, entry -> ValueSome entry
+        | _ -> ValueNone
+
     member _.ReleaseOwner(target: obj, property: string, token: obj) =
         match lastOwners.TryGetValue target with
         | true, properties ->
@@ -1249,9 +1254,14 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
             Delay = initialDelay
             Repeat = if tweens.Count = 0 then PlaybackRepeat.Count 0u else options.Playback.Repeat }
 
+    // Settling detaches Blend tweens at their current value. Reset folds First back into each entry still alive, as an
+    // attached reset's rewinding detach would, so a restart replays the delta.
+    let settledBlend = ResizeArray<struct(ComposedTween * AdditiveLookupEntry * float * float array)>()
+
     let attachSiblings reclaim =
         if not siblingsAttached then
             siblingsAttached <- true
+            settledBlend.Clear()
             manager.RegisterAnimation this
             for tw in tweens do
                 if not tw.Removed && not tw.StepSource.Muted && not tw.Replaced then
@@ -1266,6 +1276,29 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
             siblingsAttached <- false
             manager.UnregisterAnimation this
             for tw in tweens do manager.RemoveTweenSiblings(tw, rewindBlend = rewindBlend)
+
+    let detachSettled () =
+        settledBlend.Clear()
+        if siblingsAttached then
+            for tw in tweens do
+                if tw.Composition = KeyframeComposition.Blend then
+                    match manager.TryAdditiveEntry tw with
+                    | ValueSome entry when entry.Tweens.Count > 1 && entry.Tweens.Contains tw ->
+                        settledBlend.Add(struct(tw, entry, tw.CurrentNumber, Array.copy tw.CurrentNumbers))
+                    | _ -> ()
+        detachSiblings false
+    let rewindSettled () =
+        if not siblingsAttached then
+            for struct(tw, entry, folded, foldedNumbers) in settledBlend do
+                match manager.TryAdditiveEntry tw with
+                | ValueSome live when obj.ReferenceEquals(live, entry) ->
+                    entry.FromNumber <- entry.FromNumber + tw.First.Number - folded
+                    let first = tw.First.Components
+                    if foldedNumbers.Length > 0 && entry.FromNumbers.Length > 0 then
+                        for c = 0 to (min entry.FromNumbers.Length (min first.Length foldedNumbers.Length)) - 1 do
+                            entry.FromNumbers[c] <- entry.FromNumbers[c] + first[c] - foldedNumbers[c]
+                | _ -> ()
+        settledBlend.Clear()
 
     let mutable clock : Timer = Unchecked.defaultof<Timer>
     let mutable fullyReplaced = false
@@ -1515,7 +1548,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         if parentTimelineRef.IsNone then
             clock.OnSettled <- fun () ->
                 scheduler.Microtask(fun () ->
-                    if clock.Completed && clock.Paused then detachSiblings false) |> ignore
+                    if clock.Completed && clock.Paused then detachSettled()) |> ignore
         parentTimelineRef |> Option.iter (fun timeline -> clock.InheritMute(fun () -> timeline.Muted))
         clock.ConfigureRenderer(render, sampleWhenMuted = true, ?totalDuration = (if tweens.Count = 0 || initialIterDuration <= 1e-11 then Some 1e-11 else None))
         clock.OnCancel <- (fun () -> manager.UnregisterAnimation this; detachSiblings false)
@@ -1617,7 +1650,11 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         and set v =
             if this.PrepareSample() then clock.IterationProgress <- v
     /// <summary>Playback speed multiplier.</summary>
-    member _.Speed with get() = clock.Speed and set v = clock.Speed <- v
+    member _.Speed
+        with get() = clock.Speed
+        and set v =
+            clock.Speed <- v
+            parentTimelineRef |> Option.iter (fun timeline -> timeline.OnChildTimingModified())
     /// <summary>Whether playback is paused.</summary>
     member _.Paused = clock.Paused
     /// <summary>Suppresses playback writes, callbacks and completion delivery while the playhead advances.</summary>
@@ -1693,6 +1730,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         cancelled <- false
         fullyReplaced <- false
         for tw in tweens do tw.RestoreOwnership()
+        rewindSettled()
         detachSiblings true
         if clock.EffectivelyMuted then
             pendingInitialAttach <- true
@@ -2086,6 +2124,10 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedTimeline
             entriesSnapshot <- null
             if entries.Count = 0 then this.Cancel()
             else recalcDurationWithoutReset()
+
+    // A child's speed scales the span it contributes.
+    member internal _.OnChildTimingModified() =
+        if not cancelled then recalcDurationWithoutReset()
 
     /// <summary>Removes matching targets (and optional property) across child animations, cancelling empty children and this timeline if empty.</summary>
     member this.RemoveTargets(targets: obj array, ?propertyName: string) =
