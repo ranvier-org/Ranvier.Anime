@@ -408,6 +408,10 @@ module Follow =
         | _ -> invalidArg "element" "Follow.morph needs a path, polygon or polyline element."
 
 /// <summary>An identity set of nodes.</summary>
+/// <remarks>
+/// On .NET the contents are per thread, like the services <c>AnimeHost</c> installs: every member reads and writes the
+/// calling thread's nodes, and each thread starts with an empty set.
+/// </remarks>
 [<Sealed>]
 type NodeSet() =
     let perThread =

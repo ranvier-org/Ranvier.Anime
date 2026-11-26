@@ -365,6 +365,22 @@ let private nodeSetTests =
             nodes.Add child.Dom
             Expect.isTrue (nodes.AnyUnder root.Dom) "a child of the root"
             Expect.isTrue (nodes.AnyUnder child.Dom) "the node itself"
+
+        testCase "each thread holds its own nodes" <| fun _ ->
+            let first = FakeElement "first"
+            let second = FakeElement "second"
+            let nodes = NodeSet()
+            nodes.Add first.Dom
+            let elsewhere = ref (-1, true)
+            let other =
+                Threading.Thread(fun () ->
+                    elsewhere.Value <- (nodes.Count, nodes.Has first.Dom)
+                    nodes.Add second.Dom)
+            other.Start()
+            other.Join()
+            Expect.equal elsewhere.Value (0, false) "another thread starts empty"
+            Expect.isFalse (nodes.Has second.Dom) "a node added on another thread stays there"
+            Expect.equal nodes.Count 1 "this thread keeps its node"
     ]
 
 let private flipTests =

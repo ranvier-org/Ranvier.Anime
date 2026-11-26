@@ -17,7 +17,8 @@ let install (host: WebCoreHost) =
     AnimeHost.Install { Scheduler = Frames.forHost host; Computed = ComputedStyles.forHost host }
 ```
 
-Then animate. No scheduler appears in a portable call; the functions read the installed host.
+Then animate. No scheduler appears in a portable call; the functions read the installed host. The host is per thread,
+and so are the contents of a `NodeSet`: a thread sees only the nodes it added.
 
 Use `Spring(bounce = 0.5).Stretch(600.)` to keep the spring's curve while fitting a playback interval in milliseconds.
 Spring durations and layout options use physical milliseconds. `Animation.animateSpring` converts the settling duration
