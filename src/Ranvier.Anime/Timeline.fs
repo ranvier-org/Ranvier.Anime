@@ -415,6 +415,10 @@ type Timeline(scheduler: FrameScheduler, ?options: PlaybackOptions, ?playbackEas
     /// <remarks>Parent cancellation releases this timer without disposing it. Parent muting preserves its callbacks.</remarks>
     member internal this.BorrowExternal(identity: obj, childDuration: float, pause: unit -> unit, write: float -> (unit -> bool) -> unit, position: TimelinePosition option) =
         this.Borrow(identity, childDuration, pause, (fun value guard -> if not(isMuted()) then write value guard), None, position)
+    /// <summary>Registers an action that <c>Revert</c> runs after rewinding, in reverse registration order.</summary>
+    member internal _.AddRestoration(restore: (unit -> bool) -> unit) =
+        ensureLive()
+        restorations.Add restore
     member this.Sync(child: Timer, ?position: TimelinePosition) =
         ensureLive()
         if isNull (box child) then nullArg "child"

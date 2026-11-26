@@ -784,13 +784,7 @@ module Text =
         if isNull (box scheduler) then nullArg "scheduler"
         if isNull target then nullArg "target"
         if isNull steps || steps.Length = 0 then invalidArg "steps" "Expected at least one scramble step."
-        let originalHtmlOpt =
-            match target with
-            | :? HTMLElement as htmlEl ->
-                let h = htmlEl.innerHTML
-                Some (if isNull h then "" else h)
-            | _ -> None
-        let original = ScrambleImpl.readTargetText target
+        let restoreContent = ScrambleImpl.captureContent target
         let compiled = ResizeArray<float * float * ScrambleTextTween>()
         let mutable cursor = 0.
         let mutable prevSettled : string option = None
@@ -825,9 +819,7 @@ module Text =
             if not revertedScramble then
                 revertedScramble <- true
                 timer.StopForRevert seekToStart
-                match originalHtmlOpt, target with
-                | Some origHtml, (:? HTMLElement as htmlEl) -> htmlEl.innerHTML <- origHtml
-                | _ -> ScrambleImpl.writeTargetHtml target original
+                restoreContent ()
         timer.OnRevert <- restoreScramble
         ScopeRegistration.register (fun () -> restoreScramble true)
         timer.Reset()
@@ -850,6 +842,10 @@ module TextTimelineExtensions =
 
     type Timeline with
         /// <summary>Adds a scrambleText step to this timeline, chaining settled text from any prior AddScramble on the same target.</summary>
+        /// <remarks>
+        /// Timeline <c>Revert</c> restores the target's content from before its first AddScramble: an HTML element's markup,
+        /// otherwise its text.
+        /// </remarks>
         member this.AddScramble(scheduler: FrameScheduler, target: obj, ?options: ScrambleTextOptions, ?duration: float, ?position: TimelinePosition) =
             if isNull target then nullArg "target"
             let chainMap = ScrambleChainTable.Get this
@@ -864,9 +860,12 @@ module TextTimelineExtensions =
                 | _ -> baseOpts
             let tw = (ScrambleImpl.createFactory effectiveOpts) target 0 1 prevVal
             chainMap[target] <- tw.SettledText
+            let restoreContent = ScrambleImpl.captureContent target
             let child = ScopeRegistration.run ignore (fun () -> new Timer(scheduler, tw.Duration, options = { PlaybackOptions.Default with Delay = tw.Delay }))
             child.ConfigureRenderer(PlaybackRenderer(fun sample _ _ ->
                 let progress = if tw.Duration <= 1e-11 then 1. else Math.Clamp(sample.IterationTime / tw.Duration, 0., 1.)
                 ScrambleImpl.writeTargetHtml target (tw.Modifier progress)))
             child.Reset()
-            this.Sync(child, ?position = position)
+            let timeline = this.Sync(child, ?position = position)
+            this.AddRestoration(fun _ -> restoreContent ())
+            timeline

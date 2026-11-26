@@ -701,4 +701,54 @@ let tests =
                 first.Restart() |> ignore
                 first.Seek 50. |> ignore
                 close (bag.GetNumber "x") 50. "restarted Blend animation replays from 0 -> 100"
+
+            testCase "#39 follow-up: Restart of a Blend animation finished by Complete replays its delta"
+            <| fun _ ->
+                use host = new ManualFrameScheduler()
+                let bag = AnimatedObject [ "x", AdaptedValue.Scalar 0. ]
+                let blendOpts =
+                    { ComposedAnimationOptions.Default with
+                        Duration = 100.
+                        Ease = id
+                        Autoplay = false
+                        Composition = KeyframeComposition.Blend }
+                use first = Composed.animate host bag [| PropertySpec.Scalar("x", 100.) |] (Some blendOpts)
+                use second = Composed.animate host bag [| PropertySpec.Scalar("x", 100.) |] (Some blendOpts)
+                second.Seek 50. |> ignore
+                first.Complete() |> ignore
+                host.RunMicrotasks()
+                Expect.isTrue first.Completed "first completed"
+                Expect.isFalse second.Completed "second still active"
+                first.Restart() |> ignore
+                first.Seek 50. |> ignore
+                close (bag.GetNumber "x") 50. "restarted Blend animation replays from 0 -> 100"
+
+            testCase "#40 follow-up: Timeline Revert restores the markup from before AddScramble"
+            <| fun _ ->
+                use host = new ManualFrameScheduler()
+                let mutable markup = "<span>Keep</span>"
+                let mutable text = "Keep"
+                let element =
+                    domProxy<HTMLElement> (fun m args ->
+                        match m.Name with
+                        | "get_innerHTML" -> box markup
+                        | "set_innerHTML" ->
+                            markup <- unbox<string> args[0]
+                            null
+                        | "get_textContent" -> box text
+                        | "set_textContent" ->
+                            // Setting textContent replaces the element's children with one text node.
+                            text <- unbox<string> args[0]
+                            markup <- text
+                            null
+                        | other -> failwith other)
+                use timeline = new Timeline(host)
+                timeline
+                    .AddScramble(host, box element, options = { ScrambleTextOptions.Default with Text = Some "Hello"; Duration = Some 100. })
+                    .AddScramble(host, box element, options = { ScrambleTextOptions.Default with Text = Some "World"; Duration = Some 100. })
+                |> ignore
+                timeline.Seek timeline.Duration
+                Expect.equal markup "World" "the last scramble settles"
+                timeline.Revert()
+                Expect.equal markup "<span>Keep</span>" "Revert restores the markup from before the first AddScramble"
         ]
