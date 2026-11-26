@@ -1,5 +1,5 @@
 ---
-last_commit_released: 57059b38d2d3b039611d89e70678ea5cc8370fe2
+last_commit_released: 22ee9a925fd6f4e77a6e9d6d9c2770188b40d7c9
 updaters:
   - regex:
       file: Ranvier.Anime.fsproj
@@ -9,6 +9,14 @@ updaters:
 # Changelog
 
 This changelog is generated from conventional commits by [EasyBuild.ShipIt](https://github.com/easybuild-org/EasyBuild.ShipIt).
+
+## 0.3.2 - 2026-11-26
+
+### 🐞 Bug Fixes
+
+* *(anime)* Replay Blend after Complete and restore AddScramble content on revert (#56) ([22ee9a9](https://github.com/ranvier-org/Ranvier.Anime/commit/22ee9a925fd6f4e77a6e9d6d9c2770188b40d7c9))
+
+<strong><small>[View changes on Github](https://github.com/ranvier-org/Ranvier.Anime/compare/57059b38d2d3b039611d89e70678ea5cc8370fe2..22ee9a925fd6f4e77a6e9d6d9c2770188b40d7c9)</small></strong>
 
 ## 0.3.1 - 2026-11-25
 
