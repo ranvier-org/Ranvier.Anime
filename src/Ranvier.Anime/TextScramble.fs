@@ -218,6 +218,16 @@ module internal ScrambleImpl =
         | :? AnimatedObject as bag -> bag.SetText("innerHTML", value)
         | _ -> ()
 
+    /// <summary>Returns an action that writes back the target's current content: an HTML element's markup, otherwise its text.</summary>
+    let captureContent (target: obj) : unit -> unit =
+        match target with
+        | :? HTMLElement as element ->
+            let markup = match element.innerHTML with null -> "" | markup -> markup
+            fun () -> element.innerHTML <- markup
+        | _ ->
+            let text = readTargetText target
+            fun () -> writeTargetHtml target text
+
     let createFactory (options: ScrambleTextOptions) : (obj -> int -> int -> string option -> ScrambleTextTween) =
         let easeFn = defaultArg options.Ease id
         let cursorChars =

@@ -1254,7 +1254,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
             Delay = initialDelay
             Repeat = if tweens.Count = 0 then PlaybackRepeat.Count 0u else options.Playback.Repeat }
 
-    // Settling detaches Blend tweens at their current value. Reset folds First back into each entry still alive, as an
+    // Settling and Complete detach Blend tweens at their current value. Reset folds First back into each entry still alive, as an
     // attached reset's rewinding detach would, so a restart replays the delta.
     let settledBlend = ResizeArray<struct(ComposedTween * AdditiveLookupEntry * float * float array)>()
 
@@ -1278,8 +1278,8 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
             for tw in tweens do manager.RemoveTweenSiblings(tw, rewindBlend = rewindBlend)
 
     let detachSettled () =
-        settledBlend.Clear()
         if siblingsAttached then
+            settledBlend.Clear()
             for tw in tweens do
                 if tw.Composition = KeyframeComposition.Blend then
                     match manager.TryAdditiveEntry tw with
@@ -1753,7 +1753,7 @@ and [<Sealed; Diagnostics.DebuggerDisplay("{ToString(),nq}")>] ComposedAnimation
         if not fullyReplaced && not cancelled then
             clock.Complete(?muteCallbacks = muteCallbacks)
             if manager.IsAdditiveDirty then manager.FlushAdditive()
-            detachSiblings false
+            detachSettled()
         this
 
     /// <summary>Stretches total duration proportionally.</summary>
